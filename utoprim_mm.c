@@ -44,16 +44,16 @@ int Utoprim_mm(double U[NPR], struct of_geom *geom, double prim[NPR])
 
 	eflag = 0 ;
 
+	/* Update the primitive B-fields */
+	prim[B1] = U[B1]/geom->g  ;
+	prim[B2] = U[B2]/geom->g  ;
+	prim[B3] = U[B3]/geom->g  ;
+
 	/* CATCH: negative density */
 	if (U[RHO] <= 0.) {
 		eflag = -100 ;
 		return (eflag) ;
 	}
-
-	/* Update the primitive B-fields */
-	prim[B1] = U[B1]/geom->g  ;
-	prim[B2] = U[B2]/geom->g  ;
-	prim[B3] = U[B3]/geom->g  ;
 
 	lapse = geom->alpha ;
 

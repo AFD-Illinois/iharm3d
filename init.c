@@ -49,9 +49,10 @@ void init()
 	/* some numerical parameters */
 	lim = MC;
 	failed = 0;		/* start slow */
-	cour = 0.4;
+	cour = 0.3;
 	dtsave = dt = 1.e-8;
 	R0 = 0.0;
+	Rhor = (1. + sqrt(1. - a*a));
 	Rin = 0.98 * (1. + sqrt(1. - a * a));
 	Rout = 40.;
 
@@ -97,6 +98,7 @@ void init()
 		SS = r * r + a * a * cth * cth;
 
 		thin = M_PI / 2.;
+
 		sthin = sin(thin);
 		cthin = cos(thin);
 		DDin = rin * rin - 2. * rin + a * a;
@@ -207,7 +209,7 @@ void init()
 	umax = mpi_max(umax);
 	rhomax = mpi_max(rhomax);
 
-	fprintf(stderr, "rhomax: %g\n", rhomax);
+	if(mpi_io_proc()) fprintf(stderr, "rhomax: %g\n", rhomax);
 	ZSLOOP(-1, N1, -1, N2, -1, N3) {
 		p[i][j][k][RHO] /= rhomax;
 		p[i][j][k][UU] /= rhomax;
@@ -259,11 +261,11 @@ void init()
 		if (bsq_ij > bsq_max) bsq_max = bsq_ij;
 	}
 	bsq_max = mpi_max(bsq_max);
-	fprintf(stderr, "initial bsq_max: %g\n", bsq_max);
+	if(mpi_io_proc()) fprintf(stderr, "initial bsq_max: %g\n", bsq_max);
 
 	/* finally, normalize to set field strength */
 	beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
-	fprintf(stderr, "initial beta: %g (should be %g)\n", beta_act,
+	if(mpi_io_proc()) fprintf(stderr, "initial beta: %g (should be %g)\n", beta_act,
 		beta);
 	norm = sqrt(beta_act / beta);
 	bsq_max = 0.;
@@ -278,7 +280,7 @@ void init()
 	}
 	bsq_max = mpi_max(bsq_max);
 	beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
-	fprintf(stderr, "final beta: %g (should be %g)\n", beta_act, beta);
+	if(mpi_io_proc()) fprintf(stderr, "final beta: %g (should be %g)\n", beta_act, beta);
 
 	/* enforce boundary conditions */
 	fixup(p);
@@ -324,7 +326,7 @@ void coord_transform(double *pr, int ii, int jj)
 
 	/* transform to Kerr-Schild */
 	/* make transform matrix */
-
+	memset(trans, 0, 16*sizeof(double));
 	DLOOPA trans[j][j] = 1.;
 	trans[0][1] = 2. * r / (r * r - 2. * r + a * a);
 	trans[3][1] = a / (r * r - 2. * r + a * a);

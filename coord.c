@@ -149,7 +149,8 @@ void set_points()
 	dx[1] = log((Rout - R0) / (Rin - R0)) / N1TOT;
 	#elif(RCOORD==SINHR)
 	dx[1] = 0.075;
-	sinhr_r0 = Rin;
+	Rhor = 1. + sqrt(1. - a*a);
+	sinhr_r0 = Rhor - 2.1*dx[1];
 	sinhr_rtrans = 1.9;
 	#endif
 	dx[2] = 1. / N2TOT;
@@ -170,6 +171,7 @@ void fix_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
 	ISLOOP(-1,N1-1)
 	KSLOOP(-1,N3-1) {
 		F1[i][-1+START2][k][B2] = -F1[i][0+START2][k][B2];
+		F3[i][-1+START2][k][B2] = -F3[i][0+START2][k][B2];
 		PLOOP F2[i][0+START2][k][ip] = 0.;
 	}
 	}
@@ -177,6 +179,7 @@ void fix_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
 	ISLOOP(-1,N1-1)
 	KSLOOP(-1,N3-1) {
 		F1[i][N2+START2][k][B2] = -F1[i][N2 - 1+START2][k][B2];
+		F3[i][N2+START2][k][B2] = -F3[i][N2 - 1+START2][k][B2];
 		PLOOP F2[i][N2+START2][k][ip] = 0.;
 	}
 	}

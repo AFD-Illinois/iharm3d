@@ -51,7 +51,7 @@ void coord(int i, int j, int loc, double *X)
    switched to use gsl
    cfg 12.24.14 
 */
-double gdet_func(double gcov[][NDIM])
+/*double gdet_func(double gcov[][NDIM])
 {
 	int i,j,signum ;
 	double detg ;
@@ -71,13 +71,14 @@ double gdet_func(double gcov[][NDIM])
 	}
 
 	detg = gsl_linalg_LU_det(gsl_gcov, signum) ;
-
+*/
 	/* clean up after yourself */
-	gsl_matrix_free(gsl_gcov) ;
+/*	gsl_matrix_free(gsl_gcov) ;
 	gsl_permutation_free(perm) ;
 
 	return (sqrt(fabs(detg)));
 }
+*/
 
 /* invert gcov to get gcon */
 /*
@@ -86,9 +87,12 @@ double gdet_func(double gcov[][NDIM])
 	cfg 12.24.14
 
 */
-void gcon_func(double gcov[][NDIM], double gcon[][NDIM])
+double gcon_func(double gcov[][NDIM], double gcon[][NDIM])
 {
-	int i,j,signum ;
+
+	double gdet = invert(&gcov[0][0],&gcon[0][0]);
+	return sqrt(fabs(gdet));
+	/*int i,j,signum ;
 	gsl_matrix *gsl_gcov,*gsl_gcon ;
 	gsl_permutation *perm ;
 
@@ -113,11 +117,12 @@ void gcon_func(double gcov[][NDIM], double gcon[][NDIM])
 
 	for(i=0;i<NDIM;i++)
 	for(j=0;j<NDIM;j++) gcon[i][j] = gsl_matrix_get(gsl_gcon,i,j) ;
+	*/
 
 	/* clean up after yourself */
-	gsl_matrix_free(gsl_gcov) ;
-	gsl_matrix_free(gsl_gcon) ;
-	gsl_permutation_free(perm) ;
+	//gsl_matrix_free(gsl_gcov) ;
+	//gsl_matrix_free(gsl_gcon) ;
+	//gsl_permutation_free(perm) ;
 
 	/* done! */
 }
@@ -342,4 +347,41 @@ void bl_gcon_func(double r, double th, double gcon[][NDIM])
 	gcon[2][2] = 1. / (r2 * mu);
 	gcon[3][3] = (1. - 2. / (r * mu)) / (r2 * sth * sth * DD);
 
+}
+
+double MINOR(double m[16], int r0, int r1, int r2, int c0, int c1, int c2)
+{
+    return m[4*r0+c0] * (m[4*r1+c1] * m[4*r2+c2] - m[4*r2+c1] * m[4*r1+c2]) -
+           m[4*r0+c1] * (m[4*r1+c0] * m[4*r2+c2] - m[4*r2+c0] * m[4*r1+c2]) +
+           m[4*r0+c2] * (m[4*r1+c0] * m[4*r2+c1] - m[4*r2+c0] * m[4*r1+c1]);
+}
+ 
+ 
+void adjoint(double m[16], double adjOut[16])
+{
+    adjOut[ 0] =  MINOR(m,1,2,3,1,2,3); adjOut[ 1] = -MINOR(m,0,2,3,1,2,3); adjOut[ 2] =  MINOR(m,0,1,3,1,2,3); adjOut[ 3] = -MINOR(m,0,1,2,1,2,3);
+    adjOut[ 4] = -MINOR(m,1,2,3,0,2,3); adjOut[ 5] =  MINOR(m,0,2,3,0,2,3); adjOut[ 6] = -MINOR(m,0,1,3,0,2,3); adjOut[ 7] =  MINOR(m,0,1,2,0,2,3);
+    adjOut[ 8] =  MINOR(m,1,2,3,0,1,3); adjOut[ 9] = -MINOR(m,0,2,3,0,1,3); adjOut[10] =  MINOR(m,0,1,3,0,1,3); adjOut[11] = -MINOR(m,0,1,2,0,1,3);
+    adjOut[12] = -MINOR(m,1,2,3,0,1,2); adjOut[13] =  MINOR(m,0,2,3,0,1,2); adjOut[14] = -MINOR(m,0,1,3,0,1,2); adjOut[15] =  MINOR(m,0,1,2,0,1,2);
+}
+ 
+double determinant(double m[16])
+{
+    return m[0] * MINOR(m, 1, 2, 3, 1, 2, 3) -
+           m[1] * MINOR(m, 1, 2, 3, 0, 2, 3) +
+           m[2] * MINOR(m, 1, 2, 3, 0, 1, 3) -
+           m[3] * MINOR(m, 1, 2, 3, 0, 1, 2);
+}
+ 
+ 
+double invert(double *m, double *invOut)
+{
+    adjoint(m, invOut);
+ 
+	double det = determinant(m);
+    double inv_det = 1. / det;
+    for(int i = 0; i < 16; ++i)
+        invOut[i] = invOut[i] * inv_det;
+
+	return det;
 }

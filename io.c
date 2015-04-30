@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 
 void write_scalar(float *data, hid_t file_id, const char *name, hid_t filespace, hid_t memspace, FILE *xml);
+void write_scalar_int(int *data, hid_t file_id, const char *name, hid_t filespace, hid_t memspace, FILE *xml);
 
 static int dump_id = 0;
 static int restart_id = 0;
@@ -13,6 +14,7 @@ void dump()
 {
 	static int firstc = 1;
 	static float *data;
+	static int *idata;
 	int i,j,k,d;
 	char name[80];
 	FILE *xml = NULL;
@@ -32,6 +34,7 @@ void dump()
 		mkdir("dumps", 0777);
 		dump_grid();
 		data = malloc(N1*N2*N3*NPR*sizeof(float));
+		idata = malloc(N1*N2*N3*sizeof(int));
 		if(data == NULL) {
 			fprintf(stderr,"failed to allocate data in dump\n");
 			exit(8);
@@ -98,7 +101,7 @@ void dump()
 		write_scalar(data, file_id, varNames[ip], filespace, memspace, xml);
 	}
 
-	// example of writing something else out
+	// examples of writing other things out
 	int ind = 0;
 	ZLOOP {
 		struct of_geom *geom = get_geometry(i, j, CENT) ;
@@ -119,7 +122,24 @@ void dump()
 		ind++;
 	}
 	write_scalar(data, file_id, "gamma", filespace, memspace, xml);
-	
+
+	ind = 0;
+	ZLOOP {
+		double divb = flux_ct_divb(i, j, k);
+		data[ind] = divb;
+		ind++;
+	}
+	write_scalar(data, file_id, "divb", filespace, memspace, xml);
+
+
+	ind = 0;
+	ZLOOP {
+		idata[ind] = fail_save[i][j][k];
+		fail_save[i][j][k] = 0;
+		ind++;
+	}
+	write_scalar_int(idata, file_id, "fail", filespace, memspace, xml);
+
 
 	// always make sure the following is at the end
 	if(mpi_io_proc()) {
@@ -128,9 +148,12 @@ void dump()
 
 	H5Sclose(memspace);
 	H5Sclose(filespace);
+	H5Fflush(file_id,H5F_SCOPE_GLOBAL);
 	H5Fclose(file_id);
 
+	t_last_dump = t;
 	dump_id++;
+
 }
 
 void add_int_value(int val, const char *name, hid_t file_id, hid_t filespace, hid_t memspace)
@@ -163,9 +186,11 @@ void get_int_value(int *val, const char *name, hid_t file_id, hid_t filespace, h
 	H5Pclose(plist_id);
 	plist_id = H5Pcreate(H5P_DATASET_XFER);
     H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
-	H5Dread(dset_id, H5T_NATIVE_INT, memspace, filespace, plist_id, &val);
+	H5Dread(dset_id, H5T_NATIVE_INT, memspace, filespace, plist_id, val);
 	H5Dclose(dset_id);
 	H5Pclose(plist_id);
+
+	mpi_int_broadcast(val);
 }
 
 
@@ -176,9 +201,11 @@ void get_dbl_value(double *val, const char *name, hid_t file_id, hid_t filespace
 	H5Pclose(plist_id);
 	plist_id = H5Pcreate(H5P_DATASET_XFER);
     H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
-	H5Dread(dset_id, H5T_NATIVE_DOUBLE, memspace, filespace, plist_id, &val);
+	H5Dread(dset_id, H5T_NATIVE_DOUBLE, memspace, filespace, plist_id, val);
 	H5Dclose(dset_id);
 	H5Pclose(plist_id);
+
+	mpi_dbl_broadcast(val);
 }
 
 
@@ -238,6 +265,8 @@ void restart_write()
 	add_dbl_value(Rout, "Rout", file_id, filespace, memspace);
 	add_dbl_value(hslope, "hslope", file_id, filespace, memspace);
 	add_dbl_value(R0, "R0", file_id, filespace, memspace);
+	add_dbl_value(Rhor, "Rhor", file_id, filespace, memspace);
+	add_dbl_value(t_last_dump, "t_last_dump", file_id, filespace, memspace);
 
 	H5Sclose(filespace);
 	H5Sclose(memspace);
@@ -304,7 +333,7 @@ void restart_read(char *fname)
 	hid_t file_id = H5Fopen(fname, H5F_ACC_RDONLY, plist_id);
 	H5Pclose(plist_id);
 
-	// first write some info about the current state of the run (e.g. time, istep, ...)
+	// first read some info about the current state of the run (e.g. time, istep, ...)
 	file_grid_dims[0] = 1;
 	hid_t filespace = H5Screate_simple(1, file_grid_dims, NULL);
 	file_start[0] = 0;
@@ -332,6 +361,9 @@ void restart_read(char *fname)
 	get_dbl_value(&Rout, "Rout", file_id, filespace, memspace);
 	get_dbl_value(&hslope, "hslope", file_id, filespace, memspace);
 	get_dbl_value(&R0, "R0", file_id, filespace, memspace);
+	get_dbl_value(&Rhor, "Rhor", file_id, filespace, memspace);
+	get_dbl_value(&t_last_dump, "t_last_dump", file_id, filespace, memspace);
+	t_next_dump = t_last_dump + DTd;
 
 	H5Sclose(filespace);
 	H5Sclose(memspace);
@@ -339,7 +371,7 @@ void restart_read(char *fname)
 	for(d = 0; d < 3; d++) file_grid_dims[d] = fdims[d];
 	file_grid_dims[3] = NPR;	// for vectors
 	filespace = H5Screate_simple(4, file_grid_dims, NULL);
-	for(d = 0; d< 3; d++) {
+	for(d = 0; d < 3; d++) {
 		file_start[d] = global_start[d];
 		file_count[d] = mdims[d];
 	}
@@ -352,7 +384,7 @@ void restart_read(char *fname)
 	}
 	mem_grid_dims[3] = NPR;
 	memspace = H5Screate_simple(4, mem_grid_dims, NULL);
-	for(d = 0; d< 3; d++) mem_start[d] = 0;
+	for(d = 0; d < 3; d++) mem_start[d] = NG;
 	mem_start[3] = 0;
 	H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count, NULL);
 
@@ -362,12 +394,13 @@ void restart_read(char *fname)
 
 	plist_id = H5Pcreate(H5P_DATASET_XFER);
     H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
-	H5Dread(dset_id, H5T_NATIVE_DOUBLE, memspace, filespace, plist_id, &p[NG][NG][NG][0]);
+	H5Dread(dset_id, H5T_NATIVE_DOUBLE, memspace, filespace, plist_id, &p[0][0][0][0]);
 	H5Dclose(dset_id);
 	H5Pclose(plist_id);
 
 	H5Sclose(memspace);
 	H5Sclose(filespace);
+	H5Fflush(file_id,H5F_SCOPE_GLOBAL);
 	H5Fclose(file_id);
 
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -383,16 +416,47 @@ int restart_init()
 	int i,j,k;
 	char fname[256];
 	FILE *fp = fopen("restarts/restart.last","r");
-	if(fp == NULL) return 0;
+	if(fp == NULL) {
+		if(mpi_io_proc()) fprintf(stderr,"Starting a model from scratch!\n");
+		return 0;
+	}
+	int icheck = 0;
+	if(mpi_io_proc()) fprintf(stderr,"check = %d\n", icheck++);
+	fflush(stderr);
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	zero_arrays();
+
+	if(mpi_io_proc()) fprintf(stderr,"check = %d\n", icheck++);
+	fflush(stderr);
+	MPI_Barrier(MPI_COMM_WORLD);
+
 
 	fscanf(fp,"%s\n", fname);
 	restart_read(fname);
 
+	ZSLOOP(-NG, N1-1+NG, -NG, N2-1+NG, -NG, N3-1+NG) PLOOP ph[i][j][k][ip] = p[i][j][k][ip];
+
+	if(mpi_io_proc()) fprintf(stderr,"check = %d\n", icheck++);
+	fflush(stderr);
+	MPI_Barrier(MPI_COMM_WORLD);
+
+
 	set_grid();
 
-	bound_prim(p);
+	if(mpi_io_proc()) fprintf(stderr,"check = %d\n", icheck++);
+	fflush(stderr);
+	MPI_Barrier(MPI_COMM_WORLD);
 
-	ZSLOOP(-NG, N1-1+NG, -NG, N2-1+NG, -NG, N3-1+NG) PLOOP ph[i][j][k][ip] = p[i][j][k][ip];
+	bound_prim(p);
+	//bound_prim(ph);
+
+	if(mpi_io_proc()) fprintf(stderr,"check = %d\n", icheck++);
+	fflush(stderr);
+	MPI_Barrier(MPI_COMM_WORLD);
+
+
+
 
 	return 1;
 }

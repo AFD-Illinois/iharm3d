@@ -15,6 +15,7 @@ cfg 12.29.13
 */
 
 #include "decs.h"
+#include <mpi.h>
 
 /** algorithmic choices **/
 
@@ -49,7 +50,6 @@ void step_ch()
 
 	//fprintf(stderr, "h");
 	ndt = advance(p, p, 0.5 * dt, ph);	/* time step primitive variables to the half step */
-
 	fixup(ph);		/* Set updated densities to floor, set limit for gamma */
 	fixup_utoprim(ph);	/* Fix the failure points using interpolation and updated ghost zone values */
 	bound_prim(ph);		/* Set boundary conditions for primitive variables, flag bad ghost zones */
@@ -132,7 +132,7 @@ double advance(grid_prim_type pi,
 	//fprintf(stderr, "1");
 	/** now update pi to pf **/
 #pragma omp parallel \
- shared ( pi, pb, pf, F1, F2, F3, ggeom, pflag, dx, Dt ) \
+ shared ( pi, pb, pf, F1, F2, F3, ggeom, pflag, dx, Dt, fail_save ) \
  private ( i, j, k, dU, q, U )
 {
 #pragma omp for
@@ -152,6 +152,7 @@ double advance(grid_prim_type pi,
 		}
 
 		pflag[i][j][k] = Utoprim_mm(U, &(ggeom[i][j][CENT]), pf[i][j][k]);
+		if(pflag[i][j][k]) fail_save[i][j][k] = 1;
 	}
 }
 
@@ -178,19 +179,20 @@ double fluxcalc(grid_prim_type pr, grid_prim_type F, int dir)
 {
 	int i, j, k ;
 	double p_l[NMAX+2*NG][NPR], p_r[NMAX+2*NG][NPR] ;
-	double ndt,dtij;
-	double cmax[N1+2*NG][N2+2*NG][N3+2*NG] ;
+	double ndt;
+	double cij,cmax;	//[N1+2*NG][N2+2*NG][N3+2*NG] ;
 	double ptmp[NMAX+2*NG][NPR] ;
 
 	ndt = 1.e3 ;
+	cmax = 0.;
 
 	if(dir == 1) {
 		/* loop over other direction */
-#pragma omp parallel \
- shared ( pr, ggeom, F, dir, cmax ) \
- private ( ptmp, p_l, p_r, i, j, k )
-{
-#pragma omp for
+
+#pragma omp parallel for \
+ shared ( pr, ggeom, F, dir ) \
+ private ( ptmp, p_l, p_r, i, j, k ) \
+ reduction(max:cmax)
 		JSLOOP(-1,N2) 
 		KSLOOP(-1,N3) {
 
@@ -207,18 +209,17 @@ double fluxcalc(grid_prim_type pr, grid_prim_type F, int dir)
 #endif
 
 			ISLOOP(0,N1) {
-				lr_to_flux(p_r[i-1],p_l[i], &(ggeom[i][j][FACE1]), dir, F[i][j][k], &cmax[i][j][k]) ;
+				lr_to_flux(p_r[i-1],p_l[i], &(ggeom[i][j][FACE1]), dir, F[i][j][k], &cij) ;
+				cmax = (cij > cmax ? cij : cmax);
 			}
 		}
-}
 	}
 	else if(dir == 2) {
 		/* loop over other direction */
-#pragma omp parallel \
- shared ( pr, ggeom, F, dir, cmax ) \
- private ( ptmp, p_l, p_r, i, j, k )
-{
-#pragma omp for
+#pragma omp parallel for \
+ shared ( pr, ggeom, F, dir ) \
+ private ( ptmp, p_l, p_r, i, j, k ) \
+ reduction(max:cmax)
 		ISLOOP(-1,N1)
 		KSLOOP(-1,N3) {
 
@@ -234,19 +235,19 @@ double fluxcalc(grid_prim_type pr, grid_prim_type F, int dir)
 			reconstruct_lr_weno(ptmp, N2, p_l, p_r) ;
 #endif
 
-			JSLOOP(0,N2) 
-				lr_to_flux(p_r[j-1],p_l[j], &(ggeom[i][j][FACE2]), dir, F[i][j][k], &cmax[i][j][k]);
+			JSLOOP(0,N2) {
+				lr_to_flux(p_r[j-1],p_l[j], &(ggeom[i][j][FACE2]), dir, F[i][j][k], &cij);
+				cmax = (cij > cmax ? cij : cmax);
+			}
 
 		}
-}
 	}
 	else if(dir == 3) {
 		/* or the other direction */
-#pragma omp parallel \
- shared ( pr, ggeom, F, dir, cmax ) \
- private ( ptmp, p_l, p_r, i, j, k )
-{
-#pragma omp for
+#pragma omp parallel for \
+ shared ( pr, ggeom, F, dir ) \
+ private ( ptmp, p_l, p_r, i, j, k ) \
+ reduction(max:cmax)
 		ISLOOP(-1,N1)
 		JSLOOP(-1,N2) {
 
@@ -262,18 +263,20 @@ double fluxcalc(grid_prim_type pr, grid_prim_type F, int dir)
 			reconstruct_lr_weno(ptmp, N3, p_l, p_r) ;
 #endif
 
-			KSLOOP(0,N3)
-				lr_to_flux(p_r[k-1],p_l[k], &(ggeom[i][j][FACE3]), dir, F[i][j][k], &cmax[i][j][k]);
+			KSLOOP(0,N3) {
+				lr_to_flux(p_r[k-1],p_l[k], &(ggeom[i][j][FACE3]), dir, F[i][j][k], &cij);
+				cmax = (cij > cmax ? cij : cmax);
+			}
+				
 		}
-}
 	}
 		
 
-
-	ZLOOP {
-		dtij = cour * dx[dir] / cmax[i][j][k];
-		if (dtij < ndt) ndt = dtij;
-	}
+	ndt = cour * dx[dir] / cmax;
+	//ZLOOP {
+	//	dtij = cour * dx[dir] / cmax[i][j][k];
+	//	if (dtij < ndt) ndt = dtij;
+	//}
 
 	return (ndt);
 
@@ -331,6 +334,12 @@ void lr_to_flux(double p_l[NPR], double p_r[NPR], struct of_geom *geom,
 	double F_l[NPR],F_r[NPR],U_l[NPR],U_r[NPR] ;
 	double cmax_l,cmax_r,cmin_l,cmin_r,cmax,cmin,ctop ;
 	int k ;
+
+	if(geom->g < SMALL) {
+		for(k=0;k<8;k++) Flux[k] = 0.;
+		*max_speed = 0.;
+		return;
+	}
 
 	get_state(p_l, geom, &state_l);
 	get_state(p_r, geom, &state_r);

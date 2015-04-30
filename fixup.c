@@ -30,18 +30,31 @@ void fixup1zone(int i, int j, int k, double pv[NPR])
 	rhoflr = RHOMIN * rhoscal;
 	uuflr = UUMIN * uuscal;
 
-	if (rhoflr < RHOMINLIMIT) rhoflr = RHOMINLIMIT;
-	if (uuflr < UUMINLIMIT) uuflr = UUMINLIMIT;
+	if (rhoflr < RHOMINLIMIT) {
+		//if(nstep > 0) fprintf(stdout,"applying rho floor1 in zone %d %d %d\n", i, j, k);
+		rhoflr = RHOMINLIMIT;
+	}
+	if (uuflr < UUMINLIMIT) {
+		//if(nstep > 0) fprintf(stdout,"applying u floor1 in zone %d %d %d\n", i, j, k);
+		uuflr = UUMINLIMIT;
+	}
 
 	/* floor on density and internal energy density (momentum *not* conserved) */
-	if (pv[RHO] < rhoflr || isnan(pv[RHO])) pv[RHO] = rhoflr;
-	if (pv[UU] < uuflr || isnan(pv[UU])) pv[UU] = uuflr;
+	if (pv[RHO] < rhoflr || isnan(pv[RHO])) {
+		pv[RHO] = rhoflr;
+		//if(nstep > 0) fprintf(stdout,"applying rho floor2 in zone %d %d %d\n", i, j, k);
+	}
+	if (pv[UU] < uuflr || isnan(pv[UU])) {
+		pv[UU] = uuflr;
+		//if(nstep > 0) fprintf(stdout,"applying u floor2 in zone %d %d %d\n", i, j, k);
+	}
 
 	/* limit gamma wrt normal observer */
 	geom = get_geometry(i, j, CENT) ;
 
 	if (mhd_gamma_calc(pv, geom, &gamma)) {
 		/* Treat gamma failure here as "fixable" for fixup_utoprim() */
+		//if(nstep > 0) fprintf(stdout,"gamma failure in zone %d %d %d\n", i, j, k);
 		pflag[i][j][k] = -333;
 		//failimage[3][i + j * N1]++;
 	} else {
@@ -52,6 +65,7 @@ void fixup1zone(int i, int j, int k, double pv[NPR])
 			pv[U1] *= f;
 			pv[U2] *= f;
 			pv[U3] *= f;
+		//	if(nstep > 0) fprintf(stdout,"fixing gamma in zone %d %d %d\n", i, j, k);
 		}
 	}
 
@@ -79,10 +93,24 @@ void fixup_utoprim(grid_prim_type pv)
 		pflag[i][j][k] = !pflag[i][j][k];
 	}
 
+	// make sure we are not using ill defined corner regions
+	for(i=0;i<NG;i++) {
+	for(j=0;j<NG;j++) {
+	for(k=0;k<NG;k++) {
+		pflag[i][j][k] = 0;
+		pflag[i+N1+NG][j][k] = 0;
+		pflag[i][j+N2+NG][k] = 0;
+		pflag[i][j][k+N3+NG] = 0;
+		pflag[i+N1+NG][j+N2+NG][k] = 0;
+		pflag[i+N1+NG][j][k+N3+NG] = 0;
+		pflag[i][j+N2+NG][k+N3+NG] = 0;
+		pflag[i+N1+NG][j+N2+NG][k+N3-1+NG] = 0;
+	}}}
+
 	/* Fix the interior points first */
 	ZSLOOP(0, (N1 - 1), 0, (N2 - 1), 0, (N3 - 1)) {
 		if (pflag[i][j][k] == 0) {
-			//fprintf(stderr,"fixing %d %d %d\n", i, j, k);
+			//if(nstep > 0) fprintf(stdout,"fixing utoprim %d %d %d\n", i, j, k);
 			wsum = 0.;
 			FLOOP sum[ip] = 0.;
 			for(int l=-1;l<2;l++) {
@@ -98,7 +126,7 @@ void fixup_utoprim(grid_prim_type pv)
 			}
 			FLOOP pv[i][j][k][ip] = sum[ip]/wsum;
 
-			pflag[i][j][k] = 0;	/* The cell has been fixed so we can use it for interpolation elsewhere */
+			pflag[i][j][k] = 1;	/* The cell has been fixed so we can use it for interpolation elsewhere */
 			fixup1zone(i, j, k, pv[i][j][k]);	/* Floor and limit gamma the interpolated value */
 		}
 	}

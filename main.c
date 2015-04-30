@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
 {
 	double tdump, tpdump, timage, tlog, zcps;
 	int nfailed = 0;
+	int nthreads;
 	double ti_t,t0_t,t1_t,tf_t ;
 	void init_mpi();
 
@@ -48,6 +49,7 @@ int main(int argc, char *argv[])
 	t0_t = ti_t ;
 
     /* report on switches */
+	if(mpi_io_proc()) {
     fprintf(stderr,"Wind source: ") ;
     if(WIND) fprintf(stderr,"ENABLED\n") ;
     else fprintf(stderr,"DISABLED\n") ;
@@ -60,12 +62,6 @@ int main(int argc, char *argv[])
     if(RECON_WENO) fprintf(stderr,"ENABLED\n") ;
     else fprintf(stderr,"DISABLED\n") ;
 
-	if((RECON_PARA || RECON_WENO) && NG == 2) {
-		fprintf(stderr,"not enough ghost zones!\n") ;
-		fprintf(stderr,"WENO or PARA + NG=2\n") ;
-		exit(1);
-	}
-
     fprintf(stderr,"Cooling: ") ;
     if(ALLOW_COOL) fprintf(stderr,"ENABLED\n") ;
     else fprintf(stderr,"DISABLED\n") ;
@@ -73,30 +69,46 @@ int main(int argc, char *argv[])
     fprintf(stderr,"Lagrangian tracers: ") ;
     if(NPTOT <= 0) fprintf(stderr,"DISABLED\n") ;
     else fprintf(stderr,"ENABLED\n") ;
+	}
+
+	if((RECON_PARA || RECON_WENO) && NG == 2) {
+		fprintf(stderr,"not enough ghost zones!\n") ;
+		fprintf(stderr,"WENO or PARA + NG=2\n") ;
+		exit(1);
+	}
+
+	#pragma omp parallel
+	{
+	#pragma omp master
+	{
+	nthreads = omp_get_num_threads();
+	}
+	}
 
 	nstep = 0;
 
+	t_last_dump = 0.;
 	/* Perform Initializations, either directly or via checkpoint */
 	system("mkdir -p dumps images");
+	init_ranc(1);
 	if (!restart_init()) {
-		init_ranc(1) ;
+		//init_ranc(1) ;
 		init();
-		if(NPTOT > 0) init_particles();		
+		if(NPTOT > 0) init_particles();
+		/* do initial diagnostics */
+		diag(INIT_OUT);
 	}
 
-	/* do initial diagnostics */
-	diag(INIT_OUT);
-
-	tdump = t + DTd;
+	if(t_last_dump > 0.) tdump = t_next_dump;
+	else tdump = t + DTd;
 	if(NPTOT > 0) tpdump = t + DTp;
 	timage = t + DTi;
 	tlog = t + DTl;
 
 	defcon = 1.;
-	fprintf(stderr,"t, tf: %g %g\n",t,tf) ;
-	dump();
+	if(mpi_io_proc()) fprintf(stderr,"t, tf: %g %g\n",t,tf) ;
+	if(t_last_dump == 0.) dump();
 	while (t < tf) {
-
 
 		/* step variables forward in time */
 		step_ch();
@@ -136,7 +148,8 @@ int main(int argc, char *argv[])
 		if(nstep%TIMER_NSTEP == 0) {
 			t1_t = MPI_Wtime() ;
 			zcps = TIMER_NSTEP*N1*N2*N3/(t1_t-t0_t) ;
-			fprintf(stderr,"Zone cycles/second: %g\n", zcps) ;
+			zcps = mpi_io_reduce(zcps)/(mpi_nprocs()*nthreads);
+			if(mpi_io_proc()) fprintf(stderr,"Zone cycles/second: %g\n", zcps) ;
 			t0_t = t1_t ;
 		}
 
@@ -187,6 +200,7 @@ void zero_arrays()
 			F3[i][j][k][ip] = 0.;
 		}
 		pflag[i][j][k] = 0;
+		fail_save[i][j][k] = 0;
 	}
 
 	//k = 0;
@@ -219,13 +233,13 @@ void set_grid()
 
 	DLOOPA X[j] = 0.;
 
-	GZSLOOP(-NG, N1-1 + NG, -NG, N2-1 + NG) {
+	GZSLOOP(-NG, N1-1 + NG, -NG, N2-1 + NG) {	
 
 		/* zone-centered */
 		coord(i, j, CENT, X);
 		gcov_func(X, ggeom[i][j][CENT].gcov);
-		ggeom[i][j][CENT].g = gdet_func(ggeom[i][j][CENT].gcov);
-		gcon_func(ggeom[i][j][CENT].gcov, ggeom[i][j][CENT].gcon);
+		//ggeom[i][j][CENT].g = gdet_func(ggeom[i][j][CENT].gcov);
+		ggeom[i][j][CENT].g = gcon_func(ggeom[i][j][CENT].gcov, ggeom[i][j][CENT].gcon);
 		ggeom[i][j][CENT].alpha = 1.0 / sqrt(-ggeom[i][j][CENT].gcon[0][0]);
 
 		/* only required in zone center... */
@@ -234,22 +248,22 @@ void set_grid()
 		/* corner-centered */
 		coord(i, j, CORN, X);
 		gcov_func(X, ggeom[i][j][CORN].gcov);
-		ggeom[i][j][CORN].g = gdet_func(ggeom[i][j][CORN].gcov);
-		gcon_func(ggeom[i][j][CORN].gcov, ggeom[i][j][CORN].gcon);
+		//ggeom[i][j][CORN].g = gdet_func(ggeom[i][j][CORN].gcov);
+		ggeom[i][j][CORN].g = gcon_func(ggeom[i][j][CORN].gcov, ggeom[i][j][CORN].gcon);
 		ggeom[i][j][CORN].alpha = 1.0 / sqrt(-ggeom[i][j][CORN].gcon[0][0]);
 
 		/* r-face-centered */
 		coord(i, j, FACE1, X);
 		gcov_func(X, ggeom[i][j][FACE1].gcov);
-		ggeom[i][j][FACE1].g = gdet_func(ggeom[i][j][FACE1].gcov);
-		gcon_func(ggeom[i][j][FACE1].gcov, ggeom[i][j][FACE1].gcon);
+		//ggeom[i][j][FACE1].g = gdet_func(ggeom[i][j][FACE1].gcov);
+		ggeom[i][j][FACE1].g = gcon_func(ggeom[i][j][FACE1].gcov, ggeom[i][j][FACE1].gcon);
 		ggeom[i][j][FACE1].alpha = 1.0 / sqrt(-ggeom[i][j][FACE1].gcon[0][0]);
 
 		/* theta-face-centered */
 		coord(i, j, FACE2, X);
 		gcov_func(X, ggeom[i][j][FACE2].gcov);
-		ggeom[i][j][FACE2].g = gdet_func(ggeom[i][j][FACE2].gcov);
-		gcon_func(ggeom[i][j][FACE2].gcov, ggeom[i][j][FACE2].gcon);
+		//ggeom[i][j][FACE2].g = gdet_func(ggeom[i][j][FACE2].gcov);
+		ggeom[i][j][FACE2].g = gcon_func(ggeom[i][j][FACE2].gcov, ggeom[i][j][FACE2].gcon);
 		ggeom[i][j][FACE2].alpha = 1.0 / sqrt(-ggeom[i][j][FACE2].gcon[0][0]);
 	}
 

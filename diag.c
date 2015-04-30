@@ -18,20 +18,22 @@ void diag(int call_code)
 	double e = 0.;
 	struct of_geom *geom;
 	struct of_state q;
-	int imax = 0;
-	int jmax = 0;
-	int kmax = 0;
+	//int imax = 0;
+	//int jmax = 0;
+	//int kmax = 0;
 
 	static double e_init, m_init;
 	static FILE *ener_file;
 
 	if (call_code == INIT_OUT) {
 		/* set things up */
-		ener_file = fopen("ener.out", "a");
-		if (ener_file == NULL) {
-			fprintf(stderr,
-				"error opening energy output file\n");
-			exit(1);
+		if(mpi_io_proc()) {
+			ener_file = fopen("ener.out", "a");
+			if (ener_file == NULL) {
+				fprintf(stderr,
+					"error opening energy output file\n");
+				exit(1);
+			}
 		}
 	}
 
@@ -41,8 +43,9 @@ void diag(int call_code)
 		e = 0.;
 		rmed = 0.;
 		divbmax = 0.;
-		imax = 0;
-		jmax = 0;
+		//imax = 0;
+		//jmax = 0;
+		//kmax = 0;
 		ZSLOOP(0, N1 - 1, 0, N2 - 1, 0, N3 - 1) {
 			geom = get_geometry(i, j, CENT) ;
 			get_state(p[i][j][k], geom, &q);
@@ -52,49 +55,21 @@ void diag(int call_code)
 			pp += U[U3] * dV;
 			e += U[UU] * dV;
 
-			/* flux-ct defn */
-	                /* divb flux-ct defn; corner-centered.  Use only interior corners */
-                	if(i > 0+NG && j > 0+NG && i < N1+NG && j < N2+NG && k > 0+NG && k < N3+NG) {
-				divb = fabs(0.25*(
-					p[i][j][k][B1]*ggeom[i][j][CENT].g 
-					+ p[i][j-1][k][B1]*ggeom[i][j-1][CENT].g
-					+ p[i][j][k-1][B1]*ggeom[i][j][CENT].g
-					+ p[i][j-1][k-1][B1]*ggeom[i][j-1][CENT].g
-					- p[i-1][j][k][B1]*ggeom[i-1][j][CENT].g
-					- p[i-1][j-1][k][B1]*ggeom[i-1][j-1][CENT].g
-					- p[i-1][j][k-1][B1]*ggeom[i-1][j][CENT].g
-					- p[i-1][j-1][k-1][B1]*ggeom[i-1][j-1][CENT].g
-					)/dx[1] +
-					0.25*(
-					p[i][j][k][B2]*ggeom[i][j][CENT].g
-					+ p[i-1][j][k][B2]*ggeom[i-1][j][CENT].g
-					+ p[i][j][k-1][B2]*ggeom[i][j][CENT].g
-					+ p[i-1][j][k-1][B2]*ggeom[i-1][j][CENT].g
-					- p[i][j-1][k][B2]*ggeom[i][j-1][CENT].g
-					- p[i-1][j-1][k][B2]*ggeom[i-1][j-1][CENT].g
-					- p[i][j-1][k-1][B2]*ggeom[i][j-1][CENT].g
-					- p[i-1][j-1][k-1][B2]*ggeom[i-1][j-1][CENT].g
-					)/dx[2] + 
-					0.25*(
-					p[i][j][k][B3]*ggeom[i][j][CENT].g
-					+ p[i][j-1][k][B3]*ggeom[i][j-1][CENT].g
-					+ p[i-1][j][k][B3]*ggeom[i-1][j][CENT].g
-					+ p[i-1][j-1][k][B3]*ggeom[i-1][j-1][CENT].g
-					- p[i][j][k-1][B3]*ggeom[i][j][CENT].g
-					- p[i][j-1][k-1][B3]*ggeom[i][j-1][CENT].g
-					- p[i-1][j][k-1][B3]*ggeom[i-1][j][CENT].g
-					- p[i-1][j-1][k-1][B3]*ggeom[i-1][j-1][CENT].g
-					)/dx[3]);
+			divb = flux_ct_divb(i, j, k);
 
-				if (divb > divbmax) {
-					imax = i;
-					jmax = j;
-					kmax = k;
-					divbmax = divb;
-				}
+			if (divb > divbmax) {
+				//imax = i;
+				//jmax = j;
+				//kmax = k;
+				divbmax = divb;
 			}
 		}
 	}
+
+	rmed = mpi_io_reduce(rmed);
+	pp = mpi_io_reduce(pp);
+	e = mpi_io_reduce(e);
+	divbmax = mpi_io_max(divbmax);
 
 	if (call_code == INIT_OUT) {
 		e_init = e;
@@ -102,25 +77,31 @@ void diag(int call_code)
 	}
 
 	if (call_code == FINAL_OUT) {
-		e_fin = e;
-		m_fin = rmed;
-		fprintf(stderr, "\n\nEnergy: ini,fin,del: %g %g %g\n",
-			e_init, e_fin, (e_fin - e_init) / e_init);
-		fprintf(stderr, "mass: ini,fin,del: %g %g %g\n",
-			m_init, m_fin, (m_fin - m_init) / m_init);
+		if(mpi_io_proc()) {
+			e_fin = e;
+			m_fin = rmed;
+			if(mpi_io_proc()) {
+				fprintf(stderr, "\n\nEnergy: ini,fin,del: %g %g %g\n",
+					e_init, e_fin, (e_fin - e_init) / e_init);
+				fprintf(stderr, "mass: ini,fin,del: %g %g %g\n",
+					m_init, m_fin, (m_fin - m_init) / m_init);
+			}
+		}
 	}
 
 	if (call_code == INIT_OUT ||
 	    call_code == LOG_OUT || call_code == FINAL_OUT) {
-		fprintf(stderr, "LOG      t=%g \t divbmax: %d %d %d %g\n",
-			t,imax,jmax,kmax,divbmax);
-		fprintf(ener_file, "%10.5g %10.5g %10.5g %10.5g %15.8g %15.8g ", 
-			t,rmed,pp,e,
-			p[N1/2][N2/2][N3/2][UU]*pow(p[N1/2][N2/2][N3/2][RHO], -gam),
-			p[N1/2][N2/2][N3/2][UU]);
-		fprintf(ener_file, "%15.8g %15.8g %15.8g ",mdot,edot,ldot);
-		fprintf(ener_file, "\n");
-		fflush(ener_file);
+		if(mpi_io_proc()) {
+			fprintf(stderr, "LOG      t=%g \t divbmax: %g\n",
+				t,divbmax);
+			fprintf(ener_file, "%10.5g %10.5g %10.5g %10.5g %15.8g %15.8g ", 
+				t,rmed,pp,e,
+				p[N1/2][N2/2][N3/2][UU]*pow(p[N1/2][N2/2][N3/2][RHO], -gam),
+				p[N1/2][N2/2][N3/2][UU]);
+			fprintf(ener_file, "%15.8g %15.8g %15.8g ",mdot,edot,ldot);
+			fprintf(ener_file, "\n");
+			fflush(ener_file);
+		}
 	}
 
 
@@ -214,7 +195,7 @@ void area_map(int i, int j, int k, grid_prim_type prim)
 
 }
 
-/* evaluate fluxed based diagnostics; put results in
+/* evaluate flux based diagnostics; put results in
  * global variables */
 void diag_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
 {
@@ -228,3 +209,44 @@ void diag_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
 	}
 	}
 }
+
+
+double flux_ct_divb(int i, int j, int k)
+{
+
+	if(i > 0+NG && j > 0+NG && k > 0+NG && i < N1+NG && j < N2+NG && k < N3+NG) {
+		return fabs(0.25*(
+					p[i][j][k][B1]*ggeom[i][j][CENT].g 
+					+ p[i][j-1][k][B1]*ggeom[i][j-1][CENT].g
+					+ p[i][j][k-1][B1]*ggeom[i][j][CENT].g
+					+ p[i][j-1][k-1][B1]*ggeom[i][j-1][CENT].g
+					- p[i-1][j][k][B1]*ggeom[i-1][j][CENT].g
+					- p[i-1][j-1][k][B1]*ggeom[i-1][j-1][CENT].g
+					- p[i-1][j][k-1][B1]*ggeom[i-1][j][CENT].g
+					- p[i-1][j-1][k-1][B1]*ggeom[i-1][j-1][CENT].g
+					)/dx[1] +
+					0.25*(
+					p[i][j][k][B2]*ggeom[i][j][CENT].g
+					+ p[i-1][j][k][B2]*ggeom[i-1][j][CENT].g
+					+ p[i][j][k-1][B2]*ggeom[i][j][CENT].g
+					+ p[i-1][j][k-1][B2]*ggeom[i-1][j][CENT].g
+					- p[i][j-1][k][B2]*ggeom[i][j-1][CENT].g
+					- p[i-1][j-1][k][B2]*ggeom[i-1][j-1][CENT].g
+					- p[i][j-1][k-1][B2]*ggeom[i][j-1][CENT].g
+					- p[i-1][j-1][k-1][B2]*ggeom[i-1][j-1][CENT].g
+					)/dx[2] + 
+					0.25*(
+					p[i][j][k][B3]*ggeom[i][j][CENT].g
+					+ p[i][j-1][k][B3]*ggeom[i][j-1][CENT].g
+					+ p[i-1][j][k][B3]*ggeom[i-1][j][CENT].g
+					+ p[i-1][j-1][k][B3]*ggeom[i-1][j-1][CENT].g
+					- p[i][j][k-1][B3]*ggeom[i][j][CENT].g
+					- p[i][j-1][k-1][B3]*ggeom[i][j-1][CENT].g
+					- p[i-1][j][k-1][B3]*ggeom[i-1][j][CENT].g
+					- p[i-1][j-1][k-1][B3]*ggeom[i-1][j-1][CENT].g
+					)/dx[3]);
+	} else {
+		return 0.;
+	}
+}
+
