@@ -6,9 +6,19 @@
 #include <math.h>
 #include <omp.h>
 #include <string.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
-#include <gsl/gsl_linalg.h>
+//#include <gsl/gsl_rng.h>
+//#include <gsl/gsl_randist.h>
+//#include <gsl/gsl_linalg.h>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327
+#endif
+#ifndef M_PI_2
+#define M_PI_2 1.57079632679489661923132169164
+#endif
+#ifndef M_SQRT2
+#define M_SQRT2 1.4142135623730950488016887242
+#endif
 
 extern int flag_of_convenience ;
 
@@ -39,9 +49,9 @@ extern int flag_of_convenience ;
 #define N2TOT    (64)
 #define N3TOT    (64)
 
-#define N1CPU    (3)
+#define N1CPU    (6)
 #define N2CPU    (2)
-#define N3CPU    (2)
+#define N3CPU    (1)
 
 
 #define N1       (N1TOT/N1CPU)		/* number of physical zones in X1-direction */
@@ -161,6 +171,7 @@ extern grid_prim_type F2;	/* fluxes */
 extern grid_prim_type F3;
 extern grid_prim_type ph;	/* half-step primitives */
 extern int    pflag[N1 + 2*NG][N2 + 2*NG][N3 + 2*NG];	/* identifies failure points */
+extern int    fail_save[N1 + 2*NG][N2 + 2*NG][N3 + 2*NG];
 
 /* for debug & diagnostics */
 extern grid_prim_type psave;   /* stores old data for time derivatives */
@@ -178,6 +189,7 @@ extern double xp[NPTOT][NDIM];
 extern double a;
 extern double gam;
 extern double M_unit;
+extern double Rhor;
 
 /* numerical parameters */
 extern double Rin, Rout, hslope, R0;
@@ -199,6 +211,8 @@ extern int pdump_cnt;
 extern int image_cnt;
 extern int rdump_cnt;
 extern int nstroke;
+extern double t_last_dump;
+extern double t_next_dump;
 
 /* global flags */
 extern int failed;
@@ -226,7 +240,7 @@ struct of_state {
 	double bcov[NDIM];
 };
 
-extern gsl_rng *r ;
+//extern gsl_rng *r ;
 
 /* more grid functions */
 // -- for now assume axisymmetry (JCD)
@@ -323,6 +337,7 @@ void cool_down(grid_prim_type, double Dt);
 void coord(int i, int j, int loc, double *X);
 void diag(int call_code);
 void diag_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3);
+double flux_ct_divb(int i, int j, int k);
 void dump();
 
 void fail(int fail_type);
@@ -330,7 +345,8 @@ void fixup(grid_prim_type pv);
 void fixup1zone(int i, int j, int k, double prim[NPR]);
 void fixup_utoprim(grid_prim_type pv);
 void fix_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3);
-void gcon_func(double lgcov[][NDIM], double lgcon[][NDIM]);
+double invert(double *A, double *invA);	// inverts a 4x4
+double gcon_func(double lgcov[][NDIM], double lgcon[][NDIM]);
 void gcov_func(double *X, double lgcov[][NDIM]);
 void get_state(double *pr, struct of_geom *geom, struct of_state *q);
 void image_all(int image_count);
@@ -373,6 +389,7 @@ void usrfun(double *pr, int n, double *beta, double **alpha);
 void weno(double x1, double x2, double x3, double x4, 
 	double x5, double *lout, double *rout) ;
 int Utoprim_mm(double *Ua, struct of_geom *geom, double *pa);
+int Utoprim_sn(double *Ua, struct of_geom *geom, double *pa);
 
 void mhd_vchar(double *pr, struct of_state *q, struct of_geom *geom,
 	   int dir, double *cmax, double *cmin);
@@ -385,6 +402,12 @@ void sync_mpi_boundaries(grid_prim_type pr);
 double mpi_max(double f);
 double mpi_min(double f);
 int mpi_io_proc();
+void mpi_int_broadcast(int *val);
+void mpi_dbl_broadcast(double *val);
+double mpi_io_reduce(double val);
+double mpi_io_max(double val);
+int mpi_nprocs();
+int mpi_myrank();
 
 void write_xml_closing(FILE *xml);
 FILE *write_xml_head(int dump_id, double t);

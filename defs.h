@@ -13,6 +13,7 @@ grid_prim_type F2;	/* fluxes */
 grid_prim_type F3;
 grid_prim_type ph;	/* half-step primitives */
 int pflag[N1 + 2*NG][N2 + 2*NG][N3 + 2*NG];	/* identifies failure points */
+int fail_save[N1 + 2*NG][N2 + 2*NG][N3 + 2*NG];
 
 /* for debug & diagnostics */
 grid_prim_type psave;
@@ -34,6 +35,7 @@ double xp[NPTOT][NDIM];
 double a;
 double gam;
 double M_unit;
+double Rhor;
 
 /* numerical parameters */
 double Rin, Rout, hslope, R0;
@@ -59,6 +61,8 @@ int pdump_cnt;
 int image_cnt;
 int rdump_cnt;
 int nstroke;
+double t_last_dump;
+double t_next_dump;
 
 /* global flags */
 int failed;
@@ -73,7 +77,7 @@ double ldot = 0.;
 /* current local position */
 int icurr, jcurr, pcurr;
 
-gsl_rng *r ;
+//gsl_rng *r ;
 
 /* mpi specific stuff */
 int global_start[3];
