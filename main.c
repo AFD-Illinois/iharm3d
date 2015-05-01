@@ -25,11 +25,17 @@ int main(int argc, char *argv[])
 {
 	double tdump, tpdump, timage, tlog, zcps;
 	int nfailed = 0;
-	int nthreads;
+	int nthreads,thread_safety_provided;
 	double ti_t,t0_t,t1_t,tf_t ;
 	void init_mpi();
 
-	MPI_Init(&argc, &argv);
+
+	MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &thread_safety_provided);
+    if(thread_safety_provided < MPI_THREAD_FUNNELED) {
+        fprintf(stderr,"thread support < MPI_THREAD_FUNNELED.  You suck.\n");
+        fflush(stderr);
+        exit(1);
+    }
 
 	init_mpi();
 
@@ -95,9 +101,9 @@ int main(int argc, char *argv[])
 		//init_ranc(1) ;
 		init();
 		if(NPTOT > 0) init_particles();
-		/* do initial diagnostics */
-		diag(INIT_OUT);
 	}
+	/* do initial diagnostics */
+	diag(INIT_OUT);
 
 	if(t_last_dump > 0.) tdump = t_next_dump;
 	else tdump = t + DTd;

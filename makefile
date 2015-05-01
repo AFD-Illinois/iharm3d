@@ -3,10 +3,11 @@
 CC       = h5pcc
 #CCFLAGS  = -I/opt/local/include -O2 #-ffast-math
 CCFLAGS  = -Wall -std=c99 -I/ope/local/include -Ofast -ftree-vectorizer-verbose=1 -fopenmp
-CCFLAGS+= -I/usr/local/Cellar/gsl/1.16/include
+#CCFLAGS  = -g -Wall -std=c99 -O0 -save-temps
+#CCFLAGS+= -I/usr/local/Cellar/gsl/1.16/include
 #CCFLAGS  = -I/opt/local/include -pg
 
-EXTRALIBS = -lm -L/usr/local/Cellar/gsl/1.16/lib -lgsl -lgslcblas
+EXTRALIBS = -lm
 
 CC_COMPILE  = $(CC) $(CCFLAGS) -c 
 CC_LOAD     = $(CC) $(CCFLAGS) 

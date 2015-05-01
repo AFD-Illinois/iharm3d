@@ -420,43 +420,17 @@ int restart_init()
 		if(mpi_io_proc()) fprintf(stderr,"Starting a model from scratch!\n");
 		return 0;
 	}
-	int icheck = 0;
-	if(mpi_io_proc()) fprintf(stderr,"check = %d\n", icheck++);
-	fflush(stderr);
-	MPI_Barrier(MPI_COMM_WORLD);
-
 	zero_arrays();
-
-	if(mpi_io_proc()) fprintf(stderr,"check = %d\n", icheck++);
-	fflush(stderr);
-	MPI_Barrier(MPI_COMM_WORLD);
-
 
 	fscanf(fp,"%s\n", fname);
 	restart_read(fname);
 
 	ZSLOOP(-NG, N1-1+NG, -NG, N2-1+NG, -NG, N3-1+NG) PLOOP ph[i][j][k][ip] = p[i][j][k][ip];
 
-	if(mpi_io_proc()) fprintf(stderr,"check = %d\n", icheck++);
-	fflush(stderr);
-	MPI_Barrier(MPI_COMM_WORLD);
-
-
 	set_grid();
-
-	if(mpi_io_proc()) fprintf(stderr,"check = %d\n", icheck++);
-	fflush(stderr);
-	MPI_Barrier(MPI_COMM_WORLD);
 
 	bound_prim(p);
 	//bound_prim(ph);
-
-	if(mpi_io_proc()) fprintf(stderr,"check = %d\n", icheck++);
-	fflush(stderr);
-	MPI_Barrier(MPI_COMM_WORLD);
-
-
-
 
 	return 1;
 }
