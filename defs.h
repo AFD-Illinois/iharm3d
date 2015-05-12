@@ -36,6 +36,7 @@ double a;
 double gam;
 double M_unit;
 double Rhor;
+double Risco;
 
 /* numerical parameters */
 double Rin, Rout, hslope, R0;

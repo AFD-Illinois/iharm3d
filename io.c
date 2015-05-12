@@ -266,6 +266,7 @@ void restart_write()
 	add_dbl_value(hslope, "hslope", file_id, filespace, memspace);
 	add_dbl_value(R0, "R0", file_id, filespace, memspace);
 	add_dbl_value(Rhor, "Rhor", file_id, filespace, memspace);
+    add_dbl_value(Risco, "Risco", file_id, filespace, memspace);
 	add_dbl_value(t_last_dump, "t_last_dump", file_id, filespace, memspace);
 
 	H5Sclose(filespace);
@@ -362,6 +363,7 @@ void restart_read(char *fname)
 	get_dbl_value(&hslope, "hslope", file_id, filespace, memspace);
 	get_dbl_value(&R0, "R0", file_id, filespace, memspace);
 	get_dbl_value(&Rhor, "Rhor", file_id, filespace, memspace);
+    get_dbl_value(&Risco, "Risco", file_id, filespace, memspace);
 	get_dbl_value(&t_last_dump, "t_last_dump", file_id, filespace, memspace);
 	t_next_dump = t_last_dump + DTd;
 

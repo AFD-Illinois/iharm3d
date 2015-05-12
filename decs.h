@@ -190,6 +190,7 @@ extern double a;
 extern double gam;
 extern double M_unit;
 extern double Rhor;
+extern double Risco;
 
 /* numerical parameters */
 extern double Rin, Rout, hslope, R0;

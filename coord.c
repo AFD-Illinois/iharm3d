@@ -138,7 +138,9 @@ void gcov_func(double *X, double gcov[][NDIM])
 /* some grid location, dxs */
 void set_points()
 {
+    double rtrans_solve(double dx, double rout);
 	#if(RCOORD==LOGR)
+    Rin = 0.98*Rhor;
 	startx[1] = log(Rin - R0);
 	#elif(RCOORD==SINHR)
 	startx[1] = 0.;
@@ -148,10 +150,11 @@ void set_points()
 	#if(RCOORD==LOGR)
 	dx[1] = log((Rout - R0) / (Rin - R0)) / N1TOT;
 	#elif(RCOORD==SINHR)
-	dx[1] = 0.075;
-	Rhor = 1. + sqrt(1. - a*a);
-	sinhr_r0 = Rhor - 2.1*dx[1];
-	sinhr_rtrans = 1.9;
+    
+	dx[1] = 1.1*log(Rout/Rhor)/N1TOT * Risco;   // a sensible default?  not sure about this with different spins...
+	sinhr_r0 = Rhor - 2.05*dx[1];    // at least 2 zones inside the horizon
+	sinhr_rtrans = rtrans_solve(dx[1], Rout);
+    if(mpi_io_proc()) fprintf(stderr,"dx[1] = %g   sinhr_rtrans = %g\n", dx[1], sinhr_rtrans);
 	#endif
 	dx[2] = 1. / N2TOT;
 	dx[3] = 2.*M_PI / N3TOT;
@@ -212,5 +215,49 @@ void fix_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
 	}
 
 	return;
+}
+
+double rtrans_solve(double dx, double rout) {
+
+	double rs;
+	double rg = 100*rout;
+
+	// do a little bisection first
+	rs = 0.1*dx;
+	sinhr_rtrans = rs;
+	double fl;
+	do {
+		rs *= 1.1;
+		sinhr_rtrans = rs;
+		fl = r_of_x(N1TOT*dx)-rout;
+	} while(isinf(fl) || isnan(fl));
+	sinhr_rtrans = rg;
+	double fr = r_of_x(N1TOT*dx)-rout;
+	if(fl*fr > 0) {
+		fprintf(stderr,"did not bracket rtrans in rtrans_solve %g->%g  %g->%g\n", rs, fl, rg, fr);
+		exit(1);
+	}
+	do {
+		sinhr_rtrans = 0.5*(rs + rg);
+		double fm = r_of_x(N1TOT*dx)-rout;
+		if(fm*fl <= 0) {
+			fr = fm;
+			rg = sinhr_rtrans;
+		} else {
+			fl = fm;
+			rs = sinhr_rtrans;
+		}
+	} while(fabs((rs-rg)/rg) > 0.1);
+	rg = 0.5*(rs+rg);
+
+	do {
+		rs = rg;
+		sinhr_rtrans = rs;
+		double f = r_of_x(N1TOT*dx) - rout;
+		double fp = sinh(N1TOT*dx/rg) - N1TOT*dx*cosh(N1TOT*dx/rg)/rg;
+		rg -= f/fp;
+	} while(fabs((rs-rg)/rg) > 1.e-10);
+
+	return fabs(rg);
 }
 
