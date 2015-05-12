@@ -111,10 +111,10 @@ void fixup_utoprim(grid_prim_type pv)
 	}}}
 
 	/* Fix the interior points first */
-#pragma omp parallel for \
- private(i,j,k,sum,wsum) \
- schedule(dynamic) \
- collapse(3)
+//#pragma omp parallel for \
+// private(i,j,k,sum,wsum) \
+// schedule(dynamic) \
+// collapse(3)
 	ZSLOOP(0, (N1 - 1), 0, (N2 - 1), 0, (N3 - 1)) {
 		if (pflag[i][j][k] == 0) {
 			//if(nstep > 0) fprintf(stdout,"fixing utoprim %d %d %d\n", i, j, k);
