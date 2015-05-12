@@ -49,8 +49,8 @@ extern int flag_of_convenience ;
 #define N2TOT    (64)
 #define N3TOT    (64)
 
-#define N1CPU    (6)
-#define N2CPU    (2)
+#define N1CPU    (1)
+#define N2CPU    (1)
 #define N3CPU    (1)
 
 

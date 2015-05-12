@@ -9,7 +9,7 @@
 #include <time.h>
 #include "mpi.h"
 
-#define  TIMER_NSTEP	(512)
+#define  TIMER_NSTEP	(128)
 
 /*****************************************************************/
 /*****************************************************************
@@ -50,9 +50,6 @@ int main(int argc, char *argv[])
                 exit(0);
         }
 #endif
-
-	ti_t = MPI_Wtime() ;	/* start timer */	
-	t0_t = ti_t ;
 
     /* report on switches */
 	if(mpi_io_proc()) {
@@ -114,6 +111,10 @@ int main(int argc, char *argv[])
 	defcon = 1.;
 	if(mpi_io_proc()) fprintf(stderr,"t, tf: %g %g\n",t,tf) ;
 	if(t_last_dump == 0.) dump();
+
+	ti_t = MPI_Wtime() ;	/* start timer */	
+	t0_t = ti_t ;
+
 	while (t < tf) {
 
 		/* step variables forward in time */

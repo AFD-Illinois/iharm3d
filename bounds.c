@@ -13,6 +13,9 @@ void bound_prim(grid_prim_type prim)
 
 	if(global_start[0] == 0) {
 	/* inner r boundary condition: copy last value off grid */
+#pragma omp parallel for \
+ private(i,j,k,iz,rescale_fac) \
+ collapse(2)
 	JSLOOP(0,N2-1) {
 	KSLOOP(0,N3-1) {
 		iz = 0+START1 ;
@@ -31,6 +34,9 @@ void bound_prim(grid_prim_type prim)
 
 	if(global_stop[0] == N1TOT) {
 	/* outer r BC: copy last value off grid */
+#pragma omp parallel for \
+ private(i,j,k,iz,rescale_fac) \
+ collapse(2)
 	JSLOOP(0,N2-1) {
 	KSLOOP(0,N3-1) {
 		iz = N1-1+START1 ;
@@ -52,6 +58,9 @@ void bound_prim(grid_prim_type prim)
 
 	if(global_start[1] == 0) {
 	/* polar BCs */
+#pragma omp parallel for \
+ private(i,j,k,jrefl) \
+ collapse(2)
 	ISLOOP(0,N1-1) {
 	KSLOOP(0,N3-1) {
 		JSLOOP(-NG,-1) {
@@ -66,6 +75,9 @@ void bound_prim(grid_prim_type prim)
 	}
 
 	if(global_stop[1] == N2TOT) {
+#pragma omp parallel for \
+ private(i,j,k,jrefl) \
+ collapse(2)
 	ISLOOP(0,N1-1) {
 	KSLOOP(0,N3-1) {
 		JSLOOP(N2,N2-1+NG) {
@@ -83,6 +95,9 @@ void bound_prim(grid_prim_type prim)
 
 	if(global_start[2] == 0 && global_stop[2] == N3TOT) {
 	/* periodic boundary in phi */
+#pragma omp parallel for \
+ private(i,j,k) \
+ collapse(2)
 	ISLOOP(0,N1-1) {
 	JSLOOP(0,N2-1) {
 		KSLOOP(-NG,-1) {
@@ -333,7 +348,6 @@ void bound_prim(grid_prim_type prim)
 	}
 	}
 
-
 	if(global_start[0] == 0) {
 	/* make sure there is no inflow at the inner boundary */
 	ISLOOP(-NG,-1) 
@@ -349,7 +363,6 @@ void bound_prim(grid_prim_type prim)
 		KSLOOP(-NG,N3-1+NG) 
 			inflow_check(prim[i][j][k], i, j, 1);
 	}
-
 
 }
 

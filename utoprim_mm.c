@@ -1,7 +1,7 @@
 
 #include "decs.h"
 
-#define ERRTOL	1.e-10
+#define ERRTOL	1.e-8
 #define ITERMAX 8
 #define DEL	1.e-5
 

@@ -199,9 +199,14 @@ void area_map(int i, int j, int k, grid_prim_type prim)
  * global variables */
 void diag_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
 {
+    int j,k;
 	mdot = edot = ldot = 0.;
-	for (int j = 0; j < N2; j++) {
-	for (int k = 0; k < N3; k++) {
+#pragma omp parallel for \
+ private(j,k) \
+ reduction(+:mdot) reduction(-:edot) reduction(+:ldot) \
+ collapse(2)    
+	for (j = 0; j < N2; j++) {
+	for (k = 0; k < N3; k++) {
 	
 		mdot += F1[0+START1][j][k][RHO] * dx[2] * dx[3];
 		edot -= (F1[0+START1][j][k][UU] - F1[0+START1][j][k][RHO]) * dx[2] * dx[3];

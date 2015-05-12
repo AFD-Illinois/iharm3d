@@ -12,6 +12,9 @@ void fixup(grid_prim_type pv)
 {
 	int i, j, k;
 
+#pragma omp parallel for \
+ private(i,j,k) \
+ collapse(3)
 	ZLOOP fixup1zone(i, j, k, pv[i][j][k]);
 }
 
@@ -108,6 +111,10 @@ void fixup_utoprim(grid_prim_type pv)
 	}}}
 
 	/* Fix the interior points first */
+#pragma omp parallel for \
+ private(i,j,k,sum,wsum) \
+ schedule(dynamic) \
+ collapse(3)
 	ZSLOOP(0, (N1 - 1), 0, (N2 - 1), 0, (N3 - 1)) {
 		if (pflag[i][j][k] == 0) {
 			//if(nstep > 0) fprintf(stdout,"fixing utoprim %d %d %d\n", i, j, k);

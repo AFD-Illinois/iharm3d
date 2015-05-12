@@ -168,33 +168,47 @@ void fix_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
 	int i, j, k;
 
 	if(global_start[1] == 0) {
-	ISLOOP(-1,N1)
-	KSLOOP(-1,N3) {
-		F1[i][-1+START2][k][B2] = -F1[i][0+START2][k][B2];
-		F3[i][-1+START2][k][B2] = -F3[i][0+START2][k][B2];
-		PLOOP F2[i][0+START2][k][ip] = 0.;
-	}
+#pragma omp parallel for \
+ private(i,k) \
+ collapse(2)
+    	ISLOOP(-1,N1)
+    	KSLOOP(-1,N3) {
+	    	F1[i][-1+START2][k][B2] = -F1[i][0+START2][k][B2];
+    		F3[i][-1+START2][k][B2] = -F3[i][0+START2][k][B2];
+	    	PLOOP F2[i][0+START2][k][ip] = 0.;
+    	}
 	}
 	if(global_stop[1] == N2TOT) {
-	ISLOOP(-1,N1)
-	KSLOOP(-1,N3) {
-		F1[i][N2+START2][k][B2] = -F1[i][N2 - 1+START2][k][B2];
-		F3[i][N2+START2][k][B2] = -F3[i][N2 - 1+START2][k][B2];
-		PLOOP F2[i][N2+START2][k][ip] = 0.;
-	}
+#pragma omp parallel for \
+ private(i,k) \
+ collapse(2)
+    	ISLOOP(-1,N1)
+	    KSLOOP(-1,N3) {
+    		F1[i][N2+START2][k][B2] = -F1[i][N2 - 1+START2][k][B2];
+	    	F3[i][N2+START2][k][B2] = -F3[i][N2 - 1+START2][k][B2];
+    		PLOOP F2[i][N2+START2][k][ip] = 0.;
+	    }
 	}
 
 	if(global_start[0] == 0) {
-	JSLOOP(-1,N2-1) 
-	KSLOOP(-1,N3-1) {
-		if (F1[0+START1][j][k][RHO] > 0.) F1[0+START1][j][k][RHO] = 0.;
-	}
+#pragma omp parallel for \
+ private(j,k) \
+ collapse(2)
+    	JSLOOP(-1,N2-1) 
+    	KSLOOP(-1,N3-1) {
+            F1[0+START1][j][k][RHO] = MY_MIN(F1[0+START1][j][k][RHO],0.);
+	    	//if (F1[0+START1][j][k][RHO] > 0.) F1[0+START1][j][k][RHO] = 0.;
+    	}
 	}
 	if(global_stop[0] == N1TOT) {
-	JSLOOP(-1,N2-1)
-	KSLOOP(-1,N3-1) {
-		if (F1[N1+START1][j][k][RHO] < 0.) F1[N1+START1][j][k][RHO] = 0.;
-	}
+#pragma omp parallel for \
+ private(j,k) \
+ collapse(2)
+	    JSLOOP(-1,N2-1)
+    	KSLOOP(-1,N3-1) {
+            F1[N1+START1][j][k][RHO] = MY_MAX(F1[N1+START1][j][k][RHO],0.);
+	    	//if (F1[N1+START1][j][k][RHO] < 0.) F1[N1+START1][j][k][RHO] = 0.;
+    	}
 	}
 
 	return;

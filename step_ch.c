@@ -28,9 +28,10 @@ cfg 12.29.13
 
 /* local functions for step_ch */
 double advance(grid_prim_type pi, grid_prim_type pb,
-	       double Dt, grid_prim_type pf);
-double fluxcalc(grid_prim_type pr, grid_prim_type F,
-		int dir);
+	       double Dt, grid_prim_type pf, int stage);
+//double fluxcalc(grid_prim_type pr, grid_prim_type F,
+//		int dir);
+double fluxcalc(grid_prim_type pr);
 void flux_ct(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3);
 
 /***********************************************************************************************/
@@ -49,7 +50,7 @@ void step_ch()
 	int i, j, k;
 
 	//fprintf(stderr, "h");
-	ndt = advance(p, p, 0.5 * dt, ph);	/* time step primitive variables to the half step */
+	ndt = advance(p, p, dt, ph, 0);	/* time step primitive variables to the half step */
 	fixup(ph);		/* Set updated densities to floor, set limit for gamma */
 	fixup_utoprim(ph);	/* Fix the failure points using interpolation and updated ghost zone values */
 	bound_prim(ph);		/* Set boundary conditions for primitive variables, flag bad ghost zones */
@@ -61,9 +62,12 @@ void step_ch()
 
 	/* Repeat and rinse for the full time (aka corrector) step:  */
 	//fprintf(stderr, "f");
+#pragma omp parallel for \
+ private(i,j,k) \
+ collapse(3)
 	ZSLOOP(-NG,N1-1+NG,-NG,N2-1+NG,-NG,N3-1+NG) PLOOP psave[i][j][k][ip] = p[i][j][k][ip];
 
-	ndt = advance(p, ph, dt, p);
+	ndt = advance(p, ph, dt, p, 1);
 
 	dtsave = dt ;
 
@@ -92,6 +96,8 @@ void step_ch()
 	dt = mpi_min(dt);
 	if (t + dt > tf) dt = tf - t;	/* but don't step beyond end of run */
 
+	//fprintf(stderr, "d\n");
+
 	/* done! */
 }
 
@@ -108,19 +114,25 @@ void step_ch()
 double advance(grid_prim_type pi,
 	       grid_prim_type pb,
 	       double Dt, 
-	       grid_prim_type pf)
+	       grid_prim_type pf,
+           int stage)
 {
 	int i, j, k;
-	double ndt, ndt1, ndt2, ndt3, U[NPR], dU[NPR];
-	struct of_state q;
+	double ndt;
+// ndt1, ndt2, ndt3,
+    double U[NPR], dU[NPR], Ub[NPR];
+    double stage_coeff;
+	struct of_state qi, qb;
 
+#pragma omp parallel for \
+ private(i,j,k) \
+ collapse(3)
 	ZLOOP PLOOP pf[i][j][k][ip] = pi[i][j][k][ip];	/* needed for Utoprim */
 
-	//fprintf(stderr, "0");
-
-	ndt1 = fluxcalc(pb, F1, 1);
-	ndt2 = fluxcalc(pb, F2, 2);
-	ndt3 = fluxcalc(pb, F3, 3);
+	//ndt1 = fluxcalc(pb, F1, 1);
+	//ndt2 = fluxcalc(pb, F2, 2);
+	//ndt3 = fluxcalc(pb, F3, 3);
+    ndt = fluxcalc(pb);
 
 	fix_flux(F1, F2, F3);
 
@@ -129,38 +141,39 @@ double advance(grid_prim_type pi,
 	/* evaluate diagnostics based on fluxes */
 	diag_flux(F1, F2, F3);
 
-	//fprintf(stderr, "1");
+    stage_coeff = 1./(1. + stage);
+
 	/** now update pi to pf **/
-#pragma omp parallel \
- shared ( pi, pb, pf, F1, F2, F3, ggeom, pflag, dx, Dt, fail_save ) \
- private ( i, j, k, dU, q, U )
-{
-#pragma omp for
+#pragma omp parallel for \
+ schedule(guided) \
+ shared ( pi, pb, pf, F1, F2, F3, ggeom, pflag, dx, Dt, fail_save, stage_coeff ) \
+ private ( i, j, k, dU, qi, qb, U, Ub ) \
+ collapse(3)
 	ZLOOP {
 
 		source(pb[i][j][k], &(ggeom[i][j][CENT]), i, j, dU, Dt);
-		get_state(pi[i][j][k], &(ggeom[i][j][CENT]), &q);
-		primtoU(pi[i][j][k], &q, &(ggeom[i][j][CENT]), U);
+		get_state(pi[i][j][k], &(ggeom[i][j][CENT]), &qi);
+		primtoU(pi[i][j][k], &qi, &(ggeom[i][j][CENT]), U);
+		get_state(pb[i][j][k], &(ggeom[i][j][CENT]), &qb);
+		primtoU(pb[i][j][k], &qb, &(ggeom[i][j][CENT]), Ub);
 
 		PLOOP {
-			U[ip] +=
-			    Dt * (- (F1[i + 1][j][k][ip] - F1[i][j][k][ip]) / dx[1]
-				      - (F2[i][j + 1][k][ip] - F2[i][j][k][ip]) / dx[2]
-				      - (F3[i][j][k + 1][ip] - F3[i][j][k][ip]) / dx[3]
-				  + dU[ip]
-			    );
+            U[ip] = stage_coeff*U[ip] + (1 - stage_coeff)*Ub[ip];
+            U[ip] += stage_coeff * Dt * (
+                        - (F1[i + 1][j][k][ip] - F1[i][j][k][ip]) / dx[1]
+                        - (F2[i][j + 1][k][ip] - F2[i][j][k][ip]) / dx[2]
+                        - (F3[i][j][k + 1][ip] - F3[i][j][k][ip]) / dx[3]
+                        + dU[ip]
+                     );
 		}
 
 		pflag[i][j][k] = Utoprim_mm(U, &(ggeom[i][j][CENT]), pf[i][j][k]);
 		if(pflag[i][j][k]) fail_save[i][j][k] = 1;
 	}
-}
 
-	ndt = defcon * 1. / (1. / ndt1 + 1. / ndt2 + 1. / ndt3);
-	//fprintf(stderr,"\nndt: %g %g %g\n",ndt,ndt1,ndt2) ;
-	//fprintf(stderr, "2");
+	//ndt = defcon * 1. / (1. / ndt1 + 1. / ndt2 + 1. / ndt3);
 
-	return (ndt);
+	return (defcon*ndt);
 }
 
 
@@ -175,110 +188,99 @@ double advance(grid_prim_type pi,
         
 ***********************************************************************************************/
 #define OFFSET	1
-double fluxcalc(grid_prim_type pr, grid_prim_type F, int dir)
+//double fluxcalc(grid_prim_type pr, grid_prim_type F, int dir)
+double fluxcalc(grid_prim_type pr)
 {
 	int i, j, k ;
 	double p_l[NMAX+2*NG][NPR], p_r[NMAX+2*NG][NPR] ;
-	double ndt;
-	double cij,cmax;	//[N1+2*NG][N2+2*NG][N3+2*NG] ;
+	double ndt1,ndt2,ndt3;
+	double cij,cmax1,cmax2,cmax3;	//[N1+2*NG][N2+2*NG][N3+2*NG] ;
 	double ptmp[NMAX+2*NG][NPR] ;
 
-	ndt = 1.e3 ;
-	cmax = 0.;
+	cmax1 = cmax2 = cmax3 = 0.;
 
-	if(dir == 1) {
-		/* loop over other direction */
+#pragma omp parallel \
+ shared(pr, ggeom, F1, F2, F3) \
+ private(ptmp, p_l, p_r, i, j, k, cij) \
+ reduction(max:cmax1) reduction(max:cmax2) reduction(max:cmax3)
+{
 
-#pragma omp parallel for \
- shared ( pr, ggeom, F, dir ) \
- private ( ptmp, p_l, p_r, i, j, k ) \
- reduction(max:cmax)
-		JSLOOP(-1,N2) 
-		KSLOOP(-1,N3) {
 
-			/* copy out variables and operate on those */
-			ISLOOP(-NG,N1-1+NG) PLOOP ptmp[i][ip] = pr[i][j][k][ip] ;
+#pragma omp for collapse(2) nowait
+	JSLOOP(-1,N2) 
+	KSLOOP(-1,N3) {
 
-			/* reconstruct left & right states */
+		/* copy out variables and operate on those */
+		ISLOOP(-NG,N1-1+NG) PLOOP ptmp[i][ip] = pr[i][j][k][ip] ;
+
+		/* reconstruct left & right states */
 #if (RECON_LIN)
-			reconstruct_lr_lin(ptmp, N1, p_l, p_r) ;
+		reconstruct_lr_lin(ptmp, N1, p_l, p_r) ;
 #elif (RECON_PARA)
-			reconstruct_lr_par(ptmp, N1, p_l, p_r) ;
+		reconstruct_lr_par(ptmp, N1, p_l, p_r) ;
 #elif (RECON_WENO)
-			reconstruct_lr_weno(ptmp, N1, p_l, p_r) ;
+		reconstruct_lr_weno(ptmp, N1, p_l, p_r) ;
 #endif
 
-			ISLOOP(0,N1) {
-				lr_to_flux(p_r[i-1],p_l[i], &(ggeom[i][j][FACE1]), dir, F[i][j][k], &cij) ;
-				cmax = (cij > cmax ? cij : cmax);
-			}
+		ISLOOP(0,N1) {
+			lr_to_flux(p_r[i-1],p_l[i], &(ggeom[i][j][FACE1]), 1, F1[i][j][k], &cij) ;
+			cmax1 = (cij > cmax1 ? cij : cmax1);
 		}
 	}
-	else if(dir == 2) {
-		/* loop over other direction */
-#pragma omp parallel for \
- shared ( pr, ggeom, F, dir ) \
- private ( ptmp, p_l, p_r, i, j, k ) \
- reduction(max:cmax)
-		ISLOOP(-1,N1)
-		KSLOOP(-1,N3) {
+#pragma omp for collapse(2) nowait
+	ISLOOP(-1,N1)
+	KSLOOP(-1,N3) {
 
-			/* copy out variables and operate on those */
-			JSLOOP(-NG,N2-1+NG) PLOOP ptmp[j][ip] = pr[i][j][k][ip] ;
+		/* copy out variables and operate on those */
+		JSLOOP(-NG,N2-1+NG) PLOOP ptmp[j][ip] = pr[i][j][k][ip] ;
 
-			/* reconstruct left & right states */
+		/* reconstruct left & right states */
 #if (RECON_LIN)
-			reconstruct_lr_lin(ptmp, N2, p_l, p_r) ;
+		reconstruct_lr_lin(ptmp, N2, p_l, p_r) ;
 #elif (RECON_PARA)
-			reconstruct_lr_par(ptmp, N2, p_l, p_r) ;
+		reconstruct_lr_par(ptmp, N2, p_l, p_r) ;
 #elif (RECON_WENO) 
-			reconstruct_lr_weno(ptmp, N2, p_l, p_r) ;
+		reconstruct_lr_weno(ptmp, N2, p_l, p_r) ;
 #endif
 
-			JSLOOP(0,N2) {
-				lr_to_flux(p_r[j-1],p_l[j], &(ggeom[i][j][FACE2]), dir, F[i][j][k], &cij);
-				cmax = (cij > cmax ? cij : cmax);
-			}
-
+		JSLOOP(0,N2) {
+			lr_to_flux(p_r[j-1],p_l[j], &(ggeom[i][j][FACE2]), 2, F2[i][j][k], &cij);
+			cmax2 = (cij > cmax2 ? cij : cmax2);
 		}
 	}
-	else if(dir == 3) {
-		/* or the other direction */
-#pragma omp parallel for \
- shared ( pr, ggeom, F, dir ) \
- private ( ptmp, p_l, p_r, i, j, k ) \
- reduction(max:cmax)
-		ISLOOP(-1,N1)
-		JSLOOP(-1,N2) {
+#pragma omp for collapse(2)
+	ISLOOP(-1,N1)
+	JSLOOP(-1,N2) {
 
-			/* copy out variables and operate on those */
-			KSLOOP(-NG,N3-1+NG) PLOOP ptmp[k][ip] = pr[i][j][k][ip];
+		/* copy out variables and operate on those */
+		KSLOOP(-NG,N3-1+NG) PLOOP ptmp[k][ip] = pr[i][j][k][ip];
 
-			/* reconstruct left & right states */
+		/* reconstruct left & right states */
 #if (RECON_LIN)
-			reconstruct_lr_lin(ptmp, N3, p_l, p_r) ;
+		reconstruct_lr_lin(ptmp, N3, p_l, p_r) ;
 #elif (RECON_PARA)
-			reconstruct_lr_par(ptmp, N3, p_l, p_r) ;
+    	reconstruct_lr_par(ptmp, N3, p_l, p_r) ;
 #elif (RECON_WENO) 
-			reconstruct_lr_weno(ptmp, N3, p_l, p_r) ;
+		reconstruct_lr_weno(ptmp, N3, p_l, p_r) ;
 #endif
 
-			KSLOOP(0,N3) {
-				lr_to_flux(p_r[k-1],p_l[k], &(ggeom[i][j][FACE3]), dir, F[i][j][k], &cij);
-				cmax = (cij > cmax ? cij : cmax);
-			}
-				
+		KSLOOP(0,N3) {
+			lr_to_flux(p_r[k-1],p_l[k], &(ggeom[i][j][FACE3]), 3, F3[i][j][k], &cij);
+			cmax3 = (cij > cmax3 ? cij : cmax3);
 		}
 	}
+}
 		
 
-	ndt = cour * dx[dir] / cmax;
+	ndt1 = cour * dx[1] / cmax1;
+    ndt2 = cour * dx[2] / cmax2;
+    ndt3 = cour * dx[3] / cmax3;
 	//ZLOOP {
 	//	dtij = cour * dx[dir] / cmax[i][j][k];
 	//	if (dtij < ndt) ndt = dtij;
 	//}
 
-	return (ndt);
+	return (1./(1./ndt1 + 1./ndt2 + 1./ndt3));
 
 }
 
@@ -299,6 +301,11 @@ void flux_ct(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
 	/* calculate EMFs */
 	/* Toth approach: just average to corners */
 	/* best done in scalar mode! */
+#pragma omp parallel \
+ private(i,j,k)
+{
+
+#pragma omp for collapse(3)
 	ZSLOOP(0, N1, 0, N2, 0, N3) {
 		emf3[i][j][k] = 0.25 * (F1[i][j][k][B2] + F1[i][j - 1][k][B2]
 		                               - F2[i][j][k][B1] - F2[i - 1][j][k][B1]);
@@ -309,21 +316,26 @@ void flux_ct(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
 	}
 
 	/* rewrite EMFs as fluxes, after Toth */
+
+#pragma omp for collapse(3) nowait
 	ZSLOOP(0, N1, 0, N2 - 1, 0, N3 - 1) {
 		F1[i][j][k][B1] = 0.;
 		F1[i][j][k][B2] = 0.5 * (emf3[i][j][k] + emf3[i][j + 1][k]);
 		F1[i][j][k][B3] = -0.5 * (emf2[i][j][k] + emf2[i][j][k + 1]);
 	}
+#pragma omp for collapse(3) nowait
 	ZSLOOP(0, N1 - 1, 0, N2, 0, N3 - 1) {
 		F2[i][j][k][B1] = -0.5 * (emf3[i][j][k] + emf3[i + 1][j][k]);
 		F2[i][j][k][B2] = 0.;
 		F2[i][j][k][B3] = 0.5 * (emf1[i][j][k] + emf1[i][j][k + 1]);
 	}
+#pragma omp for collapse(3)
 	ZSLOOP(0, N1 - 1, 0, N2 - 1, 0, N3) {
 		F3[i][j][k][B1] = 0.5 * (emf2[i][j][k] + emf2[i + 1][j][k]);
 		F3[i][j][k][B2] = -0.5 * (emf1[i][j][k] + emf1[i][j + 1][k]);
 		F3[i][j][k][B3] = 0.;
 	}
+}
 
 }
 
