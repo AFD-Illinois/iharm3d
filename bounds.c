@@ -7,7 +7,8 @@ void inflow_check(double *pr, int ii, int jj, int type);
 
 void bound_prim(grid_prim_type prim)
 {
-	int i, j, k, iz, jrefl, rescale_fac;
+	int i, j, k, iz, jrefl;
+	double rescale_fac;
 
 	sync_mpi_boundaries(prim);
 
