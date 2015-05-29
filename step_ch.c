@@ -369,7 +369,7 @@ void lr_to_flux(double p_l[NPR], double p_r[NPR], struct of_geom *geom,
 	cmin = fabs(MY_MAX(MY_MAX(0., -cmin_l), -cmin_r));
 	ctop = MY_MAX(cmax, cmin);
 
-	for(k=0;k<8;k++) Flux[k] = 
+	PLOOP Flux[k] = 
 		HLLF*((cmax*F_l[k] + cmin*F_r[k] - cmax*cmin*(U_r[k]-U_l[k]))/(cmax+cmin+SMALL)) 
 		+ LAXF*(0.5*(F_l[k] + F_r[k] - ctop*(U_r[k] - U_l[k])));
 
