@@ -11,10 +11,10 @@
  *
  **/
 
-#define LOGR	0
-#define SINHR	1
-#define SINTH	0
-#define POLYTH	1
+#define LOGR	1
+#define SINHR	0
+#define SINTH	1
+#define POLYTH	0
 
 //#define RCOORD	LOGR
 #define RCOORD	SINHR

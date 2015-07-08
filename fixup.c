@@ -88,7 +88,7 @@ void fixup1zone(int i, int j, int k, double pv[NPR])
 
 void fixup_utoprim(grid_prim_type pv)
 {
-	int i, j, k;
+	int i, j, k, bad;
 	double sum[B1],wsum;
 
 	/* Flip the logic of the pflag[] so that it now indicates which cells are good  */
@@ -111,10 +111,8 @@ void fixup_utoprim(grid_prim_type pv)
 	}}}
 
 	/* Fix the interior points first */
-//#pragma omp parallel for \
-// private(i,j,k,sum,wsum) \
-// schedule(dynamic) \
-// collapse(3)
+    do {
+    bad = 0;
 	ZSLOOP(0, (N1 - 1), 0, (N2 - 1), 0, (N3 - 1)) {
 		if (pflag[i][j][k] == 0) {
 			//if(nstep > 0) fprintf(stdout,"fixing utoprim %d %d %d\n", i, j, k);
@@ -128,8 +126,10 @@ void fixup_utoprim(grid_prim_type pv)
 				FLOOP sum[ip] += w*pv[i+l][j+m][k+n][ip];
 			}}}
 			if(wsum < 1.e-10) {
-				fprintf(stderr,"fixup_utoprim problem: wsum == 0!  no useable neighbors!\n");
-				exit(7);
+				fprintf(stderr,"fixup_utoprim problem: wsum == 0!  no useable neighbors!  we'll fix it next time!\n");
+                bad++;
+                continue;
+				//exit(7);
 			}
 			FLOOP pv[i][j][k][ip] = sum[ip]/wsum;
 
@@ -137,6 +137,7 @@ void fixup_utoprim(grid_prim_type pv)
 			fixup1zone(i, j, k, pv[i][j][k]);	/* Floor and limit gamma the interpolated value */
 		}
 	}
+    } while(bad > 0);
 
 	return;
 }

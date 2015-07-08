@@ -50,7 +50,7 @@ void step_ch()
 	int i, j, k;
 
 	//fprintf(stderr, "h");
-	ndt = advance(p, p, dt, ph, 0);	/* time step primitive variables to the half step */
+	ndt = advance(p, p, 0.5*dt, ph, 0);	/* time step primitive variables to the half step */
 	fixup(ph);		/* Set updated densities to floor, set limit for gamma */
 	fixup_utoprim(ph);	/* Fix the failure points using interpolation and updated ghost zone values */
 	bound_prim(ph);		/* Set boundary conditions for primitive variables, flag bad ghost zones */
@@ -119,19 +119,14 @@ double advance(grid_prim_type pi,
 {
 	int i, j, k;
 	double ndt;
-// ndt1, ndt2, ndt3,
-    double U[NPR], dU[NPR], Ub[NPR];
-    double stage_coeff;
-	struct of_state qi, qb;
+    double U[NPR], dU[NPR];
+	struct of_state qi;
 
 #pragma omp parallel for \
  private(i,j,k) \
  collapse(3)
 	ZLOOP PLOOP pf[i][j][k][ip] = pi[i][j][k][ip];	/* needed for Utoprim */
 
-	//ndt1 = fluxcalc(pb, F1, 1);
-	//ndt2 = fluxcalc(pb, F2, 2);
-	//ndt3 = fluxcalc(pb, F3, 3);
     ndt = fluxcalc(pb);
 
 	fix_flux(F1, F2, F3);
@@ -141,25 +136,21 @@ double advance(grid_prim_type pi,
 	/* evaluate diagnostics based on fluxes */
 	diag_flux(F1, F2, F3);
 
-    stage_coeff = 1./(1. + stage);
 
 	/** now update pi to pf **/
 #pragma omp parallel for \
  schedule(guided) \
- shared ( pi, pb, pf, F1, F2, F3, ggeom, pflag, dx, Dt, fail_save, stage_coeff ) \
- private ( i, j, k, dU, qi, qb, U, Ub ) \
+ shared ( pi, pb, pf, F1, F2, F3, ggeom, pflag, dx, Dt, fail_save ) \
+ private ( i, j, k, dU, qi, U ) \
  collapse(3)
 	ZLOOP {
 
 		source(pb[i][j][k], &(ggeom[i][j][CENT]), i, j, dU, Dt);
 		get_state(pi[i][j][k], &(ggeom[i][j][CENT]), &qi);
 		primtoU(pi[i][j][k], &qi, &(ggeom[i][j][CENT]), U);
-		get_state(pb[i][j][k], &(ggeom[i][j][CENT]), &qb);
-		primtoU(pb[i][j][k], &qb, &(ggeom[i][j][CENT]), Ub);
 
 		PLOOP {
-            U[ip] = stage_coeff*U[ip] + (1 - stage_coeff)*Ub[ip];
-            U[ip] += stage_coeff * Dt * (
+            U[ip] += Dt * (
                         - (F1[i + 1][j][k][ip] - F1[i][j][k][ip]) / dx[1]
                         - (F2[i][j + 1][k][ip] - F2[i][j][k][ip]) / dx[2]
                         - (F3[i][j][k + 1][ip] - F3[i][j][k][ip]) / dx[3]
@@ -170,8 +161,6 @@ double advance(grid_prim_type pi,
 		pflag[i][j][k] = Utoprim_mm(U, &(ggeom[i][j][CENT]), pf[i][j][k]);
 		if(pflag[i][j][k]) fail_save[i][j][k] = 1;
 	}
-
-	//ndt = defcon * 1. / (1. / ndt1 + 1. / ndt2 + 1. / ndt3);
 
 	return (defcon*ndt);
 }
@@ -345,10 +334,9 @@ void lr_to_flux(double p_l[NPR], double p_r[NPR], struct of_geom *geom,
 	struct of_state state_l, state_r ;
 	double F_l[NPR],F_r[NPR],U_l[NPR],U_r[NPR] ;
 	double cmax_l,cmax_r,cmin_l,cmin_r,cmax,cmin,ctop ;
-	int k ;
 
 	if(geom->g < SMALL) {
-		for(k=0;k<8;k++) Flux[k] = 0.;
+		PLOOP Flux[ip] = 0.;
 		*max_speed = 0.;
 		return;
 	}
@@ -369,9 +357,9 @@ void lr_to_flux(double p_l[NPR], double p_r[NPR], struct of_geom *geom,
 	cmin = fabs(MY_MAX(MY_MAX(0., -cmin_l), -cmin_r));
 	ctop = MY_MAX(cmax, cmin);
 
-	PLOOP Flux[k] = 
-		HLLF*((cmax*F_l[k] + cmin*F_r[k] - cmax*cmin*(U_r[k]-U_l[k]))/(cmax+cmin+SMALL)) 
-		+ LAXF*(0.5*(F_l[k] + F_r[k] - ctop*(U_r[k] - U_l[k])));
+	PLOOP Flux[ip] = 
+		HLLF*((cmax*F_l[ip] + cmin*F_r[ip] - cmax*cmin*(U_r[ip]-U_l[ip]))/(cmax+cmin+SMALL)) 
+		+ LAXF*(0.5*(F_l[ip] + F_r[ip] - ctop*(U_r[ip] - U_l[ip])));
 
 	*max_speed = ctop ;
 

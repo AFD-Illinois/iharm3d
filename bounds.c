@@ -8,7 +8,7 @@ void inflow_check(double *pr, int ii, int jj, int type);
 void bound_prim(grid_prim_type prim)
 {
 	int i, j, k, iz, jrefl;
-	double rescale_fac;
+    double rescale_fac;
 
 	sync_mpi_boundaries(prim);
 
@@ -56,14 +56,13 @@ void bound_prim(grid_prim_type prim)
 	}
 	}
 
-
 	if(global_start[1] == 0) {
 	/* polar BCs */
 #pragma omp parallel for \
  private(i,j,k,jrefl) \
  collapse(2)
-	ISLOOP(0,N1-1) {
-	KSLOOP(0,N3-1) {
+	ISLOOP(-NG,N1-1+NG) {
+	KSLOOP(-NG,N3-1+NG) {
 		JSLOOP(-NG,-1) {
 			jrefl = -j+2*NG-1 ;
 			PLOOP prim[i][j][k][ip] = prim[i][jrefl][k][ip];
@@ -79,8 +78,8 @@ void bound_prim(grid_prim_type prim)
 #pragma omp parallel for \
  private(i,j,k,jrefl) \
  collapse(2)
-	ISLOOP(0,N1-1) {
-	KSLOOP(0,N3-1) {
+	ISLOOP(-NG,N1-1+NG) {
+	KSLOOP(-NG,N3-1+NG) {
 		JSLOOP(N2,N2-1+NG) {
 			jrefl = -j+2*(N2+START2)-1 ;
 			PLOOP prim[i][j][k][ip] = prim[i][jrefl][k][ip];
@@ -94,13 +93,34 @@ void bound_prim(grid_prim_type prim)
 	}
 	}
 
+
+
+#if(N3==1)
 	if(global_start[2] == 0 && global_stop[2] == N3TOT) {
 	/* periodic boundary in phi */
 #pragma omp parallel for \
  private(i,j,k) \
  collapse(2)
-	ISLOOP(0,N1-1) {
-	JSLOOP(0,N2-1) {
+	ISLOOP(-NG,N1-1+NG) {
+	JSLOOP(-NG,N2-1+NG) {
+		KSLOOP(-NG,-1) {
+			PLOOP prim[i][j][k][ip] = prim[i][j][START3][ip];
+		}
+		KSLOOP(N3,N3-1+NG) {
+			PLOOP prim[i][j][k][ip] = prim[i][j][START3][ip];
+		}
+	}
+	}
+	}
+#else 
+
+	if(global_start[2] == 0 && global_stop[2] == N3TOT) {
+	/* periodic boundary in phi */
+#pragma omp parallel for \
+ private(i,j,k) \
+ collapse(2)
+	ISLOOP(-NG,N1-1+NG) {
+	JSLOOP(-NG,N2-1+NG) {
 		KSLOOP(-NG,-1) {
 			int kper = N3+k;
 			PLOOP prim[i][j][k][ip] = prim[i][j][kper][ip];
@@ -112,242 +132,7 @@ void bound_prim(grid_prim_type prim)
 	}
 	}
 	}
-
-
-	/* now deal with the weird corners we need for CT */
-	// TODO(JCD) make this more concise
-
-	if(global_start[0] == 0) {
-	/* inner r boundary condition: copy last value off grid */
-	JSLOOP(-NG,N2-1+NG) {
-	KSLOOP(-NG,-1) {
-		iz = 0+START1 ;
-		ISLOOP(-NG,-1) {
-			PLOOP prim[i][j][k][ip] = prim[iz][j][k][ip];
-			pflag[i][j][k] = pflag[iz][j][k];
-
-			rescale_fac = ggeom[i][j][CENT].g/ggeom[iz][j][CENT].g ;
-			prim[i][j][k][B1] *= rescale_fac ;
-			prim[i][j][k][B2] *= rescale_fac ;
-			prim[i][j][k][B3] *= rescale_fac ;
-		}
-	}
-	}
-	JSLOOP(-NG,-1) {
-	KSLOOP(-NG,N3-1+NG) {
-		iz = 0+START1 ;
-		ISLOOP(-NG,-1) {
-			PLOOP prim[i][j][k][ip] = prim[iz][j][k][ip];
-			pflag[i][j][k] = pflag[iz][j][k];
-
-			rescale_fac = ggeom[i][j][CENT].g/ggeom[iz][j][CENT].g ;
-			prim[i][j][k][B1] *= rescale_fac ;
-			prim[i][j][k][B2] *= rescale_fac ;
-			prim[i][j][k][B3] *= rescale_fac ;
-		}
-	}
-	}
-	JSLOOP(-NG,N2-1+NG) {
-	KSLOOP(N3,N3-1+NG) {
-		iz = 0+START1 ;
-		ISLOOP(-NG,-1) {
-			PLOOP prim[i][j][k][ip] = prim[iz][j][k][ip];
-			pflag[i][j][k] = pflag[iz][j][k];
-
-			rescale_fac = ggeom[i][j][CENT].g/ggeom[iz][j][CENT].g ;
-			prim[i][j][k][B1] *= rescale_fac ;
-			prim[i][j][k][B2] *= rescale_fac ;
-			prim[i][j][k][B3] *= rescale_fac ;
-		}
-	}
-	}
-	JSLOOP(N2,N2-1+NG) {
-	KSLOOP(-NG,N3-1+NG) {
-		iz = 0+START1 ;
-		ISLOOP(-NG,-1) {
-			PLOOP prim[i][j][k][ip] = prim[iz][j][k][ip];
-			pflag[i][j][k] = pflag[iz][j][k];
-
-			rescale_fac = ggeom[i][j][CENT].g/ggeom[iz][j][CENT].g ;
-			prim[i][j][k][B1] *= rescale_fac ;
-			prim[i][j][k][B2] *= rescale_fac ;
-			prim[i][j][k][B3] *= rescale_fac ;
-		}
-	}
-	}
-	}
-
-
-	if(global_stop[0] == N1TOT) {
-	/* outer r BC: copy last value off grid */
-	JSLOOP(-NG,N2-1+NG) {
-	KSLOOP(-NG,-1) {
-		iz = N1-1+START1 ;
-		ISLOOP(N1,N1-1+NG) {
-			PLOOP prim[i][j][k][ip] = prim[iz][j][k][ip];
-			pflag[i][j][k] = pflag[iz][j][k];
-
-			rescale_fac = ggeom[i][j][CENT].g/ggeom[iz][j][CENT].g ;
-			prim[i][j][k][B1] *= rescale_fac ;
-			prim[i][j][k][B2] *= rescale_fac ;
-			prim[i][j][k][B3] *= rescale_fac ;
-			/*
-			*/
-		}
-	}
-	}
-	JSLOOP(-NG,-1) {
-	KSLOOP(-NG,N3-1+NG) {
-		iz = N1-1+START1 ;
-		ISLOOP(N1,N1-1+NG) {
-			PLOOP prim[i][j][k][ip] = prim[iz][j][k][ip];
-			pflag[i][j][k] = pflag[iz][j][k];
-
-			rescale_fac = ggeom[i][j][CENT].g/ggeom[iz][j][CENT].g ;
-			prim[i][j][k][B1] *= rescale_fac ;
-			prim[i][j][k][B2] *= rescale_fac ;
-			prim[i][j][k][B3] *= rescale_fac ;
-			/*
-			*/
-		}
-	}
-	}
-	JSLOOP(-NG,N2-1+NG) {
-	KSLOOP(N3,N3-1+NG) {
-		iz = N1-1+START1 ;
-		ISLOOP(N1,N1-1+NG) {
-			PLOOP prim[i][j][k][ip] = prim[iz][j][k][ip];
-			pflag[i][j][k] = pflag[iz][j][k];
-
-			rescale_fac = ggeom[i][j][CENT].g/ggeom[iz][j][CENT].g ;
-			prim[i][j][k][B1] *= rescale_fac ;
-			prim[i][j][k][B2] *= rescale_fac ;
-			prim[i][j][k][B3] *= rescale_fac ;
-			/*
-			*/
-		}
-	}
-	}
-	JSLOOP(N2,N2-1+NG) {
-	KSLOOP(-NG,N3-1+NG) {
-		iz = N1-1+START1 ;
-		ISLOOP(N1,N1-1+NG) {
-			PLOOP prim[i][j][k][ip] = prim[iz][j][k][ip];
-			pflag[i][j][k] = pflag[iz][j][k];
-
-			rescale_fac = ggeom[i][j][CENT].g/ggeom[iz][j][CENT].g ;
-			prim[i][j][k][B1] *= rescale_fac ;
-			prim[i][j][k][B2] *= rescale_fac ;
-			prim[i][j][k][B3] *= rescale_fac ;
-			/*
-			*/
-		}
-	}
-	}
-	}
-
-	if(global_start[1] == 0) {
-	/* polar BCs */
-	ISLOOP(-NG,N1-1+NG) {
-	KSLOOP(-NG,-1) {
-		JSLOOP(-NG,-1) {
-			jrefl = -j+2*NG-1 ;
-			PLOOP prim[i][j][k][ip] = prim[i][jrefl][k][ip];
-			pflag[i][j][k] = pflag[i][jrefl][k];
-			prim[i][j][k][U2] *= -1.;
-			prim[i][j][k][B2] *= -1.;
-		}
-	}
-	}
-	ISLOOP(-NG,-1) {
-	KSLOOP(-NG,N3-1+NG) {
-		JSLOOP(-NG,-1) {
-			jrefl = -j+2*NG-1 ;
-			PLOOP prim[i][j][k][ip] = prim[i][jrefl][k][ip];
-			pflag[i][j][k] = pflag[i][jrefl][k];
-			prim[i][j][k][U2] *= -1.;
-			prim[i][j][k][B2] *= -1.;
-		}
-	}
-	}
-	ISLOOP(N1,N1-1+NG) {
-	KSLOOP(-NG,N3-1+NG) {
-		JSLOOP(-NG,-1) {
-			jrefl = -j+2*NG-1 ;
-			PLOOP prim[i][j][k][ip] = prim[i][jrefl][k][ip];
-			pflag[i][j][k] = pflag[i][jrefl][k];
-			prim[i][j][k][U2] *= -1.;
-			prim[i][j][k][B2] *= -1.;
-		}
-	}
-	}
-	ISLOOP(-NG,N1-1+NG) {
-	KSLOOP(N3,N3-1+NG) {
-		JSLOOP(-NG,-1) {
-			jrefl = -j+2*NG-1 ;
-			PLOOP prim[i][j][k][ip] = prim[i][jrefl][k][ip];
-			pflag[i][j][k] = pflag[i][jrefl][k];
-			prim[i][j][k][U2] *= -1.;
-			prim[i][j][k][B2] *= -1.;
-		}
-	}
-	}
-	}
-
-	if(global_stop[1] == N2TOT) {
-	ISLOOP(-NG,N1-1+NG) {
-	KSLOOP(-NG,-1) {
-		JSLOOP(N2,N2-1+NG) {
-			jrefl = -j+2*(N2+START2)-1 ;
-			PLOOP prim[i][j][k][ip] = prim[i][jrefl][k][ip];
-			pflag[i][j][k] = pflag[i][jrefl][k];
-			prim[i][j][k][U2] *= -1.;
-			prim[i][j][k][B2] *= -1.;
-
-		}
-
-	}
-	}
-	ISLOOP(-NG,-1) {
-	KSLOOP(-NG,N3-1+NG) {
-		JSLOOP(N2,N2-1+NG) {
-			jrefl = -j+2*(N2+START2)-1 ;
-			PLOOP prim[i][j][k][ip] = prim[i][jrefl][k][ip];
-			pflag[i][j][k] = pflag[i][jrefl][k];
-			prim[i][j][k][U2] *= -1.;
-			prim[i][j][k][B2] *= -1.;
-
-		}
-
-	}
-	}
-	ISLOOP(N1,N1-1+NG) {
-	KSLOOP(-NG,N3-1+NG) {
-		JSLOOP(N2,N2-1+NG) {
-			jrefl = -j+2*(N2+START2)-1 ;
-			PLOOP prim[i][j][k][ip] = prim[i][jrefl][k][ip];
-			pflag[i][j][k] = pflag[i][jrefl][k];
-			prim[i][j][k][U2] *= -1.;
-			prim[i][j][k][B2] *= -1.;
-
-		}
-
-	}
-	}
-	ISLOOP(-NG,N1-1+NG) {
-	KSLOOP(N3,N3-1+NG) {
-		JSLOOP(N2,N2-1+NG) {
-			jrefl = -j+2*(N2+START2)-1 ;
-			PLOOP prim[i][j][k][ip] = prim[i][jrefl][k][ip];
-			pflag[i][j][k] = pflag[i][jrefl][k];
-			prim[i][j][k][U2] *= -1.;
-			prim[i][j][k][B2] *= -1.;
-
-		}
-
-	}
-	}
-	}
+#endif
 
 	if(global_start[0] == 0) {
 	/* make sure there is no inflow at the inner boundary */
