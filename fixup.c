@@ -143,3 +143,56 @@ void fixup_utoprim(grid_prim_type pv)
 }
 
 #undef FLOOP
+
+/* Average the primitive variables over the inner POLARAVERAGING azimuthal
+ * rings. That way those zones do not affect timestep. */
+void zone_conflation(grid_prim_type pv)
+{
+	int i, j, k;
+
+	/* Perform average */
+	JSLOOP(0, POLARAVERAGING-1)
+  {
+    ISLOOP(0, N1-1)
+	  {
+	    double x, zoneSum = 0.;
+      PLOOP
+      {
+        #pragma omp parallel for reduction(+:zoneSum) private(x,k)
+        KSLOOP(0, N3-1)
+        {
+          x = pv[i][j][k][ip];
+          zoneSum += x;
+        }
+        #pragma omp parallel for private(k)
+        KSLOOP(0, N3-1)
+        {
+          pv[i][j][k][ip] = zoneSum/N3;
+        }
+      }
+	  }
+	}	
+	/* Perform average */
+	JSLOOP(N2-1-POLARAVERAGING, N2-1)
+  {
+    ISLOOP(0, N1-1)
+	  {
+	    double x, zoneSum = 0.;
+      PLOOP
+      {
+        #pragma omp parallel for reduction(+:zoneSum) private(x,k)
+        KSLOOP(0, N3-1)
+        {
+          x = pv[i][j][k][ip];
+          zoneSum += x;
+        }
+        #pragma omp parallel for private(k)
+        KSLOOP(0, N3-1)
+        {
+          pv[i][j][k][ip] = zoneSum/N3;
+        }
+      }
+	  }
+	}	
+}
+

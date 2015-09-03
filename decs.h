@@ -42,6 +42,9 @@ extern int flag_of_convenience ;
 /* use optically thin cooling */
 #define ALLOW_COOL  (0)
 
+/* average polar axes zones in x3 to increase timestep */
+#define POLARAVERAGING (2)
+
 /** END SWITCHES **/
 
 /** here are the few things that we change frequently **/
@@ -345,6 +348,7 @@ void fail(int fail_type);
 void fixup(grid_prim_type pv);
 void fixup1zone(int i, int j, int k, double prim[NPR]);
 void fixup_utoprim(grid_prim_type pv);
+void zone_conflation(grid_prim_type pv);
 void fix_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3);
 double invert(double *A, double *invA);	// inverts a 4x4
 double gcon_func(double lgcov[][NDIM], double lgcon[][NDIM]);

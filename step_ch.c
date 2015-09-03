@@ -52,6 +52,9 @@ void step_ch()
 	//fprintf(stderr, "h");
 	ndt = advance(p, p, 0.5*dt, ph, 0);	/* time step primitive variables to the half step */
 	fixup(ph);		/* Set updated densities to floor, set limit for gamma */
+#if (POLARAVERAGING > 0)
+  zone_conflation(ph); /* Average zone axes to increase timestep */
+#endif /* POLARAVERAGING */
 	fixup_utoprim(ph);	/* Fix the failure points using interpolation and updated ghost zone values */
 	bound_prim(ph);		/* Set boundary conditions for primitive variables, flag bad ghost zones */
 	//fixup_utoprim(ph);	/* Fix the failure points using interpolation and updated ghost zone values */
@@ -77,6 +80,9 @@ void step_ch()
 #endif
 
 	fixup(p);
+#if (POLARAVERAGING > 0)
+  zone_conflation(ph); /* Average zone axes to increase timestep */
+#endif /* POLARAVERAGING */
 	fixup_utoprim(p);
 	bound_prim(p);
 	//bound_prim(p);
@@ -255,7 +261,8 @@ double fluxcalc(grid_prim_type pr)
 
 		KSLOOP(0,N3) {
 			lr_to_flux(p_r[k-1],p_l[k], &(ggeom[i][j][FACE3]), 3, F3[i][j][k], &cij);
-			cmax3 = (cij > cmax3 ? cij : cmax3);
+			if (j-START2 >= POLARAVERAGING && j-START2 < N2-POLARAVERAGING)
+        cmax3 = (cij > cmax3 ? cij : cmax3);
 		}
 	}
 }
