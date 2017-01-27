@@ -43,7 +43,7 @@ extern int flag_of_convenience ;
 #define ALLOW_COOL  (0)
 
 /* average polar axes zones in x3 to increase timestep */
-#define POLARAVERAGING (2)
+#define POLARAVERAGING (0)
 
 /** END SWITCHES **/
 

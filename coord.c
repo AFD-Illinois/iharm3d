@@ -16,11 +16,11 @@
 #define SINTH	1
 #define POLYTH	0
 
-//#define RCOORD	LOGR
-#define RCOORD	SINHR
+#define RCOORD	LOGR
+//#define RCOORD	SINHR
 
-//#define THCOORD	SINTH
-#define THCOORD	POLYTH
+#define THCOORD	SINTH
+//#define THCOORD	POLYTH
 
 #if(RCOORD==SINHR)
 static double sinhr_r0,sinhr_rtrans;
@@ -138,9 +138,19 @@ void gcov_func(double *X, double gcov[][NDIM])
 /* some grid location, dxs */
 void set_points()
 {
-    double rtrans_solve(double dx, double rout);
 	#if(RCOORD==LOGR)
-    Rin = 0.98*Rhor;
+        /* Set Rin such that we have 5 zones completely inside the event horizon */
+	double Reh = 1. + sqrt(1. - a*a);
+	//dx[1] = (log(Rout) - log(Rin))/N1TOT;	
+        //startx[1] + 5.5*dx[1] = log(Reh);
+	//startx[1] + 5.5*log(Rout)/N1TOT - 5.5*log(Rin)/N1TOT = log(Reh)
+	//log(Rin) = N1TOT*log(Reh)/5.5 - N1TOT*log(Rin)/5.5 - log(Rout);
+        // (1 + N1TOT/5.5)*log(Rin) = N1TOT*log(Reh)/5.5 - log(Rout)
+        Rin = exp((N1TOT*log(Reh)/5.5 - log(Rout))/(1. + N1TOT/5.5));
+
+        //Rin = 0.98*Rhor;
+	printf("Reh = %e\n", Reh);
+	printf("Rin = %e\n", Rin);
 	startx[1] = log(Rin - R0);
 	#elif(RCOORD==SINHR)
 	startx[1] = 0.;
@@ -149,7 +159,9 @@ void set_points()
 	startx[3] = 0.;
 	#if(RCOORD==LOGR)
 	dx[1] = log((Rout - R0) / (Rin - R0)) / N1TOT;
+        printf("exp(startx[1] + 5.5*dx[1]) = %e\n", exp(startx[1] + 5.5*dx[1]));
 	#elif(RCOORD==SINHR)
+    double rtrans_solve(double dx, double rout);
     
 	dx[1] = 1.1*log(Rout/Rhor)/N1TOT * Risco;   // a sensible default?  not sure about this with different spins...
 	sinhr_r0 = Rhor - 2.05*dx[1];    // at least 2 zones inside the horizon
@@ -217,6 +229,7 @@ void fix_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
 	return;
 }
 
+#if(RCOORD==SINHR)
 double rtrans_solve(double dx, double rout) {
 
 	double rs;
@@ -260,4 +273,5 @@ double rtrans_solve(double dx, double rout) {
 
 	return fabs(rg);
 }
+#endif /* RCOORD==SINHR */
 

@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 		//diag(DUMP_OUT);
 		//diag(IMAGE_OUT);
 
-		//fprintf(stderr, "%10.5g %10.5g %8d\n", t, dt, nstep) ;
+		fprintf(stderr, "%10.5g %10.5g %8d\n", t, dt, nstep) ;
 
 		/* Handle output frequencies: */
 		if (t >= tdump) {
