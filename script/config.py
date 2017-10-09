@@ -275,13 +275,13 @@ def build(PROBLEM, PATHS):
     call(['cp', INC_PROB[n], PATHS['SRC'] + INC_PROB[n].rsplit('/',1)[1]])
 
   # WRITE PARAMETERS FILE
-  pf = open(PATHS['SRC'] + 'params.h', 'w')
-  for KEY in CPARMS:
-    if isinstance(CPARMS[KEY], str):
-      pf.write("#define " + KEY + " (" + CPARMS[KEY] + ")\n")
-    else:
-      pf.write("#define " + KEY + " (%g)\n" % CPARMS[KEY])
-  pf.close()
+  #pf = open(PATHS['SRC'] + 'params.h', 'w')
+  #for KEY in CPARMS:
+  #  if isinstance(CPARMS[KEY], str):
+  #    pf.write("#define " + KEY + " (" + CPARMS[KEY] + ")\n")
+  #  else:
+  #    pf.write("#define " + KEY + " (%g)\n" % CPARMS[KEY])
+  #pf.close()
 
   # GET SINGLE LISTS OF ALL SOURCE, OBJECT, AND HEADER FILES
   SRC_ALL = util.get_files(PATHS['SRC'], '*.c')
