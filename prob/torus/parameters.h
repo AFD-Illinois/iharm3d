@@ -7,9 +7,9 @@
  ******************************************************************************/
 
 /* GLOBAL RESOLUTION */
-#define N1TOT 64
-#define N2TOT 64
-#define N3TOT 1
+#define N1TOT 194
+#define N2TOT 128
+#define N3TOT 64
 
 /* MPI DECOMPOSITION */
 #define N1CPU 1

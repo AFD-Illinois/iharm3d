@@ -24,9 +24,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   exit(-1);
   #endif
 
-printf("a\n");
   sync_mpi_boundaries(state);
-printf("a\n");
 
   if(global_start[0] == 0) {
     #pragma omp parallel for collapse(2)
@@ -189,7 +187,6 @@ printf("a\n");
   } // global_stop[1] == N2TOT
   #endif // N2 == 1
 
-printf("AOSIDJHIAOSUJDIASUD\n");
   #if N3 == 1
   #pragma omp parallel for collapse(2)
   KSLOOP(-NG, -1) {
@@ -199,18 +196,14 @@ printf("AOSIDJHIAOSUJDIASUD\n");
       }
     }
   }
-printf("AOSIDJHIAOSUJDIASUD\n");
   #pragma omp parallel for collapse(2)
   KSLOOP(N3, N3 - 1 + NG) {
     JSLOOP(-NG, N2 - 1 + NG) {
       ISLOOP(-NG, N1 - 1 + NG) {
-    printf("k = %i %i %i\n", i,j,k);
-        PLOOP {printf("%i", ip); state->P[ip][k][j][i] = state->P[ip][NG][j][i];
-        }
+        PLOOP state->P[ip][k][j][i] = state->P[ip][NG][j][i];
       }
     }
   }
-printf("AOSIDJHIAOSUJDIASUD\n");
   #else
   if (global_start[2] == 0) {
     #pragma omp parallel for collapse(2)
@@ -259,7 +252,6 @@ printf("AOSIDJHIAOSUJDIASUD\n");
     }
     #endif
   } // global_start[2] == 0
-printf("AOSIDJHIAOSUJDIASUD\n");
 
   if(global_stop[2] == N3TOT) {
     #pragma omp parallel for collapse(2)
@@ -285,7 +277,6 @@ printf("AOSIDJHIAOSUJDIASUD\n");
     }
   } // global_stop[2] == N3TOT
   #endif // N3
-printf("AOSIDJHIAOSUJDIASUD\n");
   
   #if METRIC == MKS
   //ucon_calc(geom, state);
@@ -312,7 +303,6 @@ printf("AOSIDJHIAOSUJDIASUD\n");
     }
   }
   #endif
-printf("AOSIDJHIAOSUJDIASUD\n");
   
   timer_stop(TIMER_BOUND);
 }

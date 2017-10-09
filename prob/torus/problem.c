@@ -216,11 +216,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
   umax /= rhomax;
   rhomax = 1.;
-  printf("A\n");
   fixup(G, S);
-  printf("A\n");
   set_bounds(G, S);
-  printf("A\n");
 
   // first find corner-centered vector potential
   ZSLOOP(0, 0, 0, N2, 0, N1) A[i][j] = 0.;
