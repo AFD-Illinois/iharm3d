@@ -191,7 +191,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
       S->P[RHO][k][j][i] = rho;
       if (rho > rhomax) rhomax = rho;
-      S->P[UU][k][j][i] = u * (1. + 4.e-2 * (random() - 0.5));
+      S->P[UU][k][j][i] = u * (1. + 4.e-2 * (get_random() - 0.5));
       if (u > umax && r > rin) umax = u;
       S->P[U1][k][j][i] = ur;
       S->P[U2][k][j][i] = uh;
@@ -234,7 +234,7 @@ void init(struct GridGeom *G, struct FluidState *S)
     /* flux_ct */
     rho_av = 0.25*(S->P[RHO][NG][j][i] + S->P[RHO][NG][j][i-1] +
                    S->P[RHO][NG][j-1][i] + S->P[RHO][NG][j-1][i-1])
-      *(1. + 0.0*(random() - 0.5));
+      *(1. + 0.0*(get_random() - 0.5));
 
     q = rho_av/rhomax - 0.2;
     if (q > 0.) A[i][j] = q;

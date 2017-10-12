@@ -499,7 +499,7 @@ double get_bk_angle(double X[NDIM], double K[NDIM], double Ucov[NDIM],
 
 // random.c
 void init_random(int seed);
-double random();
+double get_random();
 
 // reconstruction.c
 void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir);
