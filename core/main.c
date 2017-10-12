@@ -12,7 +12,7 @@
 
 int main(int argc, char *argv[])
 {
-  //omp_set_num_threads(1);
+  omp_set_num_threads(1);
   
   // Check for minimal required MPI thread support
   int threadSafety;
@@ -147,6 +147,9 @@ printf("diag\n");
 printf("diag\n");
   // Initial diagnostics
   diag(G, S, DIAG_INIT);
+  void check_nan(struct FluidState *S);
+  check_nan(S);
+  printf("B\n");
 
   if (mpi_io_proc())
     fprintf(stdout, "t = %e tf = %e\n", t, tf);

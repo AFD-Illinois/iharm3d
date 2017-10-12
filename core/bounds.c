@@ -26,39 +26,43 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   sync_mpi_boundaries(state);
 
+  // Rewrite this function to put prim index on the outside
+
   if(global_start[0] == 0) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3 - 1) {
-      JSLOOP(0, N2 - 1) {
+    KSLOOP(-NG, N3-1+NG) {
+      JSLOOP(-NG, N2-1+NG) {
         ISLOOP(-NG, -1) {
-          #if X1L_BOUND == OUTFLOW
-          int iz = 0 + NG;
-          PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
-          pflag[k][j][i] = pflag[k][j][iz];
-
-          double rescale = geom->gdet[CENT][j][iz]/geom->gdet[CENT][j][i];
-          state->P[B1][k][j][i] *= rescale;
-          state->P[B2][k][j][i] *= rescale;
-          state->P[B3][k][j][i] *= rescale;
-          //state->P[i][j][k][B1] *= rescale;
-          //state->P[i][j][k][B2] *= rescale;
-          //state->P[i][j][k][B3] *= rescale;
-          //if (j == 4 && i < 7) {
-          //  printf("B: 
-          //}
-          #elif X1L_BOUND == PERIODIC
-          int iz = N1 + i;
-          PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
-          pflag[k][j][i] = pflag[k][j][iz];
-          #elif X1L_BOUND == POLAR
-          printf("X1L_BOUND choice POLAR not supported\n", X1L_BOUND);
-          exit(-1);
-          #elif X1L_BOUND == USER
-          printf("X1L_BOUND choice USER not supported\n", X1L_BOUND);
-          exit(-1);
+          #if N1 < NG
+          int iactive = NG;
+          PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iactive];
+          pflag[k][j][i] = pflag[k][j][iactive];
           #else
-          printf("X1L_BOUND choice %i not supported\n", X1L_BOUND);
-          exit(-1);
+          {
+            #if X1L_BOUND == OUTFLOW
+            int iz = 0 + NG;
+            PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
+            pflag[k][j][i] = pflag[k][j][iz];
+
+            double rescale = geom->gdet[CENT][j][iz]/geom->gdet[CENT][j][i];
+            state->P[B1][k][j][i] *= rescale;
+            state->P[B2][k][j][i] *= rescale;
+            state->P[B3][k][j][i] *= rescale;
+            #elif X1L_BOUND == PERIODIC
+            int iz = N1 + i;
+            PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
+            pflag[k][j][i] = pflag[k][j][iz];
+            #elif X1L_BOUND == POLAR
+            printf("X1L_BOUND choice POLAR not supported\n", X1L_BOUND);
+            exit(-1);
+            #elif X1L_BOUND == USER
+            printf("X1L_BOUND choice USER not supported\n", X1L_BOUND);
+            exit(-1);
+            #else
+            printf("X1L_BOUND choice %i not supported\n", X1L_BOUND);
+            exit(-1);
+            #endif
+          }
           #endif
         }
       }
@@ -67,38 +71,46 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   if(global_stop[0] == N1TOT) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3 - 1) {
-      JSLOOP(0, N2 - 1) {
+    KSLOOP(-NG, N3-1+NG) {
+      JSLOOP(-NG, N2-1+NG) {
         ISLOOP(N1, N1 - 1 + NG) {
-          #if X1R_BOUND == OUTFLOW
-          int iz = N1 - 1 + NG;
-          PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
-          pflag[k][j][i] = pflag[k][j][iz];
-
-          double rescale = geom->gdet[CENT][j][iz]/geom->gdet[CENT][j][i];
-          state->P[B1][k][j][i] *= rescale;
-          state->P[B2][k][j][i] *= rescale;
-          state->P[B3][k][j][i] *= rescale;
-          #elif X1R_BOUND == PERIODIC
-          int iz = i - N1;
-          PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
-          pflag[k][j][i] = pflag[k][j][iz];
-          #elif X1R_BOUND == POLAR
-          printf("X1R_BOUND choice POLAR not supported\n");
-          exit(-1);
-          #elif X1R_BOUND == USER
-          printf("X1R_BOUND choice USER not supported\n");
-          exit(-1);
+          #if N1 < NG
+          int iactive = N1 - 1 + NG;
+          PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iactive];
+          pflag[k][j][i] = pflag[k][j][iactive];
           #else
-          printf("X1R_BOUND choice %i not supported\n", X1R_BOUND);
-          exit(-1);
+          {
+            #if X1R_BOUND == OUTFLOW
+            int iz = N1 - 1 + NG;
+            PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
+            pflag[k][j][i] = pflag[k][j][iz];
+
+            double rescale = geom->gdet[CENT][j][iz]/geom->gdet[CENT][j][i];
+            state->P[B1][k][j][i] *= rescale;
+            state->P[B2][k][j][i] *= rescale;
+            state->P[B3][k][j][i] *= rescale;
+            #elif X1R_BOUND == PERIODIC
+            int iz = i - N1;
+            PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
+            pflag[k][j][i] = pflag[k][j][iz];
+            #elif X1R_BOUND == POLAR
+            printf("X1R_BOUND choice POLAR not supported\n");
+            exit(-1);
+            #elif X1R_BOUND == USER
+            printf("X1R_BOUND choice USER not supported\n");
+            exit(-1);
+            #else
+            printf("X1R_BOUND choice %i not supported\n", X1R_BOUND);
+            exit(-1);
+            #endif
+          }
           #endif
         }
       }
     }
   } // global_stop[0] == N1TOT
 
-  #if N2 == 1
+  /*#if N2 == 1
   #pragma omp parallel for collapse(2)
   KSLOOP(-NG, N3 -1 + NG) {
     JSLOOP(-NG, -1) {
@@ -115,12 +127,18 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       }
     }
   }
-  #else
+  #else*/
   if(global_start[1] == 0) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3 - 1 + NG) {
+    KSLOOP(-NG, N3-1+NG) {
       JSLOOP(-NG, -1) {
-        ISLOOP(-NG, N1 - 1 + NG) {
+        ISLOOP(-NG, N1-1+NG) {
+          #if N2 < NG
+          int jactive = NG;
+          PLOOP state->P[ip][k][j][i] = state->P[ip][k][jactive][i];
+          pflag[k][j][i] = pflag[k][jactive][i];
+          #else
+          {
           #if X2L_BOUND == OUTFLOW
           int jz = 0 + NG ;
           PLOOP state->P[ip][k][j][i] = state->P[ip][k][jz][i];
@@ -138,10 +156,14 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
           printf("X2L_BOUND choice %i not supported\n", X2L_BOUND);
           exit(-1);
           #endif
+          }
+          #endif
         }
       }
     }
+  } // global_start[1] == 0
 
+/*
     // Treat periodic bounds separately in presence of MPI
     #if X2L_BOUND == PERIODIC && X2R_BOUND == PERIODIC
     if (global_stop[1] == N2TOT) {
@@ -158,12 +180,19 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
     #endif
   } // global_start[1] == 0
+  */
 
   if(global_stop[1] == N2TOT) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3 - 1 + NG) {
-      JSLOOP(N2, N2 - 1 + NG) {
-        ISLOOP(-NG, N1 - 1 + NG) {
+    KSLOOP(-NG, N3-1+NG) {
+      JSLOOP(N2, N2-1+NG) {
+        ISLOOP(-NG, N1-1+NG) {
+          #if N2 < NG
+          int jactive = N2 - 1 + NG;
+          PLOOP state->P[ip][k][j][i] = state->P[ip][k][jactive][i];
+          pflag[k][j][i] = pflag[k][jactive][i];
+          #else
+          {
           #if X2R_BOUND == OUTFLOW
           int jz = N2 - 1 + NG;
           PLOOP state->P[ip][k][j][i] = state->P[ip][k][jz][i];
@@ -181,13 +210,15 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
           printf("X2R_BOUND choice %i not supported\n", X2R_BOUND);
           exit(-1);
           #endif
+          }
+          #endif
         }
       }
     }
   } // global_stop[1] == N2TOT
-  #endif // N2 == 1
+  //#endif // N2 == 1
 
-  #if N3 == 1
+  /*#if N3 == 1
   #pragma omp parallel for collapse(2)
   KSLOOP(-NG, -1) {
     JSLOOP(-NG, N2 - 1 + NG) {
@@ -204,30 +235,39 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       }
     }
   }
-  #else
+  #else*/
   if (global_start[2] == 0) {
     #pragma omp parallel for collapse(2)
     KSLOOP(-NG, -1) {
-      JSLOOP(-NG, N2 - 1 + NG) {
-        ISLOOP(-NG, N1 - 1 + NG) {
-          #if X3L_BOUND == OUTFLOW
-          int kz = 0 + NG ;
-          PLOOP state->P[ip][k][j][i] = state->P[ip][kz][j][i];
-          pflag[k][j][i] = pflag[kz][j][i];
-          #elif X3L_BOUND == POLAR
-          printf("X3L_BOUND choice POLAR not supported\n");
-          exit(-1);
-          #elif X3L_BOUND == USER
-          printf("X3L_BOUND choice USER not supported\n");
-          exit(-1);
-          #elif X3L_BOUND != PERIODIC
-          printf("X3L_BOUND choice %i not supported\n", X3L_BOUND);
-          exit(-1);
+      JSLOOP(-NG, N2-1+NG) {
+        ISLOOP(-NG, N1-1+NG) {
+          #if N3 < NG
+          int kactive = NG;
+          PLOOP state->P[ip][k][j][i] = state->P[ip][kactive][j][i];
+          pflag[k][j][i] = pflag[kactive][j][i];
+          #else
+          {
+            #if X3L_BOUND == OUTFLOW
+            int kz = 0 + NG ;
+            PLOOP state->P[ip][k][j][i] = state->P[ip][kz][j][i];
+            pflag[k][j][i] = pflag[kz][j][i];
+            #elif X3L_BOUND == POLAR
+            printf("X3L_BOUND choice POLAR not supported\n");
+            exit(-1);
+            #elif X3L_BOUND == USER
+            printf("X3L_BOUND choice USER not supported\n");
+            exit(-1);
+            #elif X3L_BOUND != PERIODIC
+            printf("X3L_BOUND choice %i not supported\n", X3L_BOUND);
+            exit(-1);
+            #endif
+          }
           #endif
         }
       }
     }
-
+  } // global_start[2] == 0
+/*
     #if X3L_BOUND == PERIODIC && X3R_BOUND == PERIODIC
     if (global_stop[2] == 0) {
       #pragma omp parallel for collapse(2)
@@ -251,32 +291,40 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       }
     }
     #endif
-  } // global_start[2] == 0
+  } // global_start[2] == 0*/
 
   if(global_stop[2] == N3TOT) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(N3, N3 - 1 + NG) {
-      JSLOOP(-NG, N2 - 1 + NG) {
-        ISLOOP(-NG, N1 - 1 + NG) {
-          #if X3R_BOUND == OUTFLOW
-          int kz = N3 - 1 + NG;
-          PLOOP state->P[ip][k][j][i] = state->P[ip][kz][j][i];
-          pflag[k][j][i] = pflag[kz][j][i];
-          #elif X3R_BOUND == POLAR
-          printf("X3R_BOUND choice POLAR not supported\n");
-          exit(-1);
-          #elif X3R_BOUND == USER
-          printf("X3R_BOUND choice USER not supported\n");
-          exit(-1);
-          #elif X3R_BOUND != PERIODIC
-          printf("X3R_BOUND choice %i not supported\n", X3R_BOUND);
-          exit(-1);
+    KSLOOP(N3, N3-1+NG) {
+      JSLOOP(-NG, N2-1+NG) {
+        ISLOOP(-NG, N1-1+NG) {
+          #if N3 < NG
+          int kactive = N3 - 1 + NG;
+          PLOOP state->P[ip][k][j][i] = state->P[ip][kactive][j][i];
+          pflag[k][j][i] = pflag[kactive][j][i];
+          #else
+          {
+            #if X3R_BOUND == OUTFLOW
+            int kz = N3 - 1 + NG;
+            PLOOP state->P[ip][k][j][i] = state->P[ip][kz][j][i];
+            pflag[k][j][i] = pflag[kz][j][i];
+            #elif X3R_BOUND == POLAR
+            printf("X3R_BOUND choice POLAR not supported\n");
+            exit(-1);
+            #elif X3R_BOUND == USER
+            printf("X3R_BOUND choice USER not supported\n");
+            exit(-1);
+            #elif X3R_BOUND != PERIODIC
+            printf("X3R_BOUND choice %i not supported\n", X3R_BOUND);
+            exit(-1);
+            #endif
+          }
           #endif
         }
       }
     }
   } // global_stop[2] == N3TOT
-  #endif // N3
+  //#endif // N3
   
   #if METRIC == MKS
   //ucon_calc(geom, state);

@@ -31,9 +31,13 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
 
   // reconstruct X1
   reconstruct(S, Sl->P, Sr->P, 1);
+  PLOOP ZLOOPALL if (isnan(Sl->P[ip][k][j][i])) {printf(" %i %i %i Sl->P\n", i, j, k); exit(-1);}
+  PLOOP ZLOOPALL if (isnan(Sr->P[ip][k][j][i])) {printf(" %i %i %i Sr->P\n", i, j, k); exit(-1);}
 
   // lr_to_flux X1
   lr_to_flux(G, Sl, Sr, 1, FACE1, F->X1, ctop);
+
+  PLOOP ZLOOPALL if (isnan(F->X1[ip][k][j][i])) {printf(" %i %i %i AOSIiSjjJD\n", i, j, k); exit(-1);}
 
   // cmax1
   timer_start(TIMER_CMAX);
@@ -49,6 +53,7 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
 
   // lr_to_flux X2
   lr_to_flux(G, Sl, Sr, 2, FACE2, F->X2, ctop);
+  PLOOP ZLOOP if (isnan(F->X1[ip][k][j][i])) {printf("FX2\n"); exit(-1);}
 
   // cmax2
   timer_start(TIMER_CMAX);
@@ -62,6 +67,7 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
 
   // lr_to_flux X3
   lr_to_flux(G, Sl, Sr, 3, FACE3, F->X3, ctop);
+  PLOOP ZLOOP if (isnan(F->X1[ip][k][j][i])) {printf("FX3\n"); exit(-1);}
 
   // cmax3
   timer_start(TIMER_CMAX);
@@ -148,8 +154,6 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     }
   }*/
   timer_stop(TIMER_LR_STATE);
-  //if (dir == 2)
-  //printf("LRFLUX Pr[U1] = %e\n", Sr->P[U1][3][4][6]);
 
   timer_start(TIMER_LR_PTOF);
 
@@ -175,6 +179,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     cmax[k][j][i] = fabs(MY_MAX(MY_MAX(0., cmaxL[k][j][i]), cmaxR[k][j][i]));
     cmin[k][j][i] = fabs(MY_MAX(MY_MAX(0., -cminL[k][j][i]), -cminR[k][j][i]));
     ctop[k][j][i] = MY_MAX(cmax[k][j][i], cmin[k][j][i]);
+    if (isnan(1./ctop[k][j][i])) {printf("%i %i %i (%i)\n", k,j,i,dir); exit(-1);}
   }
   timer_stop(TIMER_LR_CMAX);
 
@@ -191,13 +196,10 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     //ZSLOOP(0, N3-1, 0, N2-1, 0, N1) {
       flux[ip][k][j][i] = 0.5*(fluxL[ip][k][j][i] + fluxR[ip][k][j][i] -
         ctop[k][j][i]*(Sr->U[ip][k][j][i] - Sl->U[ip][k][j][i]));
-      /*if (i == 64 && j == 64 && k == 2 && dir == 3) {
-        printf("[%i] fL = %e fR = %e ctop = %e Ur = %e uL = %e\n", ip,
-        fluxL[ip][k][j][i], fluxR[ip][k][j][i], ctop[k][j][i],
-        Sr->U[ip][k][j][i], Sl->U[ip][k][j][i]);
-        printf("    Pr = %e Pl = %e\n", Sr->P[ip][k][j][i], Sl->P[ip][k][j][i]);
-        //exit(-1);
-      }*/
+      if (isnan(flux[ip][k][j][i])) {
+        printf("%e %e %e %e %e\n", fluxL[ip][k][j][i], fluxR[ip][k][j][i],
+        ctop[k][j][i], Sr->U[ip][k][j][i], Sl->U[ip][k][j][i]);
+      }
     }
   }
   timer_stop(TIMER_LR_FLUX);
@@ -220,6 +222,8 @@ void flux_ct(struct FluidFlux *F)
                               - F->X2[B1][k][j][i] - F->X2[B1][k][j][i-1]);
       emf->X2[k][j][i] = -0.25*(F->X1[B3][k][j][i] + F->X1[B3][k-1][j][i]
                               - F->X3[B1][k][j][i] - F->X3[B1][k][j][i-1]);
+      if (isnan(emf->X2[k][j][i])) printf("%i %i %i %g %g %g %g\n", k,j,i,
+        F->X1[B3][k][j][i], F->X1[B3][k-1][j][i], F->X3[B1][k][j][i], F->X3[B1][k][j][i-1]);
       emf->X1[k][j][i] =  0.25*(F->X2[B3][k][j][i] + F->X2[B3][k-1][j][i]
                               - F->X3[B2][k][j][i] - F->X3[B2][k][j-1][i]);
     }
@@ -233,6 +237,7 @@ void flux_ct(struct FluidFlux *F)
       F->X1[B1][k][j][i] =  0.;
       F->X1[B2][k][j][i] =  0.5*(emf->X3[k][j][i] + emf->X3[k][j+1][i]);
       F->X1[B3][k][j][i] = -0.5*(emf->X2[k][j][i] + emf->X2[k+1][j][i]);
+      //if (isnan(F->X1[B3][k][j][i])) printf("1\n");
     }
     #pragma omp for collapse(3) nowait
     ZSLOOP(0, N3 - 1, 0, N2, 0, N1 - 1) {

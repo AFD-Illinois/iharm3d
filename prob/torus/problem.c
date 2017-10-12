@@ -283,9 +283,17 @@ void init(struct GridGeom *G, struct FluidState *S)
   init_electrons();
   #endif
 
+  void check_nan(struct FluidState *S);
+  check_nan(S);
+  printf("A\n");
+
   // Enforce boundary conditions
   fixup(G, S);
+  check_nan(S);
+  printf("A\n");
   set_bounds(G, S);
+  check_nan(S);
+  printf("A\n");
 }
 
 // Convert Boyer-Lindquist four-velocity to MKS 3-velocity

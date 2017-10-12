@@ -29,7 +29,7 @@ def get_options():
 
   host['NAME']           = os.uname()[1]
   host['COMPILER']       = 'h5pcc'
-  host['COMPILER_FLAGS'] = '-Ofast -Wall -Werror -fdiagnostics-color -fopenmp'
+  host['COMPILER_FLAGS'] = '-O3 -Wall -Werror -fdiagnostics-color -fopenmp'
   host['GSL_DIR']        = '/home/brryan/Software/gsl'
   host['EXECUTABLE']     = 'mpirun'
 

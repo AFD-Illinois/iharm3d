@@ -313,6 +313,10 @@ extern int global_stop[3];
   for (int k = 0 + NG; k < N3 + NG; k++) \
   for (int j = 0 + NG; j < N2 + NG; j++) \
   for (int i = 0 + NG; i < N1 + NG; i++) 
+#define ZLOOPALL \
+  for (int k = 0; k < N3 + 2*NG; k++) \
+  for (int j = 0; j < N2 + 2*NG; j++) \
+  for (int i = 0; i < N1 + 2*NG; i++) 
 #define ISLOOP(istart,istop) \
   for (int i = (istart) + NG; i <= (istop) + NG; i++)
 #define JSLOOP(jstart,jstop) \

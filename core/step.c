@@ -15,6 +15,15 @@ static struct FluidState *Stmp;
 static struct FluidFlux *F;
 static int first_call = 1;
 
+void check_nan(struct FluidState *S) {
+  ZLOOP {
+    if (isnan(S->P[B1][k][j][i]) || isnan(S->P[B2][k][j][i]) || isnan(S->P[B3][k][j][i])) {
+    printf("fail~ %i %i %i\n", i,j,k);
+    exit(-1);
+    }
+  }
+}
+
 void step(struct GridGeom *G, struct FluidState *S)
 {
   //static struct FluidState Stmp;
@@ -25,6 +34,10 @@ void step(struct GridGeom *G, struct FluidState *S)
   }
   
   double ndt;
+
+  check_nan(S);
+
+
 
   //printf("\n");
   //PLOOP printf("P[%i][NG][64][64] = %.10e\n", ip, S->P[ip][NG][64][64]);
@@ -42,7 +55,11 @@ void step(struct GridGeom *G, struct FluidState *S)
 
   // Predictor setup
   //ndt = advance(P, P, 0.5*dt, Ph, 0);
+  check_nan(S);
+  printf("A\n");
   ndt = advance_fluid(G, S, S, Stmp, 0.5*dt);
+  check_nan(Stmp);
+  printf("Atmp\n");
   /*printf("past advance\n");
   printf("P[RHO][3][4][6] = %.10e\n", Stmp->P[RHO][3][4][6]);
   printf("P[U1][3][4][6] = %.10e\n", Stmp->P[U1][3][4][6]);*/
@@ -51,6 +68,8 @@ void step(struct GridGeom *G, struct FluidState *S)
   heat_electrons(P, Ph, 0.5*dt);
   #endif
   fixup(G, Stmp);
+  check_nan(Stmp);
+  printf("A\n");
   /*printf("past base fixup\n");
   printf("P[RHO][3][4][6] = %.10e\n", Stmp->P[RHO][3][4][6]);
   printf("P[U1][3][4][6] = %.10e\n", Stmp->P[U1][3][4][6]);*/
@@ -65,16 +84,23 @@ void step(struct GridGeom *G, struct FluidState *S)
   /*printf("past bounds\n");
   printf("P[RHO][3][4][6] = %.10e\n", Stmp->P[RHO][3][4][6]);
   printf("P[U1][3][4][6] = %.10e\n", Stmp->P[U1][3][4][6]);*/
+  check_nan(Stmp);
+  printf("A\n");
 
   // Radiation step
   #if RADIATION
   make_superphotons(Ph, t, dt);
   push_superphotons(t, dt);
   #endif
+  check_nan(Stmp);
+  check_nan(S);
+  printf("BALL\n");
 
   // Corrector step
   //ndt = advance(P, Ph, dt, P, 1);
   ndt = advance_fluid(G, S, Stmp, S, dt);
+  check_nan(S);
+  printf("B\n");
   /*printf("past advance\n");
   printf("P[RHO][3][4][6] = %.10e\n", S->P[RHO][3][4][6]);
   printf("P[U1][3][4][6] = %.10e\n", S->P[U1][3][4][6]);*/
@@ -82,17 +108,27 @@ void step(struct GridGeom *G, struct FluidState *S)
   heat_electrons(Ph, P, dt);
   #endif
   fixup(G, S);
+  check_nan(S);
+  printf("B\n");
   fixup_utoprim(G, S);
+  check_nan(S);
+  printf("B\n");
   /*printf("past fixup\n");
   printf("P[RHO][3][4][6] = %.10e\n", S->P[RHO][3][4][6]);
   printf("P[U1][3][4][6] = %.10e\n", S->P[U1][3][4][6]);*/
   #if ELECTRONS
   fixup_electrons(P);
   #endif
+  check_nan(S);
+  printf("B\n");
   set_bounds(G, S);
+  check_nan(S);
+  printf("B\n");
   /*printf("past bounds\n");
   printf("P[RHO][3][4][6] = %.10e\n", S->P[RHO][3][4][6]);
   printf("P[U1][3][4][6] = %.10e\n", S->P[U1][3][4][6]);*/
+  check_nan(S);
+  printf("A\n");
 
   #if RADIATION
   // Apply radiation four-force to fluid
@@ -119,11 +155,13 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   static GridPrim dU;
 
   #pragma omp parallel for collapse(3)
-  PLOOP ZLOOP Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
+  PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
   //memcpy(Sf->P, Si->P, NVAR*(N3+2*NG)*(N2+2*NG)*(N1+2*NG)*sizeof(double));
   //memcpy(Sf->P, Si->P, sizeof(GridPrim);
   
   //ZLOOP PLOOP Pf[i][j][k][ip] = Pi[i][j][k][ip];
+
+  //printf("Ss
   
   double ndt = get_flux(G, Ss, F);
 
@@ -131,7 +169,13 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   fix_flux(F);
   #endif
 
+  //PLOOP ZLOOP if (isnan(F->X1[ip][k][j][i])) printf("FF\n");
+  PLOOP ZLOOPALL if (isnan(F->X1[ip][k][j][i])) {printf("[%i] 1AsdiufsdSOIDJ\n", ip); exit(-1); printf("FF\n");}
+  PLOOP ZLOOPALL if (isnan(F->X2[ip][k][j][i])) {printf("[%i] 2AsdiufsdSOIDJ\n", ip); exit(-1); printf("FF\n");}
+  PLOOP ZLOOPALL if (isnan(F->X3[ip][k][j][i])) {printf("[%i] 3AsdiufsdSOIDJ\n", ip); exit(-1); printf("FF\n");}
+
   flux_ct(F);
+  PLOOP ZLOOP if (isnan(F->X1[ip][k][j][i])) {printf("[%i] ASOIDJ\n", ip); exit(-1); printf("FF\n");}
 
   // Evaluate diagnostics based on fluxes
   //timer_start(TIMER_DIAG);
