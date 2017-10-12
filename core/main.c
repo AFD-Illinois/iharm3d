@@ -124,32 +124,22 @@ int main(int argc, char *argv[])
 
   // Perform initializations, either directly or via checkpoint
   init_random(1); // NEED RANDOM SEED BASED ON TIME() HERE
-printf("diag\n");
   is_restart = restart_init(G, S);
-printf("diag\n");
   if (!is_restart) {
-printf("diag\n");
     time_init();
     //init(&G, &S);
-printf("diag\n");
     init(G, S);
-printf("diag\n");
     #if RADIATION
     init_rad(P);
     #endif
-printf("diag\n");
     tdump = DTd;
     tlog  = DTl;
     if (mpi_myrank() == 0) 
       fprintf(stdout, "Initial conditions generated\n\n");
   }
 
-printf("diag\n");
   // Initial diagnostics
   diag(G, S, DIAG_INIT);
-  void check_nan(struct FluidState *S);
-  check_nan(S);
-  printf("B\n");
 
   if (mpi_io_proc())
     fprintf(stdout, "t = %e tf = %e\n", t, tf);

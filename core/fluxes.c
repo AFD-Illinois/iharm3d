@@ -22,8 +22,6 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
     first_call = 0;
   }
 
-  //static GridPrim Pl, Pr;
-  //static struct FluidState Sl, Sr;
   static GridDouble ctop;
   double cmax[NDIM], ndts[NDIM];
   memset(cmax, 0, NDIM*sizeof(double));
@@ -31,13 +29,9 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
 
   // reconstruct X1
   reconstruct(S, Sl->P, Sr->P, 1);
-  PLOOP ZLOOPALL if (isnan(Sl->P[ip][k][j][i])) {printf(" %i %i %i Sl->P\n", i, j, k); exit(-1);}
-  PLOOP ZLOOPALL if (isnan(Sr->P[ip][k][j][i])) {printf(" %i %i %i Sr->P\n", i, j, k); exit(-1);}
 
   // lr_to_flux X1
   lr_to_flux(G, Sl, Sr, 1, FACE1, F->X1, ctop);
-
-  PLOOP ZLOOPALL if (isnan(F->X1[ip][k][j][i])) {printf(" %i %i %i AOSIiSjjJD\n", i, j, k); exit(-1);}
 
   // cmax1
   timer_start(TIMER_CMAX);
@@ -49,11 +43,8 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
   // reconstruct X2
   reconstruct(S, Sl->P, Sr->P, 2);
 
-  //printf("[U1] LR = %e %e\n", Sl->P[U1][3][4][6], Sr->P[U1][3][4][6]);
-
   // lr_to_flux X2
   lr_to_flux(G, Sl, Sr, 2, FACE2, F->X2, ctop);
-  PLOOP ZLOOP if (isnan(F->X1[ip][k][j][i])) {printf("FX2\n"); exit(-1);}
 
   // cmax2
   timer_start(TIMER_CMAX);
@@ -67,7 +58,6 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
 
   // lr_to_flux X3
   lr_to_flux(G, Sl, Sr, 3, FACE3, F->X3, ctop);
-  PLOOP ZLOOP if (isnan(F->X1[ip][k][j][i])) {printf("FX3\n"); exit(-1);}
 
   // cmax3
   timer_start(TIMER_CMAX);
@@ -91,20 +81,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   static GridPrim fluxL, fluxR;
   static GridDouble cmaxL, cmaxR, cminL, cminR, cmax, cmin;//, ctop;
 
-  /*int max_indices[] = {0, N1-1, N2-1, N3-1};
-  if (dir == 1) {
-    max_indices[1] += 1;
-  } else if (dir == 2) {
-    max_indices[2] += 1;
-  } else if (dir == 3) {
-    max_indices[3] += 1;
-  }*/
   int max_indices[] = {0, N1, N2, N3};
-
-  //if (dir == 2)
-  //printf("LRFLUX Pr[U1] = %e\n", Sr->P[U1][3][4][6]);
-  //printf("DIR = %i: MAX_INDICES = %i %i %i %i\n", dir,
-  //max_indices[0], max_indices[1], max_indices[2], max_indices[3]);
 
   // Properly offset left face
   PLOOP {
@@ -121,38 +98,13 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
         Sl->P[ip][k][j][i] = Sl->P[ip][k-1][j][i];
     }
   }
-  //if (dir == 2)
-  //printf("LRFLUX Pr[U1] = %e\n", Sr->P[U1][3][4][6]);
-
-  // IF GDET < SMALL?!?!??!?! FLUX = 0!!!  MAXSPEED = 0!!!
-  // MAYBE SING_FIX REMOVES THIS
-
+  
   timer_start(TIMER_LR_STATE);
 
   get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
 
   get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
 
-  //if (dir == 2)
-  //printf("LRFLUX Pr[U1] = %e\n", Sr->P[U1][3][4][6]);
-  /*#pragma omp parallel for collapse(2)
-  KSLOOP(0, max_indices[3]) {
-    JSLOOP(0, max_indices[2]) {
-      #pragma omp simd
-      ISLOOP(0, max_indices[1]) {
-        get_state(G, Sl, i, j, k, loc);
-      }
-    }
-  }
-  #pragma omp parallel for collapse(2)
-  KSLOOP(0, max_indices[3]) {
-    JSLOOP(0, max_indices[2]) {
-      #pragma omp simd
-      ISLOOP(0, max_indices[1]) {
-        get_state(G, Sr, i, j, k, loc);
-      }
-    }
-  }*/
   timer_stop(TIMER_LR_STATE);
 
   timer_start(TIMER_LR_PTOF);
@@ -186,20 +138,10 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   timer_start(TIMER_LR_FLUX);
 
   PLOOP {
-    //#pragma omp parallel for collapse(3)
-    /*ZSLOOP(0, max_indices[3], 0, max_indices[2], 0, max_indices[1]) {
-      flux[ip][k][j][i] = 0.5*(fluxL[ip][k][j][i] + fluxR[ip][k][j][i] -
-        ctop[k][j][i]*(Sr->U[ip][k][j][i] - Sl->U[ip][k][j][i]));
-    }*/
     #pragma omp parallel for simd collapse(2)
     ZSLOOP(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1]) {
-    //ZSLOOP(0, N3-1, 0, N2-1, 0, N1) {
       flux[ip][k][j][i] = 0.5*(fluxL[ip][k][j][i] + fluxR[ip][k][j][i] -
         ctop[k][j][i]*(Sr->U[ip][k][j][i] - Sl->U[ip][k][j][i]));
-      if (isnan(flux[ip][k][j][i])) {
-        printf("%e %e %e %e %e\n", fluxL[ip][k][j][i], fluxR[ip][k][j][i],
-        ctop[k][j][i], Sr->U[ip][k][j][i], Sl->U[ip][k][j][i]);
-      }
     }
   }
   timer_stop(TIMER_LR_FLUX);
@@ -211,25 +153,15 @@ void flux_ct(struct FluidFlux *F)
   timer_start(TIMER_FLUX_CT);
   #pragma omp parallel
   {
-    //printf("BEFORE F->X3[B1][3][64][64] = %e\n", F->X3[B1][3][64][64]);
-    //printf("BEFORE F->X1[B3][3][64][64] = %e\n", F->X1[B3][3][64][64]);
-    //printf("BEFORE F->X1[B3][2][64][64] = %e\n", F->X1[B3][2][64][64]);
-    //printf("F->X1[B3][4][64][64] = %e\n", F->X1[B3][4][64][64]);
-    // Calculate EMFs via average to corners (Toth approach)
     #pragma omp for collapse(3)
     ZSLOOP(0, N3, 0, N2, 0, N1) {
       emf->X3[k][j][i] =  0.25*(F->X1[B2][k][j][i] + F->X1[B2][k][j-1][i]
                               - F->X2[B1][k][j][i] - F->X2[B1][k][j][i-1]);
       emf->X2[k][j][i] = -0.25*(F->X1[B3][k][j][i] + F->X1[B3][k-1][j][i]
                               - F->X3[B1][k][j][i] - F->X3[B1][k][j][i-1]);
-      if (isnan(emf->X2[k][j][i])) printf("%i %i %i %g %g %g %g\n", k,j,i,
-        F->X1[B3][k][j][i], F->X1[B3][k-1][j][i], F->X3[B1][k][j][i], F->X3[B1][k][j][i-1]);
       emf->X1[k][j][i] =  0.25*(F->X2[B3][k][j][i] + F->X2[B3][k-1][j][i]
                               - F->X3[B2][k][j][i] - F->X3[B2][k][j-1][i]);
     }
-
-    //printf("emf->X2[3][64][64] = %e\n", emf->X2[3][64][64]);
-    //printf("emf->X2[4][64][64] = %e\n", emf->X2[4][65][64]);
 
     // Rewrite EMFs as fluxes, after Toth
     #pragma omp for collapse(3) nowait
@@ -237,7 +169,6 @@ void flux_ct(struct FluidFlux *F)
       F->X1[B1][k][j][i] =  0.;
       F->X1[B2][k][j][i] =  0.5*(emf->X3[k][j][i] + emf->X3[k][j+1][i]);
       F->X1[B3][k][j][i] = -0.5*(emf->X2[k][j][i] + emf->X2[k+1][j][i]);
-      //if (isnan(F->X1[B3][k][j][i])) printf("1\n");
     }
     #pragma omp for collapse(3) nowait
     ZSLOOP(0, N3 - 1, 0, N2, 0, N1 - 1) {
@@ -251,8 +182,6 @@ void flux_ct(struct FluidFlux *F)
       F->X3[B2][k][j][i] = -0.5*(emf->X1[k][j][i] + emf->X1[k][j+1][i]);
       F->X3[B3][k][j][i] =  0.;
     }
-
-    //printf("AFTER F->X1[B3][3][64][64] = %e\n", F->X1[B3][3][64][64]);
   } // omp parallel
   timer_stop(TIMER_FLUX_CT);
 }
