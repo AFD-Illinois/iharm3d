@@ -16,7 +16,7 @@ void init_random(int seed)
 }
 
 // Return pseudorandom value between 0 and 1
-double random()
+double get_random()
 {
   return (gsl_rng_uniform(r));
 }

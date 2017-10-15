@@ -38,7 +38,7 @@ void make_superphotons(grid_prim_type Prad, double t, double dt)
     ZLOOP
     {
       nz = (int)dnzs[i][j][k];
-      if (dnzs[i][j][k] - nz > random()) nz++;
+      if (dnzs[i][j][k] - nz > get_random()) nz++;
       
       if (nz > 0) {
         // Set up zone
@@ -84,8 +84,8 @@ void sample_photon(int i, int j, int k, double t, double dt,
 
   // Sample emissivity to get frequency
   do {
-    nu = exp(random()*(lnu_max - lnu_min) + lnu_min);
-  } while (random() > linear_interp_log(nu, dndlnu, lnu_min, dlnu));
+    nu = exp(get_random()*(lnu_max - lnu_min) + lnu_min);
+  } while (get_random() > linear_interp_log(nu, dndlnu, lnu_min, dlnu));
 
   // Get weight from global weight parameter
   double weight = wgtC/nu;
@@ -93,12 +93,12 @@ void sample_photon(int i, int j, int k, double t, double dt,
   // Sample emissivity in solid angle
   double jmax = jnu(nu, Ne, Thetae, Bmag, 0.5*M_PI);
   do {
-    cth[0] = 2.*random() - 1.;
+    cth[0] = 2.*get_random() - 1.;
     th = acos(cth[0]);
-  } while (random() > jnu(nu, Ne, Thetae, Bmag, th)/jmax);
+  } while (get_random() > jnu(nu, Ne, Thetae, Bmag, th)/jmax);
   
   sth[0] = sqrt(1. - cth[0]*cth[0]);
-  phi = 2.*M_PI*random();
+  phi = 2.*M_PI*get_random();
   cphi[0] = cos(phi);
   sphi[0] = sin(phi);
 
