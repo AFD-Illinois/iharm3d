@@ -12,7 +12,7 @@
 
 int main(int argc, char *argv[])
 {
-  omp_set_num_threads(1);
+  //omp_set_num_threads(1);
   
   // Check for minimal required MPI thread support
   int threadSafety;

@@ -82,9 +82,13 @@ void report_performance()
     fprintf(stdout, "   ALL:      %8.4g s\n", times[TIMER_ALL]/nstep);
     fprintf(stdout, "   ZONE CYCLES PER\n");
     fprintf(stdout, "     CORE-SECOND: %e\n", 
-      N1*N2*N3/(times[TIMER_ALL]*nthreads/nstep));
+      N1TOT*N2TOT*N3TOT/(times[TIMER_ALL]*nthreads/nstep));
     fprintf(stdout, "     NODE-SECOND: %e\n", 
-      N1*N2*N3/(times[TIMER_ALL]/nstep));
+      N1TOT*N2TOT*N3TOT/(times[TIMER_ALL]/nstep));
+    fprintf(stdout, "N1 N2 N3 NTOT = %i %i %i %i\n", N1TOT, N2TOT, N3TOT, N1TOT*N2TOT*N3TOT);
+    fprintf(stdout, "time = %e time/step = %e nstep = %i\n",
+    times[TIMER_ALL], times[TIMER_ALL]/nstep, nstep);
+    fprintf(stdout, "ZCPS: %e\n", N1TOT*N2TOT*N3TOT*nstep/times[TIMER_ALL]);
     fprintf(stdout, "*********************************\n\n");
   }
 }
