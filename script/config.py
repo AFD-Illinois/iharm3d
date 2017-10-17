@@ -144,11 +144,14 @@ def build(PROBLEM, PATHS):
   LIBRARIES = ''
   INCLUDES  = ''
 
+  # TODO Assuming $(PATH)/lib here excludes RedHat-based distros
+
   # GSL
-  host['GSL_DIR'] = util.sanitize_path(host['GSL_DIR'])
   LIB_FLAGS += ' -lgsl -lgslcblas'
-  LIBRARIES += '-L' + host['GSL_DIR'] + 'lib/'
-  INCLUDES  += '-I' + host['GSL_DIR'] + 'include/'
+  if 'GSL_DIR' in host:
+    host['GSL_DIR'] = util.sanitize_path(host['GSL_DIR'])
+    LIBRARIES += '-L' + host['GSL_DIR'] + 'lib/'
+    INCLUDES  += '-I' + host['GSL_DIR'] + 'include/'
 
   # MPI
   if 'MPI_DIR' in host:
@@ -171,7 +174,8 @@ def build(PROBLEM, PATHS):
   print_config("MACHINE",    host['NAME'])
   print_config("PROBLEM",    PROBLEM)
   print_config("COMPILER",   host['COMPILER'])
-  print_config("GSL_DIR",    host['GSL_DIR'])
+  if 'GSL_DIR' in host:
+    print_config("GSL_DIR",    host['GSL_DIR'])
   if 'MPI_DIR' in host:
     print_config("MPI_DIR",  host['MPI_DIR'])
   if 'HDF5_DIR' in host:
