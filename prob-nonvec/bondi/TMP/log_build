@@ -1,0 +1,189 @@
+
+********************************************************************************
+
+                              BHLIGHT BUILD SCRIPT
+
+  OPTIONS:
+    -debug               (compile files sequentially)
+    -noparam             (do not create new parameter file)
+    -dir /path/to/target (create target dir and build there)
+
+********************************************************************************
+
+  CONFIGURATION
+
+    MACHINE        cinnabar
+    PROBLEM        bondi
+    COMPILER       /usr/lib64/mpich/bin/mpicc
+
+    HDF5_DIR       /usr/local/fake_hdf5/
+    EXECUTABLE     /usr/lib64/mpich/bin/mpiexec
+
+    C_FLAGS        -std=c99 -mcmodel=medium -fopenmp -march=native -Wall -Ofast -flto -funroll-loops
+    LIB_FLAGS      -lm -ldl -lgsl -lgslcblas -lhdf5_hl -lhdf5
+    LIBRARIES       -L/usr/local/fake_hdf5/lib/
+    INCLUDES        -I/usr/local/fake_hdf5/include/
+    OPENMP         True
+
+  COMPILE-TIME PARAMETERS
+
+    N1TOT          256
+    N2TOT          256
+    N3TOT          1
+    N1CPU          1
+    N2CPU          1
+    N3CPU          1
+    METRIC         MKS
+    RECONSTRUCTION WENO
+
+  COMPILING SOURCE
+
+    [ 0%] bounds.c
+    [ 4%] coord.c
+    [ 8%] diag.c
+    [12%] electrons.c
+    [16%] emissivity.c
+    [20%] fixup.c
+    [25%] fluxes.c
+    [29%] io.c
+    [33%] main.c
+    [37%] make_superphotons.c
+    [41%] metric.c
+    [45%] mpi.c
+    [50%] phys.c
+    [54%] problem.c
+    [58%] push_superphotons.c
+    [62%] rad_utils.c
+    [66%] radiation.c
+    [70%] random.c
+    [75%] reconstruction.c
+    [79%] step.c
+    [83%] tetrads.c
+    [87%] timing.c
+
+  ERROR: COMPILER ERROR
+
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c: In function ‘bl_to_ks’:
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:96:3: error: unknown type name ‘DLOOP2’; did you mean ‘ZLOOP’?
+   DLOOP2 trans[mu][nu] = 0.;
+   ^~~~~~
+   ZLOOP
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:96:16: error: ‘mu’ undeclared (first use in this function)
+   DLOOP2 trans[mu][nu] = 0.;
+                ^~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:96:16: note: each undeclared identifier is reported only once for each function it appears in
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:96:20: error: ‘nu’ undeclared (first use in this function); did you mean ‘mu’?
+   DLOOP2 trans[mu][nu] = 0.;
+                    ^~
+                    mu
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:97:3: error: unknown type name ‘DLOOP1’; did you mean ‘ZLOOP’?
+   DLOOP1 trans[mu][mu] = 1.;
+   ^~~~~~
+   ZLOOP
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:101:3: error: unknown type name ‘DLOOP1’; did you mean ‘ZLOOP’?
+   DLOOP1 ucon_ks[mu] = 0.;
+   ^~~~~~
+   ZLOOP
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:102:3: error: unknown type name ‘DLOOP2’; did you mean ‘ZLOOP’?
+   DLOOP2 ucon_ks[mu] += trans[mu][nu]*ucon_bl[nu];
+   ^~~~~~
+   ZLOOP
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:102:22: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘+=’ token
+   DLOOP2 ucon_ks[mu] += trans[mu][nu]*ucon_bl[nu];
+                      ^~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:101:10: warning: unused variable ‘ucon_ks’ [-Wunused-variable]
+   DLOOP1 ucon_ks[mu] = 0.;
+          ^~~~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:97:10: warning: unused variable ‘trans’ [-Wunused-variable]
+   DLOOP1 trans[mu][mu] = 1.;
+          ^~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c: At top level:
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:106:10: warning: ‘struct of_geom’ declared inside parameter list will not be visible outside of this definition or declaration
+   struct of_geom *geom)
+          ^~~~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c: In function ‘fourvel_to_prim’:
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:109:25: error: dereferencing pointer to incomplete type ‘struct of_geom’
+   alpha = 1.0/sqrt(-geom->gcon[0][0]);
+                         ^~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c: At top level:
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:120:39: warning: ‘struct of_geom’ declared inside parameter list will not be visible outside of this definition or declaration
+ void set_ut(double ucon[NDIM], struct of_geom *geom)
+                                       ^~~~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c: In function ‘set_ut’:
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:124:12: error: dereferencing pointer to incomplete type ‘struct of_geom’
+   AA = geom->gcov[0][0];
+            ^~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c: In function ‘get_prim_bondi’:
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:145:14: error: ‘Reh’ undeclared (first use in this function)
+   while (r < Reh) {
+              ^~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:156:18: error: storage size of ‘geom_bl’ isn’t known
+   struct of_geom geom_bl, *geom_mks;
+                  ^~~~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:158:3: warning: implicit declaration of function ‘blgset’; did you mean ‘close’? [-Wimplicit-function-declaration]
+   blgset(i, j, &geom_bl);
+   ^~~~~~
+   close
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:160:3: error: ‘DLOOP1’ undeclared (first use in this function); did you mean ‘ZLOOP’?
+   DLOOP1 {
+   ^~~~~~
+   ZLOOP
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:160:10: error: expected ‘;’ before ‘{’ token
+   DLOOP1 {
+          ^
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:171:3: warning: implicit declaration of function ‘set_dxdX’; did you mean ‘set_ut’? [-Wimplicit-function-declaration]
+   set_dxdX(X, dxdX);
+   ^~~~~~~~
+   set_ut
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:173:3: error: ‘DLOOP2’ undeclared (first use in this function); did you mean ‘DLOOP1’?
+   DLOOP2 {
+   ^~~~~~
+   DLOOP1
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:173:10: error: expected ‘;’ before ‘{’ token
+   DLOOP2 {
+          ^
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:178:32: warning: passing argument 3 of ‘fourvel_to_prim’ from incompatible pointer type [-Wincompatible-pointer-types]
+   fourvel_to_prim(ucon_mks, P, geom_mks);
+                                ^~~~~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:105:6: note: expected ‘struct of_geom *’ but argument is of type ‘struct of_geom *’
+ void fourvel_to_prim(double ucon[NDIM], double prim[NVAR],
+      ^~~~~~~~~~~~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:156:18: warning: unused variable ‘geom_bl’ [-Wunused-variable]
+   struct of_geom geom_bl, *geom_mks;
+                  ^~~~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:152:10: warning: unused variable ‘ur’ [-Wunused-variable]
+   double ur = -C1/(pow(T,n)*pow(r,2));
+          ^~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c: In function ‘init_prob’:
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:297:34: error: ‘Reh’ undeclared (first use in this function)
+   printf("a = %e Reh = %e\n", a, Reh);
+                                  ^~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:316:29: error: ‘P’ undeclared (first use in this function)
+     get_prim_bondi(i, j, k, P[i][j][k]);
+                             ^
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c: In function ‘coord_transform’:
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:326:25: error: storage size of ‘blgeom’ isn’t known
+   struct of_geom *geom, blgeom;
+                         ^~~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:387:10: warning: implicit declaration of function ‘get_geometry’ [-Wimplicit-function-declaration]
+   geom = get_geometry(ii, jj, 0, CENT) ;
+          ^~~~~~~~~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:387:8: warning: assignment makes pointer from integer without a cast [-Wint-conversion]
+   geom = get_geometry(ii, jj, 0, CENT) ;
+        ^
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:388:28: error: dereferencing pointer to incomplete type ‘struct of_geom’
+   alpha = 1.0 / sqrt( -geom->gcon[0][0] ) ;
+                            ^~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:326:25: warning: unused variable ‘blgeom’ [-Wunused-variable]
+   struct of_geom *geom, blgeom;
+                         ^~~~~~
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c: At top level:
+/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.c:414:46: error: unknown type name ‘grid_prim_type’; did you mean ‘gsl_rng_type’?
+ void bound_gas_prob_x1r(int i, int j, int k, grid_prim_type P)
+                                              ^~~~~~~~~~~~~~
+                                              gsl_rng_type
+make: *** [/home/bprather/Code/iharm-test/pharm3d/prob/bondi/TMP/source/problem.o] Error 1
+make: *** Waiting for unfinished jobs....
+
+  ERROR: COMPILATION FAILED
+
