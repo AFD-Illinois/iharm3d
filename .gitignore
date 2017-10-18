@@ -71,4 +71,6 @@ bhlight
 # Output #
 ##########
 *.dat
+out.txt
 dumps/
+TMP/
