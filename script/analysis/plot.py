@@ -78,44 +78,42 @@ def plot_xz(ax, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
   label=None, ticks=None):
   x = dump['r']*np.sin(dump['theta'])
   z = dump['r']*np.cos(dump['theta'])
-  x = flatten_xz(x, dump['hdr'], flip=True)
-  z = flatten_xz(z, dump['hdr'])
-  var = flatten_xz(var, dump['hdr'])
+  x = flatten_xz(x, dump, flip=True)
+  z = flatten_xz(z, dump)
+  var = flatten_xz(var, dump)
   mesh = ax.pcolormesh(x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
       shading='gouraud')
-  circle1=plt.Circle((0,0),dump['hdr']['Reh'],color='k'); 
+  circle1=plt.Circle((0,0),dump['Reh'],color='k'); 
   ax.add_artist(circle1)
   if cbar:
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
+    bar = plt.colorbar(mesh, cax=cax, ticks=ticks)
     if label:
-      plt.colorbar(mesh, cax=cax, label=label, ticks=ticks)
-    else:
-      plt.colorbar(mesh, cax=cax, ticks=ticks)
+      bar.set_label(label)
   ax.set_aspect('equal')
   ax.set_xlabel('x/M'); ax.set_ylabel('z/M')
   ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
 
 def plot_xy(ax, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
   label=None, ticks=None):
-  x = (dump['r']*np.sin(dump['phi']))[:,dump['hdr']['N2']/2,:]
-  y = (dump['r']*np.cos(dump['phi']))[:,dump['hdr']['N2']/2,:]
-  x = flatten_xy(x, dump['hdr'])
-  y = flatten_xy(y, dump['hdr'])
-  var = flatten_xy(var[:,dump['hdr']['N2']/2,:], dump['hdr'])
+  x = (dump['r']*np.sin(dump['phi']))[:,dump['N2']/2,:]
+  y = (dump['r']*np.cos(dump['phi']))[:,dump['N2']/2,:]
+  x = flatten_xy(x, dump)
+  y = flatten_xy(y, dump)
+  var = flatten_xy(var[:,dump['N2']/2,:], dump)
   mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
       shading='gouraud')
-  circle1=plt.Circle((0,0),dump['hdr']['Reh'],color='k'); 
+  circle1=plt.Circle((0,0),dump['Reh'],color='k'); 
   ax.add_artist(circle1)
   if cbar:
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
+    bar = plt.colorbar(mesh, cax=cax, ticks=ticks)
     if label:
-      plt.colorbar(mesh, cax=cax, label=label, ticks=ticks)
-    else:
-      plt.colorbar(mesh, cax=cax, ticks=ticks)
+      bar.set_label(label)
   ax.set_aspect('equal')
   ax.set_xlabel('x/M'); ax.set_ylabel('y/M')
   ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)

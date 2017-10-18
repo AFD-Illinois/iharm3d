@@ -110,6 +110,9 @@ def load_dump(filename):
     dump['up'] = dump['UU'] - dump['ue']
     dump['Thetap'] = (hdr['gamp']-1.)*dump['up']/dump['RHO']
     dump['TpTe'] = (hdr['gamp']-1.)*dump['up']/((hdr['game']-1.)*dump['ue'])
+    
+  # Append header variables to flatten access
+  dump.update(hdr)
 
   dumpfile.close()
 

@@ -31,20 +31,29 @@ def load_hdr(fname):
           'tf']
   if dfile['ELECTRONS'][0]:
     keys += ['game', 'gamp']
-  if dfile['RADIATION'][0]:
-    keys += ['tp_over_te']
-    keys += ['L_unit', 'T_unit', 'M_unit', 'RHO_unit', 'Ne_unit', 'B_unit',
-             'U_unit', 'Thetae_unit']
-    keys += ['MAXNSCATT', 'NUBINS', 'numin', 'numax']
+  
+  try:
+    if dfile['RADIATION'][0]:
+      keys += ['tp_over_te']
+      keys += ['L_unit', 'T_unit', 'M_unit', 'RHO_unit', 'Ne_unit', 'B_unit',
+               'U_unit', 'Thetae_unit']
+      keys += ['MAXNSCATT', 'NUBINS', 'numin', 'numax']
+      has_radiation = True
+  except KeyError:
+    has_radiation = False
+  
   if dfile['METRIC'][0] == 'MKS':
     keys += ['Rin', 'Rout', 'Reh', 'Risco', 'hslope', 'a', 'poly_xt',
              'poly_alpha', 'mks_smooth']
-    if dfile['RADIATION'][0]:
+    if has_radiation:
       keys += ['Mbh', 'mbh']
 
   hdr = {}
   for key in keys:
-    hdr[key] = dfile[key][0]
+    try:
+      hdr[key] = dfile[key][0]
+    except KeyError:
+      hdr[key] = False
 
   if hdr['METRIC'] == 'MKS' and hdr['RADIATION'] == True:
     hdr['LEdd'] = 4.*np.pi*units['GNEWT']*hdr['Mbh']*units['MP']*units['CL']/units['THOMSON']
@@ -65,6 +74,7 @@ def load_geom(hdr):
   phi = np.zeros([N1, N2, N3])
   gcov = np.zeros([N1, N2, 4, 4])
   gcon = np.zeros([N1, N2, 4, 4])
+  gdet = np.zeros([N1, N2, N3])
 
   for i in xrange(N1):
     for j in xrange(N2):
@@ -72,6 +82,7 @@ def load_geom(hdr):
         if hdr['METRIC'] == 'MKS':
           X = harm_coord(hdr, i, j, k)
           r[i,j,k], th[i,j,k], phi[i,j,k] = bl_coord(hdr, X)
+          gdet[i,j,k] = np.sqrt(-np.linalg.det(get_gcov(hdr, X)))
       gcov[i,j,:,:] = get_gcov(hdr, X)
       gcon[i,j,:,:] = get_gcon(gcov[i,j,:,:])
 
@@ -87,8 +98,6 @@ def load_geom(hdr):
       x[:,0,:] = 0.
       x[:,-1,:] = 0.
 
-  gdet = np.sqrt(-np.linalg.det(gcov))
-
   geom = {}
   geom['r'] = r
   geom['th'] = th
@@ -102,8 +111,9 @@ def load_geom(hdr):
 
   return geom
 
-def load_dump(fname, geom):
+def load_dump(fname):
   hdr = load_hdr(fname)
+  geom = load_geom(hdr)
 
   dfile = h5py.File(fname, 'r')
 
@@ -125,8 +135,13 @@ def load_dump(fname, geom):
   for key in keys:
     dump[key] = dfile[key][()]
   dump['t'] = dfile['t'][0]
-  dump['mass'] = dfile['mass'][0]
-  dump['egas'] = dfile['egas'][0]
+
+  try:
+    dump['mass'] = dfile['mass'][0]
+    dump['egas'] = dfile['egas'][0]
+  except KeyError, e:
+    print e
+  
   if hdr['RADIATION']:
     dump['ur'] = -dfile['erad'][0]
 
@@ -144,10 +159,27 @@ def load_dump(fname, geom):
   dump['bsq'] = (bcon*bcov).sum(axis=-1)
 
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
+  
+  dump.update(geom)
 
   dfile.close()
 
   return dump
+
+# TODO TODO match this with the real logfile
+def load_log(path):
+  diag = {}
+  dfile = np.loadtxt(os.path.join(path, 'diag.out')).transpose()
+  diag['t'] = dfile[0]
+  diag['mdot'] = dfile[6]
+  diag['edot'] = dfile[7]
+  diag['ldot'] = dfile[8]
+  diag['mass'] = dfile[9]
+  diag['egas'] = dfile[10]
+  diag['Phi'] = dfile[11]
+  diag['phi'] = dfile[12]
+  diag['jet_EM_flux'] = dfile[13]
+  diag['divbmax'] = dfile[14]
 
 def load_diag(path):
   diag = {}
