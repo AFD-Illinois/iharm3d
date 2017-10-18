@@ -131,9 +131,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     cmax[k][j][i] = fabs(MY_MAX(MY_MAX(0., cmaxL[k][j][i]), cmaxR[k][j][i]));
     cmin[k][j][i] = fabs(MY_MAX(MY_MAX(0., -cminL[k][j][i]), -cminR[k][j][i]));
     ctop[k][j][i] = MY_MAX(cmax[k][j][i], cmin[k][j][i]);
-    // TODO Does this just mean no B field?
-    // Answer: almost certainly not
-    //if (isnan(1./ctop[k][j][i])) {printf("ctop is 0 at: %i %i %i (%i)\nExiting.\n", k,j,i,dir); exit(-1);}
+    if (isnan(1./ctop[k][j][i])) {printf("ctop is 0 at: %i %i %i (%i)\nExiting.\n", k,j,i,dir); exit(-1);}
   }
   timer_stop(TIMER_LR_CMAX);
 
