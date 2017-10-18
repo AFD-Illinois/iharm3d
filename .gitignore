@@ -55,6 +55,9 @@ Thumbs.db
 *.bak
 *.swp
 *~
+.cproject
+.project
+.settings/
 
 # Build directory #
 ###################
@@ -68,3 +71,4 @@ bhlight
 # Output #
 ##########
 *.dat
+dumps/
