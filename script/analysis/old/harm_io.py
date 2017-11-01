@@ -118,3 +118,89 @@ def load_dump(filename):
 
   return dump
 
+def load_log(path):
+  diag = {}
+  dfile = np.loadtxt(os.path.join(path, 'diag.out')).transpose()
+  diag['t'] = dfile[0]
+  diag['rmed'] = dfile[1]
+  diag['pp'] = dfile[2]
+  diag['e'] = dfile[3]
+  diag['mdot'] = dfile[4]
+  diag['edot'] = dfile[5]
+  diag['ldot'] = dfile[6]
+  diag['divbmax'] = dfile[7]
+  
+  return diag
+
+## Coordinate calculations
+
+def add_geom(dump):
+  pass
+
+def get_gcov(hdr, X):
+  gcov = np.zeros([4,4])
+  if hdr['METRIC'] == 'MINKOWSKI':
+    gcov[0,0] = -1
+    gcov[1,1] = 1
+    gcov[2,2] = 1
+    gcov[3,3] = 1
+  elif hdr['METRIC'] == 'MKS':
+    a = hdr['a']
+    hslope = hdr['hslope']
+    poly_alpha = hdr['poly_alpha']
+    poly_xt = hdr['poly_xt']
+    mks_smooth = hdr['mks_smooth']
+    startx1 = hdr['startx1']
+    poly_norm = 0.5*np.pi*1./(1. + 1./(poly_alpha + 1.)*1./pow(poly_xt, poly_alpha));
+
+    r, th, phi, = bl_coord(hdr, X)
+    cth = np.cos(th)
+    sth = np.sin(th)
+    s2 = sth**2
+    rho2 = r**2 + a**2*cth**2
+
+    # KS coordinates
+    gcovKS = np.zeros([4,4])
+    gcovKS[0,0] = -1. + 2.*r/rho2
+    gcovKS[0,1] = 2.*r/rho2
+    gcovKS[0,3] = -2.*a*r*s2/rho2
+
+    gcovKS[1,0] = gcovKS[0,1]
+    gcovKS[1,1] = 1. + 2.*r/rho2
+    gcovKS[1,3] = -a*s2*(1. + 2.*r/rho2)
+
+    gcovKS[2,2] = rho2
+
+    gcovKS[3,0] = gcovKS[0,3]
+    gcovKS[3,1] = gcovKS[1,3]
+    gcovKS[3,3] = s2*(rho2 + a*a*s2*(1. + 2.*r/rho2))
+
+    # Convert from KS to MKS
+    trans = np.zeros([4,4])
+
+    trans[0,0] = 1.
+    trans[1,1] = np.exp(X[1])
+    trans[2,1] = -np.exp(mks_smooth*(startx1-X[1]))*mks_smooth*(
+      np.pi/2. -
+      np.pi*X[2] +
+      poly_norm*(2.*X[2]-1.)*(1+(pow((-1.+2*X[2])/poly_xt,poly_alpha))/(1 + poly_alpha)) -
+      1./2.*(1. - hslope)*np.sin(2.*np.pi*X[2]))
+    trans[2,2] = (np.pi + (1. - hslope)*np.pi*np.cos(2.*np.pi*X[2]) +
+      np.exp(mks_smooth*(startx1-X[1]))*(
+        -np.pi +
+        2.*poly_norm*(1. + pow((2.*X[2]-1.)/poly_xt,poly_alpha)/(poly_alpha+1.)) +
+        (2.*poly_alpha*poly_norm*(2.*X[2]-1.)*pow((2.*X[2]-1.)/poly_xt,poly_alpha-1.))/((1.+poly_alpha)    *poly_xt) -
+        (1.-hslope)*np.pi*np.cos(2.*np.pi*X[2])))
+    trans[3,3] = 1.
+
+    for mu in xrange(4):
+      for nu in xrange(4):
+        for lam in xrange(4):
+          for kap in xrange(4):
+            gcov[mu,nu] += gcovKS[lam,kap]*trans[lam,mu]*trans[kap,nu]
+
+  return gcov
+
+def get_gcon(gcov):
+  return np.linalg.inv(gcov)
+

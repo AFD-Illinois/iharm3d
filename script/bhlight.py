@@ -22,7 +22,7 @@ try:
 except ImportError:
   print("Failed to import HDF5 Library. File I/O will be unavailable")
 import units
-cgs = units.get_cgs()
+cgs = units.get_dict()
 import util
 import config
 

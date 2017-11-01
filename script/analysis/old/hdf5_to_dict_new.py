@@ -62,13 +62,9 @@ def load_hdr(fname):
 
   dfile.close()
 
-  print "Size:", hdr['N1'], hdr['N2'], hdr['N3']
-  print "Resolution:", hdr['startx1'], hdr['dx1'], hdr['startx2'], hdr['dx2'], hdr['startx3'], hdr['dx3']
-  print "MKS a, hslope, poly_xt, poly_alpha, mks_smooth:", hdr['a'], hdr['hslope'], hdr['poly_xt'], hdr['poly_alpha'], hdr['mks_smooth']
-
   return hdr
 
-def load_geom(hdr, fname):
+def load_geom(hdr, dump):
   N1 = hdr['N1']
   N2 = hdr['N2']
   N3 = hdr['N3']
@@ -76,34 +72,33 @@ def load_geom(hdr, fname):
   r = np.zeros([N1, N2, N3])
   th = np.zeros([N1, N2, N3])
   phi = np.zeros([N1, N2, N3])
-  gcov = np.zeros([N1, N2, 4, 4])
-  gcon = np.zeros([N1, N2, 4, 4])
-  gdet = np.zeros([N1, N2])
+  #gcov = np.zeros([N1, N2, 4, 4])
+  #gcon = np.zeros([N1, N2, 4, 4])
+  #gdet = np.zeros([N1, N2, N3])
 
-  print 'Loading geometry...'
-  for k in xrange(N3):
-    print '%i' % k,; sys.stdout.flush()
-    for j in xrange(N2):
-      for i in xrange(N1):
-        if hdr['METRIC'] == 'MKS':
-          X = harm_coord(hdr, i, j, k)
-          r[k,j,i], th[k,j,i], phi[k,j,i] = bl_coord(hdr, X)
-      X = harm_coord(hdr, i, j, 0)
-      gcov[j,i,:,:] = get_gcov(hdr, X)
-      gcon[j,i,:,:] = get_gcon(gcov[j,i,:,:])
-  print '\nGeometry loaded'
+  # Old way of getting coords
+  # for i in xrange(N1):
+  #   for j in xrange(N2):
+  #     for k in xrange(N3):
+  #       if hdr['METRIC'] == 'MKS':
+  #         X = harm_coord(hdr, i, j, k)
+  #         r[i,j,k], th[i,j,k], phi[i,j,k] = bl_coord(hdr, X)
+  #         gdet[i,j,k] = np.sqrt(-np.linalg.det(get_gcov(hdr, X)))
+  #     gcov[i,j,:,:] = get_gcov(hdr, X)
+  #     gcon[i,j,:,:] = get_gcon(gcov[i,j,:,:])
 
-  #print gcov, gcon
+  # New way
+  r[:,:,:]= dump['r'][:,:,:]
+  th[:,:,:] = dump['theta'][:,:,:]
+  phi[:,:,:] = dump['phi'][:,:,:]
+
+  #gcon[:,:,:] = dump['gcon'][:,:,:]
+  #gcov[:,:,:] = dump['gcov'][:,:,:]
+  #gdet[:,:,:] = dump['gdet'][:,:,:]
 
   if hdr['METRIC'] == 'MKS':
     if hdr['N3'] == 1:
       phi = np.zeros([N1, N2, N3])
-
-    # TODO recalc as above rather than read old format
-    #dfile = h5py.File(fname, 'r')
-    #r[:,:,:]= dfile['r'][:,:,:]
-    #th[:,:,:] = dfile['theta'][:,:,:]
-    #phi[:,:,:] = dfile['phi'][:,:,:]
 
     x = r*np.sin(th)*np.cos(phi)
     y = r*np.sin(th)*np.sin(phi)
@@ -120,14 +115,18 @@ def load_geom(hdr, fname):
   geom['x'] = x
   geom['y'] = y
   geom['z'] = z
-  geom['gcov'] = gcov
-  geom['gcon'] = gcon
-  geom['gdet'] = gdet
+  #geom['gcov'] = gcov
+  #geom['gcon'] = gcon
+  #geom['gdet'] = gdet
 
   return geom
 
-def load_dump(hdr, geom, fname):
+def load_dump(fname):
+  hdr = load_hdr(fname)
+
   dfile = h5py.File(fname, 'r')
+
+  geom = load_geom(hdr, dfile)
 
   keys = ['RHO', 'UU', 'U1', 'U2', 'U3', 'B1', 'B2', 'B3']
   if hdr['ELECTRONS']:
@@ -166,11 +165,11 @@ def load_dump(hdr, geom, fname):
     dump['Thetae'] = (hdr['gam']-1.)*units['MP']/units['ME']*(
                      1./(1. + hdr['tp_over_te'])*dump['UU']/dump['RHO'])
 
-  ucon, ucov, bcon, bcov = get_state(dump, geom)
+  #ucon, ucov, bcon, bcov = get_state(dump, geom)
 
-  dump['bsq'] = (bcon*bcov).sum(axis=-1)
+  #dump['bsq'] = (bcon*bcov).sum(axis=-1)
 
-  dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
+  #dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
 
   dump.update(geom)
   dump.update(hdr)
@@ -192,6 +191,46 @@ def load_log(path):
   diag['ldot'] = dfile[6]
   diag['divbmax'] = dfile[7]
 
+  return diag
+
+def load_diag(path):
+  diag = {}
+  dfile = np.loadtxt(os.path.join(path, 'diag.out')).transpose()
+  diag['t'] = dfile[0]
+  diag['mdot'] = dfile[6]
+  diag['edot'] = dfile[7]
+  diag['ldot'] = dfile[8]
+  diag['mass'] = dfile[9]
+  diag['egas'] = dfile[10]
+  diag['Phi'] = dfile[11]
+  diag['phi'] = dfile[12]
+  diag['jet_EM_flux'] = dfile[13]
+  diag['divbmax'] = dfile[14]
+  if len(dfile) > 15:
+    diag['step_made']  = dfile[12]
+    diag['step_abs']   = dfile[13]
+    diag['step_scatt'] = dfile[14]
+    diag['step_lost']  = dfile[15]
+    diag['step_rec']   = dfile[16]
+    diag['step_tot']   = dfile[17]
+    diag['step_sent']  = dfile[18]
+    diag['step_rcvd']  = dfile[19]
+    diag['step_made_all']  = dfile[20]
+    diag['step_abs_all']   = dfile[21]
+    diag['step_scatt_all'] = dfile[22]
+    diag['step_lost_all']  = dfile[23]
+    diag['step_rec_all']   = dfile[24]
+    diag['step_tot_all']   = dfile[25]
+    diag['step_sent_all']  = dfile[26]
+    diag['step_rcvd_all']  = dfile[27]
+    diag['tune_emiss']  = dfile[28]
+    diag['tune_scatt']  = dfile[29]
+    diag['erad'] = dfile[30]
+    diag['lum'] = dfile[31]
+    diag['eff'] = dfile[32]
+
+  return diag
+
 def harm_coord(hdr, i, j, k):
   startx = [0, hdr['startx1'], hdr['startx2'], hdr['startx3']]
   dx = [0, hdr['dx1'], hdr['dx2'], hdr['dx3']]
@@ -211,23 +250,17 @@ def bl_coord(hdr, X):
   poly_xt = hdr['poly_xt']
   poly_alpha = hdr['poly_alpha']
   mks_smooth = hdr['mks_smooth']
-  startx1 = hdr['startx1']
+  poly_norm = 0.5*np.pi*1./(1. + 1./(poly_alpha + 1.)*1./pow(poly_xt, poly_alpha));
+  startx3 = hdr['startx3']
 
-  r = np.exp(X[1])
-  phi = X[3]
+  # Switched 1,3 due to coord change in harm
+  r = np.exp(X[3])
+  y = 2*X[2] - 1
+  thG = np.pi*X[2] + ((1. - hslope)/2.)*np.sin(2.*np.pi*X[2]);
+  thJ = poly_norm*y*(1. + pow(y/poly_xt,poly_alpha)/(poly_alpha+1.)) + 0.5*np.pi;
+  th = thG + np.exp(mks_smooth*(startx3 - X[3]))*(thJ - thG);
 
-  # Calculate theta differently depending on POLYTH
-  # TODO ask about this
-  if not poly_xt:
-    th = np.pi*X[2] + ((1. - hslope)/2.)*np.sin(2.*np.pi*X[2]);
-
-  else:
-    poly_norm = 0.5*np.pi*1./(1. + 1./(poly_alpha + 1.)*1./pow(poly_xt, poly_alpha));
-
-    y = 2*X[2] - 1
-    thG = np.pi*X[2] + ((1. - hslope)/2.)*np.sin(2.*np.pi*X[2]);
-    thJ = poly_norm*y*(1. + pow(y/poly_xt,poly_alpha)/(poly_alpha+1.)) + 0.5*np.pi;
-    th = thG + np.exp(mks_smooth*(startx1 - X[1]))*(thJ - thG);
+  phi = X[1]
 
   return r, th, phi
 
@@ -244,7 +277,8 @@ def get_gcov(hdr, X):
     poly_alpha = hdr['poly_alpha']
     poly_xt = hdr['poly_xt']
     mks_smooth = hdr['mks_smooth']
-    startx1 = hdr['startx1']
+    startx3 = hdr['startx3']
+    poly_norm = 0.5*np.pi*1./(1. + 1./(poly_alpha + 1.)*1./pow(poly_xt, poly_alpha));
 
     r, th, phi, = bl_coord(hdr, X)
     cth = np.cos(th)
@@ -252,73 +286,59 @@ def get_gcov(hdr, X):
     s2 = sth**2
     rho2 = r**2 + a**2*cth**2
 
+    # KS coordinates
+    gcovKS = np.zeros([4,4])
+    gcovKS[0,0] = -1. + 2.*r/rho2
+    gcovKS[0,1] = 2.*r/rho2
+    gcovKS[0,3] = -2.*a*r*s2/rho2
+
+    gcovKS[1,0] = gcovKS[0,1]
+    gcovKS[1,1] = 1. + 2.*r/rho2
+    gcovKS[1,3] = -a*s2*(1. + 2.*r/rho2)
+
+    gcovKS[2,2] = rho2
+
+    gcovKS[3,0] = gcovKS[0,3]
+    gcovKS[3,1] = gcovKS[1,3]
+    gcovKS[3,3] = s2*(rho2 + a*a*s2*(1. + 2.*r/rho2))
+
     # Convert from KS to MKS
-    # Ripped directly from coord.c
-    if poly_xt == False:
-      tfac = 1.
-      rfac = np.exp(X[1]) # dr/dx = r because exp
-      hfac = np.pi + (1. - hslope)*np.pi*np.cos(2.*np.pi*X[2]) # = dth/dx
-      pfac = 1.
+    trans = np.zeros([4,4])
 
-      gcov[0][0] = (-1. + 2.*r/rho2)*tfac*tfac
-      gcov[0][1] = (2. * r/rho2)*tfac*rfac
-      gcov[0][3] = (-2.*a*r*s2/rho2)*tfac*pfac
+    trans[0,0] = 1.
+    trans[1,1] = np.exp(X[3])
+    trans[2,1] = -np.exp(mks_smooth*(startx3-X[3]))*mks_smooth*(
+      np.pi/2. -
+      np.pi*X[2] +
+      poly_norm*(2.*X[2]-1.)*(1+(pow((-1.+2*X[2])/poly_xt,poly_alpha))/(1 + poly_alpha)) -
+      1./2.*(1. - hslope)*np.sin(2.*np.pi*X[2]))
+    trans[2,2] = (np.pi + (1. - hslope)*np.pi*np.cos(2.*np.pi*X[2]) +
+      np.exp(mks_smooth*(startx3-X[3]))*(
+        -np.pi +
+        2.*poly_norm*(1. + pow((2.*X[2]-1.)/poly_xt,poly_alpha)/(poly_alpha+1.)) +
+        (2.*poly_alpha*poly_norm*(2.*X[2]-1.)*pow((2.*X[2]-1.)/poly_xt,poly_alpha-1.))/((1.+poly_alpha)    *poly_xt) -
+        (1.-hslope)*np.pi*np.cos(2.*np.pi*X[2])))
+    trans[3,3] = 1.
 
-      gcov[1][0] = gcov[0][1]
-      gcov[1][1] = (1. + 2.*r/rho2)*rfac*rfac
-      gcov[1][3] = (-a*s2*(1. + 2.*r/rho2))*rfac*pfac
-
-      gcov[2][2] = rho2*hfac*hfac
-
-      gcov[3][0] = gcov[0][3]
-      gcov[3][1] = gcov[1][3]
-      gcov[3][3] = s2*(rho2 + a*a*s2*(1. + 2.*r/rho2))*pfac*pfac
-    else:
-      # KS coordinates
-      gcovKS = np.zeros([4,4])
-      gcovKS[0,0] = -1. + 2.*r/rho2
-      gcovKS[0,1] = 2.*r/rho2
-      gcovKS[0,3] = -2.*a*r*s2/rho2
-
-      gcovKS[1,0] = gcovKS[0,1]
-      gcovKS[1,1] = 1. + 2.*r/rho2
-      gcovKS[1,3] = -a*s2*(1. + 2.*r/rho2)
-
-      gcovKS[2,2] = rho2
-
-      gcovKS[3,0] = gcovKS[0,3]
-      gcovKS[3,1] = gcovKS[1,3]
-      gcovKS[3,3] = s2*(rho2 + a*a*s2*(1. + 2.*r/rho2))
-
-      poly_norm = 0.5*np.pi*1./(1. + 1./(poly_alpha + 1.)*1./pow(poly_xt, poly_alpha));
-
-      trans = np.zeros([4,4])
-
-      trans[0,0] = 1.
-      trans[1,1] = np.exp(X[1])
-      trans[2,1] = -np.exp(mks_smooth*(startx1-X[1]))*mks_smooth*(
-        np.pi/2. -
-        np.pi*X[2] +
-        poly_norm*(2.*X[2]-1.)*(1+(pow((-1.+2*X[2])/poly_xt,poly_alpha))/(1 + poly_alpha)) -
-        1./2.*(1. - hslope)*np.sin(2.*np.pi*X[2]))
-      trans[2,2] = (np.pi + (1. - hslope)*np.pi*np.cos(2.*np.pi*X[2]) +
-        np.exp(mks_smooth*(startx1-X[1]))*(
-          -np.pi +
-          2.*poly_norm*(1. + pow((2.*X[2]-1.)/poly_xt,poly_alpha)/(poly_alpha+1.)) +
-          (2.*poly_alpha*poly_norm*(2.*X[2]-1.)*pow((2.*X[2]-1.)/poly_xt,poly_alpha-1.))/((1.+poly_alpha)    *poly_xt) -
-          (1.-hslope)*np.pi*np.cos(2.*np.pi*X[2])))
-      trans[3,3] = 1.
-
-      for mu in xrange(4):
-        for nu in xrange(4):
-          for lam in xrange(4):
-            for kap in xrange(4):
-              gcov[mu,nu] += gcovKS[lam,kap]*trans[lam,mu]*trans[kap,nu]
+    for mu in xrange(4):
+      for nu in xrange(4):
+        for lam in xrange(4):
+          for kap in xrange(4):
+            gcov[mu,nu] += gcovKS[lam,kap]*trans[lam,mu]*trans[kap,nu]
 
   return gcov
 
 def get_gcon(gcov):
   return np.linalg.inv(gcov)
+
+def lower(vcon, gcov):
+  vcov = np.zeros(4)
+
+  for mu in xrange(4):
+    for nu in xrange(4):
+      vcov[mu] += gcov[mu,nu]*vcon[nu]
+
+  return vcov
 
 def get_state(dump, geom):
   hdr = dump['hdr']

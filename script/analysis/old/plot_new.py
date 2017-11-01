@@ -54,10 +54,9 @@ cm_data = [[0.2081, 0.1663, 0.5292], [0.2116238095, 0.1897809524, 0.5776761905],
 parula = LinearSegmentedColormap.from_list('parula', cm_data)
 
 # GET XZ SLICE OF GRID DATA
-# GET XZ SLICE OF GRID DATA
 def flatten_xz(array, hdr, flip=False):
     if flip:
-        sign = 1 ## TODO why does this work
+        sign = -1
     else:
         sign = 1
     flat = np.zeros([2*hdr['N1'],hdr['N2']])
@@ -73,85 +72,48 @@ def flatten_xz(array, hdr, flip=False):
 
 # GET XY SLICE OF GRID DATA
 def flatten_xy(array, hdr):
-  #return np.vstack((array.transpose(),array.transpose()[0])).transpose()
-  return np.vstack((array, array[0]))
+  return np.vstack((array.transpose(),array.transpose()[0])).transpose()
 
-def plot_xz(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
+def plot_xz(ax, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
   label=None, ticks=None):
-  x = geom['x']
-  z = geom['z']
-  if dump['hdr']['N3'] > 1.:
-    x = flatten_xz(x, dump['hdr'], flip=True)
-    z = flatten_xz(z, dump['hdr'])
-    var = flatten_xz(var, dump['hdr'])
-  else:
-    x = x[:,:,0]
-    z = z[:,:,0]
-    var = var[:,:,0]
+  x = dump['x'] #dump['r']*np.sin(dump['th'])
+  z = dump['z'] #dump['r']*np.cos(dump['th'])
+  x = flatten_xz(x, dump) #, flip=True)
+  z = flatten_xz(z, dump)
+  var = flatten_xz(var, dump)
   mesh = ax.pcolormesh(x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
       shading='gouraud')
-  circle1=plt.Circle((0,0),dump['hdr']['Reh'],color='k');
+  circle1=plt.Circle((0,0),dump['Reh'],color='k');
   ax.add_artist(circle1)
   if cbar:
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
+    bar = plt.colorbar(mesh, cax=cax, ticks=ticks)
     if label:
-      plt.colorbar(mesh, cax=cax, ticks=ticks).set_label(label)
-    else:
-      plt.colorbar(mesh, cax=cax, ticks=ticks)
+      bar.set_label(label)
   ax.set_aspect('equal')
   ax.set_xlabel('x/M'); ax.set_ylabel('z/M')
-  #ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
+  ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
 
-def overlay_field(ax, geom, dump):
-  from scipy.integrate import trapz
-  hdr = dump['hdr']
-  N1 = hdr['N1']; N2 = hdr['N2']
-  x = flatten_xz(geom['x'], hdr).transpose()
-  z = flatten_xz(geom['z'], hdr).transpose()
-  A_phi = np.zeros([N2, 2*N1])
-  gdet = geom['gdet'].transpose()
-  B1 = dump['B1'].mean(axis=-1).transpose()
-  B2 = dump['B2'].mean(axis=-1).transpose()
-  for j in xrange(N2):
-    for i in xrange(N1):
-      A_phi[j,N1-1-i] = (trapz(gdet[j,:i]*B2[j,:i], dx=hdr['dx1']) -
-                         trapz(gdet[:j, i]*B1[:j, i], dx=hdr['dx2']))
-      A_phi[j,i+N1] = (trapz(gdet[j,:i]*B2[j,:i], dx=hdr['dx1']) -
-                         trapz(gdet[:j, i]*B1[:j, i], dx=hdr['dx2']))
-  A_phi -= (A_phi[N2/2-1,-1] + A_phi[N2/2,-1])/2.
-  Apm = np.fabs(A_phi).max()
-  if np.fabs(A_phi.min()) > A_phi.max():
-    A_phi *= -1.
-  NLEV = 20
-  levels = np.concatenate((np.linspace(-Apm,0,NLEV)[:-1],
-                           np.linspace(0,Apm,NLEV)[1:]))
-  ax.contour(x, z, A_phi, levels=levels, colors='k')
-
-def plot_xy(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
+def plot_xy(ax, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
   label=None, ticks=None):
-  hdr = dump['hdr']
-  x = geom['x']
-  y = geom['y']
-  #x = geom['x'][:,hdr['N2']/2,:]
-  #y = geom['y'][:,hdr['N2']/2,:]
-  #var = var[:,dump['hdr']['N2']/2,:]
-  x = flatten_xy(x[:,dump['hdr']['N2']/2,:], dump['hdr'])
-  y = flatten_xy(y[:,dump['hdr']['N2']/2,:], dump['hdr'])
-  var = flatten_xy(var[:,dump['hdr']['N2']/2,:], dump['hdr'])
+  x = dump['x'][:,dump['N2']/2,:] #(dump['r']*np.sin(dump['phi']))[:,dump['N2']/2,:]
+  y = dump['y'][:,dump['N2']/2,:] #(dump['r']*np.cos(dump['phi']))[:,dump['N2']/2,:]
+  x = flatten_xy(x, dump)
+  y = flatten_xy(y, dump)
+  var = flatten_xy(var[:,dump['N2']/2,:], dump)
   mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
       shading='gouraud')
-  circle1=plt.Circle((0,0),dump['hdr']['Reh'],color='k');
+  circle1=plt.Circle((0,0),dump['Reh'],color='k');
   ax.add_artist(circle1)
   if cbar:
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
+    bar = plt.colorbar(mesh, cax=cax, ticks=ticks)
     if label:
-      plt.colorbar(mesh, cax=cax, ticks=ticks).set_label(label)
-    else:
-      plt.colorbar(mesh, cax=cax, ticks=ticks)
+      bar.set_label(label)
   ax.set_aspect('equal')
   ax.set_xlabel('x/M'); ax.set_ylabel('y/M')
-  #ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
+  ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)

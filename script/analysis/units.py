@@ -18,5 +18,8 @@ units['MSOLAR'] = 1.989e33
 units['RSOLAR'] = 6.96e10
 units['LSOLAR'] = 3.827e33
 
+def get_cgs():
+  return units
+  
 def get_dict():
   return units
