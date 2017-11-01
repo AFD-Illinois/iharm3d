@@ -266,10 +266,12 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
         }
       }
     }
-  } // global_start[2] == 0
-/*
+    //} // global_start[2] == 0
+
     #if X3L_BOUND == PERIODIC && X3R_BOUND == PERIODIC
-    if (global_stop[2] == 0) {
+    if (global_stop[2] == N3TOT) { // Both first and last node
+      puts("Enforcing periodic bounds in X3");
+
       #pragma omp parallel for collapse(2)
       KSLOOP(-NG, -1) {
         JSLOOP(-NG, N2 - 1 + NG) {
@@ -291,7 +293,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       }
     }
     #endif
-  } // global_start[2] == 0*/
+  } // global_start[2] == 0
 
   if(global_stop[2] == N3TOT) {
     #pragma omp parallel for collapse(2)
@@ -325,7 +327,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   } // global_stop[2] == N3TOT
   //#endif // N3
-  
+
   #if METRIC == MKS
   //ucon_calc(geom, state);
   if(global_start[0] == 0) {
@@ -351,7 +353,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   }
   #endif
-  
+
   timer_stop(TIMER_BOUND);
 }
 
@@ -366,7 +368,7 @@ void inflow_check(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   //ucon_calc(Pr, geom, ucon);
   ucon_calc(G, S, i, j, k, CENT);
 
-  if (((S->ucon[1][k][j][i] > 0.) && (type == 0)) || 
+  if (((S->ucon[1][k][j][i] > 0.) && (type == 0)) ||
       ((S->ucon[1][k][j][i] < 0.) && (type == 1)))
   {
     //double gamma = get_mhd_gamma(G, S, i, j, k, CENT);
@@ -409,7 +411,7 @@ void fix_flux(struct FluidFlux *F)
 {
   if (global_start[0] == 0) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3) { 
+    KSLOOP(0, N3) {
       JSLOOP(0, N2) {
         F->X1[RHO][k][j][0+NG] = MY_MIN(F->X1[RHO][k][j][0+NG], 0.);
       }
@@ -448,4 +450,3 @@ void fix_flux(struct FluidFlux *F)
   }
 }
 #endif // METRIC
-

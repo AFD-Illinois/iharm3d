@@ -256,10 +256,10 @@ extern int failed;
 extern int lim;
 
 // Diagnostics
-//extern double mdot;
-//extern double edot;
-//extern double ldot;
-//extern int icurr, jcurr, kcurr;
+extern double mdot;
+extern double edot;
+extern double ldot;
+extern int icurr, jcurr, kcurr;
 
 // Parallelism
 extern int nthreads;
