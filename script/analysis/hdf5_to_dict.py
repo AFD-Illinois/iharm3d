@@ -64,7 +64,8 @@ def load_hdr(fname):
 
   print "Size:", hdr['N1'], hdr['N2'], hdr['N3']
   print "Resolution:", hdr['startx1'], hdr['dx1'], hdr['startx2'], hdr['dx2'], hdr['startx3'], hdr['dx3']
-  print "MKS a, hslope, poly_xt, poly_alpha, mks_smooth:", hdr['a'], hdr['hslope'], hdr['poly_xt'], hdr['poly_alpha'], hdr['mks_smooth']
+  if hdr['METRIC'] == 'MKS':
+    print "MKS a, hslope, poly_xt, poly_alpha, mks_smooth:", hdr['a'], hdr['hslope'], hdr['poly_xt'], hdr['poly_alpha'], hdr['mks_smooth']
 
   return hdr
 
@@ -73,37 +74,38 @@ def load_geom(hdr, fname):
   N2 = hdr['N2']
   N3 = hdr['N3']
 
-  r = np.zeros([N1, N2, N3])
-  th = np.zeros([N1, N2, N3])
-  phi = np.zeros([N1, N2, N3])
+  if hdr['METRIC'] == 'MKS':
+    r = np.zeros([N1, N2, N3])
+    th = np.zeros([N1, N2, N3])
+    phi = np.zeros([N1, N2, N3])
+  else:
+    x = np.zeros([N1, N2, N3])
+    y = np.zeros([N1, N2, N3])
+    z = np.zeros([N1, N2, N3])
   gcov = np.zeros([N1, N2, 4, 4])
   gcon = np.zeros([N1, N2, 4, 4])
   gdet = np.zeros([N1, N2])
 
   print 'Loading geometry...'
-  for k in xrange(N3):
-    print '%i' % k,; sys.stdout.flush()
+  for i in xrange(N1):
+    print '%i' % i,; sys.stdout.flush()
     for j in xrange(N2):
-      for i in xrange(N1):
+      for k in xrange(N3):
         if hdr['METRIC'] == 'MKS':
           X = harm_coord(hdr, i, j, k)
-          r[k,j,i], th[k,j,i], phi[k,j,i] = bl_coord(hdr, X)
+          r[i,j,k], th[i,j,k], phi[i,j,k] = bl_coord(hdr, X)
+        else:
+          X = harm_coord(hdr, i, j, k)
+          x[k,j,i], y[k,j,i], z[k,j,i] = X[1], X[2], X[3]
       X = harm_coord(hdr, i, j, 0)
-      gcov[j,i,:,:] = get_gcov(hdr, X)
-      gcon[j,i,:,:] = get_gcon(gcov[j,i,:,:])
+      gcov[i,j,:,:] = get_gcov(hdr, X)
+      gcon[i,j,:,:] = get_gcon(gcov[i,j,:,:])
+           
   print '\nGeometry loaded'
-
-  #print gcov, gcon
 
   if hdr['METRIC'] == 'MKS':
     if hdr['N3'] == 1:
       phi = np.zeros([N1, N2, N3])
-
-    # TODO recalc as above rather than read old format
-    #dfile = h5py.File(fname, 'r')
-    #r[:,:,:]= dfile['r'][:,:,:]
-    #th[:,:,:] = dfile['theta'][:,:,:]
-    #phi[:,:,:] = dfile['phi'][:,:,:]
 
     x = r*np.sin(th)*np.cos(phi)
     y = r*np.sin(th)*np.sin(phi)
@@ -114,9 +116,10 @@ def load_geom(hdr, fname):
       x[:,-1,:] = 0.
 
   geom = {}
-  geom['r'] = r
-  geom['th'] = th
-  geom['phi'] = phi
+  if hdr['METRIC'] == 'MKS':
+    geom['r'] = r
+    geom['th'] = th
+    geom['phi'] = phi
   geom['x'] = x
   geom['y'] = y
   geom['z'] = z
@@ -145,7 +148,7 @@ def load_dump(hdr, geom, fname):
   dump = {}
   dump['hdr'] = hdr
   for key in keys:
-    dump[key] = dfile[key][()]
+    dump[key] = (dfile[key][()]).transpose()
   dump['t'] = dfile['t'][0]
 
   try:

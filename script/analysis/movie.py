@@ -68,41 +68,42 @@ def plot(args):
   bplt.overlay_field(ax, geom, dump)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
   
+#   ax = plt.subplot(2,2,2)
+#   bplt.plot_xz(ax, geom, np.log10(dump['bsq']), dump,
+#     vmin=-2, vmax=2, label='bsq', cmap='RdBu_r')
+#   bplt.overlay_field(ax, geom, dump)
+#   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+
   ax = plt.subplot(2,2,2)
-  bplt.plot_xz(ax, geom, np.log10(dump['bsq']), dump,
-    vmin=-2, vmax=2, label='bsq', cmap='RdBu_r')
+  bplt.plot_xz(ax, geom, np.log10(dump['beta']), dump,
+    vmin=-2, vmax=2, label='beta', cmap='RdBu_r')
   bplt.overlay_field(ax, geom, dump)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
-
-#  ax = plt.subplot(2,2,2)
-#  bplt.plot_xz(ax, geom, np.log10(dump['beta']), dump,
-#    vmin=-2, vmax=2, label='beta', cmap='RdBu_r')
-#  bplt.overlay_field(ax, geom, dump)
-#  ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
  
   ax = plt.subplot(2,2,3)
   bplt.plot_xy(ax, geom, np.log10(dump['RHO']), dump,
      vmin=-4, vmax=0, label='RHO')
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
   
-  ax = plt.subplot(2,2,4)
-  bplt.plot_xy(ax, geom, np.log10(dump['bsq']), dump,
-     vmin=-2, vmax=2, label='bsq', cmap='RdBu_r')
-  ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+#   ax = plt.subplot(2,2,4)
+#   bplt.plot_xy(ax, geom, np.log10(dump['bsq']), dump,
+#      vmin=-2, vmax=2, label='bsq', cmap='RdBu_r')
+#   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
   
-#  ax = plt.subplot(2,2,4)
-#  bplt.plot_xy(ax, geom, np.log10(dump['beta']), dump,
-#     vmin=-2, vmax=2, label='beta', cmap='RdBu_r')
-#  ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+  ax = plt.subplot(2,2,4)
+  bplt.plot_xy(ax, geom, np.log10(dump['beta']), dump,
+     vmin=-2, vmax=2, label='beta', cmap='RdBu_r')
+  ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
   #ax.pcolormesh(dump['X1'][:,:,0], dump['X2'][:,:,0], dump['RHO'][:,:,0])
   plt.savefig(imname, bbox_inches='tight', dpi=100)
   plt.close(fig)
 
 # Test plot so that backtraces work
+# And for quicker turnaround
 if debug:
     plot(0)
-    plot(1)
+    plot(100)
     exit(0)
 
 import multiprocessing
