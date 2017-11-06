@@ -48,7 +48,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
             state->P[B1][k][j][i] *= rescale;
             state->P[B2][k][j][i] *= rescale;
             state->P[B3][k][j][i] *= rescale;
-            #elif X1L_BOUND == PERIODIC
+            #elif 0 //X1L_BOUND == PERIODIC
             int iz = N1 + i;
             PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
             pflag[k][j][i] = pflag[k][j][iz];
@@ -58,7 +58,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
             #elif X1L_BOUND == USER
             printf("X1L_BOUND choice USER not supported\n", X1L_BOUND);
             exit(-1);
-            #else
+	    #elif X1L_BOUND != PERIODIC
             printf("X1L_BOUND choice %i not supported\n", X1L_BOUND);
             exit(-1);
             #endif
@@ -67,6 +67,32 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
         }
       }
     }
+
+    #if X1L_BOUND == PERIODIC && X1R_BOUND == PERIODIC
+    if (global_stop[1] == N1TOT) {
+      #pragma omp parallel for collapse(2)
+      KSLOOP(-NG, N3 - 1 + NG) {
+	JSLOOP(-NG, N2 - 1 + NG) {
+	  ISLOOP(-NG, -1) {
+	    int iz = N2 + i;
+	    PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
+	    pflag[k][j][i] = pflag[k][j][iz];
+	  }
+	}
+      }
+      #pragma omp parallel for collapse(2)
+      KSLOOP(-NG, N3 - 1 + NG) {
+	JSLOOP(-NG, N2 - 1 + NG) {
+	  ISLOOP(N1, N1 - 1 + NG) {
+	    int iz = i - N2;
+	    PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
+	    pflag[k][j][i] = pflag[k][j][iz];
+	  }
+	}
+      }
+    }
+    #endif
+
   } // global_start[0] == 0
 
   if(global_stop[0] == N1TOT) {
@@ -89,7 +115,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
             state->P[B1][k][j][i] *= rescale;
             state->P[B2][k][j][i] *= rescale;
             state->P[B3][k][j][i] *= rescale;
-            #elif X1R_BOUND == PERIODIC
+            #elif 0 //X1R_BOUND == PERIODIC
             int iz = i - N1;
             PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
             pflag[k][j][i] = pflag[k][j][iz];
@@ -99,7 +125,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
             #elif X1R_BOUND == USER
             printf("X1R_BOUND choice USER not supported\n");
             exit(-1);
-            #else
+	    #elif X1R_BOUND != PERIODIC
             printf("X1R_BOUND choice %i not supported\n", X1R_BOUND);
             exit(-1);
             #endif
@@ -152,7 +178,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
           #elif X2L_BOUND == USER
           printf("X2L_BOUND choice USER not supported\n");
           exit(-1);
-          #elif X1L_BOUND != PERIODIC
+          #elif X2L_BOUND != PERIODIC
           printf("X2L_BOUND choice %i not supported\n", X2L_BOUND);
           exit(-1);
           #endif
@@ -161,9 +187,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
         }
       }
     }
-  } // global_start[1] == 0
+    //} // global_start[1] == 0
 
-/*
     // Treat periodic bounds separately in presence of MPI
     #if X2L_BOUND == PERIODIC && X2R_BOUND == PERIODIC
     if (global_stop[1] == N2TOT) {
@@ -177,10 +202,20 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
           }
         }
       }
+      #pragma omp parallel for collapse(2)
+      KSLOOP(-NG, N3 - 1 + NG) {
+        JSLOOP(N2, N2 - 1 + NG) {
+          ISLOOP(-NG, N1 - 1 + NG) {
+            int jz = j - N2;
+            PLOOP state->P[ip][k][j][i] = state->P[ip][k][jz][i];
+            pflag[k][j][i] = pflag[k][jz][i];
+          }
+        }
+      }
     }
     #endif
+
   } // global_start[1] == 0
-  */
 
   if(global_stop[1] == N2TOT) {
     #pragma omp parallel for collapse(2)
@@ -270,7 +305,6 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
     #if X3L_BOUND == PERIODIC && X3R_BOUND == PERIODIC
     if (global_stop[2] == N3TOT) { // Both first and last node
-      puts("Enforcing periodic bounds in X3");
 
       #pragma omp parallel for collapse(2)
       KSLOOP(-NG, -1) {
@@ -282,6 +316,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
           }
         }
       }
+      #pragma omp parallel for collapse(2)
       KSLOOP(N3, N3 - 1 + NG) {
         JSLOOP(-NG, N2 - 1 + NG) {
           ISLOOP(-NG, N1 - 1 + NG) {
