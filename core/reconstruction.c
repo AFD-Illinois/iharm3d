@@ -324,20 +324,60 @@ void reconstruct_lr_par(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
   } // PLOOP
 }
 
-void reconstruct_lr_weno(double Ptmp[NMAX+2*NG][NVAR], int N,
-  double P_l[NMAX+2*NG][NVAR], double P_r[NMAX+2*NG][NVAR])
+//void reconstruct_lr_weno(double Ptmp[NMAX+2*NG][NVAR], int N,
+//  double P_l[NMAX+2*NG][NVAR], double P_r[NMAX+2*NG][NVAR])
+//{
+//  ISLOOP(-1,N) {
+//    PLOOP {
+//      weno(Ptmp[i-2][ip],
+//           Ptmp[i-1][ip],
+//           Ptmp[i][ip],
+//           Ptmp[i+1][ip],
+//           Ptmp[i+2][ip],
+//           &P_l[i][ip],
+//           &P_r[i][ip]);
+//    }
+//  }
+//}
+
+void reconstruct_lr_weno(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
-  ISLOOP(-1,N) {
-    PLOOP {
-      weno(Ptmp[i-2][ip],
-           Ptmp[i-1][ip],
-           Ptmp[i][ip],
-           Ptmp[i+1][ip],
-           Ptmp[i+2][ip],
-           &P_l[i][ip],
-           &P_r[i][ip]);
+  PLOOP {
+    if (dir == 1) {
+      #pragma omp parallel for simd collapse(2)
+      KSLOOP(-1, N3) {
+        JSLOOP(-1, N2) {
+          ISLOOP(-1, N1) {
+            weno(S->P[ip][k][j][i-2], S->P[ip][k][j][i-1], S->P[ip][k][j][i],
+                 S->P[ip][k][j][i+1], S->P[ip][k][j][i+2], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
+    } else if (dir == 2) {
+      #pragma omp parallel for simd collapse(2)
+      KSLOOP(-1, N3) {
+        JSLOOP(-1, N2) {
+          ISLOOP(-1, N1) {
+            weno(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
+    } else if (dir == 3) {
+      #pragma omp parallel for simd collapse(2)
+      KSLOOP(-1, N3) {
+        JSLOOP(-1, N2) {
+          ISLOOP(-1, N1) {
+            weno(S->P[ip][k-2][j][i], S->P[ip][k-1][j][i], S->P[ip][k][j][i],
+                 S->P[ip][k+1][j][i], S->P[ip][k+2][j][i], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
     }
-  }
+  } // PLOOP
 }
 
 void reconstruct_lr_mp5(double Ptmp[NMAX+2*NG][NVAR], int N,
@@ -367,7 +407,7 @@ void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
     //reconstruct_lr_par(Ptmp, N, P_l, P_r);
     reconstruct_lr_par(S, Pl, Pr, dir);
   #elif RECONSTRUCTION == WENO
-    reconstruct_lr_weno(Ptmp, N, P_l, P_r);
+    reconstruct_lr_weno(S, Pl, Pr, dir);
   #elif RECONSTRUCTION == MP5
     reconstruct_lr_mp5(Ptmp, N, P_l, P_r);
   #else
