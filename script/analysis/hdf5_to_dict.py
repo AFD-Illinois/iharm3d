@@ -96,11 +96,12 @@ def load_geom(hdr, fname):
           r[i,j,k], th[i,j,k], phi[i,j,k] = bl_coord(hdr, X)
         else:
           X = harm_coord(hdr, i, j, k)
-          x[k,j,i], y[k,j,i], z[k,j,i] = X[1], X[2], X[3]
+          x[i,j,k], y[i,j,k], z[i,j,k] = X[1], X[2], X[3]
       X = harm_coord(hdr, i, j, 0)
       gcov[i,j,:,:] = get_gcov(hdr, X)
-      gcon[i,j,:,:] = get_gcon(gcov[i,j,:,:])
-           
+      gcon[i,j,:,:] = get_gcon(gcov[i,j,:,:])     
+      gdet[i,j] = np.sqrt(-np.linalg.det(gcov[i,j,:,:]))
+          
   print '\nGeometry loaded'
 
   if hdr['METRIC'] == 'MKS':
@@ -155,7 +156,7 @@ def load_dump(hdr, geom, fname):
     dump['mass'] = dfile['mass'][0]
     dump['egas'] = dfile['egas'][0]
   except KeyError, e:
-    print e
+    pass
 
   if hdr['RADIATION']:
     dump['ur'] = -dfile['erad'][0]
@@ -169,9 +170,11 @@ def load_dump(hdr, geom, fname):
     dump['Thetae'] = (hdr['gam']-1.)*units['MP']/units['ME']*(
                      1./(1. + hdr['tp_over_te'])*dump['UU']/dump['RHO'])
 
-  ucon, ucov, bcon, bcov = get_state(dump, geom)
-
-  dump['bsq'] = (bcon*bcov).sum(axis=-1)
+  # This procedure seems correct but is expensive
+  #ucon, ucov, bcon, bcov = get_state(dump, geom)
+  #dump['bsq'] = (bcon*bcov).sum(axis=-1)
+  # Instead we just read it
+  dump['bsq'] = (dfile['bsq'][()]).transpose()
 
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
 
@@ -198,9 +201,6 @@ def load_log(path):
 def harm_coord(hdr, i, j, k):
   startx = [0, hdr['startx1'], hdr['startx2'], hdr['startx3']]
   dx = [0, hdr['dx1'], hdr['dx2'], hdr['dx3']]
-  N1 = hdr['N1']
-  N2 = hdr['N2']
-  N3 = hdr['N3']
   X = np.zeros(4)
 
   X[1] = startx[1] + (i + 0.5)*dx[1]
@@ -254,49 +254,54 @@ def get_gcov(hdr, X):
     sth = np.sin(th)
     s2 = sth**2
     rho2 = r**2 + a**2*cth**2
+    
+    gcovKS = np.zeros([4,4])
+    gcovKS[0,0] = -1. + 2.*r/rho2
+    gcovKS[0,1] = 2.*r/rho2
+    gcovKS[0,3] = -2.*a*r*s2/rho2
+
+    gcovKS[1,0] = gcovKS[0,1]
+    gcovKS[1,1] = 1. + 2.*r/rho2
+    gcovKS[1,3] = -a*s2*(1. + 2.*r/rho2)
+
+    gcovKS[2,2] = rho2
+
+    gcovKS[3,0] = gcovKS[0,3]
+    gcovKS[3,1] = gcovKS[1,3]
+    gcovKS[3,3] = s2*(rho2 + a*a*s2*(1. + 2.*r/rho2))
+    
+    trans = np.zeros([4,4])
 
     # Convert from KS to MKS
-    # Ripped directly from coord.c
     if poly_xt == False:
       tfac = 1.
       rfac = np.exp(X[1]) # dr/dx = r because exp
       hfac = np.pi + (1. - hslope)*np.pi*np.cos(2.*np.pi*X[2]) # = dth/dx
       pfac = 1.
+      
+      trans[0,0] = tfac
+      trans[1,1] = rfac
+      trans[2,2] = hfac
+      trans[3,3] = pfac
+      
 
-      gcov[0][0] = (-1. + 2.*r/rho2)*tfac*tfac
-      gcov[0][1] = (2. * r/rho2)*tfac*rfac
-      gcov[0][3] = (-2.*a*r*s2/rho2)*tfac*pfac
-
-      gcov[1][0] = gcov[0][1]
-      gcov[1][1] = (1. + 2.*r/rho2)*rfac*rfac
-      gcov[1][3] = (-a*s2*(1. + 2.*r/rho2))*rfac*pfac
-
-      gcov[2][2] = rho2*hfac*hfac
-
-      gcov[3][0] = gcov[0][3]
-      gcov[3][1] = gcov[1][3]
-      gcov[3][3] = s2*(rho2 + a*a*s2*(1. + 2.*r/rho2))*pfac*pfac
+#       gcov[0,0] = gcovKS[0,0]*tfac*tfac
+#       gcov[0,1] = gcovKS[0,1]*tfac*rfac
+#       gcov[0,3] = gcovKS[0,3]*tfac*pfac
+# 
+#       gcov[1,0] = gcov[0,1]
+#       gcov[1,1] = gcovKS[1,1]*rfac*rfac
+#       gcov[1,3] = gcovKS[1,3]*rfac*pfac
+# 
+#       gcov[2,2] = gcovKS[2,2]*hfac*hfac
+# 
+#       gcov[3,0] = gcov[0,3]
+#       gcov[3,1] = gcov[1,3]
+#       gcov[3,3] = gcovKS[3,3]*pfac*pfac
     else:
-      # KS coordinates
-      gcovKS = np.zeros([4,4])
-      gcovKS[0,0] = -1. + 2.*r/rho2
-      gcovKS[0,1] = 2.*r/rho2
-      gcovKS[0,3] = -2.*a*r*s2/rho2
-
-      gcovKS[1,0] = gcovKS[0,1]
-      gcovKS[1,1] = 1. + 2.*r/rho2
-      gcovKS[1,3] = -a*s2*(1. + 2.*r/rho2)
-
-      gcovKS[2,2] = rho2
-
-      gcovKS[3,0] = gcovKS[0,3]
-      gcovKS[3,1] = gcovKS[1,3]
-      gcovKS[3,3] = s2*(rho2 + a*a*s2*(1. + 2.*r/rho2))
-
+      # Modified modified KS
       poly_norm = 0.5*np.pi*1./(1. + 1./(poly_alpha + 1.)*1./pow(poly_xt, poly_alpha));
-
-      trans = np.zeros([4,4])
-
+      
       trans[0,0] = 1.
       trans[1,1] = np.exp(X[1])
       trans[2,1] = -np.exp(mks_smooth*(startx1-X[1]))*mks_smooth*(
@@ -312,11 +317,11 @@ def get_gcov(hdr, X):
           (1.-hslope)*np.pi*np.cos(2.*np.pi*X[2])))
       trans[3,3] = 1.
 
-      for mu in xrange(4):
-        for nu in xrange(4):
-          for lam in xrange(4):
-            for kap in xrange(4):
-              gcov[mu,nu] += gcovKS[lam,kap]*trans[lam,mu]*trans[kap,nu]
+    for mu in xrange(4):
+      for nu in xrange(4):
+        for lam in xrange(4):
+          for kap in xrange(4):
+            gcov[mu,nu] += gcovKS[lam,kap]*trans[lam,mu]*trans[kap,nu]
 
   return gcov
 
@@ -338,20 +343,24 @@ def get_state(dump, geom):
   gcon = geom['gcon']
 
   U1 = dump['U1']
-  U2 = dump['U2']
+  U2 = dump['U2'] 
   U3 = dump['U3']
   B1 = dump['B1']
   B2 = dump['B2']
   B3 = dump['B3']
 
   alpha = np.zeros([N1,N2,N3])
-  alpha = 1./np.sqrt(-gcon[:,:,None,0,0])
+  for i in xrange(N1):
+    for j in xrange(N2):
+      alpha[i,j,:] = 1./np.sqrt(-gcon[i,j,0,0])
   qsq = np.zeros([N1,N2,N3])
-  qsq = (gcov[:,:,None,1,1]*U1**2 + gcov[:,:,None,2,2]*U2**2 +
-         gcov[:,:,None,3,3]*U3**2 + 2.*(gcov[:,:,None,1,2]*U1*U2 +
-                                        gcov[:,:,None,1,3]*U1*U3 +
-                                        gcov[:,:,None,2,3]*U2*U3))
-  gamma = np.ones([N1,N2,N3])
+  for i in xrange(N1):
+    for j in xrange(N2):
+      for k in xrange(N3):
+        qsq[i,j,k] = (gcov[i,j,1,1]*U1[i,j,k]**2 + gcov[i,j,2,2]*U2[i,j,k]**2 +
+                      gcov[i,j,3,3]*U3[i,j,k]**2 + 2.*(gcov[i,j,1,2]*U1[i,j,k]*U2[i,j,k] +
+                                                gcov[i,j,1,3]*U1[i,j,k]*U3[i,j,k] + 
+                                                gcov[i,j,2,3]*U2[i,j,k]*U3[i,j,k]))
   gamma = np.sqrt(1. + qsq)
 
   ucon[:,:,:,0] = gamma/alpha

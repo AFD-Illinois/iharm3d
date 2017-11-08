@@ -67,16 +67,14 @@ def plot(args):
     vmin=-4, vmax = 0, label='RHO')
   bplt.overlay_field(ax, geom, dump)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
-  
-#   ax = plt.subplot(2,2,2)
-#   bplt.plot_xz(ax, geom, np.log10(dump['bsq']), dump,
-#     vmin=-2, vmax=2, label='bsq', cmap='RdBu_r')
-#   bplt.overlay_field(ax, geom, dump)
-#   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
+  # I change this a lot
+  var2_str = 'bsq'
+  var2_data = np.log10(dump[var2_str])
+  
   ax = plt.subplot(2,2,2)
-  bplt.plot_xz(ax, geom, np.log10(dump['beta']), dump,
-    vmin=-2, vmax=2, label='beta', cmap='RdBu_r')
+  bplt.plot_xz(ax, geom, var2_data, dump,
+    label=var2_str, cmap='RdBu_r', vmin=-8, vmax=2)
   bplt.overlay_field(ax, geom, dump)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
  
@@ -85,14 +83,9 @@ def plot(args):
      vmin=-4, vmax=0, label='RHO')
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
   
-#   ax = plt.subplot(2,2,4)
-#   bplt.plot_xy(ax, geom, np.log10(dump['bsq']), dump,
-#      vmin=-2, vmax=2, label='bsq', cmap='RdBu_r')
-#   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
-  
   ax = plt.subplot(2,2,4)
-  bplt.plot_xy(ax, geom, np.log10(dump['beta']), dump,
-     vmin=-2, vmax=2, label='beta', cmap='RdBu_r')
+  bplt.plot_xy(ax, geom, var2_data, dump,
+     label=var2_str, cmap='RdBu_r', vmin=-8, vmax=2)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
   #ax.pcolormesh(dump['X1'][:,:,0], dump['X2'][:,:,0], dump['RHO'][:,:,0])
