@@ -7,9 +7,9 @@
  ******************************************************************************/
 
 /* GLOBAL RESOLUTION */
-#define N1TOT 16
-#define N2TOT 16
-#define N3TOT 16
+#define N1TOT 64
+#define N2TOT 64
+#define N3TOT 64
 
 /* MPI DECOMPOSITION */
 #define N1CPU 1
@@ -21,7 +21,7 @@
  */
 #define METRIC MINKOWSKI
 
-#define NMODE 1
+#define NMODE 3
 
 #define ELECTRONS           0
 
@@ -30,7 +30,7 @@
 /* RECONSTRUCTION ALGORITHM
  *   LINEAR, PPM, WENO, MP5
  */
-#define RECONSTRUCTION PPM
+#define RECONSTRUCTION WENO
 
 /* BOUNDARY CONDITIONS
  *   OUTFLOW PERIODIC POLAR USER

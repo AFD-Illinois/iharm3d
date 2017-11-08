@@ -29,7 +29,7 @@ for arg in sys.argv:
 RES = [16, 32, 64]#, 128]
 
 # LOOP OVER EIGENMODES
-MODES = [1, 2] #, 2, 3]
+MODES = [0,1,2,3] # 1,2,3
 NAMES = ['ENTROPY', 'SLOW', 'ALFVEN', 'FAST']
 NVAR = 8
 VARS = ['rho', 'u', 'u1', 'u2', 'u3', 'B1', 'B2', 'B3']
@@ -44,10 +44,6 @@ var0[1] = 1.
 var0[5] = 1.
 L1 = np.zeros([len(MODES), len(RES), NVAR])
 powerfits = np.zeros([len(MODES), NVAR])
-
-# This is not safe, but convenient
-#hdr = io.load_hdr(dfiles[-1])
-#geom = io.load_geom(hdr, dfiles[-1])
 
 for n in xrange(len(MODES)):
 
@@ -81,42 +77,55 @@ for n in xrange(len(MODES)):
     print '../dumps_' + str(RES[m]) + '_' + str(MODES[n])
     os.chdir('../dumps_' + str(RES[m]) + '_' + str(MODES[n]))
 
-    dfiles = np.sort(glob.glob('dump*.h5'))
+    dfile = np.sort(glob.glob('dump*.h5'))[-1]
     
-    hdr = io.load_hdr(dfiles[-1])
-    geom = io.load_geom(hdr, dfiles[-1])
-    dump = io.load_dump(hdr, geom, dfiles[-1]) 
+    hdr = io.load_hdr(dfile)
+    geom = io.load_geom(hdr, dfile)
+    dump = io.load_dump(hdr, geom, dfile) 
     
-    #X1 = dump['X1'][:,:,:].transpose()
-    #X2 = dump['X2'][:,:,:].transpose()
-    #X3 = dump['X3'][:,:,:].transpose()
-    X1 = dump['x'][:,:,:].transpose()
-    X2 = dump['y'][:,:,:].transpose()
-    X3 = dump['z'][:,:,:].transpose()
+    #X1 = dump['X1'][:,:,:]
+    #X2 = dump['X2'][:,:,:]
+    #X3 = dump['X3'][:,:,:]
+    X1 = dump['x'][:,:,:]
+    X2 = dump['y'][:,:,:]
+    X3 = dump['z'][:,:,:]
     
     dvar_code = []
-    dvar_code.append(dump['RHO'][:,:,:].transpose() - var0[0]) 
-    dvar_code.append(dump['UU'][:,:,:].transpose()  - var0[1])
-    dvar_code.append(dump['U1'][:,:,:].transpose()  - var0[2])
-    dvar_code.append(dump['U2'][:,:,:].transpose()  - var0[3])
-    dvar_code.append(dump['U3'][:,:,:].transpose()  - var0[4])
-    dvar_code.append(dump['B1'][:,:,:].transpose()  - var0[5])
-    dvar_code.append(dump['B2'][:,:,:].transpose()  - var0[6])
-    dvar_code.append(dump['B3'][:,:,:].transpose()  - var0[7])
+    dvar_code.append(dump['RHO'][:,:,:] - var0[0]) 
+    dvar_code.append(dump['UU'][:,:,:]  - var0[1])
+    dvar_code.append(dump['U1'][:,:,:]  - var0[2])
+    dvar_code.append(dump['U2'][:,:,:]  - var0[3])
+    dvar_code.append(dump['U3'][:,:,:]  - var0[4])
+    dvar_code.append(dump['B1'][:,:,:]  - var0[5])
+    dvar_code.append(dump['B2'][:,:,:]  - var0[6])
+    dvar_code.append(dump['B3'][:,:,:]  - var0[7])
 
-    #dvar_sol = []
-    dvar_sol = np.zeros([RES[m], RES[m], RES[m]])
+    dvar_sol = []
     for k in xrange(NVAR):
-      #dvar_sol.append(np.real(dvar[k])*np.cos(k1*X1 + k2*X2))
+      dvar_sol.append(np.real(dvar[k])*np.cos(k1*X1 + k2*X2 + k3*X3))
+      L1[n][m][k] = np.mean(np.fabs(dvar_code[k] - dvar_sol[k]))
+      
+    mid = RES[m]/2
+    
+    # Plot dvar
+    fig = plt.figure(figsize=(16.18,10))
+    ax = fig.add_subplot(1,1,1)
+    for k in xrange(NVAR):
       if abs(dvar[k]) != 0.:
-        for i in xrange(RES[m]):
-          for j in xrange(RES[m]):
-            for kk in xrange(RES[m]):
-              dvar_sol[i,j,kk] = np.real(dvar[k])*np.cos(k1*X1[i,j,kk] + 
-                                                         k2*X2[i,j,kk] + 
-                                                         k3*X3[i,j,kk])
-              L1[n][m][k] = np.mean(np.fabs(dvar_code[k][i,j,kk] - 
-                                            dvar_sol[i,j,kk]))
+        ax.plot(X1[:,mid,mid], dvar_code[k][:,mid,mid], marker='s', label=VARS[k])
+        ax.plot(X1[:,mid,mid], dvar_sol[k][:,mid,mid], marker='s', label=(VARS[k] + " analytic"))
+    plt.title(NAMES[MODES[n]] + ' ' + str(RES[m]))
+    plt.legend(loc=1)
+    plt.savefig('../test/modes_' + NAMES[MODES[n]] + '_' + str(RES[m]) + '.png', bbox_inches='tight')
+    
+#     fig = plt.figure(figsize=(16.18,10))
+#     ax = fig.add_subplot(1,1,1)
+#     for k in xrange(NVAR):
+#       if abs(dvar[k]) != 0.:
+#         ax.plot(X1[:,mid,mid], dvar_sol[k][:,mid,mid], marker='s', label=(VARS[k] + " analytic"))
+#     plt.title(NAMES[MODES[n]] + ' ' + str(RES[m]) + ' analytic')
+#     plt.legend(loc=1)
+#     plt.savefig('../test/modes_' + NAMES[MODES[n]] + '_' + str(RES[m]) + '_ana' + '.png', bbox_inches='tight')
 
   # MEASURE CONVERGENCE
   for k in xrange(NVAR):

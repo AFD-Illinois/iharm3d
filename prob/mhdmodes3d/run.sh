@@ -1,8 +1,6 @@
 #!/bin/bash
 
-if [ -d build ]; then
-  cd build
-fi
+#python build.py
 
 # Make absolutely sure we're setting affinities correctly!
 #NP=$(( $(nproc) / 2 ))

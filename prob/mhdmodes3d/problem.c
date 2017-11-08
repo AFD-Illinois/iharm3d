@@ -89,10 +89,8 @@ void init(struct GridGeom *G, struct FluidState *S)
     dB2  = 0.;
     dB3  = 0.;*/
 
-  printf("grid set\n");
   t = 0.;
-
-  tf = 2.*M_PI/cimag(omega); // == 5?
+  tf = 2.*M_PI/cimag(omega);
   DTd = tf/10.;
   DTl = tf/10.;
   DTr = 10000;  // Restart interval, in timesteps
@@ -113,7 +111,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   zero_arrays();
   set_grid(G);
 
-  //TODO ask about this
+  printf("grid set\n");
+
   ZLOOP {
     coord(i, j, k, CENT, X);
     double mode = amp*cos(k1*X[1] + k2*X[2] + k3*X[3]);
@@ -129,7 +128,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   } // ZLOOP
 
-  // Enforce boundary conditions??
+  //Enforce boundary conditions??
   fixup(G, S);
   set_bounds(G, S);
 }

@@ -28,7 +28,6 @@ void init(struct GridGeom *G, struct FluidState *S)
   double r, th, sth, cth;
   double ur, uh, up, u, rho;
   double X[NDIM];
-  //struct of_geom *geom;
 
   // Disk interior
   double l, rin, lnh, expm2chi, up1;
