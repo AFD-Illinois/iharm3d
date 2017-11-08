@@ -69,12 +69,13 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
 
     #if X1L_BOUND == PERIODIC && X1R_BOUND == PERIODIC
-    if (global_stop[1] == N1TOT) {
+    if (global_stop[0] == N1TOT) {
+
       #pragma omp parallel for collapse(2)
       KSLOOP(-NG, N3 - 1 + NG) {
 	JSLOOP(-NG, N2 - 1 + NG) {
 	  ISLOOP(-NG, -1) {
-	    int iz = N2 + i;
+	    int iz = N1 + i;
 	    PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
 	    pflag[k][j][i] = pflag[k][j][iz];
 	  }
@@ -84,7 +85,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       KSLOOP(-NG, N3 - 1 + NG) {
 	JSLOOP(-NG, N2 - 1 + NG) {
 	  ISLOOP(N1, N1 - 1 + NG) {
-	    int iz = i - N2;
+	    int iz = i - N1;
 	    PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
 	    pflag[k][j][i] = pflag[k][j][iz];
 	  }
@@ -136,24 +137,6 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   } // global_stop[0] == N1TOT
 
-  /*#if N2 == 1
-  #pragma omp parallel for collapse(2)
-  KSLOOP(-NG, N3 -1 + NG) {
-    JSLOOP(-NG, -1) {
-      ISLOOP(-NG, N1 - 1 + NG) {
-        PLOOP state->P[ip][k][j][i] = state->P[ip][k][NG][i];
-      }
-    }
-  }
-  #pragma omp parallel for collapse(2)
-  KSLOOP(-NG, N3 -1 + NG) {
-    JSLOOP(N2, N2 - 1 + NG) {
-      ISLOOP(-NG, N1 - 1 + NG) {
-        PLOOP state->P[ip][k][j][i] = state->P[ip][k][NG][i];
-      }
-    }
-  }
-  #else*/
   if(global_start[1] == 0) {
     #pragma omp parallel for collapse(2)
     KSLOOP(-NG, N3-1+NG) {
@@ -192,6 +175,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     // Treat periodic bounds separately in presence of MPI
     #if X2L_BOUND == PERIODIC && X2R_BOUND == PERIODIC
     if (global_stop[1] == N2TOT) {
+
       #pragma omp parallel for collapse(2)
       KSLOOP(-NG, N3 - 1 + NG) {
         JSLOOP(-NG, -1) {
@@ -251,26 +235,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       }
     }
   } // global_stop[1] == N2TOT
-  //#endif // N2 == 1
 
-  /*#if N3 == 1
-  #pragma omp parallel for collapse(2)
-  KSLOOP(-NG, -1) {
-    JSLOOP(-NG, N2 - 1 + NG) {
-      ISLOOP(-NG, N1 - 1 + NG) {
-        PLOOP state->P[ip][k][j][i] = state->P[ip][NG][j][i];
-      }
-    }
-  }
-  #pragma omp parallel for collapse(2)
-  KSLOOP(N3, N3 - 1 + NG) {
-    JSLOOP(-NG, N2 - 1 + NG) {
-      ISLOOP(-NG, N1 - 1 + NG) {
-        PLOOP state->P[ip][k][j][i] = state->P[ip][NG][j][i];
-      }
-    }
-  }
-  #else*/
   if (global_start[2] == 0) {
     #pragma omp parallel for collapse(2)
     KSLOOP(-NG, -1) {
@@ -361,7 +326,6 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       }
     }
   } // global_stop[2] == N3TOT
-  //#endif // N3
 
   #if METRIC == MKS
   //ucon_calc(geom, state);

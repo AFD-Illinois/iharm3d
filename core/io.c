@@ -31,8 +31,8 @@ void dump(struct GridGeom *G, struct FluidState *S)
   static int *idata;
   char name[80];
   FILE *xml = NULL;
-  hsize_t fdims[] = {N1TOT, N2TOT, N3TOT};
-  hsize_t mdims[] = {N1, N2, N3};
+  hsize_t fdims[] = {N3TOT, N2TOT, N1TOT};
+  hsize_t mdims[] = {N3, N2, N1};
   #if ELECTRONS
   const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3", 
                             "KEL", "KTOT"};
