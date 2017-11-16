@@ -101,13 +101,25 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   
   timer_start(TIMER_LR_STATE);
 
-  get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
+//  ZSLOOP(-1, N3, -1, N2, -1, N1) {
+//    get_state(G, Sl, i, j, k, loc);
+//    get_state(G, Sr, i, j, k, loc);
+//  }
 
+  get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
   get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
 
   timer_stop(TIMER_LR_STATE);
 
   timer_start(TIMER_LR_PTOF);
+
+  //  ZSLOOP (-1, N3, -1, N2, -1, N1) {
+  //    prim_to_flux(G, Sl, i, j, k, 0,   loc, Sl->U);
+  //    prim_to_flux(G, Sl, i, j, k, dir, loc, fluxL);
+  //    prim_to_flux(G, Sr, i, j, k, 0  , loc, Sr->U);
+  //    prim_to_flux(G, Sr, i, j, k, dir, loc, fluxR);
+  //
+  //  }
 
   prim_to_flux_vec(G, Sl, 0,   loc, -1, N3, -1, N2, -1, N1, Sl->U);
   prim_to_flux_vec(G, Sl, dir, loc, -1, N3, -1, N2, -1, N1, fluxL);
