@@ -2,7 +2,7 @@
 
 source ../../../mpi-load.sh
 
-for n in 16 32 64 128 256
+for n in 16 32 64 128
 do
 
   for i in 0 1 2 3
@@ -22,11 +22,12 @@ do
     sed -i -e "s/NMODE 3/NMODE $i/g" parameters.h
 
     python build.py
+    if [ $? -eq 0 ]; then
+      ./run.sh
 
-    ./run.sh
-
-    rm -rf dumps_${n}_${i}
-    mv dumps dumps_${n}_${i}
+      rm -rf dumps_${n}_${i}
+      mv dumps dumps_${n}_${i}
+    fi
 
   done
 done
