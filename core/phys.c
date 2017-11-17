@@ -32,6 +32,33 @@ inline void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double 
   }
 }
 
+void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
+  int dir, int loc, GridPrim flux)
+{
+  double mhd[NDIM];
+
+  // Particle number flux
+  flux[RHO][k][j][i] = S->P[RHO][k][j][i]*S->ucon[dir][k][j][i];
+
+  mhd_calc(S, i, j, k, dir, mhd);
+
+  // MHD stress-energy tensor w/ first index up, second index down
+  flux[UU][k][j][i] = mhd[0] + flux[RHO][k][j][i];
+  flux[U1][k][j][i] = mhd[1];
+  flux[U2][k][j][i] = mhd[2];
+  flux[U3][k][j][i] = mhd[3];
+
+  // Dual of Maxwell tensor
+  flux[B1][k][j][i] = S->bcon[1][k][j][i]*S->ucon[dir][k][j][i] -
+                      S->bcon[dir][k][j][i]*S->ucon[1][k][j][i];
+  flux[B2][k][j][i] = S->bcon[2][k][j][i]*S->ucon[dir][k][j][i] -
+                      S->bcon[dir][k][j][i]*S->ucon[2][k][j][i];
+  flux[B3][k][j][i] = S->bcon[3][k][j][i]*S->ucon[dir][k][j][i] -
+                      S->bcon[dir][k][j][i]*S->ucon[3][k][j][i];
+
+  PLOOP flux[ip][k][j][i] *= G->gdet[loc][j][i];
+}
+
 // Calculate fluxes in direction dir, over given range.
 // Note backward indices convention, consistent with ZSLOOP's arguments
 void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc,
@@ -71,9 +98,10 @@ inline void bcon_calc(struct FluidState *S, int i, int j, int k)
   S->bcon[0][k][j][i] = S->P[B1][k][j][i]*S->ucov[1][k][j][i] +
                         S->P[B2][k][j][i]*S->ucov[2][k][j][i] +
                         S->P[B3][k][j][i]*S->ucov[3][k][j][i];
-  for (int mu = 1; mu < 4; mu++)
+  for (int mu = 1; mu < 4; mu++) {
     S->bcon[mu][k][j][i] = (S->P[B1-1+mu][k][j][i] +
       S->bcon[0][k][j][i]*S->ucon[mu][k][j][i])/S->ucon[0][k][j][i];
+  }
 }
 
 // Find gamma-factor wrt normal observer
@@ -305,7 +333,6 @@ inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, int i, in
 // Returns b.b (twice magnetic pressure)
 double bsq_calc(struct FluidState *S, int i, int j, int k)
 {
-  //struct of_state q;
 
   double bsq = 0.;
   for (int mu = 0; mu < NDIM; mu++) {
@@ -313,6 +340,4 @@ double bsq_calc(struct FluidState *S, int i, int j, int k)
   }
 
   return bsq;
-  //get_state(Pr, geom, &q);
-  //return (dot(q.bcon, q.bcov));
 }

@@ -445,6 +445,8 @@ double mpi_io_max(double val);
 int mpi_myrank();
 
 // phys.c
+void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
+  int dir, int loc, GridPrim flux);
 void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir,
   int loc, int kstart, int kstop, int jstart, int jstop, int istart, int istop, GridPrim flux);
 void bcon_calc(struct FluidState *S, int i, int j, int k);

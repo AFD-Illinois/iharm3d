@@ -21,7 +21,7 @@
  */
 #define METRIC MINKOWSKI
 
-#define NMODE 3
+#define NMODE 2
 
 #define ELECTRONS           0
 
