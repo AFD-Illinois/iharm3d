@@ -79,14 +79,14 @@ if not AUTO:
   ax = fig.add_subplot(1,1,1)
   ax.plot(RES, L1, marker='s', label='RHO')
 
-  amp = 1.
+  amp = 1.0
   ax.plot([RES[0]/2., RES[-1]*2.], 
     10.*amp*np.asarray([RES[0]/2., RES[-1]*2.])**-2.,
     color='k', linestyle='--', label='N^-2')
   plt.xscale('log', basex=2); plt.yscale('log')
   plt.xlim([RES[0]/np.sqrt(2.), RES[-1]*np.sqrt(2.)])
   plt.xlabel('N'); plt.ylabel('L1')
-  #plt.title(NAMES[MODES[n]])
+  plt.title("BONDI")
   plt.legend(loc=1)
   plt.savefig('bondi.png', bbox_inches='tight')
 
