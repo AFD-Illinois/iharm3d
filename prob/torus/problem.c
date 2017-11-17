@@ -41,7 +41,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   double rmax ;
 
   // Adiabatic index
-  gam = 13./9.;
+  //gam = 13./9.;
+  gam = 4./3;
   #if ELECTRONS
   game = 4./3.;
   gamp = 5./3.;
@@ -78,7 +79,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   tune_emiss = 1.e5;
   tune_scatt = 1.;
   #endif
-  tf = 2000.0;
+  tf = 10000.0;
   hslope = 0.3;
 
   zero_arrays();
@@ -88,10 +89,10 @@ void init(struct GridGeom *G, struct FluidState *S)
   t = 0.;
 
   // Output choices
-  DTd = 5;   // Dump interval
+  DTd = 1;   // Dump interval
   DTl = 0.1;  // Log interval
   DTr = 1024;  // Restart interval, in timesteps
-  DTp = 25;   // Performance interval, in timesteps
+  DTp = 50;   // Performance interval, in timesteps
 
   // Diagnostic counters
   dump_cnt = 0;
