@@ -301,6 +301,10 @@ struct of_photon {
 };
 #endif
 
+#if POLYTH
+extern double poly_norm, poly_xt, poly_alpha;
+#endif
+
 extern gsl_rng *r;
 
 
@@ -469,6 +473,8 @@ void mhd_vchar(struct GridGeom *G, struct FluidState *Sr, int i, int j, int k,
 
 // problem.c
 void init(struct GridGeom *G, struct FluidState *S);
+// Boundary condition (currently used for Bondi flow)
+void bound_gas_prob_x1r(int i, int j, int k, GridPrim  P, struct GridGeom *G);
 
 // push_superphotons.c
 #if RADIATION

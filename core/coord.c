@@ -22,11 +22,6 @@
  *
  */
 
-#define POLYTH (0)
-#if POLYTH
-double poly_norm, poly_xt, poly_alpha; 
-#endif
-
 void coord(int i, int j, int k, int loc, double *X)
 {
   i += global_start[0];
