@@ -15,56 +15,37 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pylab as pl
-sys.path.insert(0, '../script/')
-sys.path.insert(0, '../script/analysis/')
+
+sys.path.insert(0, '../../../script/')
+sys.path.insert(0, '../../../script/analysis/')
 import util
 import hdf5_to_dict as io
-TMP_DIR = 'TMP'
-TMP_BUILD = 'build_tmp.py'
-util.safe_remove(TMP_DIR)
 
 AUTO = False
 for arg in sys.argv:
   if arg == '-auto':
     AUTO = True
 
-RES = [32, 64, 128, 256]
-
-util.make_dir(TMP_DIR)
-os.chdir('../prob/bondi/')
-
-copyfile('build.py', TMP_BUILD)
-# COMPILE CODE AT MULTIPLE RESOLUTIONS USING SEPARATE BUILD FILE
-
-for n in xrange(len(RES)):
-  util.change_cparm('N1TOT', RES[n], TMP_BUILD)
-  util.change_cparm('N2TOT', RES[n], TMP_BUILD)
-  call(['python', TMP_BUILD, '-dir', TMP_DIR])
-  call(['cp', os.path.join(os.getcwd(), TMP_DIR, 'bhlight'),
-        '../../test/' + TMP_DIR + '/bhlight_' + str(RES[n])])
-copyfile(os.path.join(os.getcwd(), TMP_DIR, 'param_template.dat'), '../../test/' + 
-         TMP_DIR + '/param.dat')
-util.safe_remove(TMP_BUILD)
-util.safe_remove(TMP_DIR)
-os.chdir('../../test/')
+RES = [32, 64, 128] #, 256]
 
 # LOOP OVER EIGENMODES
 NVAR = 8
 
 L1 = np.zeros(len(RES))
 
-os.chdir(TMP_DIR)
-
 # RUN PROBLEM FOR EACH RESOLUTION AND ANALYZE RESULT
 for m in xrange(len(RES)):
-  print ['./bhlight_' + str(RES[m]), '-p', 'param.dat']
-  call(['./bhlight_' + str(RES[m]), '-p', 'param.dat'])
+  os.chdir('../dumps_' + str(RES[m]))
 
-  dfiles = np.sort(glob.glob('dumps/dump*.h5'))
+  dfiles = np.sort(glob.glob('dump*.h5'))
   hdr = io.load_hdr(dfiles[0])
-  dump0 = io.load_dump(dfiles[0]) 
-  dump1 = io.load_dump(dfiles[-1]) 
-  r = dump0['X1'][:,0,0]
+  geom = io.load_geom(hdr, dfiles[0])
+  dump0 = io.load_dump(hdr, geom, dfiles[0])
+  dump1 = io.load_dump(hdr, geom, dfiles[-1])
+  
+  r = dump0['r'][:,0,0]
+  
+#   print "Reh is ", str(hdr['Reh'])
 
   imin = 0
   while r[imin] < hdr['Reh']:
@@ -73,11 +54,23 @@ for m in xrange(len(RES)):
   rho1 = np.mean(dump1['RHO'][imin:,:,0], axis=1)
 
   L1[m] = np.mean(np.fabs(rho1 - rho0))
+  
+  # PLOT
+  fig = plt.figure(figsize=(16.18,10))
+
+  ax = fig.add_subplot(1,1,1)
+  ax.plot(r[imin:], rho0, marker='s', label='Initial')
+  ax.plot(r[imin:], rho1, marker='s', label='Final')
+  #plt.xscale('log', basex=2); plt.yscale('log')
+  plt.xlabel('r (M)'); plt.ylabel('RHO')
+  plt.title("Radial profile")
+  plt.legend(loc=1)
+  plt.savefig('../test/bondi_comp_' + str(RES[m]) + '.png', bbox_inches='tight')
 
 # MEASURE CONVERGENCE
 powerfit = np.polyfit(np.log(RES), np.log(L1), 1)[0]
 
-os.chdir('../')
+os.chdir('../test/')
 
 if not AUTO:
   # MAKE PLOTS
@@ -103,7 +96,4 @@ if AUTO:
   data['CODE'] = powerfit
   import pickle
   pickle.dump(data, open('data.p', 'wb'))
-
-# CLEAN UP
-util.safe_remove(TMP_DIR)
 
