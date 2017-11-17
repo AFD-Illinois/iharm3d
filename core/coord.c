@@ -33,21 +33,28 @@ void coord(int i, int j, int k, int loc, double *X)
   j += global_start[1];
   k += global_start[2];
   if (loc == FACE1) {
-    X[1] = startx[1] + (i - NG)*dx[1];
-    X[2] = startx[2] + (j + 0.5 - NG)*dx[2];
-    X[3] = startx[3] + (k + 0.5 - NG)*dx[3];
+    X[1] = startx[1] + (i - NG) * dx[1];
+    X[2] = startx[2] + (j + 0.5 - NG) * dx[2];
+    X[3] = startx[3] + (k + 0.5 - NG) * dx[3];
   } else if (loc == FACE2) {
-    X[1] = startx[1] + (i + 0.5 - NG)*dx[1];
+    X[1] = startx[1] + (i + 0.5 - NG) * dx[1];
     X[2] = startx[2] + (j - NG) * dx[2];
-    X[3] = startx[3] + (k + 0.5 - NG)*dx[3];
+    X[3] = startx[3] + (k + 0.5 - NG) * dx[3];
+  } else if (loc == FACE3) {
+    X[1] = startx[1] + (i + 0.5 - NG) * dx[1];
+    X[2] = startx[2] + (j + 0.5 - NG) * dx[2];
+    X[3] = startx[3] + (k - NG) * dx[3];
   } else if (loc == CENT) {
-    X[1] = startx[1] + (i + 0.5 - NG)*dx[1];
-    X[2] = startx[2] + (j + 0.5 - NG)*dx[2];
-    X[3] = startx[3] + (k + 0.5 - NG)*dx[3];
+    X[1] = startx[1] + (i + 0.5 - NG) * dx[1];
+    X[2] = startx[2] + (j + 0.5 - NG) * dx[2];
+    X[3] = startx[3] + (k + 0.5 - NG) * dx[3];
+  } else if (loc == CORN) {
+    X[1] = startx[1] + (i - NG) * dx[1];
+    X[2] = startx[2] + (j - NG) * dx[2];
+    X[3] = startx[3] + (k - NG) * dx[3];
   } else {
-    X[1] = startx[1] + (i - NG)*dx[1];
-    X[2] = startx[2] + (j - NG)*dx[2];
-    X[3] = startx[3] + (k - NG)*dx[3];
+    fprintf(stderr, "Invalid coordinate location!\n");
+    exit(-1);
   }
 }
 
@@ -249,6 +256,7 @@ void set_grid(struct GridGeom *G)
       set_grid_loc(G, i, j, 0, CORN);
       set_grid_loc(G, i, j, 0, FACE1);
       set_grid_loc(G, i, j, 0, FACE2);
+      set_grid_loc(G, i, j, 0, FACE3); // TODO if Minkowski...
       
       // Connection only needed at zone center
       conn_func(G, i, j, 0);

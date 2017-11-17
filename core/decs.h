@@ -50,7 +50,7 @@
 #define NMAX     (N12 > N3 ? N12 : N3)
 
 #define NDIM       (4)    // Number of total dimensions
-#define NPG        (4)    // Number of positions on grid for grid functions
+#define NPG        (5)    // Number of positions on grid for grid functions
 #define NG         (3)    // Number of ghost zones
 
 // Fixup parameters
@@ -102,9 +102,11 @@
 // Centering of grid functions (assumes axisymmetry in X3)
 #define FACE1 (0)
 #define FACE2 (1)
+//#define FACE3 (2)
 #define CORN  (2)
 #define CENT  (3)
-#define FACE3 (CENT)
+// For non-axisymmetric (Minkowski spacetimes etc)
+#define FACE3 (4)
 
 // Slope limiter
 #define MC   (0)

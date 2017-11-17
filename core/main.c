@@ -119,15 +119,12 @@ int main(int argc, char *argv[])
   nstep = 0;
   struct GridGeom *G = (struct GridGeom*)malloc(sizeof(struct GridGeom));
   struct FluidState *S = (struct FluidState*)malloc(sizeof(struct FluidState));
-  //struct GridGeom G;
-  //struct FluidState S;
 
   // Perform initializations, either directly or via checkpoint
   init_random(1); // NEED RANDOM SEED BASED ON TIME() HERE
   is_restart = restart_init(G, S);
   if (!is_restart) {
     time_init();
-    //init(&G, &S);
     init(G, S);
     #if RADIATION
     init_rad(P);

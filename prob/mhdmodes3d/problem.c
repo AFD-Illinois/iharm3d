@@ -24,7 +24,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   // Mean state
   double rho0 = 1.;
   double u0 = 1.;
-  double B10 = 1.;
+  double B10 = 0.; // This is set later, see below
   double B20 = 0.;
   double B30 = 0.;
 
@@ -33,8 +33,10 @@ void init(struct GridGeom *G, struct FluidState *S)
   double k2 = 2.*M_PI;
   double k3 = 2.*M_PI;
   double amp = 1.e-4;
-  // "Faux-2D" planar wave direction
-  int dir = 1;
+
+  // "Faux-2D" planar waves direction
+  // Set to 0 for "full" 3D wave
+  int dir = 0;
 
   complex omega, drho, du, du1, du2, du3, dB1, dB2, dB3;
 
@@ -49,60 +51,29 @@ void init(struct GridGeom *G, struct FluidState *S)
   dB2  = 0.;
   dB3  = 0.;
 
-   // Eigenmode
-//   if (nmode == 0) { // Entropy
-//     omega = 2.*M_PI/5.*I;
-//     drho = 1.;
-//   } else if (nmode == 1) { // Slow
-//     omega = 2.35896379113*I;
-//     drho = 0.556500332363;
-//     du   = 0.742000443151;
-//     du1  = -0.282334999306;
-//     du2  = 0.0367010491491;
-//     du3  = 0.0367010491491;
-//     dB1  = -0.195509141461;
-//     dB2  = 0.0977545707307;
-//     dB3  = 0.0977545707307;
-//   } else if (nmode == 2) { // Alfven
-//     omega = 3.44144232573*I;
-//     du3  = 0.480384461415;
-//     dB3  = 0.877058019307;
-//   } else { // Fast
-//     omega = 5.53726217331*I;
-//     drho = 0.476395427447;
-//     du   = 0.635193903263;
-//     du1  = -0.102965815319;
-//     du2  = -0.316873207561;
-//     dB1  = 0.359559114174;
-//     dB2  = -0.359559114174;
-//  }
-
-
-   // Eigenmodes for faux-2D
-   if (nmode == 0) { // Entropy
+  // Eigenmode
+  if (dir == 0) {
+    B10 = 1.;
+    B20 = 1.;
+    B30 = 1.;
+    if (nmode == 0) { // Entropy
      omega = 2.*M_PI/5.*I;
      drho = 1.;
-   } else if (nmode == 1) { // Slow
-     omega = 2.41024185339*I;
-     drho = 0.558104461559;
-     du   = 0.744139282078;
-     du1  = -0.277124827421;
-     du2  = 0.0630348927707;
-     dB1  = -0.164323721928;
-     dB2  = 0.164323721928;
-   } else if (nmode == 2) { // Alfven
+    } else if (nmode == 1) { // Slow
+     omega = 2.35896379113*I;
+     drho = 0.556500332363;
+     du   = 0.742000443151;
+     du1  = -0.282334999306;
+     du2  = 0.0367010491491;
+     du3  = 0.0367010491491;
+     dB1  = -0.195509141461;
+     dB2  = 0.0977545707307;
+     dB3  = 0.0977545707307;
+    } else if (nmode == 2) { // Alfven
      omega = 3.44144232573*I;
-     if(dir == 1) {
-       du1 = 0.480384461415;
-       dB1 = 0.877058019307;
-     } else if (dir == 2) {
-       du2 = 0.480384461415;
-       dB2 = 0.877058019307;
-     } else if (dir == 3) {
-       du3 = 0.480384461415;
-       dB3 = 0.877058019307;
-     }
-   } else { // Fast
+     du3  = 0.480384461415;
+     dB3  = 0.877058019307;
+    } else { // Fast
      omega = 5.53726217331*I;
      drho = 0.476395427447;
      du   = 0.635193903263;
@@ -110,7 +81,75 @@ void init(struct GridGeom *G, struct FluidState *S)
      du2  = -0.316873207561;
      dB1  = 0.359559114174;
      dB2  = -0.359559114174;
-   }
+    }
+  } else {
+    // Constant field direction
+    if (dir ==1) {
+	B20 = 1.;
+    } else if (dir == 2) {
+	B30 = 1.;
+    } else if (dir == 3) {
+	B10 = 1.;
+    }
+
+    // Eigenmodes for faux-2D
+    if (nmode == 0) { // Entropy
+      omega = 2.*M_PI/5.*I;
+      drho = 1.;
+    } else if (nmode == 1) { // Slow
+      omega = 2.41024185339*I;
+      drho = 0.558104461559;
+      du   = 0.744139282078;
+      if (dir == 1) {
+       du2  = -0.277124827421;
+       du3  = 0.0630348927707;
+       dB2  = -0.164323721928;
+       dB3  = 0.164323721928;
+      } else if (dir == 2) {
+       du3  = -0.277124827421;
+       du1  = 0.0630348927707;
+       dB3  = -0.164323721928;
+       dB1  = 0.164323721928;
+      } else if (dir == 3) {
+       du1  = -0.277124827421;
+       du2  = 0.0630348927707;
+       dB1  = -0.164323721928;
+       dB2  = 0.164323721928;
+      }
+    } else if (nmode == 2) { // Alfven
+      omega = 3.44144232573*I;
+      if (dir == 1) {
+       du1 = 0.480384461415;
+       dB1 = 0.877058019307;
+      } else if (dir == 2) {
+       du2 = 0.480384461415;
+       dB2 = 0.877058019307;
+      } else if (dir == 3) {
+       du3 = 0.480384461415;
+       dB3 = 0.877058019307;
+      }
+    } else { // Fast
+      omega = 5.53726217331*I;
+      drho = 0.476395427447;
+      du   = 0.635193903263;
+      if (dir == 1) {
+       du2  = -0.102965815319;
+       du3  = -0.316873207561;
+       dB2  = 0.359559114174;
+       dB3  = -0.359559114174;
+      } else if (dir == 2) {
+       du3  = -0.102965815319;
+       du1  = -0.316873207561;
+       dB3  = 0.359559114174;
+       dB1  = -0.359559114174;
+      } else if (dir == 3) {
+       du1  = -0.102965815319;
+       du2  = -0.316873207561;
+       dB1  = 0.359559114174;
+       dB2  = -0.359559114174;
+      }
+    }
+  }
 
   t = 0.;
   tf = 2.*M_PI/cimag(omega);
@@ -162,6 +201,6 @@ void init(struct GridGeom *G, struct FluidState *S)
   } // ZLOOP
 
   //Enforce boundary conditions
-  fixup(G, S);
+  //fixup(G, S);
   set_bounds(G, S);
 }
