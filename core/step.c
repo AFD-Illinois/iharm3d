@@ -31,8 +31,8 @@ void step(struct GridGeom *G, struct FluidState *S)
   #if ELECTRONS
   heat_electrons(P, Ph, 0.5*dt);
   #endif
-  //fixup(G, Stmp);
-  //fixup_utoprim(G, Stmp);
+  fixup(G, Stmp);
+  fixup_utoprim(G, Stmp);
   #if ELECTRONS
   fixup_electrons(Ph);
   #endif
@@ -49,8 +49,8 @@ void step(struct GridGeom *G, struct FluidState *S)
   #if ELECTRONS
   heat_electrons(Ph, P, dt);
   #endif
-  //fixup(G, S);
-  //fixup_utoprim(G, S);
+  fixup(G, S);
+  fixup_utoprim(G, S);
   #if ELECTRONS
   fixup_electrons(P);
   #endif
@@ -60,8 +60,6 @@ void step(struct GridGeom *G, struct FluidState *S)
   // Apply radiation four-force to fluid
   memset((void*)&radG[0][0][0][0], 0,
     (N1+2*NG)*(N2+2*NG)*(N3+2*NG)*NDIM*sizeof(double));
-
-  // Control Monte Carlo resolution
   #endif
 
   // Increment time
@@ -89,7 +87,8 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   fix_flux(F);
   #endif
 
-  //flux_ct(F);
+  //Constrained transport for B
+  flux_ct(F);
 
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);

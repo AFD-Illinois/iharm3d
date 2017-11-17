@@ -124,8 +124,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
             printf("X1R_BOUND choice POLAR not supported\n");
             exit(-1);
             #elif X1R_BOUND == USER
-            printf("X1R_BOUND choice USER not supported\n");
-            exit(-1);
+            bound_gas_prob_x1r(i, j, k, state->P, geom);
 	    #elif X1R_BOUND != PERIODIC
             printf("X1R_BOUND choice %i not supported\n", X1R_BOUND);
             exit(-1);
@@ -268,7 +267,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
     //} // global_start[2] == 0
 
-    #if X3L_BOUND == PERIODIC && X3R_BOUND == PERIODIC
+    #if X3L_BOUND == PERIODIC && X3R_BOUND == PERIODIC && N3 > NG
     if (global_stop[2] == N3TOT) { // Both first and last node
 
       #pragma omp parallel for collapse(2)
@@ -301,7 +300,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       JSLOOP(-NG, N2-1+NG) {
         ISLOOP(-NG, N1-1+NG) {
           #if N3 < NG
-          int kactive = N3 - 1 + NG;
+          int kactive = NG;
           PLOOP state->P[ip][k][j][i] = state->P[ip][kactive][j][i];
           pflag[k][j][i] = pflag[kactive][j][i];
           #else
@@ -329,7 +328,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   #if METRIC == MKS
   //ucon_calc(geom, state);
-  if(global_start[0] == 0) {
+  if(global_start[0] == 0  && X1L_INFLOW == 0) {
     // Make sure there is no inflow at the inner boundary
     #pragma omp parallel for collapse(2)
     KSLOOP(-NG, N3 - 1 + NG) {
@@ -340,7 +339,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       }
     }
   }
-  if(global_stop[0] == N1TOT) {
+
+  if(global_stop[0] == N1TOT && X1R_INFLOW == 0) {
     // Make sure there is no inflow at the outer boundary
     #pragma omp parallel for collapse(2)
     KSLOOP(-NG, N3 - 1 + NG) {
@@ -408,7 +408,7 @@ void inflow_check(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
 
 void fix_flux(struct FluidFlux *F)
 {
-  if (global_start[0] == 0) {
+  if (global_start[0] == 0 && X1L_INFLOW == 0) {
     #pragma omp parallel for collapse(2)
     KSLOOP(0, N3) {
       JSLOOP(0, N2) {
@@ -417,7 +417,7 @@ void fix_flux(struct FluidFlux *F)
     }
   }
 
-  if (global_stop[0] == N1TOT) {
+  if (global_stop[0] == N1TOT  && X1R_INFLOW == 0) {
     #pragma omp parallel for collapse(2)
     KSLOOP(0, N3+NG-1) {
       JSLOOP(0, N2+NG-1) {
