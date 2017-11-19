@@ -29,7 +29,7 @@ for arg in sys.argv:
 RES = [16, 32, 64]#, 128]
 
 # LOOP OVER EIGENMODES
-MODES = [1,2,3]
+MODES = [2,3]
 NAMES = ['ENTROPY', 'SLOW', 'ALFVEN', 'FAST']
 NVAR = 8
 VARS = ['rho', 'u', 'u1', 'u2', 'u3', 'B1', 'B2', 'B3']
@@ -66,15 +66,19 @@ for n in xrange(len(MODES)):
     dvar[6] = 0.0977545707307
     dvar[7] = 0.0977545707307
   if MODES[n] == 2: # ALFVEN
-    dvar[4] = 0.480384461415
-    dvar[7] = 0.877058019307
+    # dvar[4] = 0.480384461415
+    # dvar[7] = 0.877058019307
+    dvar[3] =  -0.339683110243
+    dvar[4] =  0.339683110243
+    dvar[6] =  0.620173672946
+    dvar[7] =  -0.620173672946
   if MODES[n] == 3: # FAST
-#     dvar[0] = 0.476395427447
-#     dvar[1] = 0.635193903263
-#     dvar[2] = -0.102965815319
-#     dvar[3] = -0.316873207561
-#     dvar[5] = 0.359559114174
-#     dvar[6] = -0.359559114174
+    # dvar[0] = 0.476395427447
+    # dvar[1] = 0.635193903263
+    # dvar[2] = -0.102965815319
+    # dvar[3] = -0.316873207561
+    # dvar[5] = 0.359559114174
+    # dvar[6] = -0.359559114174
     dvar[0]  =  0.481846076323;
     dvar[1]    =  0.642461435098;
     dvar[2]   =  -0.0832240462505;
@@ -117,19 +121,19 @@ for n in xrange(len(MODES)):
       L1[n][m][k] = np.mean(np.fabs(dvar_code[k] - dvar_sol[k]))
 
     mid = RES[m]/2
-    
+
     # Plot slice at each timestep
 #     for fnum in xrange(len(np.sort(glob.glob('dump*.h5')))):
 #       dfile = np.sort(glob.glob('dump*.h5'))[fnum]
-# 
+#
 #       hdr = io.load_hdr(dfile)
 #       geom = io.load_geom(hdr, dfile)
 #       dump = io.load_dump(hdr, geom, dfile)
-#   
+#
 #       X1 = dump['x']
 #       X2 = dump['y']
 #       X3 = dump['z']
-#   
+#
 #       dvar_code = []
 #       dvar_code.append(dump['RHO'] - var0[0])
 #       dvar_code.append(dump['UU'] - var0[1])
@@ -139,14 +143,14 @@ for n in xrange(len(MODES)):
 #       dvar_code.append(dump['B1'] - var0[5])
 #       dvar_code.append(dump['B2'] - var0[6])
 #       dvar_code.append(dump['B3'] - var0[7])
-#       
+#
 #       dvar_plane = []
 #       for k in xrange(NVAR):
 #         dvar_plane.append(np.zeros((dump['N1'], dump['N2'])))
 #         for i in xrange(dump['N1']):
 #           for j in xrange(dump['N2']):
 #             dvar_plane[k][i,j] = dvar_code[k][i,j,int(i/2 + j/2)]
-#        
+#
 #       # Plot dvar
 #       for k in xrange(NVAR):
 #         if abs(dvar[k]) != 0.:

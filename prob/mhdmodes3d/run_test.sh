@@ -5,7 +5,7 @@ source ../../../mpi-load.sh
 for n in 16 32 64
 do
 
-  for i in 0 1 2 3
+  for i in 2 3
   do
 
     # I can't believe I'm doing this again
