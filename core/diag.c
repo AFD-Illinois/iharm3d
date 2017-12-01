@@ -15,6 +15,24 @@ void reset_log_variables()
   #endif
 }
 
+// Evaluate flux based diagnostics; put results in global variables
+void diag_flux(struct FluidFlux *F)
+{
+  mdot = edot = ldot = 0.;
+  if (global_start[1] == 0) {
+    #pragma omp parallel for \
+      reduction(+:mdot) reduction(-:edot) reduction(+:ldot) \
+      collapse(2)
+    JSLOOP(0, N2 - 1) {
+      KSLOOP(0, N3 - 1) {
+        mdot -= F->X1[RHO][k][j][NG]*dx[2]*dx[3];
+        edot -= (F->X1[UU][k][j][NG] - F->X1[RHO][k][j][NG])*dx[2]*dx[3];
+        ldot += F->X1[U3][k][j][NG]*dx[2]*dx[3];
+      }
+    }
+  }
+}
+
 void diag(struct GridGeom *G, struct FluidState *S, int call_code)
 {
   //double U[NVAR], divb;
@@ -91,7 +109,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
       //  P[N1/2][N2/2][N3/2][UU]*pow(P[N1/2][N2/2][N3/2][RHO], -gam),
       //  P[N1/2][N2/2][N3/2][UU]);
       // REEVALUATE MDOT LOCALLY!
-      //fprintf(ener_file, "%15.8g %15.8g %15.8g ", mdot, edot, ldot);
+      fprintf(ener_file, "%15.8g %15.8g %15.8g ", mdot, edot, ldot);
       fprintf(ener_file, "%15.8g ", divbmax);
       fprintf(ener_file, "\n");
       fflush(ener_file);

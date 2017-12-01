@@ -181,8 +181,11 @@ int main(int argc, char *argv[])
         diag(G, S, DIAG_LOG);
         tlog += DTl;
       }
-      if (nstep % DTr == 0)
-        restart_write(S);
+      if (nstep % DTr == 0) {
+	char fname[50];
+	sprintf(fname, "restart.last.%d", mpi_myrank());
+        restart_write(fname, S);
+      }
     }
 
     timer_stop(TIMER_ALL);

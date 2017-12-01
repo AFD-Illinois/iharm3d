@@ -90,6 +90,9 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   //Constrained transport for B
   flux_ct(F);
 
+  // Flux diagnostic globals
+  diag_flux(F);
+
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);
   #pragma omp parallel for collapse(3)

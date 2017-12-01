@@ -133,6 +133,7 @@ void init_mpi()
 // Share face data
 void sync_mpi_boundaries(struct FluidState *S)
 {
+  // TODO TODO
   #if 0
   MPI_Status status;
 

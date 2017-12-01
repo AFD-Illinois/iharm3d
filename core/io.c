@@ -18,11 +18,11 @@ void add_int_value(int val, const char *name, hid_t file_id, hid_t filespace,
   hid_t memspace);
 void add_dbl_value(double val, const char *name, hid_t file_id, hid_t filespace,
   hid_t memspace);
-void add_str_value(const char* val, const char *name, hid_t file_id, 
+void add_str_value(const char* val, const char *name, hid_t file_id,
   hid_t filespace, hid_t memspace);
 
 static int dump_id = 0;
-//static int restart_id = 0;
+static int restart_id = 0;
 
 void dump(struct GridGeom *G, struct FluidState *S)
 {
@@ -34,7 +34,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hsize_t fdims[] = {N3TOT, N2TOT, N1TOT};
   hsize_t mdims[] = {N3, N2, N1};
   #if ELECTRONS
-  const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3", 
+  const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
                             "KEL", "KTOT"};
   #else
   const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"};
@@ -69,20 +69,20 @@ void dump(struct GridGeom *G, struct FluidState *S)
   strcpy(name, dumpdir);
   strcat(name, fname);
   if(mpi_io_proc()) {
-    fprintf(stdout, "DUMP %s\n", name); 
+    fprintf(stdout, "DUMP %s\n", name);
   }
 
   plist_id = H5Pcreate(H5P_FILE_ACCESS);
   H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
   file_id = H5Fcreate(name, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
   H5Pclose(plist_id);
-  
+
   // Write header
   file_grid_dims[0] = 1;
   filespace = H5Screate_simple(1, file_grid_dims, NULL);
   file_start[0] = 0;
   file_count[0] = (mpi_io_proc() ? one : zero);
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count, 
+  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count,
     NULL);
   memspace  = H5Screate_simple(1, (mpi_io_proc() ? &one : &zero), NULL);
   #if METRIC == MINKOWSKI
@@ -135,20 +135,20 @@ void dump(struct GridGeom *G, struct FluidState *S)
     file_start[d] = global_start[d];
     file_count[d] = mdims[d];
   }
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count, 
+  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count,
     NULL);
 
   memspace = H5Screate_simple(3, file_count, NULL);
   for (int d = 0; d < 3; d++)
     mem_start[d] = 0;
-  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count, 
+  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count,
     NULL);
 
   // Write primitive variables
   PLOOP {
     int ind = 0;
     ZLOOP {
-      //data[ind] = (float)P[i][j][k][ip]; 
+      //data[ind] = (float)P[i][j][k][ip];
       data[ind] = (float)(S->P[ip][k][j][i]);
       ind++;
     }
@@ -178,7 +178,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
     ind++;
   }
   write_scalar(data, file_id, "X3", filespace, memspace, xml);
-  
+
   #if METRIC == MKS
   double r, theta, phi;
   ind = 0;
@@ -209,7 +209,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   }
   write_scalar(data, file_id, "phi", filespace, memspace, xml);
   #endif
-  
+
   ind = 0;
   ZLOOP {
     get_state(G, S, i, j, k, CENT);
@@ -288,7 +288,7 @@ void add_dbl_value(double val, const char *name, hid_t file_id, hid_t filespace,
   H5Pclose(plist_id);
 }
 
-void add_str_value(const char* val, const char *name, hid_t file_id, 
+void add_str_value(const char* val, const char *name, hid_t file_id,
   hid_t filespace, hid_t memspace)
 {
   hid_t string_type = H5Tcopy(H5T_C_S1);
@@ -333,267 +333,343 @@ void get_dbl_value(double *val, const char *name, hid_t file_id,
   mpi_dbl_broadcast(val);
 }
 
-void restart_write(struct FluidState *S)
+void restart_write(char* fname, struct FluidState *S)
 {
-  /*
-  int fdims[3] = {N1TOT, N2TOT, N3TOT};
-  int mdims[3] = {N1, N2, N3};
-  hsize_t file_grid_dims[4],file_start[4],file_count[4];
-  hsize_t mem_grid_dims[4],mem_start[4],one,zero;
+  // Restart files are ours to define.  Why not own it?
+  char fullpath[512];
+  strcpy(fullpath, restartdir);
+  strcat(fullpath, fname);
+  FILE* outfile = fopen(fullpath, "wb");
 
-  char name[80];
+  fwrite(&t, sizeof(double), 1, outfile);
+  fwrite(&nstep, sizeof(int), 1, outfile);
+  fwrite(&dump_id, sizeof(int), 1, outfile);
+  fwrite(&tf, sizeof(double), 1, outfile);
+  fwrite(&a, sizeof(double), 1, outfile);
+  fwrite(&gam, sizeof(double), 1, outfile);
+#if ELECTRONS
+  fwrite(&game, sizeof(double), 1, outfile);
+  fwrite(&gamp, sizeof(double), 1, outfile);
+  fwrite(&fel0, sizeof(double), 1, outfile);
+#endif
+  fwrite(&cour, sizeof(double), 1, outfile);
+  fwrite(&DTd, sizeof(double), 1, outfile);
+  fwrite(&DTl, sizeof(double), 1, outfile);
+  fwrite(&DTr, sizeof(int), 1, outfile);
+  fwrite(&DTp, sizeof(int), 1, outfile);
+  fwrite(&restart_id, sizeof(int), 1, outfile);
+  fwrite(&dt, sizeof(double), 1, outfile);
+  fwrite(&lim, sizeof(int), 1, outfile);
+  fwrite(&failed, sizeof(int), 1, outfile);
+  fwrite(&Rin, sizeof(double), 1, outfile);
+  fwrite(&Rout, sizeof(double), 1, outfile);
+  fwrite(&hslope, sizeof(double), 1, outfile);
+  fwrite(&R0, sizeof(double), 1, outfile);
+  fwrite(&Rhor, sizeof(double), 1, outfile);
+  fwrite(&Risco, sizeof(double), 1, outfile);
+  fwrite(&tdump, sizeof(double), 1, outfile);
+  fwrite(&tlog, sizeof(double), 1, outfile);
 
-  one = 1;
-  zero = 0;
-  mkdir("restarts", 0777);
+  // See?
+  fwrite(S, sizeof(struct FluidState), 1, outfile);
 
-  char fname[2048];
-  sprintf(fname, "restart_%08d.h5", restart_id);
-  strcpy(name, restartdir);
-  strcat(name, fname);
- 
-  char lastname[2048];
-  sprintf(fname, "restart.last");
-  strcpy(lastname, restartdir);
-  strcat(lastname, fname);
+  fclose(outfile);
 
-  restart_id++;
-  FILE *fp = fopen(lastname,"w");
-  fprintf(fp,"%s\n", name);
-  fclose(fp);
-  if(mpi_io_proc()) {
-    fprintf(stdout, "RESTART %s\n", name);
-  }
-
-  hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
-  H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
-  hid_t file_id = H5Fcreate(name, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
-  H5Pclose(plist_id);
-
-  // Write header
-  file_grid_dims[0] = 1;
-  hid_t filespace = H5Screate_simple(1, file_grid_dims, NULL);
-  file_start[0] = 0;
-  file_count[0] = (mpi_io_proc() ? one : zero);
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count,
-    NULL);
-  hid_t memspace  = H5Screate_simple(1, (mpi_io_proc() ? &one : &zero), NULL);
-
-  add_dbl_value(t, "t", file_id, filespace, memspace);
-  add_int_value(nstep, "nstep", file_id, filespace, memspace);
-  add_int_value(dump_id, "dump_id", file_id, filespace, memspace);
-  add_dbl_value(tf, "tf", file_id, filespace, memspace);
-  add_dbl_value(a, "a", file_id, filespace, memspace);
-  add_dbl_value(gam, "gam", file_id, filespace, memspace);
-  #if ELECTRONS
-  add_dbl_value(game, "game", file_id, filespace, memspace);
-  add_dbl_value(gamp, "gamp", file_id, filespace, memspace);
-  add_dbl_value(fel0, "fel0", file_id, filespace, memspace);
-  #endif
-  add_dbl_value(cour, "cour", file_id, filespace, memspace);
-  add_dbl_value(DTd, "DTd", file_id, filespace, memspace);
-  add_dbl_value(DTl, "DTl", file_id, filespace, memspace);
-  add_int_value(DTr, "DTr", file_id, filespace, memspace);
-  add_int_value(DTp, "DTp", file_id, filespace, memspace);
-  add_int_value(restart_id, "restart_id", file_id, filespace, memspace);
-  add_dbl_value(dt, "dt", file_id, filespace, memspace);
-  add_int_value(lim, "lim", file_id, filespace, memspace);
-  add_int_value(failed, "failed", file_id, filespace, memspace);
-  add_dbl_value(Rin, "Rin", file_id, filespace, memspace);
-  add_dbl_value(Rout, "Rout", file_id, filespace, memspace);
-  add_dbl_value(hslope, "hslope", file_id, filespace, memspace);
-  add_dbl_value(R0, "R0", file_id, filespace, memspace);
-  add_dbl_value(Rhor, "Rhor", file_id, filespace, memspace);
-  add_dbl_value(Risco, "Risco", file_id, filespace, memspace);
-  add_dbl_value(tdump, "tdump", file_id, filespace, memspace);
-  add_dbl_value(tlog, "tlog", file_id, filespace, memspace);
-
-  H5Sclose(filespace);
-  H5Sclose(memspace);
-
-  // Write data
-  for (int d = 0; d < 3; d++)
-    file_grid_dims[d] = fdims[d];
-  file_grid_dims[3] = NVAR;
-  filespace = H5Screate_simple(4, file_grid_dims, NULL);
-  for (int d = 0; d < 3; d++) {
-    file_start[d] = global_start[d];
-    file_count[d] = mdims[d];
-  }
-  file_start[3] = 0;
-  file_count[3] = NVAR;
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count, 
-    NULL);
-
-  for (int d = 0; d < 3; d++) {
-    mem_grid_dims[d] = mdims[d] + 2*NG;
-  }
-  mem_grid_dims[3] = NVAR;
-  memspace = H5Screate_simple(4, mem_grid_dims, NULL);
-  for (int d = 0; d < 3; d++)
-    mem_start[d] = 0;
-  mem_start[3] = 0;
-  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count, 
-    NULL);
-
-  sprintf(name,"p");
-  plist_id = H5Pcreate(H5P_DATASET_CREATE);
-  hid_t dset_id = H5Dcreate(file_id, name, H5T_NATIVE_DOUBLE, filespace,
-    H5P_DEFAULT, plist_id, H5P_DEFAULT);
-  H5Pclose(plist_id);
-
-  plist_id = H5Pcreate(H5P_DATASET_XFER);
-    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
-  H5Dwrite(dset_id, H5T_NATIVE_DOUBLE, memspace, filespace, plist_id,
-    &P[NG][NG][NG][0]);
-  H5Dclose(dset_id);
-  H5Pclose(plist_id);
-
-  H5Sclose(memspace);
-  H5Sclose(filespace);
-
-  H5Fflush(file_id, H5F_SCOPE_GLOBAL);
-  H5Fclose(file_id);
-  */
+//  hsize_t file_grid_dims[4],file_start[4],file_count[4];
+//  hsize_t mem_grid_dims[4],mem_start[4],one,zero;
+//  int fdims[4] = {NVAR, N3TOT, N2TOT, N1TOT};
+//  int mdims[4] = {NVAR, N3, N2, N1};
+//
+//  char name[80];
+//
+//  one = 1;
+//  zero = 0;
+//  mkdir("restarts", 0777);
+//
+//  char fname[2048];
+//  sprintf(fname, "restart_%08d.h5", restart_id);
+//  strcpy(name, restartdir);
+//  strcat(name, fname);
+//
+//  char lastname[2048];
+//  sprintf(fname, "restart.last");
+//  strcpy(lastname, restartdir);
+//  strcat(lastname, fname);
+//
+//  restart_id++;
+//  FILE *fp = fopen(lastname,"w");
+//  fprintf(fp,"%s\n", name);
+//  fclose(fp);
+//  if(mpi_io_proc()) {
+//    fprintf(stdout, "RESTART %s\n", name);
+//  }
+//
+//  hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
+//  H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
+//  hid_t file_id = H5Fcreate(name, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
+//  H5Pclose(plist_id);
+//
+//  // Write header
+//  file_grid_dims[0] = 1;
+//  hid_t filespace = H5Screate_simple(1, file_grid_dims, NULL);
+//  file_start[0] = 0;
+//  file_count[0] = (mpi_io_proc() ? one : zero);
+//  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count,
+//    NULL);
+//  hid_t memspace  = H5Screate_simple(1, (mpi_io_proc() ? &one : &zero), NULL);
+//
+//  add_dbl_value(t, "t", file_id, filespace, memspace);
+//  add_int_value(nstep, "nstep", file_id, filespace, memspace);
+//  add_int_value(dump_id, "dump_id", file_id, filespace, memspace);
+//  add_dbl_value(tf, "tf", file_id, filespace, memspace);
+//  add_dbl_value(a, "a", file_id, filespace, memspace);
+//  add_dbl_value(gam, "gam", file_id, filespace, memspace);
+//  #if ELECTRONS
+//  add_dbl_value(game, "game", file_id, filespace, memspace);
+//  add_dbl_value(gamp, "gamp", file_id, filespace, memspace);
+//  add_dbl_value(fel0, "fel0", file_id, filespace, memspace);
+//  #endif
+//  add_dbl_value(cour, "cour", file_id, filespace, memspace);
+//  add_dbl_value(DTd, "DTd", file_id, filespace, memspace);
+//  add_dbl_value(DTl, "DTl", file_id, filespace, memspace);
+//  add_int_value(DTr, "DTr", file_id, filespace, memspace);
+//  add_int_value(DTp, "DTp", file_id, filespace, memspace);
+//  add_int_value(restart_id, "restart_id", file_id, filespace, memspace);
+//  add_dbl_value(dt, "dt", file_id, filespace, memspace);
+//  add_int_value(lim, "lim", file_id, filespace, memspace);
+//  add_int_value(failed, "failed", file_id, filespace, memspace);
+//  add_dbl_value(Rin, "Rin", file_id, filespace, memspace);
+//  add_dbl_value(Rout, "Rout", file_id, filespace, memspace);
+//  add_dbl_value(hslope, "hslope", file_id, filespace, memspace);
+//  add_dbl_value(R0, "R0", file_id, filespace, memspace);
+//  add_dbl_value(Rhor, "Rhor", file_id, filespace, memspace);
+//  add_dbl_value(Risco, "Risco", file_id, filespace, memspace);
+//  add_dbl_value(tdump, "tdump", file_id, filespace, memspace);
+//  add_dbl_value(tlog, "tlog", file_id, filespace, memspace);
+//
+//  H5Sclose(filespace);
+//  H5Sclose(memspace);
+//
+//  // Write data
+//  for (int d = 0; d < 4; d++)
+//    file_grid_dims[d] = fdims[d];
+//  filespace = H5Screate_simple(4, file_grid_dims, NULL);
+//  for (int d = 0; d < 4; d++) {
+//    file_start[d] = (d == 0) ? 0 : global_start[d-1];
+//    file_count[d] = mdims[d];
+//  }
+//  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count,
+//    NULL);
+//
+//  for (int d = 1; d < 4; d++) {
+//    mem_grid_dims[d] = (d == 0) ? mdims[d] : mdims[d] + 2*NG;
+//  }
+//
+//  memspace = H5Screate_simple(4, mem_grid_dims, NULL);
+//  for (int d = 0; d < 4; d++)
+//    mem_start[d] = 0;
+//  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count,
+//    NULL);
+//
+//  sprintf(name,"p");
+//  plist_id = H5Pcreate(H5P_DATASET_CREATE);
+//  hid_t dset_id = H5Dcreate(file_id, name, H5T_NATIVE_DOUBLE, filespace,
+//    H5P_DEFAULT, plist_id, H5P_DEFAULT);
+//  H5Pclose(plist_id);
+//
+//  plist_id = H5Pcreate(H5P_DATASET_XFER);
+//    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+//  H5Dwrite(dset_id, H5T_NATIVE_DOUBLE, memspace, filespace, plist_id,
+//	   &(S->P[0][0][0][0]));
+//  H5Dclose(dset_id);
+//  H5Pclose(plist_id);
+//
+//  H5Sclose(memspace);
+//  H5Sclose(filespace);
+//
+//  H5Fflush(file_id, H5F_SCOPE_GLOBAL);
+//  H5Fclose(file_id);
 }
 
 void restart_read(char *fname, struct FluidState *S)
 {
-  /*hsize_t file_grid_dims[4],file_start[4],file_count[4];
-  hsize_t mem_grid_dims[4],mem_start[4],one;
-  char *name = "p";
-  int fdims[3] = {N1TOT, N2TOT, N3TOT};
-  int mdims[3] = {N1, N2, N3};
+  // Restart files are ours to define.  Why not own it?
+  char fullpath[512];
+  strcpy(fullpath, restartdir);
+  strcat(fullpath, fname);
+  FILE* outfile = fopen(fullpath, "rb");
+  if(outfile == NULL) fprintf(stderr, "Error opening restart file %s!\n", fullpath);
 
-  if(mpi_io_proc()) {
-    fprintf(stderr, "Restarting from %s\n\n", fname);
-  }
+  fprintf(stderr, "Reading dump header\n");
 
-  one = 1;
+  if(!fread(&t, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&nstep, sizeof(int), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&dump_id, sizeof(int), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&tf, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&a, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&gam, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+#if ELECTRONS
+  if(!fread(&game, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&gamp, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&fel0, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+#endif
+  if(!fread(&cour, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&DTd, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&DTl, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&DTr, sizeof(int), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&DTp, sizeof(int), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&restart_id, sizeof(int), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&dt, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&lim, sizeof(int), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&failed, sizeof(int), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&Rin, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&Rout, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&hslope, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&R0, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&Rhor, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&Risco, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&tdump, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
+  if(!fread(&tlog, sizeof(double), 1, outfile)) fprintf(stderr, "Error reading restart file!");
 
-  hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
-  H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
-  hid_t file_id = H5Fopen(fname, H5F_ACC_RDONLY, plist_id);
-  H5Pclose(plist_id);
+  fprintf(stderr, "Read dump header\n");
 
-  // Read header
-  file_grid_dims[0] = 1;
-  hid_t filespace = H5Screate_simple(1, file_grid_dims, NULL);
-  file_start[0] = 0;
-  file_count[0] = 1;
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count, 
-    NULL);
-  hid_t memspace  = H5Screate_simple(1, &one, NULL);
+  // See?
+  if(!fread(S, sizeof(struct FluidState), 1, outfile)) fprintf(stderr, "Error reading restart file!");
 
-  get_dbl_value(&t, "t", file_id, filespace, memspace);
-  get_int_value(&nstep, "nstep", file_id, filespace, memspace);
-  get_int_value(&dump_id, "dump_id", file_id, filespace, memspace);
-  get_dbl_value(&tf, "tf", file_id, filespace, memspace);
-  get_dbl_value(&a, "a", file_id, filespace, memspace);
-  get_dbl_value(&gam, "gam", file_id, filespace, memspace);
-  #if ELECTRONS
-  get_dbl_value(&game, "game", file_id, filespace, memspace);
-  get_dbl_value(&gamp, "gamp", file_id, filespace, memspace);
-  get_dbl_value(&fel0, "fel0", file_id, filespace, memspace);
-  #endif
-  get_dbl_value(&cour, "cour", file_id, filespace, memspace);
-  get_dbl_value(&DTd, "DTd", file_id, filespace, memspace);
-  get_dbl_value(&DTl, "DTl", file_id, filespace, memspace);
-  get_int_value(&DTr, "DTr", file_id, filespace, memspace);
-  get_int_value(&DTp, "DTp", file_id, filespace, memspace);
-  get_int_value(&restart_id, "restart_id", file_id, filespace, memspace);
-  get_dbl_value(&dt, "dt", file_id, filespace, memspace);
-  get_int_value(&lim, "lim", file_id, filespace, memspace);
-  get_int_value(&failed, "failed", file_id, filespace, memspace);
-  get_dbl_value(&Rin, "Rin", file_id, filespace, memspace);
-  get_dbl_value(&Rout, "Rout", file_id, filespace, memspace);
-  get_dbl_value(&hslope, "hslope", file_id, filespace, memspace);
-  get_dbl_value(&R0, "R0", file_id, filespace, memspace);
-  get_dbl_value(&Rhor, "Rhor", file_id, filespace, memspace);
-    get_dbl_value(&Risco, "Risco", file_id, filespace, memspace);
-  get_dbl_value(&tdump, "tdump", file_id, filespace, memspace);
-  get_dbl_value(&tlog, "tlog", file_id, filespace, memspace);
+  fclose(outfile);
 
-  H5Sclose(filespace);
-  H5Sclose(memspace);
-
-  // Read data
-  for (int d = 0; d < 3; d++)
-    file_grid_dims[d] = fdims[d];
-  file_grid_dims[3] = NVAR;  // For vectors
-  filespace = H5Screate_simple(4, file_grid_dims, NULL);
-  for (int d = 0; d < 3; d++) {
-    file_start[d] = global_start[d];
-    file_count[d] = mdims[d];
-  }
-  file_start[3] = 0;
-  file_count[3] = NVAR;
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count, 
-    NULL);
-
-  for (int d = 0; d < 3; d++) {
-    mem_grid_dims[d] = mdims[d] + 2*NG;
-  }
-  mem_grid_dims[3] = NVAR;
-  memspace = H5Screate_simple(4, mem_grid_dims, NULL);
-  for (int d = 0; d < 3; d++)
-    mem_start[d] = NG;
-  mem_start[3] = 0;
-  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count, 
-    NULL);
-
-  plist_id = H5Pcreate(H5P_DATASET_ACCESS);
-  hid_t dset_id = H5Dopen(file_id, name, plist_id);
-  H5Pclose(plist_id);
-
-  plist_id = H5Pcreate(H5P_DATASET_XFER);
-    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
-  H5Dread(dset_id, H5T_NATIVE_DOUBLE, memspace, filespace, plist_id, 
-    &P[0][0][0][0]);
-  H5Dclose(dset_id);
-  H5Pclose(plist_id);
-
-  H5Sclose(memspace);
-  H5Sclose(filespace);
-  H5Fflush(file_id,H5F_SCOPE_GLOBAL);
-  H5Fclose(file_id);
-
-  MPI_Barrier(MPI_COMM_WORLD);*/
+//  hsize_t file_grid_dims[4],file_start[4],file_count[4];
+//  hsize_t mem_grid_dims[4],mem_start[4],one;
+//  char *name = "p";
+//  int fdims[4] = {NVAR, N3TOT, N2TOT, N1TOT};
+//  int mdims[4] = {NVAR, N3, N2, N1};
+//
+//  if(mpi_io_proc()) {
+//    fprintf(stderr, "Restarting from %s\n\n", fname);
+//  }
+//
+//  one = 1;
+//
+//  hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
+//  H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
+//  hid_t file_id = H5Fopen(fname, H5F_ACC_RDONLY, plist_id);
+//  H5Pclose(plist_id);
+//
+//  // Read header
+//  file_grid_dims[0] = 1;
+//  hid_t filespace = H5Screate_simple(1, file_grid_dims, NULL);
+//  file_start[0] = 0;
+//  file_count[0] = 1;
+//  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count,
+//    NULL);
+//  hid_t memspace  = H5Screate_simple(1, &one, NULL);
+//
+//  get_dbl_value(&t, "t", file_id, filespace, memspace);
+//  get_int_value(&nstep, "nstep", file_id, filespace, memspace);
+//  get_int_value(&dump_id, "dump_id", file_id, filespace, memspace);
+//  get_dbl_value(&tf, "tf", file_id, filespace, memspace);
+//  get_dbl_value(&a, "a", file_id, filespace, memspace);
+//  get_dbl_value(&gam, "gam", file_id, filespace, memspace);
+//  #if ELECTRONS
+//  get_dbl_value(&game, "game", file_id, filespace, memspace);
+//  get_dbl_value(&gamp, "gamp", file_id, filespace, memspace);
+//  get_dbl_value(&fel0, "fel0", file_id, filespace, memspace);
+//  #endif
+//  get_dbl_value(&cour, "cour", file_id, filespace, memspace);
+//  get_dbl_value(&DTd, "DTd", file_id, filespace, memspace);
+//  get_dbl_value(&DTl, "DTl", file_id, filespace, memspace);
+//  get_int_value(&DTr, "DTr", file_id, filespace, memspace);
+//  get_int_value(&DTp, "DTp", file_id, filespace, memspace);
+//  get_int_value(&restart_id, "restart_id", file_id, filespace, memspace);
+//  get_dbl_value(&dt, "dt", file_id, filespace, memspace);
+//  get_int_value(&lim, "lim", file_id, filespace, memspace);
+//  get_int_value(&failed, "failed", file_id, filespace, memspace);
+//  get_dbl_value(&Rin, "Rin", file_id, filespace, memspace);
+//  get_dbl_value(&Rout, "Rout", file_id, filespace, memspace);
+//  get_dbl_value(&hslope, "hslope", file_id, filespace, memspace);
+//  get_dbl_value(&R0, "R0", file_id, filespace, memspace);
+//  get_dbl_value(&Rhor, "Rhor", file_id, filespace, memspace);
+//    get_dbl_value(&Risco, "Risco", file_id, filespace, memspace);
+//  get_dbl_value(&tdump, "tdump", file_id, filespace, memspace);
+//  get_dbl_value(&tlog, "tlog", file_id, filespace, memspace);
+//
+//  H5Sclose(filespace);
+//  H5Sclose(memspace);
+//
+//  // Read data
+//  for (int d = 0; d < 4; d++)
+//    file_grid_dims[d] = fdims[d];
+//
+//  filespace = H5Screate_simple(4, file_grid_dims, NULL);
+//
+//  for (int d = 0; d < 4; d++) {
+//    file_start[d] = (d == 0) ? 0 : global_start[d-1];
+//    file_count[d] = mdims[d];
+//  }
+//  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count,
+//    NULL);
+//
+//  for (int d = 0; d < 4; d++) {
+//    mem_grid_dims[d] = (d == 0) ? mdims[d] : mdims[d] + 2*NG;
+//  }
+//  memspace = H5Screate_simple(4, mem_grid_dims, NULL);
+//
+//  for (int d = 0; d < 4; d++)
+//    mem_start[d] = (d == 0) ? 0 : NG;
+//  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count,
+//    NULL);
+//
+//  plist_id = H5Pcreate(H5P_DATASET_ACCESS);
+//  hid_t dset_id = H5Dopen(file_id, name, plist_id);
+//  H5Pclose(plist_id);
+//
+//  plist_id = H5Pcreate(H5P_DATASET_XFER);
+//    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+//  H5Dread(dset_id, H5T_NATIVE_DOUBLE, memspace, filespace, plist_id,
+//	  &(S->P[0][0][0][0]));
+//  H5Dclose(dset_id);
+//  H5Pclose(plist_id);
+//
+//  H5Sclose(memspace);
+//  H5Sclose(filespace);
+//  H5Fflush(file_id,H5F_SCOPE_GLOBAL);
+//  H5Fclose(file_id);
+//
+//  MPI_Barrier(MPI_COMM_WORLD);
 }
 
 int restart_init(struct GridGeom *G, struct FluidState *S)
 {
-  char fname[2048], lastname[2048];
-  sprintf(fname, "restart.last");
+  char fname[512], lastname[512];
+  sprintf(fname, "restart.last.%d", mpi_myrank());
+
+  // Check that file exists
   strcpy(lastname, restartdir);
   strcat(lastname, fname);
 
-  FILE *fp = fopen(lastname,"r");
+  FILE *fp = fopen(lastname,"rb");
   if (fp == NULL) {
     if (mpi_io_proc())
       fprintf(stdout, "No restart file\n\n");
     return 0;
   }
+  fclose(fp);
 
   if (mpi_io_proc())
     fprintf(stdout, "Loading restart file\n\n");
   zero_arrays();
 
-  safe_fscanf(fp, "%s\n", fname);
+  //safe_fscanf(fp, "%s\n", fname);
   restart_read(fname, S);
-
-  //ZSLOOP(-NG, N3-1+NG, -NG, N2-1+NG, -NG, N1-1+NG) {
-  //  PLOOP {
-  //    Ph[i][j][k][ip] = P[i][j][k][ip];
-  //  }
-  //}
 
   set_grid(G);
 
-  set_bounds(G, S);
+//  ZLOOP {
+//    get_state(G, S, i, j, k, CENT);
+//  }
 
-  fprintf(stderr, "RESTART INIT NOT SUPPORTED WITH NEW ARRAY INDEXING\n");
-  exit(-1);
+//  fixup(G, S);
+//  set_bounds(G, S);
 
   return 1;
 }
@@ -619,4 +695,3 @@ void safe_fscanf(FILE *stream, const char *format, ...)
     exit(-1);
   }
 }
-

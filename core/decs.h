@@ -371,7 +371,7 @@ void reset_log_variables();
 void diag(struct GridGeom *G, struct FluidState *S, int call_code);
 void fail(int fail_type, int i, int j, int k);
 //void area_map(int i, int j, int k, grid_prim_type prim);
-//void diag_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3);
+void diag_flux(struct FluidFlux *F);
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k);
 
@@ -403,7 +403,7 @@ void flux_ct(struct FluidFlux *F);
 
 // io.c
 void dump(struct GridGeom *G, struct FluidState *S);
-void restart_write(struct FluidState *S);
+void restart_write(char* fname, struct FluidState *S);
 void restart_read(char *fname, struct FluidState *S);
 int restart_init(struct GridGeom *G, struct FluidState *S);
 void safe_system(const char *command);
