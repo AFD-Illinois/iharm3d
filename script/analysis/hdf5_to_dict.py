@@ -186,9 +186,9 @@ def load_dump(hdr, geom, fname):
   return dump
 
 # TODO TODO match this with the real logfile
-def load_log(path):
+def load_log(logfile):
   diag = {}
-  dfile = np.loadtxt(os.path.join(path, 'log.out')).transpose()
+  dfile = np.loadtxt(logfile).transpose()
   diag['t'] = dfile[0]
   diag['rmed'] = dfile[1]
   diag['pp'] = dfile[2]
@@ -197,6 +197,8 @@ def load_log(path):
   diag['edot'] = dfile[5]
   diag['ldot'] = dfile[6]
   diag['divbmax'] = dfile[7]
+  
+  return diag
 
 def harm_coord(hdr, i, j, k):
   startx = [0, hdr['startx1'], hdr['startx2'], hdr['startx3']]
