@@ -659,17 +659,16 @@ int restart_init(struct GridGeom *G, struct FluidState *S)
     fprintf(stdout, "Loading restart file\n\n");
   zero_arrays();
 
-  //safe_fscanf(fp, "%s\n", fname);
   restart_read(fname, S);
 
   set_grid(G);
 
-//  ZLOOP {
-//    get_state(G, S, i, j, k, CENT);
-//  }
+  ZLOOP {
+    get_state(G, S, i, j, k, CENT);
+  }
 
 //  fixup(G, S);
-//  set_bounds(G, S);
+  set_bounds(G, S);
 
   return 1;
 }

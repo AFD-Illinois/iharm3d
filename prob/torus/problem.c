@@ -64,7 +64,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   // Numerical parameters
   lim = MC;
   failed = 0;
-  cour = 0.3;
+  cour = 0.9;
   dt = 1.e-8;
   R0 = 0.0;
   Rhor = (1. + sqrt(1. - a*a));
