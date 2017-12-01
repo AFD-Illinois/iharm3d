@@ -17,9 +17,12 @@ PATHS['PROB'] = os.getcwd()
 sys.path.insert(0, PATHS['SCRIPT'])
 sys.path.insert(0, PATHS['ANALYSIS'])
 sys.path.insert(0, PATHS['MACHINE'])
-import hdf5_to_dict as io
+try:
+  import hdf5_to_dict as io
+except ImportError:
+  print("Failed to import HDF5 Library. File I/O will be unavailable")
 import units
-cgs = units.get_cgs()
+cgs = units.get_dict()
 import util
 import config
 

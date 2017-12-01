@@ -101,13 +101,25 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   
   timer_start(TIMER_LR_STATE);
 
-  get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
+//  ZSLOOP(-1, N3, -1, N2, -1, N1) {
+//    get_state(G, Sl, i, j, k, loc);
+//    get_state(G, Sr, i, j, k, loc);
+//  }
 
+  get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
   get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
 
   timer_stop(TIMER_LR_STATE);
 
   timer_start(TIMER_LR_PTOF);
+
+//    ZSLOOP (-1, N3, -1, N2, -1, N1) {
+//      prim_to_flux(G, Sl, i, j, k, 0,   loc, Sl->U);
+//      prim_to_flux(G, Sl, i, j, k, dir, loc, fluxL);
+//      prim_to_flux(G, Sr, i, j, k, 0  , loc, Sr->U);
+//      prim_to_flux(G, Sr, i, j, k, dir, loc, fluxR);
+//
+//    }
 
   prim_to_flux_vec(G, Sl, 0,   loc, -1, N3, -1, N2, -1, N1, Sl->U);
   prim_to_flux_vec(G, Sl, dir, loc, -1, N3, -1, N2, -1, N1, fluxL);
@@ -131,7 +143,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     cmax[k][j][i] = fabs(MY_MAX(MY_MAX(0., cmaxL[k][j][i]), cmaxR[k][j][i]));
     cmin[k][j][i] = fabs(MY_MAX(MY_MAX(0., -cminL[k][j][i]), -cminR[k][j][i]));
     ctop[k][j][i] = MY_MAX(cmax[k][j][i], cmin[k][j][i]);
-    if (isnan(1./ctop[k][j][i])) {printf("%i %i %i (%i)\n", k,j,i,dir); exit(-1);}
+    if (isnan(1./ctop[k][j][i])) {printf("ctop is 0 or NaN at: %i %i %i (%i)\nExiting.\n", k,j,i,dir); exit(-1);}
   }
   timer_stop(TIMER_LR_CMAX);
 

@@ -9,7 +9,7 @@
 #include "decs.h"
 
 // Declarations
-double advance_fluid(struct GridGeom *G, struct FluidState *Si, 
+double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   struct FluidState *Ss, struct FluidState *Sf, double Dt);
 static struct FluidState *Stmp;
 static struct FluidFlux *F;
@@ -23,7 +23,7 @@ void step(struct GridGeom *G, struct FluidState *S)
     F = (struct FluidFlux*)malloc(sizeof(struct FluidFlux));
     first_call = 0;
   }
-  
+
   double ndt;
 
   // Predictor setup
@@ -60,8 +60,6 @@ void step(struct GridGeom *G, struct FluidState *S)
   // Apply radiation four-force to fluid
   memset((void*)&radG[0][0][0][0], 0,
     (N1+2*NG)*(N2+2*NG)*(N3+2*NG)*NDIM*sizeof(double));
-  
-  // Control Monte Carlo resolution
   #endif
 
   // Increment time
@@ -75,21 +73,25 @@ void step(struct GridGeom *G, struct FluidState *S)
   dt = mpi_min(dt);
 }
 
-double advance_fluid(struct GridGeom *G, struct FluidState *Si, 
+double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   struct FluidState *Ss, struct FluidState *Sf, double Dt)
 {
   static GridPrim dU;
 
   #pragma omp parallel for collapse(3)
   PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
-  
+
   double ndt = get_flux(G, Ss, F);
 
   #if METRIC == MKS
   fix_flux(F);
   #endif
 
+  //Constrained transport for B
   flux_ct(F);
+
+  // Flux diagnostic globals
+  diag_flux(F);
 
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);
@@ -139,4 +141,3 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 
   return ndt;
 }
-

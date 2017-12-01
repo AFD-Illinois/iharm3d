@@ -7,9 +7,9 @@
  ******************************************************************************/
 
 /* GLOBAL RESOLUTION */
-#define N1TOT 64
-#define N2TOT 64
-#define N3TOT 64
+#define N1TOT 96
+#define N2TOT 96
+#define N3TOT 96
 
 /* MPI DECOMPOSITION */
 #define N1CPU 1
@@ -68,4 +68,7 @@
 #define X2R_BOUND POLAR
 #define X3L_BOUND PERIODIC
 #define X3R_BOUND PERIODIC
+
+#define X1L_INFLOW 0
+#define X1R_INFLOW 0
 

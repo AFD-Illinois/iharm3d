@@ -50,7 +50,7 @@
 #define NMAX     (N12 > N3 ? N12 : N3)
 
 #define NDIM       (4)    // Number of total dimensions
-#define NPG        (4)    // Number of positions on grid for grid functions
+#define NPG        (5)    // Number of positions on grid for grid functions
 #define NG         (3)    // Number of ghost zones
 
 // Fixup parameters
@@ -102,9 +102,11 @@
 // Centering of grid functions (assumes axisymmetry in X3)
 #define FACE1 (0)
 #define FACE2 (1)
+//#define FACE3 (2)
 #define CORN  (2)
 #define CENT  (3)
-#define FACE3 (CENT)
+// For non-axisymmetric (Minkowski spacetimes etc)
+#define FACE3 (4)
 
 // Slope limiter
 #define MC   (0)
@@ -256,10 +258,10 @@ extern int failed;
 extern int lim;
 
 // Diagnostics
-//extern double mdot;
-//extern double edot;
-//extern double ldot;
-//extern int icurr, jcurr, kcurr;
+extern double mdot;
+extern double edot;
+extern double ldot;
+extern int icurr, jcurr, kcurr;
 
 // Parallelism
 extern int nthreads;
@@ -297,6 +299,10 @@ struct of_photon {
   int origin[4];
   struct of_photon *next;
 };
+#endif
+
+#if POLYTH
+extern double poly_norm, poly_xt, poly_alpha;
 #endif
 
 extern gsl_rng *r;
@@ -365,7 +371,7 @@ void reset_log_variables();
 void diag(struct GridGeom *G, struct FluidState *S, int call_code);
 void fail(int fail_type, int i, int j, int k);
 //void area_map(int i, int j, int k, grid_prim_type prim);
-//void diag_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3);
+void diag_flux(struct FluidFlux *F);
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k);
 
@@ -397,7 +403,7 @@ void flux_ct(struct FluidFlux *F);
 
 // io.c
 void dump(struct GridGeom *G, struct FluidState *S);
-void restart_write(struct FluidState *S);
+void restart_write(char* fname, struct FluidState *S);
 void restart_read(char *fname, struct FluidState *S);
 int restart_init(struct GridGeom *G, struct FluidState *S);
 void safe_system(const char *command);
@@ -445,6 +451,8 @@ double mpi_io_max(double val);
 int mpi_myrank();
 
 // phys.c
+void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
+  int dir, int loc, GridPrim flux);
 void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir,
   int loc, int kstart, int kstop, int jstart, int jstop, int istart, int istop, GridPrim flux);
 void bcon_calc(struct FluidState *S, int i, int j, int k);
@@ -465,6 +473,8 @@ void mhd_vchar(struct GridGeom *G, struct FluidState *Sr, int i, int j, int k,
 
 // problem.c
 void init(struct GridGeom *G, struct FluidState *S);
+// Boundary condition (currently used for Bondi flow)
+void bound_gas_prob_x1r(int i, int j, int k, GridPrim  P, struct GridGeom *G);
 
 // push_superphotons.c
 #if RADIATION

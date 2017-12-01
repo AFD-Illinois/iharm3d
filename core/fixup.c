@@ -110,7 +110,6 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
             for (int n = -1; n < 2; n++) {
               double w = 1./(abs(l) + abs(m) + abs(n) + 1)*pflag[k+n][j+m][i+l];
               wsum += w;
-              //FLOOP sum[ip] += w*Pv[i+l][j+m][k+n][ip];
               FLOOP sum[ip] += w*S->P[ip][k+n][j+m][i+l];
             }
           }

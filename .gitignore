@@ -56,8 +56,10 @@ Thumbs.db
 *.swp
 *~
 .cproject
+.pydevproject
 .project
 .settings/
+TAGS
 
 # Build directory #
 ###################
@@ -73,4 +75,6 @@ bhlight
 *.dat
 out.txt
 dumps/
+dumps*/
 TMP/
+*.png
