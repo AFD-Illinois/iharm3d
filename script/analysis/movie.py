@@ -1,7 +1,7 @@
 ################################################################################
-#                                                                              # 
-#  GENERATE MOVIES FROM SIMULATION OUTPUT                                      # 
-#                                                                              # 
+#                                                                              #
+#  GENERATE MOVIES FROM SIMULATION OUTPUT                                      #
+#                                                                              #
 ################################################################################
 
 import sys; sys.dont_write_bytecode = True
@@ -55,53 +55,57 @@ def plot(args):
   n = args
   imname = 'frame_%08d.png' % n
   imname = os.path.join(FRAMEDIR, imname)
-  print '%08d / ' % (n+1) + '%08d' % len(files) 
- 
+  print '%08d / ' % (n+1) + '%08d' % len(files)
+
   # Ignore if frame already exists
   if os.path.isfile(imname):
     return
 
   dump = io.load_dump(hdr, geom, files[n])
   fig = plt.figure(figsize=(FIGX, FIGY))
-  
-  ax = plt.subplot(2,3,1)
-  bplt.plot_xz(ax, geom, np.log10(dump['RHO']), dump, 
+
+  ax = plt.subplot(2,4,1)
+  bplt.plot_xz(ax, geom, np.log10(dump['RHO']), dump,
     vmin=-4, vmax = 0, label='RHO')
   bplt.overlay_field(ax, geom, dump)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
   # I change this a lot
-  var2_str = 'bsq'
+  var2_str = 'beta'
   var2_data = np.log10(dump[var2_str])
-  
-  ax = plt.subplot(2,3,2)
+
+  ax = plt.subplot(2,4,2)
   bplt.plot_xz(ax, geom, var2_data, dump,
-    label=var2_str, cmap='RdBu_r', vmin=-8, vmax=2)
+    label=var2_str, cmap='RdBu_r', vmin=-2, vmax=2)
   bplt.overlay_field(ax, geom, dump)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
- 
-  ax = plt.subplot(2,3,4)
+
+  ax = plt.subplot(2,4,5)
   bplt.plot_xy(ax, geom, np.log10(dump['RHO']), dump,
      vmin=-4, vmax=0, label='RHO')
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
-  
-  ax = plt.subplot(2,3,5)
+
+  ax = plt.subplot(2,4,6)
   bplt.plot_xy(ax, geom, var2_data, dump,
      label=var2_str, cmap='RdBu_r', vmin=-8, vmax=2)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
   
-  ax = plt.subplot(2,3,3)
-  ax.plot(diag['t'], diag['mdot'], color='k')
+  plt.subplots_adjust(hspace=0.15, wspace=0.4)
+
+  ax = plt.subplot(2,2,2)
+  slc = np.nonzero(diag['mdot'])
+  ax.semilogy(diag['t'][slc], diag['mdot'][slc], color='k')
   ax.axvline(dump['t'], color='r') # Trace on finished plot, don't draw it as we go
   ax.set_xlim([0, dump['tf']])
+  ax.set_ylim([10**(-2),2])
   ax.set_xlabel('t/M')
   ax.set_ylabel('mdot')
-  
-  # This fucks with video because it generates an odd image size
-  #plt.subplots_adjust(hspace=0.50) # Avoid crowding
+
+  plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95) # Avoid crowding
+  #plt.tight_layout()
 
   #ax.pcolormesh(dump['X1'][:,:,0], dump['X2'][:,:,0], dump['RHO'][:,:,0])
-  plt.savefig(imname, bbox_inches='tight', dpi=100)
+  plt.savefig(imname, dpi=100) # bbox_inches='tight', # Messing with bounds risks odd pixel count
   plt.close(fig)
 
 # Test plot so that backtraces work
@@ -131,4 +135,3 @@ except KeyboardInterrupt:
 else:
   pool.close()
 pool.join()
-

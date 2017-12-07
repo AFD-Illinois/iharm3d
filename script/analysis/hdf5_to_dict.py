@@ -172,9 +172,11 @@ def load_dump(hdr, geom, fname):
 
   # This procedure seems correct but is expensive
   #ucon, ucov, bcon, bcov = get_state(dump, geom)
-  #dump['bsq'] = (bcon*bcov).sum(axis=-1)
+  #dump['bsq_py'] = (bcon*bcov).sum(axis=-1)
   # Instead we just read it
   dump['bsq'] = (dfile['bsq'][()]).transpose()
+  
+  #dump['bsq_diff'] = dump['bsq'] - dump['bsq_py'] # Check the python-based bsq
 
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
 
