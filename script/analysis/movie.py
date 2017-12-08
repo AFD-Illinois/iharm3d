@@ -87,7 +87,7 @@ def plot(args):
 
   ax = plt.subplot(2,4,6)
   bplt.plot_xy(ax, geom, var2_data, dump,
-     label=var2_str, cmap='RdBu_r', vmin=-8, vmax=2)
+     label=var2_str, cmap='RdBu_r', vmin=-2, vmax=2)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
   
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
