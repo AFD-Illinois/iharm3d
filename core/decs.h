@@ -138,7 +138,7 @@
 #define FAIL_METRIC      (5)
 
 // Timers
-#define TIMER_RECON    (1) 
+#define TIMER_RECON    (1)
 #define TIMER_LR_TO_F  (2)
 #define TIMER_CMAX     (3)
 #define TIMER_FLUX_CT  (4)
@@ -318,11 +318,11 @@ extern int global_stop[3];
 #define ZLOOP \
   for (int k = 0 + NG; k < N3 + NG; k++) \
   for (int j = 0 + NG; j < N2 + NG; j++) \
-  for (int i = 0 + NG; i < N1 + NG; i++) 
+  for (int i = 0 + NG; i < N1 + NG; i++)
 #define ZLOOPALL \
   for (int k = 0; k < N3 + 2*NG; k++) \
   for (int j = 0; j < N2 + 2*NG; j++) \
-  for (int i = 0; i < N1 + 2*NG; i++) 
+  for (int i = 0; i < N1 + 2*NG; i++)
 #define ISLOOP(istart,istop) \
   for (int i = (istart) + NG; i <= (istop) + NG; i++)
 #define JSLOOP(jstart,jstop) \
@@ -397,13 +397,13 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S);
 
 // fluxes.c
 double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F);
-void lr_to_flux(struct GridGeom *G, struct FluidState *Sl, 
+void lr_to_flux(struct GridGeom *G, struct FluidState *Sl,
   struct FluidState *Sr, int dir, int loc, GridPrim flux, GridDouble ctop);
 void flux_ct(struct FluidFlux *F);
 
 // io.c
 void dump(struct GridGeom *G, struct FluidState *S);
-void restart_write(char* fname, struct FluidState *S);
+void restart_write(struct FluidState *S);
 void restart_read(char *fname, struct FluidState *S);
 int restart_init(struct GridGeom *G, struct FluidState *S);
 void safe_system(const char *command);
@@ -542,4 +542,3 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
 void write_xml_closing(FILE *xml);
 FILE *write_xml_head(int dump_id, double t);
 void dump_grid();
-

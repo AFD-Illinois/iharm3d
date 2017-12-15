@@ -136,7 +136,7 @@ def build(PROBLEM, PATHS):
 
   host = machine.get_options()
 
-  C_FLAGS = '-std=c99 -mcmodel=medium ' + host['COMPILER_FLAGS']
+  C_FLAGS = '-std=gnu99 -mcmodel=medium ' + host['COMPILER_FLAGS']
 
   # MATH AND DYNAMIC LINKING
   LIB_FLAGS = '-lm -ldl'

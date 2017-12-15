@@ -13,7 +13,7 @@
 int main(int argc, char *argv[])
 {
   //omp_set_num_threads(1);
-  
+
   // Check for minimal required MPI thread support
   int threadSafety;
   MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &threadSafety);
@@ -47,7 +47,13 @@ int main(int argc, char *argv[])
 
 
   // Read command line arguments
-  strcpy(outputdir, ""); // Default value
+  //strcpy(outputdir, ""); // Default value
+  if(getcwd(outputdir, sizeof(outputdir)) == NULL) {
+    printf("Current directory error: %d", errno);
+    exit(-1);
+  }
+  strcat(outputdir, "/");
+
   #if RADIATION
   mbh = -1.;
   M_unit = -1.;
@@ -65,7 +71,7 @@ int main(int argc, char *argv[])
             exit(-1);
           }
         }
-      } 
+      }
       #if RADIATION
       else if (*(argv[n]+1) == 'm') { // Set black hole mass in solar masses
         mbh = strtof(argv[++n], NULL)*MSUN;
@@ -75,15 +81,17 @@ int main(int argc, char *argv[])
       #endif
     }
   }
-  strcpy(dumpdir, "dumps/"); // Default value
-  strcpy(restartdir, "restarts/"); // Default value
-  int len = strlen(outputdir);
-  memmove(dumpdir+len, dumpdir, strlen(dumpdir)+1);
-  memmove(restartdir+len, restartdir, strlen(restartdir)+1);
-  for (int n = 0; n < len; ++n) {
-    dumpdir[n] = outputdir[n];
-    restartdir[n] = outputdir[n];
-  }
+  strcpy(dumpdir, outputdir);
+  strcpy(restartdir, outputdir);
+  strcat(dumpdir, "dumps/"); // Default value
+  strcat(restartdir, "restarts/"); // Default value
+  /* int len = strlen(outputdir); */
+  /* memmove(dumpdir+len, dumpdir, strlen(dumpdir)+1); */
+  /* memmove(restartdir+len, restartdir, strlen(restartdir)+1); */
+  /* for (int n = 0; n < len; ++n) { */
+  /*   dumpdir[n] = outputdir[n]; */
+  /*   restartdir[n] = outputdir[n]; */
+  /* } */
   char mkdircall[4096];
   strcpy(mkdircall, "mkdir -p ");
   strcat(mkdircall, dumpdir);
@@ -100,7 +108,7 @@ int main(int argc, char *argv[])
   }
   #if (RADIATION && METRIC == MKS)
   if (mbh < 0. || M_unit < 0.) {
-    fprintf(stderr, "Error! Bad parameters! mbh = %e and M_unit = %e\n", 
+    fprintf(stderr, "Error! Bad parameters! mbh = %e and M_unit = %e\n",
       mbh, M_unit);
     exit(-1);
   }
@@ -131,7 +139,7 @@ int main(int argc, char *argv[])
     #endif
     tdump = DTd;
     tlog  = DTl;
-    if (mpi_myrank() == 0) 
+    if (mpi_myrank() == 0)
       fprintf(stdout, "Initial conditions generated\n\n");
   }
 
@@ -152,7 +160,7 @@ int main(int argc, char *argv[])
   while (t < tf) {
     dumpThisStep = 0;
     timer_start(TIMER_ALL);
-    
+
     // Step variables forward in time
     step(G, S);
     nstep++;
@@ -161,7 +169,7 @@ int main(int argc, char *argv[])
     if (t + dt > tf) {
       dt = tf - t;
     }
-    
+
     if (mpi_io_proc()) {
       fprintf(stdout, "t = %10.5g dt = %10.5g n = %8d\n", t, dt, nstep);
       #if RADIATION
@@ -181,18 +189,15 @@ int main(int argc, char *argv[])
         diag(G, S, DIAG_LOG);
         tlog += DTl;
       }
-      if (nstep % DTr == 0) {
-	char fname[50];
-	sprintf(fname, "restart.last.%d", mpi_myrank());
-        restart_write(fname, S);
-      }
+      if (nstep % DTr == 0)
+        restart_write(S);
     }
 
     timer_stop(TIMER_ALL);
 
     if (nstep % DTp == 0)
       report_performance();
-  
+
     reset_log_variables();
   }
 /*******************************************************************************
@@ -202,4 +207,3 @@ int main(int argc, char *argv[])
 
   return 0;
 }
-
