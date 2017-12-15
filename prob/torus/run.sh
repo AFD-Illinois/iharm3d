@@ -1,8 +1,10 @@
 #!/bin/bash
 
-if [ -d build ]; then
-  cd build
-fi
+#rm -rf dumps/ restarts/
+
+. ../../../mpi-load.sh
+
+python build.py
 
 # Make absolutely sure we're setting affinities correctly!
 NP=$(( $(nproc) / 2 ))
