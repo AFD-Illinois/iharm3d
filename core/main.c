@@ -85,13 +85,6 @@ int main(int argc, char *argv[])
   strcpy(restartdir, outputdir);
   strcat(dumpdir, "dumps/"); // Default value
   strcat(restartdir, "restarts/"); // Default value
-  /* int len = strlen(outputdir); */
-  /* memmove(dumpdir+len, dumpdir, strlen(dumpdir)+1); */
-  /* memmove(restartdir+len, restartdir, strlen(restartdir)+1); */
-  /* for (int n = 0; n < len; ++n) { */
-  /*   dumpdir[n] = outputdir[n]; */
-  /*   restartdir[n] = outputdir[n]; */
-  /* } */
   char mkdircall[4096];
   strcpy(mkdircall, "mkdir -p ");
   strcat(mkdircall, dumpdir);

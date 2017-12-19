@@ -24,9 +24,11 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   exit(-1);
   #endif
 
-  sync_mpi_boundaries(state);
+  if (mpi_nprocs() > 1) {
+    sync_mpi_boundaries(state);
+  }
 
-  // Rewrite this function to put prim index on the outside
+  // TODO Rewrite this function to put prim index on the outside
 
   if(global_start[0] == 0) {
     #pragma omp parallel for collapse(2)
@@ -69,7 +71,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
 
     #if X1L_BOUND == PERIODIC && X1R_BOUND == PERIODIC
-    if (global_stop[0] == N1TOT) {
+    if (N1CPU == 1) { // Both the first and last node
 
       #pragma omp parallel for collapse(2)
       KSLOOP(-NG, N3 - 1 + NG) {
@@ -169,11 +171,10 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
         }
       }
     }
-    //} // global_start[1] == 0
 
     // Treat periodic bounds separately in presence of MPI
     #if X2L_BOUND == PERIODIC && X2R_BOUND == PERIODIC
-    if (global_stop[1] == N2TOT) {
+    if (N2CPU == 1) {
 
       #pragma omp parallel for collapse(2)
       KSLOOP(-NG, N3 - 1 + NG) {
@@ -265,10 +266,9 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
         }
       }
     }
-    //} // global_start[2] == 0
 
     #if X3L_BOUND == PERIODIC && X3R_BOUND == PERIODIC && N3 > NG
-    if (global_stop[2] == N3TOT) { // Both first and last node
+    if (N3CPU == 1) {
 
       #pragma omp parallel for collapse(2)
       KSLOOP(-NG, -1) {

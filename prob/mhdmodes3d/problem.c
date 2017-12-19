@@ -51,8 +51,9 @@ void init(struct GridGeom *G, struct FluidState *S)
   dB2  = 0.;
   dB3  = 0.;
 
-  // Eigenmode
+  // Eigenmode definitions
   if (dir == 0) {
+    // 3D (1,1,1) wave
     B10 = 1.;
     B20 = 0.;
     B30 = 0.;
@@ -70,9 +71,6 @@ void init(struct GridGeom *G, struct FluidState *S)
      dB2  = 0.0977545707307;
      dB3  = 0.0977545707307;
     } else if (nmode == 2) { // Alfven
-     /* omega = 3.44144232573*I; */
-     /* du3  = 0.480384461415; */
-     /* dB3  = 0.877058019307; */
       omega = - 3.44144232573*I;
       drho  = 4.83506785235e-16*I;
       du2   = -0.339683110243;
@@ -80,15 +78,6 @@ void init(struct GridGeom *G, struct FluidState *S)
       dB2   = 0.620173672946;
       dB3   = -0.620173672946;
     } else { // Fast
-     /* omega = 5.53726217331*I; */
-     /* drho = 0.476395427447; */
-     /* du   = 0.635193903263; */
-     /* du1  = -0.102965815319; */
-     /* du2  = -0.316873207561; */
-     /* dB1  = 0.359559114174; */
-     /* dB2  = -0.359559114174; */
-
-	// New mode.  Converges.
       omega =  6.92915162882*I;
       drho  =  0.481846076323;
       du    =  0.642461435098;
@@ -101,6 +90,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
     }
   } else {
+    // 2D (1,1,0), (1,0,1), (0,1,1) wave
     // Constant field direction
     if (dir ==1) {
       B20 = 1.;
@@ -110,7 +100,6 @@ void init(struct GridGeom *G, struct FluidState *S)
       B10 = 1.;
     }
 
-    // Eigenmodes for faux-2D
     if (nmode == 0) { // Entropy
       omega = 2.*M_PI/5.*I;
       drho = 1.;
@@ -170,14 +159,16 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
 
   t = 0.;
-  tf = 2.*M_PI/cimag(omega);
+  tf = 2.*M_PI/fabs(cimag(omega));
   DTd = tf/30.;
   DTl = tf/30.;
-  DTr = 10000;  // Restart interval, in timesteps
+  DTr = 1000000;  // Turn off restarts
   DTp = 10;   // Performance interval, in timesteps
 
   dt = 1.e-6;
 
+  // Changing these will cause failing restarts if enabled
+  // See io.c, restart_init()
   x1Min = 0.;
   x1Max = 1.;
   x2Min = 0.;
@@ -186,7 +177,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   x3Max = 1.;
 
   gam = 4./3;
-  cour = 2./5;
+  cour = 0.9;
 
   zero_arrays();
   set_grid(G);

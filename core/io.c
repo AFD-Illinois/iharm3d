@@ -27,13 +27,6 @@ void get_dbl_value(double *val, const char *name, hid_t file_id,
                    hid_t filespace, hid_t memspace);
 void get_int_value(int *val, const char *name, hid_t file_id, hid_t filespace,
                    hid_t memspace);
-/* void add_int_value(int val, const char *name, hid_t file_id, hid_t filespace, */
-/*                      hid_t memspace); */
-/* void add_dbl_value(double val, const char *name, hid_t file_id, hid_t filespace, */
-/*                    hid_t memspace); */
-/* void add_str_value(const char* val, const char *name, hid_t file_id, */
-/*                    hid_t filespace, hid_t memspace); */
-
 
 static int dump_id = 0;
 static int restart_id = 0;
@@ -46,18 +39,16 @@ void dump(struct GridGeom *G, struct FluidState *S)
   char name[80];
   FILE *xml = NULL;
   hsize_t fdims[] = {N3TOT, N2TOT, N1TOT};
-  hsize_t mdims[] = {N3, N2, N1};
+  hsize_t mem_copy_dims[] = {N3, N2, N1};
   #if ELECTRONS
   const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
                             "KEL", "KTOT"};
   #else
   const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"};
   #endif
-  //struct of_state q;
 
   hid_t file_id, filespace, memspace, plist_id;//, dset_id;
   hsize_t mem_start[3], file_start[3], one, zero;
-  hsize_t file_count[3], file_grid_dims[3];
 
   one = 1;
   zero = 0;
@@ -92,13 +83,11 @@ void dump(struct GridGeom *G, struct FluidState *S)
   H5Pclose(plist_id);
 
   // Write header
-  file_grid_dims[0] = 1;
-  filespace = H5Screate_simple(1, file_grid_dims, NULL);
-  file_start[0] = 0;
-  file_count[0] = (mpi_io_proc() ? one : zero);
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count,
+  filespace = H5Screate_simple(1, &one, NULL);
+  hsize_t single_var_count = (mpi_io_proc() ? one : zero);
+  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, &zero, NULL, &single_var_count,
     NULL);
-  memspace  = H5Screate_simple(1, (mpi_io_proc() ? &one : &zero), NULL);
+  memspace  = H5Screate_simple(1, &single_var_count, NULL);
   #if METRIC == MINKOWSKI
   add_str_value("MINKOWSKI", "METRIC", file_id, filespace, memspace);
   #elif METRIC == MKS
@@ -137,32 +126,35 @@ void dump(struct GridGeom *G, struct FluidState *S)
   add_int_value(dump_cnt, "dump_cnt", file_id, filespace, memspace);
   add_dbl_value(dt, "dt", file_id, filespace, memspace);
   add_int_value(failed, "failed", file_id, filespace, memspace);
+
   H5Sclose(filespace);
   H5Sclose(memspace);
 
-
   // Tell HDF how data is laid out in memory and in file
-  for (int d = 0; d < 3; d++)
-    file_grid_dims[d] = fdims[d];
-  filespace = H5Screate_simple(3, file_grid_dims, NULL);
+  filespace = H5Screate_simple(3, fdims, NULL);
   for (int d = 0; d < 3; d++) {
-    file_start[d] = global_start[d];
-    file_count[d] = mdims[d];
+    file_start[d] = global_start[2-d];
   }
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count,
+  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, mem_copy_dims,
     NULL);
 
-  memspace = H5Screate_simple(3, file_count, NULL);
+  memspace = H5Screate_simple(3, mem_copy_dims, NULL);
   for (int d = 0; d < 3; d++)
     mem_start[d] = 0;
-  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count,
+  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, mem_copy_dims,
     NULL);
+
+  /* printf("Size of memspace: %lld x %lld x %lld\n", */
+  /*       mem_copy_dims[0], mem_copy_dims[1], mem_copy_dims[2]); */
+  /* printf("Location of memspace: %lld %lld %lld\n", */
+  /*        file_start[0], file_start[1], file_start[2]); */
+  /* printf("Size of filespace: %lld x %lld x %lld\n", */
+  /*       fdims[0], fdims[1], fdims[2]); */
 
   // Write primitive variables
   PLOOP {
     int ind = 0;
     ZLOOP {
-      //data[ind] = (float)P[i][j][k][ip];
       data[ind] = (float)(S->P[ip][k][j][i]);
       ind++;
     }
@@ -228,10 +220,6 @@ void dump(struct GridGeom *G, struct FluidState *S)
   ZLOOP {
     get_state(G, S, i, j, k, CENT);
     double bsq = dot_grid(S->bcon, S->bcov, i, j, k);
-    //struct of_geom *geom = get_geometry(i, j, CENT) ;
-    //get_state(P[i][j][k], geom, &q);
-    //double bsq = 0.;
-    //for (int d = 0; d < NDIM; d++) bsq += q.bcon[d]*q.bcov[d];
     data[ind] = bsq;
     ind++;
   }
@@ -239,7 +227,6 @@ void dump(struct GridGeom *G, struct FluidState *S)
 
   ind = 0;
   ZLOOP {
-    //struct of_geom *geom = get_geometry(i, j, CENT) ;
     double gamma = 1.;
     mhd_gamma_calc(G, S, i, j, k, CENT, &gamma);
     data[ind] = gamma;
@@ -343,7 +330,7 @@ void restart_write(struct FluidState *S)
   // Write data
   filespace = H5Screate_simple(4, fdims, NULL);
   for (int d = 0; d < 4; d++) {
-    file_start[d] = (d == 0) ? 0 : global_start[d-1];
+    file_start[d] = (d == 0) ? 0 : global_start[3-d];
   }
   H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, mem_copy_dims, NULL);
 
@@ -454,7 +441,7 @@ void restart_read(char *fname, struct FluidState *S)
   filespace = H5Screate_simple(4, fdims, NULL);
 
   for (int d = 0; d < 4; d++) {
-    file_start[d] = (d == 0) ? 0 : global_start[d-1];
+    file_start[d] = (d == 0) ? 0 : global_start[3-d];
   }
   H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, mem_copy_dims,
     NULL);
@@ -509,13 +496,21 @@ int restart_init(struct GridGeom *G, struct FluidState *S)
 
   restart_read(filepath, S);
 
+#if METRIC == MINKOWSKI
+  // TODO these are not written to restart files, but /tend/ to be 0,1
+  x1Min = 0.;
+  x1Max = 1.;
+  x2Min = 0.;
+  x2Max = 1.;
+  x3Min = 0.;
+  x3Max = 1.;
+#endif
+
   set_grid(G);
 
-  ZLOOP {
-    get_state(G, S, i, j, k, CENT);
-  }
+  get_state_vec(G, S, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
+  prim_to_flux_vec(G, S, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, S->U);
 
-  fixup(G, S);
   set_bounds(G, S);
 
   return 1;

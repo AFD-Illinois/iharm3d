@@ -6,11 +6,17 @@
 
 python build.py
 
-# Make absolutely sure we're setting affinities correctly!
-NP=$(( $(nproc) / 2 ))
-#NP=1
-export OMP_NUM_THREADS=$NP
-export GOMP_CPU_AFFINITY=0-$(( $NP - 1 ))
-export OMP_PROC_BIND=true
+# Number of MPI Processes
+NMPI=32
 
-numactl --interleave=all ./bhlight 2>&1 >out.txt
+if (( $NMPI == 1 ))
+then
+  export OMP_NUM_THREADS=$(( $(nproc) / 2 ))
+  export GOMP_CPU_AFFINITY=0-$(( $OMP_NUM_THREADS - 1 ))
+  export OMP_PROC_BIND=true
+  numactl --interleave=all ./bhlight
+else
+  export OMP_NUM_THREADS=1
+  mpiexec -n $NMPI ./bhlight
+  #mpiexec -n $NMPI valgrind ./bhlight
+fi

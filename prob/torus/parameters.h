@@ -1,9 +1,9 @@
-/******************************************************************************  
- *                                                                            *  
- * PARAMETERS.H                                                               *  
- *                                                                            *  
- * PROBLEM-SPECIFIC CHOICES                                                   *  
- *                                                                            *  
+/******************************************************************************
+ *                                                                            *
+ * PARAMETERS.H                                                               *
+ *                                                                            *
+ * PROBLEM-SPECIFIC CHOICES                                                   *
+ *                                                                            *
  ******************************************************************************/
 
 /* GLOBAL RESOLUTION */
@@ -12,9 +12,10 @@
 #define N3TOT 96
 
 /* MPI DECOMPOSITION */
-#define N1CPU 1
-#define N2CPU 1
-#define N3CPU 1
+/* COUNTERINTUITIVE: Split N3, N2, N1 order to keep k smaller than i,j*/
+#define N1CPU 2
+#define N2CPU 4
+#define N3CPU 4
 
 /* METRIC
  *   MINKOWSKI, MKS
@@ -71,4 +72,3 @@
 
 #define X1L_INFLOW 0
 #define X1R_INFLOW 0
-

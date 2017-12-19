@@ -12,9 +12,9 @@
 #define N3TOT 64
 
 /* MPI DECOMPOSITION */
-#define N1CPU 1
-#define N2CPU 1
-#define N3CPU 1
+#define N1CPU 2
+#define N2CPU 4
+#define N3CPU 4
 
 /* METRIC
  *   MINKOWSKI, MKS

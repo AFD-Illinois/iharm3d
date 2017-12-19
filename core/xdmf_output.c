@@ -167,12 +167,12 @@ void dump_grid()
   hid_t dset_id;
   hsize_t file_start[3], file_count[3];
   hsize_t mem_start[3];
-  hsize_t fdims[] = {N1TOT+1, N2TOT+1, N3TOT+1};
-  hsize_t dims[] = {N1, N2, N3};
-  const char *coordNames[] = {"/X", "/Y", "/Z"};
+  hsize_t fdims[] = {N3TOT+1, N2TOT+1, N1TOT+1};
+  hsize_t dims[] = {N3, N2, N1};
+  const char *coordNames[] = {"/Z", "/Y", "/X"};
 
   for (int d = 0; d < 3; d++) {
-    if (global_stop[d] == fdims[d]-1)
+    if (global_stop[2-d] == fdims[d]-1)
       dims[d]++;
   }
 
@@ -183,7 +183,7 @@ void dump_grid()
 
   hid_t filespace = H5Screate_simple(3, fdims, NULL);
   for (int d = 0; d < 3; d++) {
-    file_start[d] = global_start[d];
+    file_start[d] = global_start[2-d];
     file_count[d] = dims[d];
   }
   H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count, NULL);
@@ -192,8 +192,7 @@ void dump_grid()
   for (int d = 0; d < 3; d++) mem_start[d] = 0;
   H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count, NULL);
 
-  int total_size = 1;
-  for(int d = 0; d < 3; d++) total_size *= dims[d];
+  int total_size = dims[0]*dims[1]*dims[2];
   for(int d = 0; d < 3; d++) {
     x[d] = malloc(total_size*sizeof(float));
     if(x[d] == NULL) {
@@ -205,7 +204,6 @@ void dump_grid()
   int ind = 0;
   ZSLOOP(0, dims[2]-1, 0, dims[1]-1, 0, dims[0]-1) {
     coord(i, j, k, CORN, xp);
-    //xp[3] = (k + global_start[2] - NG)*dx[3];
     #if METRIC == MINKOWSKI
     x[0][ind] = xp[1];
     x[1][ind] = xp[2];
@@ -241,4 +239,3 @@ void dump_grid()
 
   H5Fclose(file_id);
 }
-
