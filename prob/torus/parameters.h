@@ -13,9 +13,9 @@
 
 /* MPI DECOMPOSITION */
 /* COUNTERINTUITIVE: Split N3, N2, N1 order to keep k smaller than i,j*/
-#define N1CPU 2
-#define N2CPU 4
-#define N3CPU 4
+#define N1CPU 1
+#define N2CPU 1
+#define N3CPU 1
 
 /* METRIC
  *   MINKOWSKI, MKS
