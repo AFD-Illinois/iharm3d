@@ -29,7 +29,7 @@ for arg in sys.argv:
 RES = [16, 32, 64]#, 128]
 
 # LOOP OVER EIGENMODES
-MODES = [2,3]
+MODES = [0,1,2,3]
 NAMES = ['ENTROPY', 'SLOW', 'ALFVEN', 'FAST']
 NVAR = 8
 VARS = ['rho', 'u', 'u1', 'u2', 'u3', 'B1', 'B2', 'B3']

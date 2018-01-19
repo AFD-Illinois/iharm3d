@@ -12,9 +12,10 @@
 #define N3TOT 64
 
 /* MPI DECOMPOSITION */
-#define N1CPU 2
+/* DECOMPOSE IN N3 FIRST! Small leading array sizes for linear access */
+#define N1CPU 1
 #define N2CPU 4
-#define N3CPU 4
+#define N3CPU 8
 
 /* METRIC
  *   MINKOWSKI, MKS
@@ -23,9 +24,9 @@
 
 #define NMODE 3
 
-#define ELECTRONS           0
+#define ELECTRONS 0
 
-#define RADIATION           0
+#define RADIATION 0
 
 /* RECONSTRUCTION ALGORITHM
  *   LINEAR, PPM, WENO, MP5

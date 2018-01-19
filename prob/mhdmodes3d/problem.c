@@ -72,7 +72,6 @@ void init(struct GridGeom *G, struct FluidState *S)
      dB3  = 0.0977545707307;
     } else if (nmode == 2) { // Alfven
       omega = - 3.44144232573*I;
-      drho  = 4.83506785235e-16*I;
       du2   = -0.339683110243;
       du3   = 0.339683110243;
       dB2   = 0.620173672946;
@@ -87,7 +86,6 @@ void init(struct GridGeom *G, struct FluidState *S)
       dB1   =  0.406380545676;
       dB2   =  -0.203190272838;
       dB3   =  -0.203190272838;
-
     }
   } else {
     // 2D (1,1,0), (1,0,1), (0,1,1) wave
