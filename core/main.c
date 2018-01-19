@@ -48,11 +48,6 @@ int main(int argc, char *argv[])
 
 
   // Read command line arguments
-  if(getcwd(outputdir, sizeof(outputdir)) == NULL) {
-    printf("Current directory error: %d", errno);
-    exit(-1);
-  }
-  strcat(outputdir, "/");
 
   #if RADIATION
   mbh = -1.;
@@ -67,6 +62,7 @@ int main(int argc, char *argv[])
 
         if( chdir(outputdir) != 0) {
             fprintf(stderr, "Output directory does not exist!\n");
+            exit(2);
         }
       }
       #if RADIATION

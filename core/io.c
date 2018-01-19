@@ -475,26 +475,22 @@ void restart_read(char *fname, struct FluidState *S)
 
 int restart_init(struct GridGeom *G, struct FluidState *S)
 {
-  char filename[512], filepath[512];
-  sprintf(filename, "restart.last");
+  char fname[512];
+  sprintf(fname, "restarts/restart.last");
 
-  // Check that file exists
-  strcpy(filepath, restartdir);
-  strcat(filepath, filename);
-
-  FILE *fp = fopen(filepath,"rb");
+  FILE *fp = fopen(fname,"rb");
   if (fp == NULL) {
     if (mpi_io_proc())
-      fprintf(stdout, "No restart file\n\n");
+      fprintf(stdout, "No restart file: %d\n\n", errno);
     return 0;
   }
   fclose(fp);
 
   if (mpi_io_proc())
-    fprintf(stdout, "Loading restart file %s\n\n", filepath);
+    fprintf(stdout, "Loading restart file %s\n\n", fname);
   zero_arrays();
 
-  restart_read(filepath, S);
+  restart_read(fname, S);
 
 #if METRIC == MINKOWSKI
   // TODO these are not written to restart files, but /tend/ to be 0,1
