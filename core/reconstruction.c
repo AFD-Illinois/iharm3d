@@ -248,37 +248,43 @@ void mp5(double x1, double x2, double x3, double x4, double x5, double *lout,
 }
 #undef MINMOD
 
-void reconstruct_lr_lin(double Ptmp[NMAX+2*NG][NVAR], int N,
-  double P_l[NMAX+2*NG][NVAR], double P_r[NMAX+2*NG][NVAR])
+//void reconstruct_lr_lin(double Ptmp[NMAX+2*NG][NVAR], int N,
+//  double P_l[NMAX+2*NG][NVAR], double P_r[NMAX+2*NG][NVAR])
+void reconstruct_lr_lin(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
-  double dqtmp[NMAX + 2*NG][NVAR];
-
-  ISLOOP(-1, N) {
-    PLOOP {
-      dqtmp[i][ip] = 0.;
-    }
-  }
-
-  // Calculate slopes
-  ISLOOP(-1, N) {
-    PLOOP {
-      dqtmp[i][ip] = slope_lim(Ptmp[i-1][ip], Ptmp[i][ip], Ptmp[i+1][ip]);
-    }
-  }
-
-  // Reconstruct left
-  ISLOOP(0, N) {
-    PLOOP {
-      P_l[i][ip] = Ptmp[i][ip] - 0.5*dqtmp[i][ip];
-    }
-  }
-
-  // Reconstruct right
-  ISLOOP(-1, N - 1) {
-    PLOOP {
-      P_r[i][ip] = Ptmp[i][ip] + 0.5*dqtmp[i][ip];
-    }
-  }
+  PLOOP {
+	if (dir == 1) {
+	  #pragma omp parallel for simd collapse(2)
+	  KSLOOP(-1, N3) {
+		JSLOOP(-1, N2) {
+		  ISLOOP(-1, N1) {
+			linear_mc(S->P[ip][k][j][i-1], S->P[ip][k][j][i], S->P[ip][k][j][i+1],
+					  &(Pl[ip][k][j][i]), &(Pr[ip][k][j][i]));
+		  }
+		}
+	  }
+	} else if (dir == 2) {
+	  #pragma omp parallel for simd collapse(2)
+	  KSLOOP(-1, N3) {
+		JSLOOP(-1, N2) {
+		  ISLOOP(-1, N1) {
+			linear_mc(S->P[ip][k][j-1][i], S->P[ip][k][j][i], S->P[ip][k][j+1][i],
+					  &(Pl[ip][k][j][i]), &(Pr[ip][k][j][i]));
+		  }
+		}
+	  }
+	} else if (dir == 3) {
+	  #pragma omp parallel for simd collapse(2)
+	  KSLOOP(-1, N3) {
+		JSLOOP(-1, N2) {
+		  ISLOOP(-1, N1) {
+			linear_mc(S->P[ip][k-1][j][i], S->P[ip][k][j][i], S->P[ip][k+1][j][i],
+					  &(Pl[ip][k][j][i]), &(Pr[ip][k][j][i]));
+		  }
+		}
+	  }
+	}
+  } // PLOOP
 }
 
 
@@ -402,7 +408,8 @@ void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
   timer_start(TIMER_RECON);
   #if RECONSTRUCTION == LINEAR
-    reconstruct_lr_lin(Ptmp, N, P_l, P_r);
+    //reconstruct_lr_lin(Ptmp, N, P_l, P_r);
+    reconstruct_lr_lin(S, Pl, Pr, dir);
   #elif RECONSTRUCTION == PPM
     //reconstruct_lr_par(Ptmp, N, P_l, P_r);
     reconstruct_lr_par(S, Pl, Pr, dir);
