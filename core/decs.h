@@ -540,5 +540,5 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
 
 // xdmf_output.c
 void write_xml_closing(FILE *xml);
-FILE *write_xml_head(int dump_id, double t);
+FILE *write_xml_head(char *fname, double t);
 void dump_grid();

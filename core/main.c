@@ -9,6 +9,7 @@
 #include "decs.h"
 #include "defs.h"
 #include <time.h>
+#include <sys/stat.h>
 
 int main(int argc, char *argv[])
 {
@@ -47,7 +48,6 @@ int main(int argc, char *argv[])
 
 
   // Read command line arguments
-  //strcpy(outputdir, ""); // Default value
   if(getcwd(outputdir, sizeof(outputdir)) == NULL) {
     printf("Current directory error: %d", errno);
     exit(-1);
@@ -64,12 +64,9 @@ int main(int argc, char *argv[])
         n < argc-1) {
       if (*(argv[n]+1) == 'o') { // Set output directory path
         strcpy(outputdir, argv[++n]);
-        char last = outputdir[strlen(outputdir)-1];
-        if (last != '/') {
-          if (mpi_myrank() == 0) {
-            fprintf(stderr, "Error! output directory must end in /\n");
-            exit(-1);
-          }
+
+        if( chdir(outputdir) != 0) {
+            fprintf(stderr, "Output directory does not exist!\n");
         }
       }
       #if RADIATION
@@ -81,16 +78,11 @@ int main(int argc, char *argv[])
       #endif
     }
   }
-  strcpy(dumpdir, outputdir);
-  strcpy(restartdir, outputdir);
-  strcat(dumpdir, "dumps/"); // Default value
-  strcat(restartdir, "restarts/"); // Default value
-  char mkdircall[4096];
-  strcpy(mkdircall, "mkdir -p ");
-  strcat(mkdircall, dumpdir);
-  strcat(mkdircall, " ");
-  strcat(mkdircall, restartdir);
-  safe_system(mkdircall);
+
+  strcpy(dumpdir, "dumps/");
+  strcpy(restartdir, "restarts/");
+  mkdir(dumpdir, 0777);
+  mkdir(restartdir, 0777);
 
   // Sanity checks
   if ((RECONSTRUCTION == PPM || RECONSTRUCTION == WENO || RECONSTRUCTION == MP5)

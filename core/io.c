@@ -36,7 +36,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   static int firstc = 1;
   static float *data;
   static int *idata;
-  char name[80];
+  char fname[80];
   FILE *xml = NULL;
   hsize_t fdims[] = {N3TOT, N2TOT, N1TOT};
   hsize_t mem_copy_dims[] = {N3, N2, N1};
@@ -54,7 +54,6 @@ void dump(struct GridGeom *G, struct FluidState *S)
   zero = 0;
 
   if(firstc) {
-    mkdir("dumps", 0777);
     dump_grid();
     data = malloc(N1*N2*N3*NVAR*sizeof(float));
     idata = malloc(N1*N2*N3*sizeof(int));
@@ -66,20 +65,18 @@ void dump(struct GridGeom *G, struct FluidState *S)
   }
 
   if(mpi_io_proc()) {
-    xml = write_xml_head(dump_id,t);
+    sprintf(fname, "dumps/dump_%08d.xmf", dump_id); // TODO define filenames elsewhere?
+    xml = write_xml_head(fname,t);
   }
 
-  char fname[2048];
-  sprintf(fname, "dump_%08d.h5", dump_id);
-  strcpy(name, dumpdir);
-  strcat(name, fname);
+  sprintf(fname, "dumps/dump_%08d.h5", dump_id);
   if(mpi_io_proc()) {
-    fprintf(stdout, "DUMP %s\n", name);
+    fprintf(stdout, "DUMP %s\n", fname);
   }
 
   plist_id = H5Pcreate(H5P_FILE_ACCESS);
   H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
-  file_id = H5Fcreate(name, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
+  file_id = H5Fcreate(fname, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
   H5Pclose(plist_id);
 
   // Write header
@@ -277,15 +274,12 @@ void restart_write(struct FluidState *S)
   // Keep track of our own index
   restart_id++;
 
-  char filepath[2048];
-  char filename[80];
-  sprintf(filename, "restart_%08d.h5", restart_id);
-  strcpy(filepath, restartdir);
-  strcat(filepath, filename);
+  char fname[2048];
+  sprintf(fname, "restarts/restart_%08d.h5", restart_id);
 
   hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
   H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
-  hid_t file_id = H5Fcreate(filepath, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
+  hid_t file_id = H5Fcreate(fname, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
   H5Pclose(plist_id);
 
   // Write header
@@ -362,16 +356,22 @@ void restart_write(struct FluidState *S)
 
   MPI_Barrier(MPI_COMM_WORLD);
   if(mpi_io_proc()) {
-    // Symlink when we're done writing (link to last good file)
-    char linkname[80], linkpath[2048];
-    sprintf(linkname, "restart.last");
-    strcpy(linkpath, restartdir);
-    strcat(linkpath, linkname);
+    fprintf(stdout, "RESTART %s\n", fname);
 
-    fprintf(stdout, "RESTART %s\n", filepath);
-    int err = remove(linkpath);
-    err = symlink(filepath, linkpath);
-    if(err != 0) {
+    // Symlink when we're done writing (link to last good file)
+    char fname_nofolder[80];
+    sprintf(fname_nofolder, "restart_%08d.h5", restart_id);
+
+    //Chained OS functions: switch to restart directory,
+    // remove current link, link last file, switch back
+    int errcode;
+    errcode = chdir("restarts");
+    if ( access("restart.last", F_OK) != -1 ) {
+      errcode = errcode || remove("restart.last");
+    }
+    errcode = errcode || symlink(fname_nofolder, "restart.last");
+    errcode = errcode || chdir("..");
+    if(errcode != 0) {
       printf("Symlink failed: errno %d\n", errno);
       exit(-1);
     }
@@ -430,7 +430,7 @@ void restart_read(char *fname, struct FluidState *S)
   get_dbl_value(&hslope, "hslope", file_id, filespace, memspace);
   get_dbl_value(&R0, "R0", file_id, filespace, memspace);
   get_dbl_value(&Rhor, "Rhor", file_id, filespace, memspace);
-    get_dbl_value(&Risco, "Risco", file_id, filespace, memspace);
+  get_dbl_value(&Risco, "Risco", file_id, filespace, memspace);
   get_dbl_value(&tdump, "tdump", file_id, filespace, memspace);
   get_dbl_value(&tlog, "tlog", file_id, filespace, memspace);
 

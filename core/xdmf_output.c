@@ -20,15 +20,13 @@ void write_xml_closing(FILE *xml)
   fclose(xml);
 }
 
-FILE *write_xml_head(int dump_id, double t)
+FILE *write_xml_head(char *fname, double t)
 {
-  char name[80];
   FILE *fp;
 
-  sprintf(name,"dumps/dump_%05d.xmf", dump_id);
-  fp = fopen(name,"w");
+  fp = fopen(fname,"w");
   if(fp == NULL) {
-    fprintf(stderr, "Failed to open xmf file\n");
+    fprintf(stderr, "Failed to open xmf file %s\n", fname);
     exit(123);
   }
 

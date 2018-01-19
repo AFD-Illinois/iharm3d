@@ -31,6 +31,9 @@ void diag_flux(struct FluidFlux *F)
       }
     }
   }
+  mdot = mpi_io_reduce(mdot);
+  edot = mpi_io_reduce(edot);
+  ldot = mpi_io_reduce(ldot);
 }
 
 void diag(struct GridGeom *G, struct FluidState *S, int call_code)
@@ -48,7 +51,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   if (call_code == DIAG_INIT) {
     // Set things up
     if(mpi_io_proc()) {
-      ener_file = fopen("dumps/log.out", "a");
+      ener_file = fopen("dumps/log.out", "a"); //TODO make this more flexible
       if (ener_file == NULL) {
         fprintf(stderr,
           "error opening energy output file\n");
@@ -88,7 +91,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   e = mpi_io_reduce(e);
   divbmax = mpi_io_max(divbmax);
 
-  if ((call_code == DIAG_INIT && !is_restart) || 
+  if ((call_code == DIAG_INIT && !is_restart) ||
     call_code == DIAG_DUMP || call_code == DIAG_FINAL) {
     dump(G, S);
     dump_cnt++;
@@ -98,7 +101,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   //  dump(G, S);
   //}
 
-  if (call_code == DIAG_INIT || call_code == DIAG_LOG || 
+  if (call_code == DIAG_INIT || call_code == DIAG_LOG ||
       call_code == DIAG_FINAL) {
     if(mpi_io_proc()) {
       fprintf(stdout, "LOG      t=%g \t divbmax: %g\n",
@@ -170,7 +173,7 @@ void fail(int fail_type, int i, int j, int k)
   }
 }*/
 
-double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j, 
+double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k)
 {
   #if N3 > 1
@@ -219,4 +222,3 @@ double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
     return 0.;
   }
 }
-
