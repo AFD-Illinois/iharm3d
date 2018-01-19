@@ -79,7 +79,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   tune_emiss = 1.e5;
   tune_scatt = 1.;
   #endif
-  tf = 1000.0;
+  tf = 10.0;
   hslope = 0.3;
 
   zero_arrays();
@@ -89,8 +89,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   t = 0.;
 
   // Output choices
-  DTd = 1;   // Dump interval
-  DTl = 0.1;  // Log interval
+  DTd = 2.0;   // Dump interval
+  DTl = 0.5;  // Log interval
   DTr = 50;  // Restart interval, in timesteps
   DTp = 50;   // Performance interval, in timesteps
 
