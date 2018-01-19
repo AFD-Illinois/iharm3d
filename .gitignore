@@ -55,10 +55,14 @@ Thumbs.db
 *.bak
 *.swp
 *~
+
+# Eclipse, man #
+################
 .cproject
 .pydevproject
 .project
 .settings/
+.ptp-sync-folder
 TAGS
 
 # Build directory #
