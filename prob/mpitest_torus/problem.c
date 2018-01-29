@@ -216,6 +216,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
   umax /= rhomax;
   rhomax = 1.;
+
+  //?
   fixup(G, S);
   set_bounds(G, S);
 

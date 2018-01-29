@@ -1,8 +1,8 @@
 #!/bin/bash
 
-OUT_DIR=${1:-/mnt/data2/bprather/default_dumps/}
-#OUT_DIR=${1:-.}
-NMPI=1
+#OUT_DIR=${1:-/mnt/data2/bprather/default_dumps/}
+OUT_DIR=${1:-.}
+NMPI=${NMPI:-1}
 
 #rm -rf $OUT_DIR ; mkdir $OUT_DIR
 
@@ -10,17 +10,17 @@ NMPI=1
 
 python build.py
 
-if (( $NMPI == 1 ))
+if (( $NMPI == 2 ))
 then
   export OMP_NUM_THREADS=$(( $(nproc --all) / 2 ))
   export GOMP_CPU_AFFINITY=0-$(( $OMP_NUM_THREADS - 1 ))
   export OMP_PROC_BIND=true
   echo "Using first $OMP_NUM_THREADS threads"
 
-  numactl --interleave=all ./bhlight -o $OUT_DIR
+  numactl --interleave=all valgrind ./bhlight -o $OUT_DIR
 else
   export OMP_NUM_THREADS=1
   echo "Using $NMPI local MPI processes"
 
-  mpiexec -n $NMPI ./bhlight -o $OUT_DIR
+  mpiexec -n $NMPI valgrind ./bhlight -o $OUT_DIR
 fi
