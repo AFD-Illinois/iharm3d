@@ -24,11 +24,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   exit(-1);
   #endif
 
-  if (mpi_nprocs() > 1) {
-    sync_mpi_boundaries(state);
-  }
-
-  // TODO Rewrite this function to put prim index on the outside
+  // TODO Rewrite/clean this function to put prim index on the outside
 
   if(global_start[0] == 0) {
     #pragma omp parallel for collapse(2)
@@ -70,32 +66,6 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       }
     }
 
-    #if X1L_BOUND == PERIODIC && X1R_BOUND == PERIODIC
-    if (N1CPU == 1) { // Both the first and last node
-
-      #pragma omp parallel for collapse(2)
-      KSLOOP(-NG, N3 - 1 + NG) {
-	JSLOOP(-NG, N2 - 1 + NG) {
-	  ISLOOP(-NG, -1) {
-	    int iz = N1 + i;
-	    PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
-	    pflag[k][j][i] = pflag[k][j][iz];
-	  }
-	}
-      }
-      #pragma omp parallel for collapse(2)
-      KSLOOP(-NG, N3 - 1 + NG) {
-	JSLOOP(-NG, N2 - 1 + NG) {
-	  ISLOOP(N1, N1 - 1 + NG) {
-	    int iz = i - N1;
-	    PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
-	    pflag[k][j][i] = pflag[k][j][iz];
-	  }
-	}
-      }
-    }
-    #endif
-
   } // global_start[0] == 0
 
   if(global_stop[0] == N1TOT) {
@@ -118,10 +88,6 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
             state->P[B1][k][j][i] *= rescale;
             state->P[B2][k][j][i] *= rescale;
             state->P[B3][k][j][i] *= rescale;
-            #elif 0 //X1R_BOUND == PERIODIC
-            int iz = i - N1;
-            PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
-            pflag[k][j][i] = pflag[k][j][iz];
             #elif X1R_BOUND == POLAR
             printf("X1R_BOUND choice POLAR not supported\n");
             exit(-1);
@@ -137,6 +103,35 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
       }
     }
   } // global_stop[0] == N1TOT
+
+#if METRIC == MKS
+  //ucon_calc(geom, state);
+  if(global_start[0] == 0  && X1L_INFLOW == 0) {
+    // Make sure there is no inflow at the inner boundary
+#pragma omp parallel for collapse(2)
+    KSLOOP(-NG, N3 - 1 + NG) {
+      JSLOOP(-NG, N2 - 1 + NG) {
+        ISLOOP(-NG, -1) {
+          inflow_check(geom, state, i, j, k, 0);
+        }
+      }
+    }
+  }
+
+  if(global_stop[0] == N1TOT && X1R_INFLOW == 0) {
+    // Make sure there is no inflow at the outer boundary
+#pragma omp parallel for collapse(2)
+    KSLOOP(-NG, N3 - 1 + NG) {
+      JSLOOP(-NG, N2 - 1 + NG) {
+        ISLOOP(N1, N1 - 1 + NG) {
+          inflow_check(geom, state, i, j, k, 1);
+        }
+      }
+    }
+  }
+#endif
+
+  sync_mpi_bound_X1(state);
 
   if(global_start[1] == 0) {
     #pragma omp parallel for collapse(2)
@@ -171,33 +166,6 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
         }
       }
     }
-
-    // Treat periodic bounds separately in presence of MPI
-    #if X2L_BOUND == PERIODIC && X2R_BOUND == PERIODIC
-    if (N2CPU == 1) {
-
-      #pragma omp parallel for collapse(2)
-      KSLOOP(-NG, N3 - 1 + NG) {
-        JSLOOP(-NG, -1) {
-          ISLOOP(-NG, N1 - 1 + NG) {
-            int jz = N2 + j;
-            PLOOP state->P[ip][k][j][i] = state->P[ip][k][jz][i];
-            pflag[k][j][i] = pflag[k][jz][i];
-          }
-        }
-      }
-      #pragma omp parallel for collapse(2)
-      KSLOOP(-NG, N3 - 1 + NG) {
-        JSLOOP(N2, N2 - 1 + NG) {
-          ISLOOP(-NG, N1 - 1 + NG) {
-            int jz = j - N2;
-            PLOOP state->P[ip][k][j][i] = state->P[ip][k][jz][i];
-            pflag[k][j][i] = pflag[k][jz][i];
-          }
-        }
-      }
-    }
-    #endif
 
   } // global_start[1] == 0
 
@@ -236,6 +204,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   } // global_stop[1] == N2TOT
 
+  sync_mpi_bound_X2(state);
+
   if (global_start[2] == 0) {
     #pragma omp parallel for collapse(2)
     KSLOOP(-NG, -1) {
@@ -266,32 +236,6 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
         }
       }
     }
-
-    #if X3L_BOUND == PERIODIC && X3R_BOUND == PERIODIC && N3 > NG
-    if (N3CPU == 1) {
-
-      #pragma omp parallel for collapse(2)
-      KSLOOP(-NG, -1) {
-        JSLOOP(-NG, N2 - 1 + NG) {
-          ISLOOP(-NG, N1 - 1 + NG) {
-            int kz = N3 + k;
-            PLOOP state->P[ip][k][j][i] = state->P[ip][kz][j][i];
-            pflag[k][j][i] = pflag[kz][j][i];
-          }
-        }
-      }
-      #pragma omp parallel for collapse(2)
-      KSLOOP(N3, N3 - 1 + NG) {
-        JSLOOP(-NG, N2 - 1 + NG) {
-          ISLOOP(-NG, N1 - 1 + NG) {
-            int kz = k - N3;
-            PLOOP state->P[ip][k][j][i] = state->P[ip][kz][j][i];
-            pflag[k][j][i] = pflag[kz][j][i];
-          }
-        }
-      }
-    }
-    #endif
   } // global_start[2] == 0
 
   if(global_stop[2] == N3TOT) {
@@ -326,32 +270,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   } // global_stop[2] == N3TOT
 
-  #if METRIC == MKS
-  //ucon_calc(geom, state);
-  if(global_start[0] == 0  && X1L_INFLOW == 0) {
-    // Make sure there is no inflow at the inner boundary
-    #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3 - 1 + NG) {
-      JSLOOP(-NG, N2 - 1 + NG) {
-        ISLOOP(-NG, -1) {
-          inflow_check(geom, state, i, j, k, 0);
-        }
-      }
-    }
-  }
-
-  if(global_stop[0] == N1TOT && X1R_INFLOW == 0) {
-    // Make sure there is no inflow at the outer boundary
-    #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3 - 1 + NG) {
-      JSLOOP(-NG, N2 - 1 + NG) {
-        ISLOOP(N1, N1 - 1 + NG) {
-          inflow_check(geom, state, i, j, k, 1);
-        }
-      }
-    }
-  }
-  #endif
+  sync_mpi_bound_X3(state);
 
   timer_stop(TIMER_BOUND);
 }

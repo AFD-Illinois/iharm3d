@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 
   init_mpi();
 
-  if (mpi_myrank() == 0) {
+  if (mpi_io_proc()) {
     fprintf(stdout, "\n          ************************************************************\n");
     fprintf(stdout, "          *                                                          *\n");
     fprintf(stdout, "          *                          BHLIGHT                         *\n");
@@ -77,8 +77,10 @@ int main(int argc, char *argv[])
 
   strcpy(dumpdir, "dumps/");
   strcpy(restartdir, "restarts/");
-  mkdir(dumpdir, 0777);
-  mkdir(restartdir, 0777);
+  if (mpi_io_proc()) {
+    mkdir(dumpdir, 0777);
+    mkdir(restartdir, 0777);
+  }
 
   // Sanity checks
   if ((RECONSTRUCTION == PPM || RECONSTRUCTION == WENO || RECONSTRUCTION == MP5)
@@ -120,7 +122,7 @@ int main(int argc, char *argv[])
     #endif
     tdump = DTd;
     tlog  = DTl;
-    if (mpi_myrank() == 0)
+    if (mpi_io_proc())
       fprintf(stdout, "Initial conditions generated\n\n");
   }
 
@@ -135,7 +137,7 @@ int main(int argc, char *argv[])
 /*******************************************************************************
     MAIN LOOP
 *******************************************************************************/
-  if (mpi_myrank() == 0)
+  if (mpi_io_proc())
     fprintf(stdout, "\nEntering main loop\n");
   int dumpThisStep = 0;
   while (t < tf) {

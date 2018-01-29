@@ -17,25 +17,27 @@ static int first_call = 1;
 
 void step(struct GridGeom *G, struct FluidState *S)
 {
-  //static struct FluidState Stmp;
   if (first_call) {
-    Stmp = (struct FluidState*)malloc(sizeof(struct FluidState));
-    F = (struct FluidFlux*)malloc(sizeof(struct FluidFlux));
+    Stmp = (struct FluidState*)calloc(1,sizeof(struct FluidState));
+    F = (struct FluidFlux*)calloc(1,sizeof(struct FluidFlux));
     first_call = 0;
   }
 
-  double ndt;
-
   // Predictor setup
-  ndt = advance_fluid(G, S, S, Stmp, 0.5*dt);
+  advance_fluid(G, S, S, Stmp, 0.5*dt);
+
   #if ELECTRONS
   heat_electrons(P, Ph, 0.5*dt);
   #endif
+
   fixup(G, Stmp);
+
   fixup_utoprim(G, Stmp);
+
   #if ELECTRONS
   fixup_electrons(Ph);
   #endif
+
   set_bounds(G, Stmp);
 
   // Radiation step
@@ -45,16 +47,21 @@ void step(struct GridGeom *G, struct FluidState *S)
   #endif
 
   // Corrector step
-  ndt = advance_fluid(G, S, Stmp, S, dt);
+  double ndt = advance_fluid(G, S, Stmp, S, dt);
+
   #if ELECTRONS
   heat_electrons(Ph, P, dt);
   #endif
+
   fixup(G, S);
   fixup_utoprim(G, S);
+
   #if ELECTRONS
   fixup_electrons(P);
   #endif
+
   set_bounds(G, S);
+
 
   #if RADIATION
   // Apply radiation four-force to fluid
@@ -69,8 +76,7 @@ void step(struct GridGeom *G, struct FluidState *S)
   if (ndt > SAFE * dt) {
     ndt = SAFE * dt;
   }
-  dt = ndt;
-  dt = mpi_min(dt);
+  dt = mpi_min(ndt);
 }
 
 double advance_fluid(struct GridGeom *G, struct FluidState *Si,
@@ -101,10 +107,12 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   }
 
   // Can remove this later after appropriate initialization
-  #pragma omp parallel for collapse(3)
-  ZLOOP {
-    get_state(G, Si, i, j, k, CENT);
-  }
+//  #pragma omp parallel for collapse(3)
+//  ZLOOP {
+//    get_state(G, Si, i, j, k, CENT);
+//  }
+
+  get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
 
   prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);
 
@@ -128,10 +136,11 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   timer_stop(TIMER_U_TO_P);
 
   // Not complete without setting four-vectors
-  #pragma omp parallel for collapse(3)
-  ZLOOP {
-    get_state(G, Sf, i, j, k, CENT);
-  }
+//  #pragma omp parallel for collapse(3)
+//  ZLOOP {
+//    get_state(G, Sf, i, j, k, CENT);
+//  }
+  get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
 
   #pragma omp parallel for collapse(3)
   ZLOOP {

@@ -11,6 +11,7 @@
 static MPI_Comm comm;
 static int neighbors[3][3][3];
 static MPI_Datatype face_type[3];
+static MPI_Datatype pflag_face_type[3];
 static int rank;
 static int numprocs;
 
@@ -71,13 +72,14 @@ void init_mpi()
          global_start[1], global_stop[1],
          global_start[2], global_stop[2]);
 
-  // Make MPI datatypes
-  int max_count = MY_MAX(NVAR, MY_MAX(NVAR*(N3+2*NG), NVAR*(N3+2*NG)*(N2+2*NG)));
-  int *blocks = malloc(max_count*sizeof(int));
-  MPI_Aint *offsets = malloc(max_count*sizeof(MPI_Aint));
-  MPI_Datatype *types = malloc(max_count*sizeof(MPI_Datatype));
 
-  // First spatial direction face
+  // Make MPI datatypes
+  int max_count = NVAR*N3*N2;
+  int *blocks = calloc(max_count,sizeof(int));
+  MPI_Aint *offsets = calloc(max_count,sizeof(MPI_Aint));
+  MPI_Datatype *types = calloc(max_count,sizeof(MPI_Datatype));
+
+  // N3 face: Update all zones
   // Need slice P[0-NVAR][i:i+NG][:][:]
 
   int count = NVAR;
@@ -92,36 +94,36 @@ void init_mpi()
   MPI_Type_create_struct(count, blocks, offsets, types, &face_type[0]);
   MPI_Type_commit(&face_type[0]);
 
-  // Second spatial direction face
-  // Slice P[0-NVAR][:][i:i+NG][:]
+  // N2 face: update all N1 zones, but only current good N3
+  // Slice P[0-NVAR][NG:N3+NG][i:i+NG][:]
 
-  count = NVAR*(N3+2*NG);
+  count = NVAR*N3;
   for (int i = 0; i < count ; i++) {
     blocks[i] = NG*(N1+2*NG);
     types[i] = MPI_DOUBLE;
   }
   PLOOP {
-    for (int j = 0; j < (N3+2*NG); j++) {
-      offsets[ip*(N3 + 2*NG) + j] = ip*(N3+2*NG)*(N2+2*NG)*(N1+2*NG)*sizeof(double) +
+    for (int j = 0; j < N3; j++) {
+      offsets[ip*N3 + j] = ip*(N3+2*NG)*(N2+2*NG)*(N1+2*NG)*sizeof(double) +
         j*(N2+2*NG)*(N1+2*NG)*sizeof(double);
     }
   }
   MPI_Type_create_struct(count, blocks, offsets, types, &face_type[1]);
   MPI_Type_commit(&face_type[1]);
 
-  // Third spatial direction face
-  // Slice P[0-NVAR][:][:][i:i+NG]
+  // N1 face: update only current good zones (No ghosts)
+  // Slice P[0-NVAR][NG:N3+NG][NG:N2+NG][i:i+NG]
 
-  count = NVAR*(N3+2*NG)*(N2+2*NG);
+  count = NVAR*N3*N2;
   for (int i = 0; i < count; i++) {
     blocks[i] = NG;
     types[i] = MPI_DOUBLE;
   }
   PLOOP {
-    for (int j = 0; j < (N3+2*NG); j++) {
-      for (int k = 0; k < (N2+2*NG); k++) {
-        offsets[ip*(N3+2*NG)*(N2+2*NG) + j*(N2+2*NG) + k] = ip*(N3 + 2*NG)*(N2 + 2*NG)*(N1 + 2*NG)*sizeof(double) +
-          j*(N2 + 2*NG)*(N1+2*NG)*sizeof(double) +
+    for (int j = 0; j < N3; j++) {
+      for (int k = 0; k < N2; k++) {
+        offsets[ip*N3*N2 + j*N2 + k] = ip*(N3+2*NG)*(N2+2*NG)*(N1+2*NG)*sizeof(double) +
+          j*(N2+2*NG)*(N1+2*NG)*sizeof(double) +
           k*(N1+2*NG)*sizeof(double);
       }
     }
@@ -132,39 +134,128 @@ void init_mpi()
   free(blocks);
   free(offsets);
   free(types);
+
+  // Integer offsets for pflag
+  max_count = N3*N2;
+  blocks = calloc(max_count,sizeof(int));
+  offsets = calloc(max_count,sizeof(MPI_Aint));
+  types = calloc(max_count,sizeof(MPI_Datatype));
+
+  // N3 Face: all zones
+  // Need slice [i:i+NG][:][:]
+
+  count = 1;
+  for (int i = 0; i < count ; i++) {
+    blocks[i] = NG*(N2+2*NG)*(N1+2*NG);
+    types[i] = MPI_INT;
+  }
+
+  offsets[0] = 0;
+
+  MPI_Type_create_struct(count, blocks, offsets, types, &pflag_face_type[0]);
+  MPI_Type_commit(&pflag_face_type[0]);
+
+  // N2 Face: all N1 zones, good N3 zones
+  // Slice [NG:N3+NG][i:i+NG][:]
+
+  count = N3;
+  for (int i = 0; i < count ; i++) {
+    blocks[i] = NG*(N1+2*NG);
+    types[i] = MPI_INT;
+  }
+  for (int j = 0; j < N3; j++) {
+    offsets[j] = (j+NG)*(N2+2*NG)*(N1+2*NG)*sizeof(int);
+  }
+  MPI_Type_create_struct(count, blocks, offsets, types, &pflag_face_type[1]);
+  MPI_Type_commit(&pflag_face_type[1]);
+
+  // N1 Face: only good zones
+  // Slice [NG:N3+NG][NG:N2+NG][i:i+NG]
+
+  count = N3*N2;
+  for (int i = 0; i < count; i++) {
+    blocks[i] = NG;
+    types[i] = MPI_INT;
+  }
+  for (int j = 0; j < N3; j++) {
+    for (int k = 0; k < N2; k++) {
+      offsets[j*N2 + k] = j*(N2+2*NG)*(N1+2*NG)*sizeof(int) +
+        k*(N1+2*NG)*sizeof(int);
+    }
+  }
+  MPI_Type_create_struct(count, blocks, offsets, types, &pflag_face_type[2]);
+  MPI_Type_commit(&pflag_face_type[2]);
+
+  free(blocks);
+  free(offsets);
+  free(types);
+
+  MPI_Barrier(comm);
 }
 
 // Share face data
-MPI_Status* sync_mpi_boundaries(struct FluidState *S)
+MPI_Status* sync_mpi_bound_X1(struct FluidState *S)
 {
   MPI_Status *status = MPI_STATUS_IGNORE;
 
   // These are rather slow, so I use bounds.c implementations where possible
-#if (N1 > 1) && (N1CPU > 1)
+#if N1 > 1
   // First send right/receive left
-  MPI_Sendrecv(&(S->P[0][0][0][N1]), 1, face_type[2], neighbors[1][1][2], 0,
-	       &(S->P[0][0][0][0]), 1, face_type[2], neighbors[1][1][0], 0, comm, status); // TODO check the status
+  MPI_Sendrecv(&(S->P[0][NG][NG][N1]), 1, face_type[2], neighbors[1][1][2], 0,
+	       &(S->P[0][NG][NG][0]), 1, face_type[2], neighbors[1][1][0], 0, comm, status); // TODO check the status
+  MPI_Sendrecv(&(pflag[NG][NG][N1]), 1, pflag_face_type[2], neighbors[1][1][2], 6,
+	       &(pflag[NG][NG][0]), 1, pflag_face_type[2], neighbors[1][1][0], 6, comm, status);
   // And back
-  MPI_Sendrecv(&(S->P[0][0][0][NG]), 1, face_type[2], neighbors[1][1][0], 1,
-	       &(S->P[0][0][0][N1+NG]), 1, face_type[2], neighbors[1][1][2], 1, comm, status);
-#endif
-
-  // Other directions
-#if (N2 > 1) && (N2CPU > 1)
-  MPI_Sendrecv(&(S->P[0][0][N2][0]), 1, face_type[1], neighbors[1][2][1], 2,
-	       &(S->P[0][0][0][0]), 1, face_type[1], neighbors[1][0][1], 2, comm, status);
-  MPI_Sendrecv(&(S->P[0][0][NG][0]), 1, face_type[1], neighbors[1][0][1], 3,
-	       &(S->P[0][0][N2+NG][0]), 1, face_type[1], neighbors[1][2][1], 3, comm, status);
-#endif
-
-#if (N3 > 1) && (N3CPU > 1)
-  MPI_Sendrecv(&(S->P[0][N3][0][0]), 1, face_type[0], neighbors[2][1][1], 4,
-	       &(S->P[0][0][0][0]), 1, face_type[0], neighbors[0][1][1], 4, comm, status);
-  MPI_Sendrecv(&(S->P[0][NG][0][0]), 1, face_type[0], neighbors[0][1][1], 5,
-	       &(S->P[0][N3+NG][0][0]), 1, face_type[0], neighbors[2][1][1], 5, comm, status);
+  MPI_Sendrecv(&(S->P[0][NG][NG][NG]), 1, face_type[2], neighbors[1][1][0], 1,
+	       &(S->P[0][NG][NG][N1+NG]), 1, face_type[2], neighbors[1][1][2], 1, comm, status);
+  MPI_Sendrecv(&(pflag[NG][NG][NG]), 1, pflag_face_type[2], neighbors[1][1][0], 7,
+	       &(pflag[NG][NG][N1+NG]), 1, pflag_face_type[2], neighbors[1][1][2], 7, comm, status);
 #endif
 
   return status;
+}
+
+MPI_Status* sync_mpi_bound_X2(struct FluidState *S)
+{
+  MPI_Status *status = MPI_STATUS_IGNORE;
+
+  // Other directions
+#if N2 > 1
+  MPI_Sendrecv(&(S->P[0][NG][N2][0]), 1, face_type[1], neighbors[1][2][1], 2,
+	       &(S->P[0][NG][0][0]), 1, face_type[1], neighbors[1][0][1], 2, comm, status);
+  MPI_Sendrecv(&(pflag[NG][N2][0]), 1, pflag_face_type[1], neighbors[1][2][1], 8,
+	       &(pflag[NG][0][0]), 1, pflag_face_type[1], neighbors[1][0][1], 8, comm, status);
+
+  MPI_Sendrecv(&(S->P[0][NG][NG][0]), 1, face_type[1], neighbors[1][0][1], 3,
+	       &(S->P[0][NG][N2+NG][0]), 1, face_type[1], neighbors[1][2][1], 3, comm, status);
+  MPI_Sendrecv(&(pflag[NG][NG][0]), 1, pflag_face_type[1], neighbors[1][0][1], 9,
+	       &(pflag[NG][N2+NG][0]), 1, pflag_face_type[1], neighbors[1][2][1], 9, comm, status);
+#endif
+
+  return status;
+}
+
+MPI_Status* sync_mpi_bound_X3(struct FluidState *S)
+{
+  MPI_Status *status = MPI_STATUS_IGNORE;
+
+#if N3 > 1
+  MPI_Sendrecv(&(S->P[0][N3][0][0]), 1, face_type[0], neighbors[2][1][1], 4,
+	       &(S->P[0][0][0][0]), 1, face_type[0], neighbors[0][1][1], 4, comm, status);
+  MPI_Sendrecv(&(pflag[N3][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 10,
+	       &(pflag[0][0][0]), 1, pflag_face_type[0], neighbors[0][1][1], 10, comm, status);
+
+  MPI_Sendrecv(&(S->P[0][NG][0][0]), 1, face_type[0], neighbors[0][1][1], 5,
+	       &(S->P[0][N3+NG][0][0]), 1, face_type[0], neighbors[2][1][1], 5, comm, status);
+  MPI_Sendrecv(&(pflag[NG][0][0]), 1, pflag_face_type[0], neighbors[0][1][1], 11,
+	       &(pflag[N3+NG][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 11, comm, status);
+#endif
+
+  return status;
+}
+
+void mpi_barrier() {
+  MPI_Barrier(comm);
 }
 
 int mpi_nprocs() {

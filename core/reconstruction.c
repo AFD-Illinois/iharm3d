@@ -191,7 +191,7 @@ void weno(double x1, double x2, double x3, double x4, double x5, double *lout, d
 // MP5 reconstruction from PLUTO
 // Imported by Mani Chandra
 #define MINMOD(a, b) ((a)*(b) > 0.0 ? (fabs(a) < fabs(b) ? (a):(b)):0.0)
-double Median(double a, double b, double c)
+double median(double a, double b, double c)
 {
   return (a + MINMOD(b - a, c - a));
 }
@@ -236,7 +236,7 @@ double mp5_subcalc(double Fjm2, double Fjm1, double Fj, double Fjp1, double Fjp2
   scrh2 = fmax(Fj, fUL);    scrh2 = fmax(scrh2, fLC);
   Fmax  = fmin(scrh1, scrh2);                // Eqn. 2.24b
 
-  f = Median(f, Fmin, Fmax);                 // Eqn. 2.26
+  f = median(f, Fmin, Fmax);                 // Eqn. 2.26
   return f;
 }
 
@@ -248,8 +248,6 @@ void mp5(double x1, double x2, double x3, double x4, double x5, double *lout,
 }
 #undef MINMOD
 
-//void reconstruct_lr_lin(double Ptmp[NMAX+2*NG][NVAR], int N,
-//  double P_l[NMAX+2*NG][NVAR], double P_r[NMAX+2*NG][NVAR])
 void reconstruct_lr_lin(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
   PLOOP {
@@ -287,9 +285,6 @@ void reconstruct_lr_lin(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
   } // PLOOP
 }
 
-
-//void reconstruct_lr_par(double Ptmp[NMAX+2*NG][NVAR], int N,
-//  double P_l[NMAX+2*NG][NVAR], double P_r[NMAX+2*NG][NVAR])
 void reconstruct_lr_par(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
   PLOOP {
@@ -329,22 +324,6 @@ void reconstruct_lr_par(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
     }
   } // PLOOP
 }
-
-//void reconstruct_lr_weno(double Ptmp[NMAX+2*NG][NVAR], int N,
-//  double P_l[NMAX+2*NG][NVAR], double P_r[NMAX+2*NG][NVAR])
-//{
-//  ISLOOP(-1,N) {
-//    PLOOP {
-//      weno(Ptmp[i-2][ip],
-//           Ptmp[i-1][ip],
-//           Ptmp[i][ip],
-//           Ptmp[i+1][ip],
-//           Ptmp[i+2][ip],
-//           &P_l[i][ip],
-//           &P_r[i][ip]);
-//    }
-//  }
-//}
 
 void reconstruct_lr_weno(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
@@ -386,24 +365,46 @@ void reconstruct_lr_weno(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir
   } // PLOOP
 }
 
-void reconstruct_lr_mp5(double Ptmp[NMAX+2*NG][NVAR], int N,
-  double P_l[NMAX+2*NG][NVAR], double P_r[NMAX+2*NG][NVAR])
+void reconstruct_lr_mp5(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
-  ISLOOP(-1,N) {
-    PLOOP {
-      mp5(Ptmp[i-2][ip],
-          Ptmp[i-1][ip],
-          Ptmp[i][ip],
-          Ptmp[i+1][ip],
-          Ptmp[i+2][ip],
-          &P_l[i][ip],
-          &P_r[i][ip]);
+  PLOOP {
+    if (dir == 1) {
+      #pragma omp parallel for simd collapse(2)
+      KSLOOP(-1, N3) {
+        JSLOOP(-1, N2) {
+          ISLOOP(-1, N1) {
+            mp5(S->P[ip][k][j][i-2], S->P[ip][k][j][i-1], S->P[ip][k][j][i],
+                 S->P[ip][k][j][i+1], S->P[ip][k][j][i+2], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
+    } else if (dir == 2) {
+      #pragma omp parallel for simd collapse(2)
+      KSLOOP(-1, N3) {
+        JSLOOP(-1, N2) {
+          ISLOOP(-1, N1) {
+            mp5(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
+    } else if (dir == 3) {
+      #pragma omp parallel for simd collapse(2)
+      KSLOOP(-1, N3) {
+        JSLOOP(-1, N2) {
+          ISLOOP(-1, N1) {
+            mp5(S->P[ip][k-2][j][i], S->P[ip][k-1][j][i], S->P[ip][k][j][i],
+                 S->P[ip][k+1][j][i], S->P[ip][k+2][j][i], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
     }
-  }
+  } // PLOOP
 }
 
-//void reconstruct(double Ptmp[NMAX+2*NG][NVAR], int N,
-//  double P_l[NMAX+2*NG][NVAR], double P_r[NMAX+2*NG][NVAR])
 void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
   timer_start(TIMER_RECON);
@@ -416,7 +417,7 @@ void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
   #elif RECONSTRUCTION == WENO
     reconstruct_lr_weno(S, Pl, Pr, dir);
   #elif RECONSTRUCTION == MP5
-    reconstruct_lr_mp5(Ptmp, N, P_l, P_r);
+    reconstruct_lr_mp5(S, Pl, Pr, dir);
   #else
     fprintf(stderr, "Reconstruction algorithm not specified!\n");
     exit(-1);

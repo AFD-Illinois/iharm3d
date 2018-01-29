@@ -439,7 +439,10 @@ double invert(double *m, double *invOut);
 
 // mpi.c
 void init_mpi();
-MPI_Status* sync_mpi_boundaries(struct FluidState *S);
+MPI_Status* sync_mpi_bound_X1(struct FluidState *S);
+MPI_Status* sync_mpi_bound_X2(struct FluidState *S);
+MPI_Status* sync_mpi_bound_X3(struct FluidState *S);
+void mpi_barrier();
 int mpi_nprocs();
 double mpi_max(double f);
 double mpi_min(double f);
