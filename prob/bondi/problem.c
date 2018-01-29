@@ -157,6 +157,7 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
 {
   double r, th, X[NDIM];
   coord(i, j, k, CENT, X);
+  if (i == NG && j == NG && k == NG) fprintf(stderr, "Coord of zero point: (%f %f %f %f)", X[0], X[1], X[2], X[3]);
   bl_coord(X, &r, &th);
 
   while (r < Rhor) {
@@ -196,6 +197,7 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
 
   P[RHO][k][j][i] = rho;
   P[UU][k][j][i] = u;
+  if (i == NG && j == NG && k == NG) fprintf(stderr, "rho,u of zero point: %f,%f", rho, u);
   P[B1][k][j][i] = 0.;
   P[B2][k][j][i] = 0.;
   P[B3][k][j][i] = 0.;
@@ -208,8 +210,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   tf = 100.0;
   DTd = 1.;
   DTl = 5.000000e-01;
-  DTr = 10000;
-  DTp = 10;
+  DTr = 100000; // Disable restarts
+  DTp = 50;
 
   dt = 1.0e-06;
 
@@ -243,21 +245,23 @@ void init(struct GridGeom *G, struct FluidState *S)
   C2 = pow(1. + (1. + n)*Tc,2)*(1. - 2.*mdot/rs + pow(C1,2)/
        (pow(rs,4)*pow(Tc,2*n)));
 
-  printf("a = %e Rhor = %e\n", a, Rhor);
+  if (mpi_io_proc()) {
+    printf("a = %e Rhor = %e\n", a, Rhor);
 
-  printf("mdot = %e\n", mdot);
-  printf("rs   = %e\n", rs);
-  printf("n    = %e\n", n);
-  printf("uc   = %e\n", uc);
-  printf("Vc   = %e\n", Vc);
-  printf("Tc   = %e\n", Tc);
-  printf("C1   = %e\n", C1);
-  printf("C2   = %e\n", C2);
+    printf("mdot = %e\n", mdot);
+    printf("rs   = %e\n", rs);
+    printf("n    = %e\n", n);
+    printf("uc   = %e\n", uc);
+    printf("Vc   = %e\n", Vc);
+    printf("Tc   = %e\n", Tc);
+    printf("C1   = %e\n", C1);
+    printf("C2   = %e\n", C2);
+  }
 
   zero_arrays();
   set_grid(G);
 
-  printf("grid set\n");
+  if (mpi_io_proc()) printf("grid set\n");
 
   ZLOOP {
     get_prim_bondi(i, j, k, S->P, G);

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-OUT_DIR=${1:-/mnt/data2/bprather/default_dumps/}
-#OUT_DIR=${1:-.}
-NMPI=1
+#OUT_DIR=${1:-/mnt/data2/bprather/default_dumps/}
+OUT_DIR=${1:-.}
+NMPI=4
 
 #rm -rf $OUT_DIR ; mkdir $OUT_DIR
 
@@ -19,7 +19,7 @@ then
 
   numactl --interleave=all ./bhlight -o $OUT_DIR
 else
-  export OMP_NUM_THREADS=1
+  export OMP_NUM_THREADS=4
   echo "Using $NMPI local MPI processes"
 
   mpiexec -n $NMPI ./bhlight -o $OUT_DIR
