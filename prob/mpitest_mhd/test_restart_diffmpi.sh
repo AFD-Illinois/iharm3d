@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Must be just a name for now
-OUT_DIR=restart_test
+OUT_DIR=test_restart
 
 rm -rf $OUT_DIR
 mkdir -p $OUT_DIR

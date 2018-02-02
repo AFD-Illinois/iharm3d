@@ -80,5 +80,7 @@ bhlight
 out.txt
 dumps/
 dumps*/
+restarts/
+test_*/
 TMP/
 *.png
