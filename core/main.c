@@ -188,5 +188,7 @@ int main(int argc, char *argv[])
 *******************************************************************************/
   if (dumpThisStep == 0) diag(G, S, DIAG_FINAL);
 
+  MPI_Finalize();
+
   return 0;
 }
