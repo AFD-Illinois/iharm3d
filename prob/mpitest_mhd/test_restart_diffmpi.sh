@@ -43,5 +43,4 @@ grep restart out_firsttime.txt
 
 grep restart out_secondtime.txt
 
-h5diff --delta=1e-3 last_dump_gold.h5 dumps/dump_00000005.h5
-#h5diff --relative=1e-3 last_dump_gold.h5 dumps/dump_00000005.h5
+h5diff --delta=1e-12 last_dump_gold.h5 dumps/dump_00000005.h5

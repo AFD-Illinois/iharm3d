@@ -10,7 +10,7 @@ NMPI=${NMPI:-1}
 
 python build.py
 
-ulimit -s 16384
+ulimit -s unlimited
 
 if (( $NMPI == 1 ))
 then

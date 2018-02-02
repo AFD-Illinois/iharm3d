@@ -158,8 +158,8 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   t = 0.;
   tf = 2.*M_PI/fabs(cimag(omega));
-  DTd = tf/30.;
-  DTl = tf/30.;
+  DTd = tf/5.;
+  DTl = tf/5.;
   DTr = 100;  // Turn off restarts
   DTp = 10;   // Performance interval, in timesteps
 
