@@ -104,33 +104,6 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   } // global_stop[0] == N1TOT
 
-#if METRIC == MKS
-  //ucon_calc(geom, state);
-  if(global_start[0] == 0  && X1L_INFLOW == 0) {
-    // Make sure there is no inflow at the inner boundary
-#pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3 - 1 + NG) {
-      JSLOOP(-NG, N2 - 1 + NG) {
-        ISLOOP(-NG, -1) {
-          inflow_check(geom, state, i, j, k, 0);
-        }
-      }
-    }
-  }
-
-  if(global_stop[0] == N1TOT && X1R_INFLOW == 0) {
-    // Make sure there is no inflow at the outer boundary
-#pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3 - 1 + NG) {
-      JSLOOP(-NG, N2 - 1 + NG) {
-        ISLOOP(N1, N1 - 1 + NG) {
-          inflow_check(geom, state, i, j, k, 1);
-        }
-      }
-    }
-  }
-#endif
-
   sync_mpi_bound_X1(state);
 
   if(global_start[1] == 0) {
@@ -271,6 +244,33 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   } // global_stop[2] == N3TOT
 
   sync_mpi_bound_X3(state);
+
+#if METRIC == MKS
+  //ucon_calc(geom, state);
+  if(global_start[0] == 0  && X1L_INFLOW == 0) {
+    // Make sure there is no inflow at the inner boundary
+#pragma omp parallel for collapse(2)
+    KSLOOP(-NG, N3 - 1 + NG) {
+      JSLOOP(-NG, N2 - 1 + NG) {
+        ISLOOP(-NG, -1) {
+          inflow_check(geom, state, i, j, k, 0);
+        }
+      }
+    }
+  }
+
+  if(global_stop[0] == N1TOT && X1R_INFLOW == 0) {
+    // Make sure there is no inflow at the outer boundary
+#pragma omp parallel for collapse(2)
+    KSLOOP(-NG, N3 - 1 + NG) {
+      JSLOOP(-NG, N2 - 1 + NG) {
+        ISLOOP(N1, N1 - 1 + NG) {
+          inflow_check(geom, state, i, j, k, 1);
+        }
+      }
+    }
+  }
+#endif
 
   timer_stop(TIMER_BOUND);
 }
