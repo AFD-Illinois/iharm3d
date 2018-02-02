@@ -18,7 +18,7 @@ import util
 import sys
 import os
 from subprocess import call
-from psutil import cpu_count
+#from psutil import cpu_count
 
 def matches_host():                                                              
   host = os.uname()[1]                                                           

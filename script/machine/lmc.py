@@ -18,12 +18,12 @@ import util
 import sys
 import os
 from subprocess import call
-from psutil import cpu_count
+#from psutil import cpu_count
 
-def matches_host():                                                              
-  host = os.uname()[1]                                                           
-  if host == 'lmc':                                                            
-    return True                                                                  
+def matches_host():
+  host = os.uname()[1]
+  if host == 'lmc':
+    return True
   return False
 
 def get_options():
@@ -31,9 +31,8 @@ def get_options():
 
   host['NAME']           = os.uname()[1]
   host['COMPILER']       = '/bhhome/bryan10/software/hdf5/bin/h5pcc'
-  host['COMPILER_FLAGS'] = '-Ofast -Wall -fdiagnostics-color -fopenmp'
+  host['COMPILER_FLAGS'] = '-O3 -Wall -fdiagnostics-color -fopenmp'
   host['GSL_DIR']        = '/bhhome/bryan10/software/gsl'
   host['EXECUTABLE']     = '/bhhome/bryan10/software/openmpi/bin/mpirun'
 
   return host
-
