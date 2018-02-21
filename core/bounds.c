@@ -26,10 +26,14 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   // TODO Rewrite/clean this function to put prim index on the outside
 
+  sync_mpi_bound_X1(state);
+//  sync_mpi_bound_X2(state);
+//  sync_mpi_bound_X3(state);
+
   if(global_start[0] == 0) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3-1+NG) {
-      JSLOOP(-NG, N2-1+NG) {
+    KSLOOP(0, N3-1) {
+      JSLOOP(0, N2-1) {
         ISLOOP(-NG, -1) {
           #if N1 < NG
           int iactive = NG;
@@ -70,8 +74,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   if(global_stop[0] == N1TOT) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3-1+NG) {
-      JSLOOP(-NG, N2-1+NG) {
+    KSLOOP(0, N3-1) {
+      JSLOOP(0, N2-1) {
         ISLOOP(N1, N1 - 1 + NG) {
           #if N1 < NG
           int iactive = N1 - 1 + NG;
@@ -104,11 +108,11 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   } // global_stop[0] == N1TOT
 
-  sync_mpi_bound_X1(state);
+  sync_mpi_bound_X2(state);
 
   if(global_start[1] == 0) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3-1+NG) {
+    KSLOOP(0, N3-1) {
       JSLOOP(-NG, -1) {
         ISLOOP(-NG, N1-1+NG) {
           #if N2 < NG
@@ -144,7 +148,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   if(global_stop[1] == N2TOT) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3-1+NG) {
+    KSLOOP(0, N3-1) {
       JSLOOP(N2, N2-1+NG) {
         ISLOOP(-NG, N1-1+NG) {
           #if N2 < NG
@@ -177,7 +181,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   } // global_stop[1] == N2TOT
 
-  sync_mpi_bound_X2(state);
+  sync_mpi_bound_X3(state);
 
   if (global_start[2] == 0) {
     #pragma omp parallel for collapse(2)
@@ -243,7 +247,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   } // global_stop[2] == N3TOT
 
-  sync_mpi_bound_X3(state);
+//  sync_mpi_bound_X3(state);
 
 #if METRIC == MKS
   //ucon_calc(geom, state);
