@@ -6,6 +6,7 @@ OUT_DIR=test_restart
 rm -rf $OUT_DIR
 mkdir -p $OUT_DIR
 
+sed -i -e "s/N1CPU 2/N1CPU 1/g" parameters.h
 sed -i -e "s/N2CPU 2/N2CPU 1/g" parameters.h
 sed -i -e "s/N3CPU 4/N3CPU 1/g" parameters.h
 export NMPI=1
@@ -27,9 +28,10 @@ ln -s restart_00000001.h5 restart.last
 cd ../..
 
 
+sed -i -e "s/N1CPU 1/N1CPU 2/g" parameters.h
 sed -i -e "s/N2CPU 1/N2CPU 2/g" parameters.h
 sed -i -e "s/N3CPU 1/N3CPU 4/g" parameters.h
-export NMPI=8
+export NMPI=16
 
 ./run.sh $OUT_DIR > $OUT_DIR/out_secondtime.txt
 

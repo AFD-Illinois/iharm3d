@@ -21,7 +21,7 @@ then
 
   numactl --interleave=all ./bhlight -o $OUT_DIR
 else
-  export OMP_NUM_THREADS=4
+  export OMP_NUM_THREADS=2
   echo "Using $NMPI local MPI processes"
 
   mpiexec -n $NMPI ./bhlight -o $OUT_DIR
