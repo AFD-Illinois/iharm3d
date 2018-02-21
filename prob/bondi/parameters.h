@@ -14,7 +14,7 @@
 /* MPI DECOMPOSITION */
 /* Careful NXCPU < NXTOT!! */
 #define N1CPU 2
-#define N2CPU 2
+#define N2CPU 4
 #define N3CPU 1
 
 /* METRIC

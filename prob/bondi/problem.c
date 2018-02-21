@@ -18,6 +18,7 @@ double mks_smooth;
 #endif
 
 double C1, C2, n;
+int prob_first_call = 1;
 
 struct of_geom {
 	double gcon[NDIM][NDIM];
@@ -155,6 +156,24 @@ void set_ut(double ucon[NDIM], struct of_geom *geom)
 
 void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
 {
+  if (prob_first_call) {
+    double mdot = 1.;
+    double rs = 8.;
+    Rhor = 2.5; // TODO had no value for this...
+    n = 1./(gam - 1.);
+
+    // Solution constants
+    double uc = sqrt(mdot/(2.*rs));
+    double Vc = -sqrt(pow(uc,2)/(1. - 3.*pow(uc,2)));
+    double Tc = -n*pow(Vc,2)/((n + 1.)*(n*pow(Vc,2) - 1.));
+    C1 = uc*pow(rs,2)*pow(Tc,n);
+    C2 = pow(1. + (1. + n)*Tc,2)*(1. - 2.*mdot/rs + pow(C1,2)/
+       (pow(rs,4)*pow(Tc,2*n)));
+
+    prob_first_call = 0;
+  }
+
+
   double r, th, X[NDIM];
   coord(i, j, k, CENT, X);
   if (i == NG && j == NG && k == NG) fprintf(stderr, "Coord of zero point: (%f %f %f %f)", X[0], X[1], X[2], X[3]);
@@ -207,11 +226,11 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
 void init(struct GridGeom *G, struct FluidState *S)
 {
   t = 0;
-  tf = 100.0;
-  DTd = 1.;
+  tf = 50.0;
+  DTd = 1.0;
   DTl = 5.000000e-01;
-  DTr = 100000; // Disable restarts
-  DTp = 50;
+  DTr = 3000; // Disable restarts
+  DTp = 500;
 
   dt = 1.0e-06;
 

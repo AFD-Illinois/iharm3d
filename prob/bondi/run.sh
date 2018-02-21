@@ -2,13 +2,15 @@
 
 #OUT_DIR=${1:-/mnt/data2/bprather/default_dumps/}
 OUT_DIR=${1:-.}
-NMPI=4
+NMPI=${NMPI:-1}
 
 #rm -rf $OUT_DIR ; mkdir $OUT_DIR
 
 . ../../../mpi-load.sh
 
 python build.py
+
+ulimit -s unlimited
 
 if (( $NMPI == 1 ))
 then
