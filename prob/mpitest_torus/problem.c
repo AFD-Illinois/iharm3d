@@ -64,7 +64,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   // Numerical parameters
   lim = MC;
   failed = 0;
-  cour = 0.9;
+  cour = 0.4;
   dt = 1.e-8;
   R0 = 0.0;
   Rhor = (1. + sqrt(1. - a*a));
@@ -91,7 +91,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   // Output choices
   DTd = 2.0;   // Dump interval
   DTl = 0.5;  // Log interval
-  DTr = 50;  // Restart interval, in timesteps
+  DTr = 200;  // Restart interval, in timesteps
   DTp = 50;   // Performance interval, in timesteps
 
   // Diagnostic counters
