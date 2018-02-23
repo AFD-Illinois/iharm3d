@@ -32,9 +32,9 @@ def get_options():
 
   host['NAME']           = os.uname()[1]
   host['COMPILER']       = 'h5pcc'
-  host['COMPILER_FLAGS'] = '-Ofast -Wall -Werror -qopenmp -mcmodel=medium'
-  host['HDF5_DIR']       = '/opt/apps/intel17/impi17_0/phdf5/1.8.16/x86_64/'
-  host['GSL_DIR']        = '/opt/apps/intel17/gsl/2.3'
+  host['COMPILER_FLAGS'] = '-xMIC-AVX512 -Ofast -funroll-loops -Wall -Werror -ipo -qopenmp'
+  host['HDF5_DIR']       = '/opt/apps/intel18/impi18_0/phdf5/1.8.16/x86_64/'
+  host['GSL_DIR']        = '/opt/apps/intel18/gsl/2.3'
   host['EXECUTABLE']     = 'mpirun'
 
   return host

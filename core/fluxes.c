@@ -84,27 +84,32 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   int max_indices[] = {0, N1, N2, N3};
 
   // Properly offset left face
+  // These are un-macro'd to bundle OpenMP thread tasks rather than memory accesses
   PLOOP {
     if (dir == 1) {
-      #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
       ZSLOOP_REVERSE(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1])
         Sl->P[ip][k][j][i] = Sl->P[ip][k][j][i-1];
     } else if (dir == 2) {
-      #pragma omp parallel for collapse(1)
-      ZSLOOP_REVERSE(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1])
-        Sl->P[ip][k][j][i] = Sl->P[ip][k][j-1][i];
+#pragma omp parallel for collapse(2)
+      for (int k = (max_indices[3]) + NG; k >= (-1) + NG; k--) {
+	for (int i = (max_indices[1]) + NG; i >= (-1) + NG; i--) {
+	  for (int j = (max_indices[2]) + NG; j >= (-1) + NG; j--)
+	    Sl->P[ip][k][j][i] = Sl->P[ip][k][j-1][i];
+	}
+      }
     } else if (dir == 3) {
-      ZSLOOP_REVERSE(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1])
-        Sl->P[ip][k][j][i] = Sl->P[ip][k-1][j][i];
+#pragma omp parallel for collapse(2)
+      for (int j = (max_indices[2]) + NG; j >= (-1) + NG; j--) {
+	for (int i = (max_indices[1]) + NG; i >= (-1) + NG; i--) {
+	  for (int k = (max_indices[3]) + NG; k >= (-1) + NG; k--)
+	    Sl->P[ip][k][j][i] = Sl->P[ip][k-1][j][i];
+	}
+      }
     }
   }
   
   timer_start(TIMER_LR_STATE);
-
-//  ZSLOOP(-1, N3, -1, N2, -1, N1) {
-//    get_state(G, Sl, i, j, k, loc);
-//    get_state(G, Sr, i, j, k, loc);
-//  }
 
   get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
   get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
@@ -112,14 +117,6 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   timer_stop(TIMER_LR_STATE);
 
   timer_start(TIMER_LR_PTOF);
-
-//    ZSLOOP (-1, N3, -1, N2, -1, N1) {
-//      prim_to_flux(G, Sl, i, j, k, 0,   loc, Sl->U);
-//      prim_to_flux(G, Sl, i, j, k, dir, loc, fluxL);
-//      prim_to_flux(G, Sr, i, j, k, 0  , loc, Sr->U);
-//      prim_to_flux(G, Sr, i, j, k, dir, loc, fluxR);
-//
-//    }
 
   prim_to_flux_vec(G, Sl, 0,   loc, -1, N3, -1, N2, -1, N1, Sl->U);
   prim_to_flux_vec(G, Sl, dir, loc, -1, N3, -1, N2, -1, N1, fluxL);
@@ -130,10 +127,19 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   timer_stop(TIMER_LR_PTOF);
 
   timer_start(TIMER_LR_VCHAR);
-  #pragma omp parallel for simd collapse(2)
-  ZSLOOP(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1]) {
-    mhd_vchar(G, Sl, i, j, k, loc, dir, cmaxL, cminL);
-    mhd_vchar(G, Sr, i, j, k, loc, dir, cmaxR, cminR);
+  // TODO vectorizing these loops fails for some reason
+#pragma omp parallel
+  {
+#pragma omp for collapse(2)
+    ZSLOOP(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1])
+      {
+	mhd_vchar (G, Sl, i, j, k, loc, dir, cmaxL, cminL);
+      }
+#pragma omp for collapse(2)
+    ZSLOOP(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1])
+      {
+	mhd_vchar (G, Sr, i, j, k, loc, dir, cmaxR, cminR);
+      }
   }
   timer_stop(TIMER_LR_VCHAR);
 
