@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#SBATCH -J pharm_torus
+
+#SBATCH -p flat-quadrant
+
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -t 1:00:00
+
+#SBATCH -o out-%j.txt
+
+JOB=torus_64_temp
+
+# Choose number of threads
+#export OMP_NUM_THREADS=68 # = 1 per core
+export OMP_NUM_THREADS=136 # 2
+# These slow the application
+#export OMP_NUM_THREADS=204 # 3
+#export OMP_NUM_THREADS=272 # 4
+
+# Tell OpenMP to allocate sensibly. Possibly unnecessary
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+ibrun numactl --membind=1 ./bhlight -o /scratch/03002/bprather/pharm_dumps/$JOB/
+#ibrun tacc_affinity ./bhlight -o /scratch/03002/bprather/pharm_dumps/$JOB/
