@@ -75,120 +75,64 @@ void init_mpi()
 
   // Make MPI datatypes
   int max_count = NVAR*N3*N2;
-  int *blocks = calloc(max_count,sizeof(int));
-  MPI_Aint *offsets = calloc(max_count,sizeof(MPI_Aint));
-  MPI_Datatype *types = calloc(max_count,sizeof(MPI_Datatype));
+  int blocks[max_count];  //= calloc(max_count,sizeof(int));
+	int indices[max_count];  //= calloc(max_count,sizeof(MPI_Aint));
+  MPI_Datatype scalar_type = MPI_DOUBLE;
+	MPI_Datatype flag_type = MPI_INT;
 
   // N3 face: Update all zones
   // Need slice P[0-NVAR][i:i+NG][:][:]
 
   int count = NVAR;
-  for (int i = 0; i < count ; i++) {
-    blocks[i] = NG*(N2+2*NG)*(N1+2*NG);
-    types[i] = MPI_DOUBLE;
-  }
+	int countp = 1;
+  int block3 = NG*(N2+2*NG)*(N1+2*NG);
+	int stride3 = (N3+2*NG)*(N2+2*NG)*(N1+2*NG);
 
-  PLOOP {
-    offsets[ip] = ip*(N3+2*NG)*(N2+2*NG)*(N1+2*NG)*sizeof(double);
-  }
-  MPI_Type_create_struct(count, blocks, offsets, types, &face_type[0]);
+  MPI_Type_vector(count, block3, stride3, scalar_type, &face_type[0]);
   MPI_Type_commit(&face_type[0]);
+	MPI_Type_vector(countp, block3, stride3, flag_type, &pflag_face_type[0]);
+  MPI_Type_commit(&pflag_face_type[0]);
 
   // N2 face: update all N1 zones, but only current good N3
   // Slice P[0-NVAR][NG:N3+NG][i:i+NG][:]
 
   count = NVAR*N3;
+	countp = N3;
   for (int i = 0; i < count ; i++) {
     blocks[i] = NG*(N1+2*NG);
-    types[i] = MPI_DOUBLE;
   }
   PLOOP {
     for (int j = 0; j < N3; j++) {
-      offsets[ip*N3 + j] = ip*(N3+2*NG)*(N2+2*NG)*(N1+2*NG)*sizeof(double) +
-        j*(N2+2*NG)*(N1+2*NG)*sizeof(double);
+      indices[ip*N3 + j] = ip*(N3+2*NG)*(N2+2*NG)*(N1+2*NG) +
+        j*(N2+2*NG)*(N1+2*NG);
     }
   }
-  MPI_Type_create_struct(count, blocks, offsets, types, &face_type[1]);
-  MPI_Type_commit(&face_type[1]);
+  MPI_Type_indexed(count, blocks, indices, scalar_type, &face_type[1]);
+	MPI_Type_commit(&face_type[1]);
+	MPI_Type_indexed(countp, blocks, indices, flag_type, &pflag_face_type[1]);
+  MPI_Type_commit(&pflag_face_type[1]);
 
   // N1 face: update only current good zones (No ghosts)
   // Slice P[0-NVAR][NG:N3+NG][NG:N2+NG][i:i+NG]
 
   count = NVAR*N3*N2;
+	countp = N3*N2;
   for (int i = 0; i < count; i++) {
     blocks[i] = NG;
-    types[i] = MPI_DOUBLE;
   }
   PLOOP {
     for (int j = 0; j < N3; j++) {
       for (int k = 0; k < N2; k++) {
-        offsets[ip*N3*N2 + j*N2 + k] = ip*(N3+2*NG)*(N2+2*NG)*(N1+2*NG)*sizeof(double) +
-          j*(N2+2*NG)*(N1+2*NG)*sizeof(double) +
-          k*(N1+2*NG)*sizeof(double);
+        indices[ip*N3*N2 + j*N2 + k] = ip*(N3+2*NG)*(N2+2*NG)*(N1+2*NG) +
+          j*(N2+2*NG)*(N1+2*NG) +
+          k*(N1+2*NG);
       }
     }
   }
-  MPI_Type_create_struct(count, blocks, offsets, types, &face_type[2]);
-  MPI_Type_commit(&face_type[2]);
-
-  free(blocks);
-  free(offsets);
-  free(types);
-
-  // Integer offsets for pflag
-  max_count = N3*N2;
-  blocks = calloc(max_count,sizeof(int));
-  offsets = calloc(max_count,sizeof(MPI_Aint));
-  types = calloc(max_count,sizeof(MPI_Datatype));
-
-  // N3 Face: all zones
-  // Need slice [i:i+NG][:][:]
-
-  count = 1;
-  for (int i = 0; i < count ; i++) {
-    blocks[i] = NG*(N2+2*NG)*(N1+2*NG);
-    types[i] = MPI_INT;
-  }
-
-  offsets[0] = 0;
-
-  MPI_Type_create_struct(count, blocks, offsets, types, &pflag_face_type[0]);
-  MPI_Type_commit(&pflag_face_type[0]);
-
-  // N2 Face: all N1 zones, good N3 zones
-  // Slice [NG:N3+NG][i:i+NG][:]
-
-  count = N3;
-  for (int i = 0; i < count ; i++) {
-    blocks[i] = NG*(N1+2*NG);
-    types[i] = MPI_INT;
-  }
-  for (int j = 0; j < N3; j++) {
-    offsets[j] = (j+NG)*(N2+2*NG)*(N1+2*NG)*sizeof(int);
-  }
-  MPI_Type_create_struct(count, blocks, offsets, types, &pflag_face_type[1]);
-  MPI_Type_commit(&pflag_face_type[1]);
-
-  // N1 Face: only good zones
-  // Slice [NG:N3+NG][NG:N2+NG][i:i+NG]
-
-  count = N3*N2;
-  for (int i = 0; i < count; i++) {
-    blocks[i] = NG;
-    types[i] = MPI_INT;
-  }
-  for (int j = 0; j < N3; j++) {
-    for (int k = 0; k < N2; k++) {
-      offsets[j*N2 + k] = j*(N2+2*NG)*(N1+2*NG)*sizeof(int) +
-        k*(N1+2*NG)*sizeof(int);
-    }
-  }
-  MPI_Type_create_struct(count, blocks, offsets, types, &pflag_face_type[2]);
+  MPI_Type_indexed(count, blocks, indices, scalar_type, &face_type[2]);
+	MPI_Type_commit(&face_type[2]);
+	MPI_Type_indexed(countp, blocks, indices, flag_type, &pflag_face_type[2]);
   MPI_Type_commit(&pflag_face_type[2]);
-
-  free(blocks);
-  free(offsets);
-  free(types);
 
   MPI_Barrier(comm);
 }
