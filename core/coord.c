@@ -27,6 +27,8 @@ void coord(int i, int j, int k, int loc, double *X)
   i += global_start[0];
   j += global_start[1];
   k += global_start[2];
+
+	X[0] = 0; // Make sure all memory passed in is initialized
   if (loc == FACE1) {
     X[1] = startx[1] + (i - NG) * dx[1];
     X[2] = startx[2] + (j + 0.5 - NG) * dx[2];
@@ -67,7 +69,7 @@ double th_of_x(double x)
 {
 #if POLYTH
   double y = 2*x - 1.;
-  return poly_norm*y*(1. + pow(y/poly_xt,poly_alpha)/(poly_alpha+1.)) + 
+  return poly_norm*y*(1. + pow(y/poly_xt,poly_alpha)/(poly_alpha+1.)) +
          0.5*M_PI;
 #else
   return M_PI*x + ((1. - hslope)/2.)*sin(2.*M_PI*x);
@@ -113,7 +115,7 @@ void bl_coord(double *X, double *r, double *th)
 void gcov_func(double *X, double gcov[NDIM][NDIM])
 {
   memset(gcov, 0, NDIM*NDIM*sizeof(double));
-  
+
   #if METRIC == MINKOWSKI
   gcov[0][0] = -1.;
   for (int j = 1; j < NDIM; j++) {
@@ -156,7 +158,7 @@ void gcov_func(double *X, double gcov[NDIM][NDIM])
 /*
 void get_gcon(double X[NDIM], double gcon[NDIM][NDIM]) {
   memset(gcon, 0, NDIM*NDIM*sizeof(double));
-  
+
   #if METRIC == MINKOWSKI
   gcov[0][0] = -1.;
   for (int j = 1; j < NDIM; j++) {
@@ -183,7 +185,7 @@ void get_gcon(double X[NDIM], double gcon[NDIM][NDIM]) {
   gcon[0][1] = -2.*r*rho2/(4.*r*r - rho2*rho2);
 
 
-  #endif // METRIC 
+  #endif // METRIC
 }*/
 
 // Establish X coordinates
@@ -252,7 +254,7 @@ void set_grid(struct GridGeom *G)
       set_grid_loc(G, i, j, 0, FACE1);
       set_grid_loc(G, i, j, 0, FACE2);
       set_grid_loc(G, i, j, 0, FACE3); // TODO if Minkowski...
-      
+
       // Connection only needed at zone center
       conn_func(G, i, j, 0);
     }
@@ -283,4 +285,3 @@ void zero_arrays()
     fail_save[k][j][i] = 0;
   }
 }
-
