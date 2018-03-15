@@ -3,9 +3,9 @@
 source ../../../mpi-load.sh
 
 # In case we didn't clean up after test_restart_diffmpi
-#sed -i -e "s/N2CPU 1/N2CPU 2/g" parameters.h
-#sed -i -e "s/N3CPU 1/N3CPU 4/g" parameters.h
-export NMPI=1
+sed -i -e "s/N2CPU 1/N2CPU 2/g" parameters.h
+sed -i -e "s/N3CPU 1/N3CPU 4/g" parameters.h
+export NMPI=8
 
 # Must be just a name for now
 OUT_DIR=test_convergence
@@ -16,7 +16,7 @@ mkdir -p $OUT_DIR
 for n in 16 32 64
 do
 
-  for i in 0 1 2 3
+  for i in 1 2 3
   do
 
     # I can't believe I'm doing this again

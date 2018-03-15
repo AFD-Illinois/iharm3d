@@ -18,6 +18,10 @@ import pylab as pl
 
 sys.path.insert(0, '../../../script/')
 sys.path.insert(0, '../../../script/analysis/')
+sys.path.insert(0, '../../../../script/')
+sys.path.insert(0, '../../../../script/analysis/')
+
+
 import util
 import hdf5_to_dict as io
 
