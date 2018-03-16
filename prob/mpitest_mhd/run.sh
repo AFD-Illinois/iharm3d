@@ -21,8 +21,8 @@ then
 
   numactl --interleave=all ./bhlight -o $OUT_DIR
 else
-  export OMP_NUM_THREADS=2
-  echo "Using $NMPI local MPI processes"
+  export OMP_NUM_THREADS=$(( $(nproc) / $NMPI / 2 * 2 ))
+  echo "Using $NMPI MPI processes with $OMP_NUM_THREADS threads each"
 
   mpiexec -n $NMPI ./bhlight -o $OUT_DIR
 fi

@@ -13,7 +13,7 @@
 
 /* MPI DECOMPOSITION */
 /* DECOMPOSE IN N3 FIRST! Small leading array sizes for linear access */
-#define N1CPU 1
+#define N1CPU 2
 #define N2CPU 2
 #define N3CPU 4
 
