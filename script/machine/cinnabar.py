@@ -30,7 +30,7 @@ def get_options():
 
   host['NAME']           = os.uname()[1]
   host['COMPILER']       = os.popen('which mpicc').read()
-  host['COMPILER_FLAGS'] = '-fopenmp -march=native -Wall -g' #-O3'
+  host['COMPILER_FLAGS'] = '-fopenmp -O3 -march=core-avx2 -mtune=core-avx2 -flto -funroll-loops -Wall'
   host['HDF5_DIR']       = '/usr/local/fake_hdf5/'
   #host['GSL_DIR']        = '/usr/'
   host['EXECUTABLE']     = os.popen('which mpiexec').read()
