@@ -74,64 +74,53 @@ void init_mpi()
 
 
   // Make MPI datatypes
-  int max_count = NVAR*N3*N2;
-  int blocks[max_count];  //= calloc(max_count,sizeof(int));
-	int indices[max_count];  //= calloc(max_count,sizeof(MPI_Aint));
+  //int max_count = NVAR*N3*N2;
+  //int blocks[max_count];
+  //int indices[max_count];
   MPI_Datatype scalar_type = MPI_DOUBLE;
-	MPI_Datatype flag_type = MPI_INT;
+  MPI_Datatype flag_type = MPI_INT;
 
   // N3 face: Update all zones
   // Need slice P[0-NVAR][i:i+NG][:][:]
 
   int count = NVAR;
-	int countp = 1;
+  int countp = 1;
   int block3 = NG*(N2+2*NG)*(N1+2*NG);
-	int stride3 = (N3+2*NG)*(N2+2*NG)*(N1+2*NG);
+  int stride3 = (N3+2*NG)*(N2+2*NG)*(N1+2*NG);
 
   MPI_Type_vector(count, block3, stride3, scalar_type, &face_type[0]);
   MPI_Type_commit(&face_type[0]);
-	MPI_Type_vector(countp, block3, stride3, flag_type, &pflag_face_type[0]);
+  MPI_Type_vector(countp, block3, stride3, flag_type, &pflag_face_type[0]);
   MPI_Type_commit(&pflag_face_type[0]);
 
   // N2 face: update all N1 zones, but only current good N3
   // Slice P[0-NVAR][NG:N3+NG][i:i+NG][:]
 
-  count = NVAR*N3;
-	countp = N3;
-  for (int i = 0; i < count ; i++) {
-    blocks[i] = NG*(N1+2*NG);
-  }
-  PLOOP {
-    for (int j = 0; j < N3; j++) {
-      indices[ip*N3 + j] = ip*(N3+2*NG)*(N2+2*NG)*(N1+2*NG) +
-        j*(N2+2*NG)*(N1+2*NG);
-    }
-  }
-  MPI_Type_indexed(count, blocks, indices, scalar_type, &face_type[1]);
-	MPI_Type_commit(&face_type[1]);
-	MPI_Type_indexed(countp, blocks, indices, flag_type, &pflag_face_type[1]);
+  int sizes[4] = {NVAR,N3+2*NG,N2+2*NG,N1+2*NG};
+  int subsizes2[4] = {NVAR,N3,NG,N1+2*NG};
+  int starts[4] = {0,0,0,0};
+  MPI_Type_create_subarray(4, sizes, subsizes2, starts,
+			   MPI_ORDER_C, scalar_type, &face_type[1]);
+  MPI_Type_commit(&face_type[1]);
+
+  int sizes_pflag[3] = {N3+2*NG,N2+2*NG,N1+2*NG};
+  int subsizes2_pflag[3] = {N3,NG,N1+2*NG};
+  int starts_pflag[3] = {0,0,0};
+  MPI_Type_create_subarray(3, sizes_pflag, subsizes2_pflag, starts_pflag,
+			   MPI_ORDER_C, flag_type, &pflag_face_type[1]);
   MPI_Type_commit(&pflag_face_type[1]);
 
   // N1 face: update only current good zones (No ghosts)
   // Slice P[0-NVAR][NG:N3+NG][NG:N2+NG][i:i+NG]
 
-  count = NVAR*N3*N2;
-	countp = N3*N2;
-  for (int i = 0; i < count; i++) {
-    blocks[i] = NG;
-  }
-  PLOOP {
-    for (int j = 0; j < N3; j++) {
-      for (int k = 0; k < N2; k++) {
-        indices[ip*N3*N2 + j*N2 + k] = ip*(N3+2*NG)*(N2+2*NG)*(N1+2*NG) +
-          j*(N2+2*NG)*(N1+2*NG) +
-          k*(N1+2*NG);
-      }
-    }
-  }
-  MPI_Type_indexed(count, blocks, indices, scalar_type, &face_type[2]);
-	MPI_Type_commit(&face_type[2]);
-	MPI_Type_indexed(countp, blocks, indices, flag_type, &pflag_face_type[2]);
+  int subsizes3[4] = {NVAR,N3,N2,NG};
+  MPI_Type_create_subarray(4, sizes, subsizes3, starts,
+			   MPI_ORDER_C, scalar_type, &face_type[2]);
+  MPI_Type_commit(&face_type[2]);
+
+  int subsizes3_pflag[3] = {N3,NG,N1+2*NG};
+  MPI_Type_create_subarray(3, sizes_pflag, subsizes3_pflag, starts_pflag,
+			   MPI_ORDER_C, flag_type, &pflag_face_type[2]);
   MPI_Type_commit(&pflag_face_type[2]);
 
   MPI_Barrier(comm);
