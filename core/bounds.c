@@ -27,8 +27,6 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   // TODO Rewrite/clean this function to put prim index on the outside
 
   sync_mpi_bound_X1(state);
-//  sync_mpi_bound_X2(state);
-//  sync_mpi_bound_X3(state);
 
   if(global_start[0] == 0) {
     #pragma omp parallel for collapse(2)
@@ -113,8 +111,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   if(global_start[1] == 0) {
     #pragma omp parallel for collapse(2)
     KSLOOP(0, N3-1) {
-      JSLOOP(-NG, -1) {
-        ISLOOP(-NG, N1-1+NG) {
+      ISLOOP(-NG, N1-1+NG) {
+        JSLOOP(-NG, -1) {
           #if N2 < NG
           int jactive = NG;
           PLOOP state->P[ip][k][j][i] = state->P[ip][k][jactive][i];
@@ -149,8 +147,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   if(global_stop[1] == N2TOT) {
     #pragma omp parallel for collapse(2)
     KSLOOP(0, N3-1) {
-      JSLOOP(N2, N2-1+NG) {
-        ISLOOP(-NG, N1-1+NG) {
+      ISLOOP(-NG, N1-1+NG) {
+        JSLOOP(N2, N2-1+NG) {
           #if N2 < NG
           int jactive = N2 - 1 + NG;
           PLOOP state->P[ip][k][j][i] = state->P[ip][k][jactive][i];
@@ -185,9 +183,9 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   if (global_start[2] == 0) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, -1) {
-      JSLOOP(-NG, N2-1+NG) {
-        ISLOOP(-NG, N1-1+NG) {
+    JSLOOP(-NG, N2-1+NG) {
+      ISLOOP(-NG, N1-1+NG) {
+	KSLOOP(-NG, -1) {
           #if N3 < NG
           int kactive = NG;
           PLOOP state->P[ip][k][j][i] = state->P[ip][kactive][j][i];
@@ -217,9 +215,9 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   if(global_stop[2] == N3TOT) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(N3, N3-1+NG) {
-      JSLOOP(-NG, N2-1+NG) {
-        ISLOOP(-NG, N1-1+NG) {
+    JSLOOP(-NG, N2-1+NG) {
+      ISLOOP(-NG, N1-1+NG) {
+	KSLOOP(N3, N3-1+NG) {
           #if N3 < NG
           int kactive = NG;
           PLOOP state->P[ip][k][j][i] = state->P[ip][kactive][j][i];
