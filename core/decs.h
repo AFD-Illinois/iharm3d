@@ -152,13 +152,14 @@
 #define TIMER_LR_VCHAR      (12)
 #define TIMER_LR_CMAX      (13)
 #define TIMER_LR_FLUX      (14)
-#define TIMER_ALL      (15)
+#define TIMER_BOUND_COMMS (15)
+#define TIMER_ALL      (16)
 #if ELECTRONS
-#define TIMER_ELECTRON_FIXUP (11)
-#define TIMER_ELECTRON_HEAT  (12)
-#define NUM_TIMERS           (13)
+#define TIMER_ELECTRON_FIXUP (21)
+#define TIMER_ELECTRON_HEAT  (22)
+#define NUM_TIMERS           (23)
 #else
-#define NUM_TIMERS     (16)
+#define NUM_TIMERS     (17)
 #endif
 
 /*******************************************************************************
