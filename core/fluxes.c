@@ -8,18 +8,24 @@
 
 #include "decs.h"
 
+// For get_flux
 static struct FluidState *Sl, *Sr;//, *Sl_shift;
 static struct FluidEMF *emf;
-int first_call = 1;
+int first_call_get_flux = 1;
+
+// For lr_to_flux
+static GridPrim *fluxL, *fluxR;
+static GridDouble *cmaxL, *cmaxR, *cminL, *cminR, *cmax, *cmin;//, ctop;
+int first_call_lr_to_flux = 1;
 
 double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
 {
-  if (first_call) {
-    Sl  = (struct FluidState*)malloc(sizeof(struct FluidState));
+  if (first_call_get_flux) {
+    Sl  = (struct FluidState*)calloc(1,sizeof(struct FluidState));
     //Sl_shift  = (struct FluidState*)malloc(sizeof(struct FluidState));
-    Sr  = (struct FluidState*)malloc(sizeof(struct FluidState));
-    emf = (struct FluidEMF*)malloc(sizeof(struct FluidEMF));
-    first_call = 0;
+    Sr  = (struct FluidState*)calloc(1,sizeof(struct FluidState));
+    emf = (struct FluidEMF*)calloc(1,sizeof(struct FluidEMF));
+    first_call_get_flux = 0;
   }
 
   static GridDouble ctop;
@@ -78,8 +84,20 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   struct FluidState *Sl, int dir, int loc, GridPrim flux, GridDouble ctop)
 {
   timer_start(TIMER_LR_TO_F);
-  static GridPrim fluxL, fluxR;
-  static GridDouble cmaxL, cmaxR, cminL, cminR, cmax, cmin;//, ctop;
+
+	// TODO TODO dereference these preemptively?  Also cleanup formatting
+	if (first_call_lr_to_flux) {
+    fluxL = (GridPrim*)malloc(sizeof(GridPrim));
+    fluxR = (GridPrim*)malloc(sizeof(GridPrim));
+    cmaxL = (GridDouble*)malloc(sizeof(GridDouble));
+		cmaxR = (GridDouble*)malloc(sizeof(GridDouble));
+		cminL = (GridDouble*)malloc(sizeof(GridDouble));
+		cminR = (GridDouble*)malloc(sizeof(GridDouble));
+		cmax = (GridDouble*)malloc(sizeof(GridDouble));
+		cmin = (GridDouble*)malloc(sizeof(GridDouble));
+
+		first_call_lr_to_flux = 0;
+	}
 
   int max_indices[] = {0, N1, N2, N3};
 
@@ -108,7 +126,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
       }
     }
   }
-  
+
   timer_start(TIMER_LR_STATE);
 
   get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
@@ -119,10 +137,10 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   timer_start(TIMER_LR_PTOF);
 
   prim_to_flux_vec(G, Sl, 0,   loc, -1, N3, -1, N2, -1, N1, Sl->U);
-  prim_to_flux_vec(G, Sl, dir, loc, -1, N3, -1, N2, -1, N1, fluxL);
+  prim_to_flux_vec(G, Sl, dir, loc, -1, N3, -1, N2, -1, N1, *fluxL);
 
   prim_to_flux_vec(G, Sr, 0,   loc, -1, N3, -1, N2, -1, N1, Sr->U);
-  prim_to_flux_vec(G, Sr, dir, loc, -1, N3, -1, N2, -1, N1, fluxR);
+  prim_to_flux_vec(G, Sr, dir, loc, -1, N3, -1, N2, -1, N1, *fluxR);
 
   timer_stop(TIMER_LR_PTOF);
 
@@ -133,22 +151,22 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
 #pragma omp for collapse(2)
     ZSLOOP(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1])
       {
-	mhd_vchar (G, Sl, i, j, k, loc, dir, cmaxL, cminL);
+				mhd_vchar (G, Sl, i, j, k, loc, dir, *cmaxL, *cminL);
       }
 #pragma omp for collapse(2)
     ZSLOOP(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1])
       {
-	mhd_vchar (G, Sr, i, j, k, loc, dir, cmaxR, cminR);
+				mhd_vchar (G, Sr, i, j, k, loc, dir, *cmaxR, *cminR);
       }
   }
   timer_stop(TIMER_LR_VCHAR);
 
   timer_start(TIMER_LR_CMAX);
-  #pragma omp parallel for collapse(3)
+  #pragma omp parallel for simd collapse(2)
   ZSLOOP(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1]) {
-    cmax[k][j][i] = fabs(MY_MAX(MY_MAX(0., cmaxL[k][j][i]), cmaxR[k][j][i]));
-    cmin[k][j][i] = fabs(MY_MAX(MY_MAX(0., -cminL[k][j][i]), -cminR[k][j][i]));
-    ctop[k][j][i] = MY_MAX(cmax[k][j][i], cmin[k][j][i]);
+    (*cmax)[k][j][i] = fabs(MY_MAX(MY_MAX(0., (*cmaxL)[k][j][i]), (*cmaxR)[k][j][i]));
+    (*cmin)[k][j][i] = fabs(MY_MAX(MY_MAX(0., -(*cminL)[k][j][i]), -(*cminR)[k][j][i]));
+    ctop[k][j][i] = MY_MAX((*cmax)[k][j][i], (*cmin)[k][j][i]);
     if (isnan(1./ctop[k][j][i])) {printf("ctop is 0 or NaN at: %i %i %i (%i)\nExiting.\n", k,j,i,dir); exit(-1);}
   }
   timer_stop(TIMER_LR_CMAX);
@@ -158,7 +176,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   PLOOP {
     #pragma omp parallel for simd collapse(2)
     ZSLOOP(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1]) {
-      flux[ip][k][j][i] = 0.5*(fluxL[ip][k][j][i] + fluxR[ip][k][j][i] -
+      flux[ip][k][j][i] = 0.5*((*fluxL)[ip][k][j][i] + (*fluxR)[ip][k][j][i] -
         ctop[k][j][i]*(Sr->U[ip][k][j][i] - Sl->U[ip][k][j][i]));
     }
   }
@@ -203,4 +221,3 @@ void flux_ct(struct FluidFlux *F)
   } // omp parallel
   timer_stop(TIMER_FLUX_CT);
 }
-
