@@ -6,7 +6,7 @@ NMPI=${NMPI:-1}
 
 #rm -rf $OUT_DIR ; mkdir $OUT_DIR
 
-. ../../../mpi-load.sh
+#. ../../../mpi-load.sh
 
 python build.py
 
@@ -14,12 +14,13 @@ ulimit -s unlimited
 
 if (( $NMPI == 1 ))
 then
-  export OMP_NUM_THREADS=$(( $(nproc --all) / 2 ))
-  export GOMP_CPU_AFFINITY=0-$(( $OMP_NUM_THREADS - 1 ))
-  export OMP_PROC_BIND=true
-  echo "Using first $OMP_NUM_THREADS threads"
+  #export OMP_NUM_THREADS=$(( $(nproc --all) / 2 ))
+  #export GOMP_CPU_AFFINITY=0-$(( $OMP_NUM_THREADS - 1 ))
+  #export OMP_PROC_BIND=true
+  #echo "Using first $OMP_NUM_THREADS threads"
 
-  numactl --interleave=all ./bhlight -o $OUT_DIR
+  #numactl --interleave=all 
+  ./bhlight -o $OUT_DIR
 else
   export OMP_NUM_THREADS=$(( $(nproc) / $NMPI / 2 * 2 ))
   echo "Using $NMPI MPI processes with $OMP_NUM_THREADS threads each"

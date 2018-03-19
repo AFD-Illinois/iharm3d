@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ../../../mpi-load.sh
+#source ../../../mpi-load.sh
 
 # In case we didn't clean up after test_restart_diffmpi
 sed -i -e "s/N1CPU 1/N1CPU 2/g" parameters.h
@@ -36,6 +36,7 @@ do
     until ./run.sh $OUT_DIR > $OUT_DIR/output_${n}_${i}.txt
     do
 	echo "Retrying run"
+	mv $OUT_DIR/output_${n}_${i}.txt $OUT_DIR/errors.txt
     done
 
     mv $OUT_DIR/dumps $OUT_DIR/dumps_${n}_${i}
