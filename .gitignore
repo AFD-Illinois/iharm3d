@@ -62,7 +62,8 @@ Thumbs.db
 .pydevproject
 .project
 .settings/
-.ptp-sync-folder
+.ptp-sync-folder/
+.ptp-sync/
 TAGS
 
 # Build directory #
@@ -76,11 +77,15 @@ bhlight
 
 # Output #
 ##########
-*.dat
 out.txt
+out-*.txt
+outfiles-*
+
 dumps/
 dumps*/
 restarts/
 test_*/
 TMP/
 *.png
+*.dat
+vtune_*
