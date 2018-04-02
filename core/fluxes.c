@@ -162,7 +162,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   timer_stop(TIMER_LR_VCHAR);
 
   timer_start(TIMER_LR_CMAX);
-  #pragma omp parallel for simd collapse(2)
+  #pragma omp parallel for collapse(2)
   ZSLOOP(-1, max_indices[3], -1, max_indices[2], -1, max_indices[1]) {
     (*cmax)[k][j][i] = fabs(MY_MAX(MY_MAX(0., (*cmaxL)[k][j][i]), (*cmaxR)[k][j][i]));
     (*cmin)[k][j][i] = fabs(MY_MAX(MY_MAX(0., -(*cminL)[k][j][i]), -(*cminR)[k][j][i]));
