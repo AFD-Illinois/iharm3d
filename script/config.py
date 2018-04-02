@@ -136,10 +136,10 @@ def build(PROBLEM, PATHS):
 
   host = machine.get_options()
 
-  C_FLAGS = '-std=gnu99 -mcmodel=medium ' + host['COMPILER_FLAGS']
+  C_FLAGS = '-std=gnu99 ' + host['COMPILER_FLAGS'] #-mcmodel=medium
 
   # MATH AND DYNAMIC LINKING
-  LIB_FLAGS = '-lm -ldl'
+  LIB_FLAGS = '-ldl' #-lm
 
   LIBRARIES = ''
   INCLUDES  = ''

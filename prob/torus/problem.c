@@ -89,10 +89,10 @@ void init(struct GridGeom *G, struct FluidState *S)
   t = 0.;
 
   // Output choices
-  DTd = 1;   // Dump interval
+  DTd = 5.0;   // Dump interval
   DTl = 0.1;  // Log interval
   DTr = 1024;  // Restart interval, in timesteps
-  DTp = 50;   // Performance interval, in timesteps
+  DTp = 25;   // Performance interval, in timesteps
 
   // Diagnostic counters
   dump_cnt = 0;
