@@ -29,10 +29,19 @@ def get_options():
   host = {}
 
   host['NAME']           = os.uname()[1]
-  host['COMPILER']       = os.popen('which mpicc').read()
-  host['COMPILER_FLAGS'] = '-fopenmp -O3 -march=core-avx2 -mtune=core-avx2 -flto -funroll-loops -Wall'
-  host['HDF5_DIR']       = '/usr/local/fake_hdf5/'
-  #host['GSL_DIR']        = '/usr/'
+
+  host['COMPILER']	  = os.popen('which mpiicc').read()
+  host['COMPILER_FLAGS'] = '-xCORE-AVX2 -Ofast -fstrict-aliasing -Wall -Werror -ipo -qopenmp'
+  host['MPI_DIR']        = '/opt/intel/compilers_and_libraries/linux/mpi/intel64/'
+  host['HDF5_DIR']       = '/opt/phdf5-intel'
+  host['GSL_DIR']        = '/opt/gsl-intel'
+
+
+  #host['COMPILER']       = os.popen('which mpicc').read()
+  #host['COMPILER_FLAGS'] = '-fopenmp -O3 -march=core-avx2 -mtune=core-avx2 -flto -funroll-loops -Wall -lm'
+  #host['HDF5_DIR']       = '/usr/local/fake_hdf5/'
+  ##host['GSL_DIR']       = '/usr/'
+
   host['EXECUTABLE']     = os.popen('which mpiexec').read()
 
   return host

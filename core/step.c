@@ -84,8 +84,13 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 {
   static GridPrim dU;
 
-  #pragma omp parallel for collapse(3)
-  PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
+  // TODO this crashes ICC. Why.
+//  #pragma omp parallel for collapse(3)
+//  PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
+
+  // In the meantime...
+  memcpy(&(Sf->P),&(Si->P),sizeof(GridPrim));
+
 
   double ndt = get_flux(G, Ss, F);
 
