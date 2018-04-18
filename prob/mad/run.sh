@@ -6,11 +6,12 @@ NMPI=${NMPI:-1}
 
 python build.py
 
+echo "Outputting to $OUT_DIR"
+
 if (( $NMPI == 1 ))
 then
   export OMP_NUM_THREADS=$(( $(nproc --all) / 2 ))
   export GOMP_CPU_AFFINITY=0-$(( $OMP_NUM_THREADS - 1 ))
-  export OMP_PROC_BIND=true
   echo "Using first $OMP_NUM_THREADS threads"
 
   numactl --interleave=all ./bhlight -o $OUT_DIR
