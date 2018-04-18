@@ -1,16 +1,23 @@
 #!/bin/bash
 
-#python build.py
 
-NMPI=32
+OUT_DIR=${1:-.}
+NMPI=${NMPI:-1}
+
+python build.py
 
 if (( $NMPI == 1 ))
 then
-  export OMP_NUM_THREADS=$(( $(nproc) / 2 ))
+  export OMP_NUM_THREADS=$(( $(nproc --all) ))
   export GOMP_CPU_AFFINITY=0-$(( $OMP_NUM_THREADS - 1 ))
   export OMP_PROC_BIND=true
-  numactl --interleave=all ./bhlight 2>&1 >out.txt
+  echo "Using first $OMP_NUM_THREADS threads"
+
+  numactl --interleave=all ./bhlight -o $OUT_DIR
+
 else
-  export OMP_NUM_THREADS=1
-  mpiexec -n $NMPI ./bhlight 2>&1 >out.txt
+  export OMP_NUM_THREADS=$(( $(nproc --all) / $NMPI ))
+  echo "Using $NMPI local MPI processes with $OMP_NUM_THREADS threads"
+
+  mpiexec -n $NMPI ./bhlight -o $OUT_DIR
 fi

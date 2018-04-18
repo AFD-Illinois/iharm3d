@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source ../../../mpi-load.sh
-
 for n in 16 32 64
 do
 

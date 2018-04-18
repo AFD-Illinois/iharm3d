@@ -7,15 +7,15 @@
  ******************************************************************************/
 
 /* GLOBAL RESOLUTION */
-#define N1TOT 192
-#define N2TOT 192
-#define N3TOT 192
+#define N1TOT 128
+#define N2TOT 128
+#define N3TOT 128
 
 /* MPI DECOMPOSITION */
 /* COUNTERINTUITIVE: Split N3, N2, N1 order to keep k smaller than i,j*/
-#define N1CPU 4
-#define N2CPU 4
-#define N3CPU 4
+#define N1CPU 1
+#define N2CPU 1
+#define N3CPU 1
 
 /* METRIC
  *   MINKOWSKI, MKS
