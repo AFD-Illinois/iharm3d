@@ -18,7 +18,8 @@ import plot as bplt
 
 FIGX = 20
 FIGY = 10
-SIZE = 40
+SIZE = 100
+NLINES = 20
 
 # TODO this is a dirty hack
 args_bad = False
@@ -67,7 +68,7 @@ def plot(args):
   ax = plt.subplot(2,4,1)
   bplt.plot_xz(ax, geom, np.log10(dump['RHO']), dump,
     vmin=-4, vmax = 0, label='RHO')
-  bplt.overlay_field(ax, geom, dump)
+  bplt.overlay_field(ax, geom, dump, NLINES)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
   # I change this a lot
@@ -77,7 +78,7 @@ def plot(args):
   ax = plt.subplot(2,4,2)
   bplt.plot_xz(ax, geom, var2_data, dump,
     label=var2_str, cmap='RdBu_r', vmin=-2, vmax=2)
-  bplt.overlay_field(ax, geom, dump)
+  bplt.overlay_field(ax, geom, dump, NLINES)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
   ax = plt.subplot(2,4,5)
@@ -89,7 +90,7 @@ def plot(args):
   bplt.plot_xy(ax, geom, var2_data, dump,
      label=var2_str, cmap='RdBu_r', vmin=-2, vmax=2)
   ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
-  
+
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
   ax = plt.subplot(2,2,2)
@@ -119,8 +120,9 @@ import multiprocessing
 import signal
 import psutil
 
-nthreads = psutil.cpu_count(logical=False)
-print 'Number of CPUs: %i' % psutil.cpu_count(logical=False)
+nthreads = 40
+#nthreads = psutil.cpu_count(logical=False)
+print 'Number of threads: %i' % nthreads
 
 original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
 pool = multiprocessing.Pool(nthreads)

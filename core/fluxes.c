@@ -87,16 +87,16 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
 
 	// TODO TODO dereference these preemptively?  Also cleanup formatting
 	if (first_call_lr_to_flux) {
-    fluxL = (GridPrim*)malloc(sizeof(GridPrim));
-    fluxR = (GridPrim*)malloc(sizeof(GridPrim));
-    cmaxL = (GridDouble*)malloc(sizeof(GridDouble));
-		cmaxR = (GridDouble*)malloc(sizeof(GridDouble));
-		cminL = (GridDouble*)malloc(sizeof(GridDouble));
-		cminR = (GridDouble*)malloc(sizeof(GridDouble));
-		cmax = (GridDouble*)malloc(sizeof(GridDouble));
-		cmin = (GridDouble*)malloc(sizeof(GridDouble));
+	  fluxL = (GridPrim*)malloc(sizeof(GridPrim));
+	  fluxR = (GridPrim*)malloc(sizeof(GridPrim));
+	  cmaxL = (GridDouble*)malloc(sizeof(GridDouble));
+	  cmaxR = (GridDouble*)malloc(sizeof(GridDouble));
+	  cminL = (GridDouble*)malloc(sizeof(GridDouble));
+	  cminR = (GridDouble*)malloc(sizeof(GridDouble));
+	  cmax = (GridDouble*)malloc(sizeof(GridDouble));
+	  cmin = (GridDouble*)malloc(sizeof(GridDouble));
 
-		first_call_lr_to_flux = 0;
+	  first_call_lr_to_flux = 0;
 	}
 
   int max_indices[] = {0, N1, N2, N3};

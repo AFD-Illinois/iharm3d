@@ -38,7 +38,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   static double A[N1 + 2*NG][N2 + 2*NG];
   double rho_av, rhomax, umax, beta, bsq_ij, bsq_max, norm, q,
       beta_act;
-  double rmax ;
+  double rmax;
 
   // Adiabatic index
   gam = 13./9.;
@@ -71,7 +71,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   double z1 = 1 + pow(1 - a*a,1./3.)*(pow(1+a,1./3.) + pow(1-a,1./3.));
   double z2 = sqrt(3*a*a + z1*z1);
   Risco = 3 + z2 - sqrt((3-z1)*(3 + z1 + 2*z2));
-  Rout = 1000.;
+  Rout = 10000.;
   #if RADIATION
   Rout_rad = 40.;
   numin = 1.e8;
@@ -80,7 +80,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   tune_scatt = 1.;
   #endif
   tf = 10000.0;
-  hslope = 0.3;
+  hslope = 0.3; // TODO check
 
   zero_arrays();
   set_grid(G);
@@ -222,37 +222,94 @@ void init(struct GridGeom *G, struct FluidState *S)
   // first find corner-centered vector potential
   ZSLOOP(0, 0, 0, N2, 0, N1) A[i][j] = 0.;
   ZSLOOP(0, 0, 0, N2, 0, N1) {
-    coord(i, j, k, CENT, X);
-    bl_coord(X, &r, &th);
-    /* vertical field version */
-    /*
-       coord(i,j,CORN,X) ;
-       bl_coord(X,&r,&th) ;
-
-       A[i][j] = 0.5*r*sin(th) ;
-     */
+    coord(i,j,k,CORN,X) ;
+    bl_coord(X,&r,&th) ;
+    // Vertical field version
+    //A[i][j] = 0.5*r*sin(th) ;
 
     /* field-in-disk version */
     /* flux_ct */
     rho_av = 0.25*(S->P[RHO][NG][j][i] + S->P[RHO][NG][j][i-1] +
                    S->P[RHO][NG][j-1][i] + S->P[RHO][NG][j-1][i-1])
-      *(1. + 0.0*(get_random() - 0.5));
+                       *(1. + 0.0*(get_random() - 0.5));
     // Smaller average B-field for SANE
     //q = rho_av/rhomax - 0.2;
 
     // Larger, MAD mean field
-    q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax - 0.2;
+    //q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax - 0.2;
 
     // T,N,M (2011) uses phi = r^5 rho^2
-    //q = pow(r/rin,5.)*pow(rho_av/rhomax, 2) - 0.2;
+    q = pow(r/rin,5.)*pow(rho_av/rhomax, 2) - 0.1; //TODO check
+    //q = pow(r/rin,3.)*rho_av/rhomax - 0.1;
 
     if (q > 0.) A[i][j] = q;
   }
 
-  // Differentiate to find cell-centered B, and begin normalization
+  fixup(G, S);
+  set_bounds(G, S);
+
+  // MAD: "Fake" B-field step for initial flux function
+  ZSLOOP(-NG+1, N3+NG-1, -NG+1, N2+NG-1, -NG+1, N1+NG-1) {
+
+    // Flux-ct
+    S->P[B1][k][j][i] = -(A[i][j] - A[i][j + 1]
+        + A[i + 1][j] - A[i + 1][j + 1]) /
+        (2. * dx[2] * G->gdet[CENT][j][i]);
+    S->P[B2][k][j][i] = (A[i][j] + A[i][j + 1]
+             - A[i + 1][j] - A[i + 1][j + 1]) /
+             (2. * dx[1] * G->gdet[CENT][j][i]);
+
+    S->P[B3][k][j][i] = 0.;
+
+    // MAD: normalize field for constant beta
+    get_state(G, S, i, j, k, CENT);
+    bsq_ij = bsq_calc(S, i, j, k);
+
+    if (bsq_ij > 0) {
+      beta_act = (gam - 1.) *  S->P[UU][k][j][i] / (0.5 * bsq_ij);
+      norm = sqrt(beta_act / beta);
+      S->P[B1][k][j][i] *= norm;
+      S->P[B2][k][j][i] *= norm;
+    }
+  }
+
+  fixup(G, S);
+  set_bounds(G, S);
+
+  //MAD: New flux function integrating B^r
+  ZSLOOP(0, 0, 0, N2, 0, N1) {
+    coord(i,j,k,CORN,X);
+    bl_coord(X,&r,&th);
+
+    double brsum = 0.0;
+
+    if (j < N2/2 + NG) {
+      for (int ks = 0 + NG; ks < N3 + NG; ks++) {
+	for (int js = 0 + NG; js <= j; js++) {
+	  double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
+	      S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
+	  brsum += b_avg; //* G->gdet[CORN][js][i] * dx[2] * dx[3];
+	}
+      }
+    } else {
+      for (int ks = 0 + NG; ks < N3 + NG; ks++) {
+	for (int js = N2 + NG - 1; js >= j; js--) {
+	  double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
+	      S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
+	  brsum -= b_avg; //* G->gdet[CORN][js][i] * dx[2] * dx[3];
+	}
+      }
+    }
+
+    A[i][j] = brsum;
+  }
+
+  fixup(G, S);
+  set_bounds(G, S);
+
+  // Calculate B-field and find bsq_max
   bsq_max = 0.;
   ZLOOP {
-    //geom = get_geometry(i, j, CENT) ;
 
     // Flux-ct
     S->P[B1][k][j][i] = -(A[i][j] - A[i][j + 1]
@@ -270,19 +327,16 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
   bsq_max = mpi_max(bsq_max);
 
+  fixup(G, S);
+  set_bounds(G, S);
 
-  // SANE normalization:
+
+  // beta_min = 100 normalization
   beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
   norm = sqrt(beta_act / beta);
-  bsq_max = 0.;
   ZLOOP {
     S->P[B1][k][j][i] *= norm;
     S->P[B2][k][j][i] *= norm;
-
-    get_state(G, S, i, j, k, CENT);
-    bsq_ij = bsq_calc(S, i, j, k);
-    if (bsq_ij > bsq_max)
-      bsq_max = bsq_ij;
   }
 
   #if ELECTRONS

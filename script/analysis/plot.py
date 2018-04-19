@@ -103,7 +103,7 @@ def plot_xz(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
   ax.set_xlabel('x/M'); ax.set_ylabel('z/M')
   #ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
 
-def overlay_field(ax, geom, dump):
+def overlay_field(ax, geom, dump, NLEV):
   from scipy.integrate import trapz
   hdr = dump['hdr']
   N1 = hdr['N1']; N2 = hdr['N2']
@@ -123,7 +123,6 @@ def overlay_field(ax, geom, dump):
   Apm = np.fabs(A_phi).max()
   if np.fabs(A_phi.min()) > A_phi.max():
     A_phi *= -1.
-  NLEV = 20
   levels = np.concatenate((np.linspace(-Apm,0,NLEV)[:-1], 
                            np.linspace(0,Apm,NLEV)[1:]))
   ax.contour(x, z, A_phi, levels=levels, colors='k')
