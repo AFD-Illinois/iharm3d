@@ -253,11 +253,10 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
 
 #if MAD
-  fixup(G, S);
-  set_bounds(G, S);
 
   // MAD: "Fake" B-field step for initial flux function
-  ZSLOOP(-NG+1, N3+NG-1, -NG+1, N2+NG-1, -NG+1, N1+NG-1) {
+  // Add one zone outside domain for subsequent calculation
+  ZSLOOP(-1, N3, -1, N2, -1, N1) {
 
     // Flux-ct
     S->P[B1][k][j][i] = -(A[i][j] - A[i][j + 1]
@@ -280,9 +279,6 @@ void init(struct GridGeom *G, struct FluidState *S)
       S->P[B2][k][j][i] *= norm;
     }
   }
-
-  fixup(G, S);
-  set_bounds(G, S);
 
   //MAD: New flux function integrating B^r
   ZSLOOP(0, 0, 0, N2, 0, N1) {
@@ -312,9 +308,6 @@ void init(struct GridGeom *G, struct FluidState *S)
     A[i][j] = brsum;
   }
 #endif
-
-  fixup(G, S);
-  set_bounds(G, S);
 
   // Calculate B-field and find bsq_max
   bsq_max = 0.;

@@ -9,7 +9,6 @@
 #include "decs.h"
 
 static int nfixed = 0;
-static int fix_called = 0;
 
 // Apply floors to density, internal energy
 void fixup(struct GridGeom *G, struct FluidState *S)
@@ -40,14 +39,9 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 #endif // METRIC
 
   // Rho_min from T,N,M '10
-  // TODO are there other factors on bsq?
+  // TODO check factors, insert mass in local frame, retire solid floor
   get_state(G, S, i, j, k, CENT);
   double rho_min = bsq_calc(S, i, j, k) / (8*M_PI) / GAMMAAGN;
-
-  if (!fix_called) {
-      //printf("Old floor: %28.18e New floor: %28.18e\n", RHOMIN, rho_min);
-      fix_called = 1;
-  }
 
   rhoflr = MY_MAX(RHOMIN*rhoscal, rho_min*rhoscal);
   uuflr = UUMIN*uuscal;
