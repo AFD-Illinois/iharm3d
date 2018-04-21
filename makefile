@@ -14,17 +14,18 @@ SYSTEM_LIBDIR = /lib64
 # Try pointing this to h5pcc on your machine, before hunting down libraries
 CC=h5pcc
 # Example CFLAGS for going fast
-CFLAGS = -std=gnu99 -O3 -march=core-avx2 -mtune=core-avx2 -flto -fopenmp -funroll-loops -Wall -Werror
+CFLAGS = -std=gnu99 -O3 -march=native -mtune=native -flto -fopenmp -funroll-loops -Wall -Werror
 #CFLAGS = -xCORE-AVX2 -Ofast -fstrict-aliasing -Wall -Werror -ipo -qopenmp
 
 # Name of the executable
 EXE = harm
 
 #Override these defaults if we know the machine we're working with
+MAKEFILE_PATH := $(abspath $(firstword $(MAKEFILE_LIST)))
 ifneq (,$(findstring stampede2,$(HOSTNAME)))
-	-include machines/stampede2.make
+	-include $(MAKEFILE_PATH)/machines/stampede2.make
 endif
--include machines/$(HOSTNAME).make
+-include $(MAKEFILE_PATH)/machines/$(HOSTNAME).make
 
 ## LINKING PARAMETERS ##
 # Everything below this should be static
@@ -38,12 +39,13 @@ GSL_LIB = -lgsl -lgslcblas
 
 ## LOGIC FOR PATHS ##
 
-MAKEFILE_PATH := $(abspath $(firstword $(MAKEFILE_LIST)))
 CORE_DIR := $(dir $(MAKEFILE_PATH))/core/
 PROB_DIR := $(dir $(MAKEFILE_PATH))/prob/$(PROB)/
 VPATH = $(CORE_DIR):$(PROB_DIR)
 
-ARC_DIR := $(dir $(MAKEFILE_PATH))/prob/$(PROB)/build_archive/
+#ARC_DIR := $(dir $(MAKEFILE_PATH))/prob/$(PROB)/build_archive/
+# TODO this is I think gmake-specific
+ARC_DIR := $(CURDIR)/build_archive/
 
 SRC := $(wildcard $(CORE_DIR)/*.c) $(wildcard $(PROB_DIR)/*.c) 
 OBJ := $(addprefix $(ARC_DIR)/, $(notdir $(SRC:%.c=%.o)))
