@@ -220,7 +220,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   set_bounds(G, S);
 
   // first find corner-centered vector potential
-  ZSLOOP(0, 0, 0, N2, 0, N1) A[i][j] = 0.;
+  ZSLOOP(0, 0, -NG, N2+NG-1, -NG, N1+NG-1) A[i][j] = 0.;
   ZSLOOP(0, 0, 0, N2, 0, N1) {
     /* vertical field version */
     /*
