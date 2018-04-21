@@ -18,7 +18,7 @@ import plot as bplt
 
 FIGX = 20
 FIGY = 10
-SIZE = 100
+SIZE = 40
 NLINES = 20
 
 # TODO this is a dirty hack
