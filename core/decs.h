@@ -64,6 +64,8 @@
 
 // Maximum value of gamma, the Lorentz factor
 #define GAMMAMAX (50.)
+// Average MAD value for gamma (for floors)
+#define GAMMAAGN (25.)
 
 // Maximum fractional increase in timestep per timestep
 #define SAFE  (1.3)

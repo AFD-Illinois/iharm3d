@@ -60,7 +60,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
             #elif X1L_BOUND == USER
             printf("X1L_BOUND choice USER not supported\n", X1L_BOUND);
             exit(-1);
-	    #elif X1L_BOUND != PERIODIC
+            #elif X1L_BOUND != PERIODIC
             printf("X1L_BOUND choice %i not supported\n", X1L_BOUND);
             exit(-1);
             #endif

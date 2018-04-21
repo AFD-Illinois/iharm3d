@@ -8,6 +8,9 @@
 
 #include "decs.h"
 
+static int nfixed = 0;
+static int fix_called = 0;
+
 // Apply floors to density, internal energy
 void fixup(struct GridGeom *G, struct FluidState *S)
 {
@@ -15,27 +18,38 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   #pragma omp parallel for collapse(3)
   ZLOOP fixup1zone(G, S, i, j, k);
   timer_stop(TIMER_FIXUP);
+  printf("Fixed %d zones\n", nfixed);
+  nfixed = 0;
 }
 
 void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
   double uuscal, rhoscal, rhoflr, uuflr;
   double f, gamma;
-  //struct of_geom *geom;
 
-  #if METRIC == MINKOWSKI
+#if METRIC == MINKOWSKI
   rhoscal = 1.e-3;
   uuscal = 1.e-3;
-  #elif METRIC == MKS
+#elif METRIC == MKS
   double r, th, X[NDIM];
   coord(i, j, k, CENT, X);
   bl_coord(X, &r, &th);
 
   rhoscal = pow(r, -1.5);
   uuscal = rhoscal/r;
-  #endif // METRIC
+#endif // METRIC
 
-  rhoflr = RHOMIN*rhoscal;
+  // Rho_min from T,N,M '10
+  // TODO are there other factors on bsq?
+  get_state(G, S, i, j, k, CENT);
+  double rho_min = bsq_calc(S, i, j, k) / (8*M_PI) / GAMMAAGN;
+
+  if (!fix_called) {
+      //printf("Old floor: %28.18e New floor: %28.18e\n", RHOMIN, rho_min);
+      fix_called = 1;
+  }
+
+  rhoflr = MY_MAX(RHOMIN*rhoscal, rho_min*rhoscal);
   uuflr = UUMIN*uuscal;
 
   rhoflr = MY_MAX(rhoflr, RHOMINLIMIT);
@@ -44,6 +58,10 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 
   // Floor on density and internal energy density (momentum *not* conserved)
   if (S->P[RHO][k][j][i] < rhoflr || isnan(S->P[RHO][k][j][i])) {
+#if METRIC == MKS
+    //printf("Adding rho at r = %f, th = %f (%d %d %d): ", r, th, i, j, k);
+    nfixed++;
+#endif
     S->P[RHO][k][j][i] = rhoflr;
   }
   if (S->P[UU][k][j][i] < uuflr || isnan(S->P[UU][k][j][i])) {
@@ -51,7 +69,6 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
   }
 
   // Limit gamma with respect to normal observer
-  //geom = get_geometry(i, j, CENT) ;
 
   if (mhd_gamma_calc(G, S, i, j, k, CENT, &gamma)) {
     // Treat gamma failure here as "fixable" for fixup_utoprim()
