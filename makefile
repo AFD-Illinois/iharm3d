@@ -13,14 +13,18 @@ SYSTEM_LIBDIR = /lib64
 
 # Try pointing this to h5pcc on your machine, before hunting down libraries
 CC=h5pcc
-# Example CFLAGS for going fast
+# Example CFLAGS for going fast with GCC
 CFLAGS = -std=gnu99 -O3 -march=native -mtune=native -flto -fopenmp -funroll-loops -Wall -Werror
+MATH_LIB = -lm
+# ICC does not like -lm and uses different flags
 #CFLAGS = -xCORE-AVX2 -Ofast -fstrict-aliasing -Wall -Werror -ipo -qopenmp
+#MATH_LIB =
 
 # Name of the executable
 EXE = harm
 
-#Override these defaults if we know the machine we're working with
+# Override these defaults if we know the machine we're working with
+# Once you know what compiles, add it as a machine def here
 MAKEFILE_PATH := $(abspath $(firstword $(MAKEFILE_LIST)))
 ifneq (,$(findstring stampede2,$(HOSTNAME)))
 	-include $(MAKEFILE_PATH)/machines/stampede2.make
@@ -52,7 +56,7 @@ OBJ := $(addprefix $(ARC_DIR)/, $(notdir $(SRC:%.c=%.o)))
 
 INC = -I$(CORE_DIR) -I$(PROB_DIR)
 LIBDIR = 
-LIB = $(GSL_LIB)
+LIB = $(MATH_LIB) $(GSL_LIB)
 
 # Add HDF and MPI directories only if compiler doesn't
 ifneq ($(strip $(HDF5_DIR)),)
@@ -98,7 +102,7 @@ $(EXE): $(ARC_DIR)/$(EXE)
 
 $(ARC_DIR)/$(EXE): $(OBJ)
 	@echo -e "\tLinking $(EXE)"
-	@$(LINK) $(LDFLAGS) $(LIBDIR) $(LIB) $(OBJ) -o $(ARC_DIR)/$(EXE)
+	@$(LINK) $(LDFLAGS) $(OBJ) $(LIBDIR) $(LIB) -o $(ARC_DIR)/$(EXE)
 
 $(ARC_DIR)/%.o: $(ARC_DIR)/%.c
 	@echo -e "\tCompiling $(notdir $<)"
