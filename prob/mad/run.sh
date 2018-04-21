@@ -4,8 +4,6 @@
 OUT_DIR=${1:-.}
 NMPI=${NMPI:-1}
 
-python build.py
-
 echo "Outputting to $OUT_DIR"
 
 if (( $NMPI == 1 ))

@@ -8,6 +8,9 @@
 
 #include "decs.h"
 
+// Switch for extra MAD B-field renormalization
+#define MAD 1
+
 // Local declarations
 struct of_geom {
 	double gcon[NDIM][NDIM];
@@ -41,24 +44,23 @@ void init(struct GridGeom *G, struct FluidState *S)
   double rmax;
 
   // Adiabatic index
-  gam = 13./9.;
-  //gam = 4./3; //EHT torus conditions
+  gam = 13./9.; // TODO check
   #if ELECTRONS
   game = 4./3.;
   gamp = 5./3.;
   fel0 = 1.;
   #else
-  tp_over_te = 1.;
+  tp_over_te = 3.;
   #endif
 
   // Fishbone-Moncrief parameters
-  a = 0.9375; // TODO this should affect efficiency in MAD model
+  a = 0.9375; // TODO check these
   rin = 15.;
   rmax = 34.;
   l = lfish_calc(rmax);
-  kappa = 1.e-3;
+  kappa = 1.e-3; //TODO is this relevant?
 
-  // Plasma beta for initial magnetic field
+  // Plasma minimum beta for initial magnetic field
   beta = 1.e2;
 
   // Numerical parameters
@@ -71,7 +73,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   double z1 = 1 + pow(1 - a*a,1./3.)*(pow(1+a,1./3.) + pow(1-a,1./3.));
   double z2 = sqrt(3*a*a + z1*z1);
   Risco = 3 + z2 - sqrt((3-z1)*(3 + z1 + 2*z2));
-  Rout = 10000.;
+  Rout = 1000.;
   #if RADIATION
   Rout_rad = 40.;
   numin = 1.e8;
@@ -232,19 +234,25 @@ void init(struct GridGeom *G, struct FluidState *S)
     rho_av = 0.25*(S->P[RHO][NG][j][i] + S->P[RHO][NG][j][i-1] +
                    S->P[RHO][NG][j-1][i] + S->P[RHO][NG][j-1][i-1])
                        *(1. + 0.0*(get_random() - 0.5));
-    // Smaller average B-field for SANE
-    //q = rho_av/rhomax - 0.2;
 
-    // Larger, MAD mean field
+#if MAD
+    // Larger, MAD threaded field
     //q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax - 0.2;
 
     // T,N,M (2011) uses phi = r^5 rho^2
-    q = pow(r/rin,5.)*pow(rho_av/rhomax, 2) - 0.1; //TODO check
-    //q = pow(r/rin,3.)*rho_av/rhomax - 0.1;
+    q = pow(r/rin,5.)*pow(rho_av/rhomax, 2) - 0.2; //TODO A ~= Phi?
+#else
+    // Smaller average B-field for SANE
+    //q = rho_av/rhomax - 0.2;
+
+    // Larger, MAD threaded field
+    q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax - 0.2;
+#endif
 
     if (q > 0.) A[i][j] = q;
   }
 
+#if MAD
   fixup(G, S);
   set_bounds(G, S);
 
@@ -288,7 +296,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 	for (int js = 0 + NG; js <= j; js++) {
 	  double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
 	      S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
-	  brsum += b_avg; //* G->gdet[CORN][js][i] * dx[2] * dx[3];
+	  brsum += b_avg;
 	}
       }
     } else {
@@ -296,13 +304,14 @@ void init(struct GridGeom *G, struct FluidState *S)
 	for (int js = N2 + NG - 1; js >= j; js--) {
 	  double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
 	      S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
-	  brsum -= b_avg; //* G->gdet[CORN][js][i] * dx[2] * dx[3];
+	  brsum -= b_avg;
 	}
       }
     }
 
     A[i][j] = brsum;
   }
+#endif
 
   fixup(G, S);
   set_bounds(G, S);
@@ -326,10 +335,6 @@ void init(struct GridGeom *G, struct FluidState *S)
     if (bsq_ij > bsq_max) bsq_max = bsq_ij;
   }
   bsq_max = mpi_max(bsq_max);
-
-  fixup(G, S);
-  set_bounds(G, S);
-
 
   // beta_min = 100 normalization
   beta_act = (gam - 1.) * umax / (0.5 * bsq_max);

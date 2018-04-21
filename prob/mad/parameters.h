@@ -7,8 +7,8 @@
  ******************************************************************************/
 
 /* GLOBAL RESOLUTION */
-#define N1TOT 64
-#define N2TOT 64
+#define N1TOT 128
+#define N2TOT 128
 #define N3TOT 64
 
 /* MPI DECOMPOSITION */
