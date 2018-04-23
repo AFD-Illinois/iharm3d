@@ -47,14 +47,17 @@ CORE_DIR := $(MAKEFILE_PATH)/core/
 PROB_DIR := $(MAKEFILE_PATH)/prob/$(PROB)/
 VPATH = $(CORE_DIR):$(PROB_DIR)
 
-#ARC_DIR := $(dir $(MAKEFILE_PATH))/prob/$(PROB)/build_archive/
+#ARC_DIR := $(MAKEFILE_PATH)/prob/$(PROB)/build_archive/
 # TODO this is I think gmake-specific
 ARC_DIR := $(CURDIR)/build_archive/
 
-SRC := $(wildcard $(CORE_DIR)/*.c) $(wildcard $(PROB_DIR)/*.c) 
+SRC := $(wildcard $(CORE_DIR)/*.c) $(wildcard $(PROB_DIR)/*.c)
+HEAD := $(wildcard $(CORE_DIR)/*.h) $(wildcard $(PROB_DIR)/*.h)
+
+HEAD_ARC := $(addprefix $(ARC_DIR)/, $(notdir $(HEAD)))
 OBJ := $(addprefix $(ARC_DIR)/, $(notdir $(SRC:%.c=%.o)))
 
-INC = -I$(CORE_DIR) -I$(PROB_DIR)
+INC = -I$(ARC_DIR)
 LIBDIR = 
 LIB = $(MATH_LIB) $(GSL_LIB)
 
@@ -79,7 +82,7 @@ LIBDIR += -L$(SYSTEM_LIBDIR)
 
 ## TARGETS ##
 
-.PRECIOUS: $(ARC_DIR)/$(EXE) $(ARC_DIR)/%.c
+.PRECIOUS: $(ARC_DIR)/$(EXE) $(ARC_DIR)/%
 
 default: build
 
@@ -102,14 +105,14 @@ $(EXE): $(ARC_DIR)/$(EXE)
 
 $(ARC_DIR)/$(EXE): $(OBJ)
 	@echo -e "\tLinking $(EXE)"
-	$(LINK) $(LDFLAGS) $(OBJ) $(LIBDIR) $(LIB) -o $(ARC_DIR)/$(EXE)
+	@$(LINK) $(LDFLAGS) $(OBJ) $(LIBDIR) $(LIB) -o $(ARC_DIR)/$(EXE)
 	@rm $(OBJ) # This ensures full recompile
 
-$(ARC_DIR)/%.o: $(ARC_DIR)/%.c
+$(ARC_DIR)/%.o: $(ARC_DIR)/%.c $(HEAD_ARC)
 	@echo -e "\tCompiling $(notdir $<)"
 	@$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
-$(ARC_DIR)/%.c: %.c | $(ARC_DIR)
+$(ARC_DIR)/%: % | $(ARC_DIR)
 	@cp $< $(ARC_DIR)
 
 $(ARC_DIR):
