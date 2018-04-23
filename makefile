@@ -23,6 +23,9 @@ MATH_LIB = -lm
 # Name of the executable
 EXE = harm
 
+# Name of the parameter file
+PARAM = param.dat
+
 # Override these defaults if we know the machine we're working with
 # Once you know what compiles, add it as a machine def here
 MAKEFILE_PATH := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
@@ -100,8 +103,9 @@ clean:
 	@echo "Cleaning build files..."
 	@rm -f $(EXE) $(OBJ)
 
-$(EXE): $(ARC_DIR)/$(EXE)
+$(EXE): $(ARC_DIR)/$(EXE) $(ARC_DIR)/$(PARAM)
 	@cp $(ARC_DIR)/$(EXE) .
+	@cp $(ARC_DIR)/$(PARAM) .
 
 $(ARC_DIR)/$(EXE): $(OBJ)
 	@echo -e "\tLinking $(EXE)"
