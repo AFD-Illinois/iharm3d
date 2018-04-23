@@ -26,6 +26,11 @@ double bl_gdet_func(double r, double th);
 void bl_gcov_func(double r, double th, double gcov[][NDIM]);
 void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 
+void set_problem_params()
+{
+
+}
+
 void init(struct GridGeom *G, struct FluidState *S)
 {
   double r, th, sth, cth;

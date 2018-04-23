@@ -23,6 +23,11 @@ double bl_gdet_func(double r, double th);
 void bl_gcov_func(double r, double th, double gcov[][NDIM]);
 void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 
+void set_problem_params()
+{
+
+}
+
 void init(struct GridGeom *G, struct FluidState *S)
 {
   double r, th, sth, cth;
@@ -41,13 +46,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   double rmax ;
 
   // Adiabatic index
-  //gam = 13./9.;
-  gam = 4./3;
-  #if ELECTRONS
-  game = 4./3.;
-  gamp = 5./3.;
-  fel0 = 1.;
-  #else
+  #if !ELECTRONS
   tp_over_te = 3.;
   #endif
 
@@ -64,14 +63,11 @@ void init(struct GridGeom *G, struct FluidState *S)
   // Numerical parameters
   lim = MC;
   failed = 0;
-  cour = 0.9;
-  dt = 1.e-8;
   R0 = 0.0;
   Rhor = (1. + sqrt(1. - a*a));
   double z1 = 1 + pow(1 - a*a,1./3.)*(pow(1+a,1./3.) + pow(1-a,1./3.));
   double z2 = sqrt(3*a*a + z1*z1);
   Risco = 3 + z2 - sqrt((3-z1)*(3 + z1 + 2*z2));
-  Rout = 100.;
   #if RADIATION
   Rout_rad = 40.;
   numin = 1.e8;
@@ -79,7 +75,6 @@ void init(struct GridGeom *G, struct FluidState *S)
   tune_emiss = 1.e5;
   tune_scatt = 1.;
   #endif
-  tf = 10000.0;
   hslope = 0.3;
 
   zero_arrays();
@@ -87,12 +82,6 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   printf("grid set\n");
   t = 0.;
-
-  // Output choices
-  DTd = 5.0;   // Dump interval
-  DTl = 0.1;  // Log interval
-  DTr = 1024;  // Restart interval, in timesteps
-  DTp = 25;   // Performance interval, in timesteps
 
   // Diagnostic counters
   dump_cnt = 0;

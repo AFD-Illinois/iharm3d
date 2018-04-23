@@ -89,5 +89,4 @@ test_*/
 build_archive/
 TMP/
 *.png
-*.dat
 vtune_*
