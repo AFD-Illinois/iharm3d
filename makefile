@@ -38,7 +38,7 @@ LINK = $(CC)
 LDFLAGS = $(CFLAGS)
 
 HDF5_LIB = -lhdf5_hl -lhdf5
-MPI_LIB = 
+MPI_LIB = #TODO these are hard to find due to ubiquity of mpicc
 GSL_LIB = -lgsl -lgslcblas
 
 ## LOGIC FOR PATHS ##
@@ -103,6 +103,7 @@ $(EXE): $(ARC_DIR)/$(EXE)
 $(ARC_DIR)/$(EXE): $(OBJ)
 	@echo -e "\tLinking $(EXE)"
 	@$(LINK) $(LDFLAGS) $(OBJ) $(LIBDIR) $(LIB) -o $(ARC_DIR)/$(EXE)
+	@rm $(OBJ) # This ensures full recompile
 
 $(ARC_DIR)/%.o: $(ARC_DIR)/%.c
 	@echo -e "\tCompiling $(notdir $<)"
