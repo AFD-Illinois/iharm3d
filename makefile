@@ -25,7 +25,7 @@ EXE = harm
 
 # Override these defaults if we know the machine we're working with
 # Once you know what compiles, add it as a machine def here
-MAKEFILE_PATH := $(abspath $(firstword $(MAKEFILE_LIST)))
+MAKEFILE_PATH := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
 ifneq (,$(findstring stampede2,$(HOSTNAME)))
 	-include $(MAKEFILE_PATH)/machines/stampede2.make
 endif
@@ -43,8 +43,8 @@ GSL_LIB = -lgsl -lgslcblas
 
 ## LOGIC FOR PATHS ##
 
-CORE_DIR := $(dir $(MAKEFILE_PATH))/core/
-PROB_DIR := $(dir $(MAKEFILE_PATH))/prob/$(PROB)/
+CORE_DIR := $(MAKEFILE_PATH)/core/
+PROB_DIR := $(MAKEFILE_PATH)/prob/$(PROB)/
 VPATH = $(CORE_DIR):$(PROB_DIR)
 
 #ARC_DIR := $(dir $(MAKEFILE_PATH))/prob/$(PROB)/build_archive/
@@ -102,7 +102,7 @@ $(EXE): $(ARC_DIR)/$(EXE)
 
 $(ARC_DIR)/$(EXE): $(OBJ)
 	@echo -e "\tLinking $(EXE)"
-	@$(LINK) $(LDFLAGS) $(OBJ) $(LIBDIR) $(LIB) -o $(ARC_DIR)/$(EXE)
+	$(LINK) $(LDFLAGS) $(OBJ) $(LIBDIR) $(LIB) -o $(ARC_DIR)/$(EXE)
 	@rm $(OBJ) # This ensures full recompile
 
 $(ARC_DIR)/%.o: $(ARC_DIR)/%.c
