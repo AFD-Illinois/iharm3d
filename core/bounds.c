@@ -337,8 +337,8 @@ void fix_flux(struct FluidFlux *F)
 {
   if (global_start[0] == 0 && X1L_INFLOW == 0) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3) {
-      JSLOOP(0, N2) {
+    KLOOPALL {
+      JLOOPALL {
         F->X1[RHO][k][j][0+NG] = MY_MIN(F->X1[RHO][k][j][0+NG], 0.);
       }
     }
@@ -346,8 +346,8 @@ void fix_flux(struct FluidFlux *F)
 
   if (global_stop[0] == N1TOT  && X1R_INFLOW == 0) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3+NG-1) {
-      JSLOOP(0, N2+NG-1) {
+    KLOOPALL {
+      JLOOPALL {
         F->X1[RHO][k][j][N1+NG] = MY_MAX(F->X1[RHO][k][j][N1+NG], 0.);
       }
     }
@@ -355,8 +355,8 @@ void fix_flux(struct FluidFlux *F)
 
   if (global_start[1] == 0) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3) {
-      ISLOOP(0, N1) {
+    KLOOPALL {
+      ILOOPALL {
         F->X1[B2][k][-1+NG][i] = -F->X1[B2][k][0+NG][i];
         F->X3[B2][k][-1+NG][i] = -F->X3[B2][k][0+NG][i];
         PLOOP F->X2[ip][k][0+NG][i] = 0.;
@@ -366,8 +366,8 @@ void fix_flux(struct FluidFlux *F)
 
   if (global_stop[1] == N2TOT) {
     #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3) {
-      ISLOOP(0, N1) {
+    KLOOPALL {
+      ILOOPALL {
         F->X1[B2][k][N2+NG][i] = -F->X1[B2][k][N2-1+NG][i];
         F->X3[B2][k][N2+NG][i] = -F->X3[B2][k][N2-1+NG][i];
         PLOOP F->X2[ip][k][N2+NG][i] = 0.;

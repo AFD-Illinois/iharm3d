@@ -304,14 +304,26 @@ extern int global_stop[3];
 /*******************************************************************************
     MACROS
 *******************************************************************************/
-#define ZLOOP \
+#define ILOOP	\
+  for (int i = 0 + NG; i < N1 + NG; i++)
+#define ILOOPALL \
+  for (int i = 0; i < N1 + 2*NG; i++)
+#define JLOOP	\
+  for (int j = 0 + NG; j < N2 + NG; j++)
+#define JLOOPALL \
+  for (int j = 0; j < N2 + 2*NG; j++)
+#define KLOOP	\
+  for (int k = 0 + NG; k < N3 + NG; k++)
+#define KLOOPALL \
+  for (int k = 0; k < N3 + 2*NG; k++)
+#define ZLOOP	\
+  KLOOP JLOOP ILOOP
+#define ZLOOPALL \
+  KLOOPALL JLOOPALL ILOOPALL
+#define ZLOOP														 \
   for (int k = 0 + NG; k < N3 + NG; k++) \
   for (int j = 0 + NG; j < N2 + NG; j++) \
   for (int i = 0 + NG; i < N1 + NG; i++)
-#define ZLOOPALL \
-  for (int k = 0; k < N3 + 2*NG; k++) \
-  for (int j = 0; j < N2 + 2*NG; j++) \
-  for (int i = 0; i < N1 + 2*NG; i++)
 #define ISLOOP(istart,istop) \
   for (int i = (istart) + NG; i <= (istop) + NG; i++)
 #define JSLOOP(jstart,jstop) \
@@ -328,6 +340,11 @@ extern int global_stop[3];
   for (int i = (istop) + NG; i >= (istart) + NG; i--)
 // Loop over primitive variables
 #define PLOOP for(int ip = 0; ip < NVAR; ip++)
+
+// Loop over spacetime indices
+#define DLOOP1 for (int mu = 0; mu < NDIM; mu++)
+#define DLOOP2 for (int mu = 0; mu < NDIM; mu++)	\
+		for (int nu = 0; nu < NDIM; nu++)
 
 #define MY_MIN(fval1,fval2) ( ((fval1) < (fval2)) ? (fval1) : (fval2))
 #define MY_MAX(fval1,fval2) ( ((fval1) > (fval2)) ? (fval1) : (fval2))
