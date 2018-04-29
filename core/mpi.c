@@ -131,7 +131,6 @@ MPI_Status* sync_mpi_bound_X1(struct FluidState *S)
 {
   MPI_Status *status = MPI_STATUS_IGNORE;
 
-  // These are rather slow, so I use bounds.c implementations where possible
 #if N1 > 1
   // First send right/receive left
   MPI_Sendrecv(&(S->P[0][NG][NG][N1]), 1, face_type[2], neighbors[1][1][2], 0,

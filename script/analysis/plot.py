@@ -75,22 +75,34 @@ def flatten_xz(array, hdr, flip=False):
 def flatten_xy(array, hdr):
   return np.vstack((array.transpose(),array.transpose()[0])).transpose()
 
-def plot_xz(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True, 
-  label=None, ticks=None):
-  x = geom['x']
-  z = geom['z']
-  if dump['hdr']['N3'] > 1.:
-    x = flatten_xz(x, dump['hdr'], flip=True)
-    z = flatten_xz(z, dump['hdr'])
-    var = flatten_xz(var, dump['hdr'])
+def plot_xz(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
+            label=None, ticks=None, arrayspace=False):
+  hdr = dump['hdr']; N1 = hdr['N1']; N2 = hdr['N2']; N3 = hdr['N3']
+  if N3 > 1.:
+    if (arrayspace):
+      x = np.reshape(np.repeat(np.linspace(0,1,N2),N1),(N1,N2))
+      z = np.transpose(np.reshape(np.repeat(np.linspace(0,1,N1),N2),(N2,N1)))
+      var = flatten_xz(var, hdr)[N2:,:]
+    else:
+      x = geom['x']
+      z = geom['z']
+      x = flatten_xz(x, hdr, flip=True)
+      z = flatten_xz(z, hdr)
+      var = flatten_xz(var, hdr)
+
   else:
     x = x[:,:,0]
     z = z[:,:,0]
     var = var[:,:,0]
+
+#  print 'xshape is ', x.shape, ', zshape is ', z.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
       shading='gouraud')
-  circle1=plt.Circle((0,0),dump['hdr']['Reh'],color='k'); 
-  ax.add_artist(circle1)
+
+  if (not arrayspace):
+    circle1=plt.Circle((0,0),hdr['Reh'],color='k');
+    ax.add_artist(circle1)
+
   if cbar:
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
@@ -100,7 +112,10 @@ def plot_xz(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
     else:
       plt.colorbar(mesh, cax=cax, ticks=ticks)
   ax.set_aspect('equal')
-  ax.set_xlabel('x/M'); ax.set_ylabel('z/M')
+  if (arrayspace):
+    ax.set_xlabel('r (arbitrary)'); ax.set_ylabel('theta (arbitrary)')
+  else:
+    ax.set_xlabel('x/M'); ax.set_ylabel('z/M')
   #ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
 
 def overlay_field(ax, geom, dump, NLEV):
@@ -128,20 +143,28 @@ def overlay_field(ax, geom, dump, NLEV):
   ax.contour(x, z, A_phi, levels=levels, colors='k')
 
 def plot_xy(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
-  label=None, ticks=None):
-  hdr = dump['hdr']
-  x = geom['x']
-  y = geom['y']
-  #x = geom['x'][:,hdr['N2']/2,:]
-  #y = geom['y'][:,hdr['N2']/2,:]
-  #var = var[:,dump['hdr']['N2']/2,:]
-  x = flatten_xy(x[:,dump['hdr']['N2']/2,:], dump['hdr'])
-  y = flatten_xy(y[:,dump['hdr']['N2']/2,:], dump['hdr'])
-  var = flatten_xy(var[:,dump['hdr']['N2']/2,:], dump['hdr'])
+            label=None, ticks=None, arrayspace=False):
+  hdr = dump['hdr']; N1 = hdr['N1']; N2 = hdr['N2']; N3 = hdr['N3']+1
+
+  if (arrayspace):
+    x = np.reshape(np.repeat(np.linspace(0,1,N3),N1),(N1,N3))
+    y = np.transpose(np.reshape(np.repeat(np.linspace(0,1,N1),N3),(N3,N1)))
+  else:
+    x = geom['x'][:,N2/2,:]
+    y = geom['y'][:,N2/2,:]
+    x = flatten_xy(x, hdr)
+    y = flatten_xy(y, hdr)
+
+  var = flatten_xy(var[:,N2/2,:], hdr)
+
+#  print 'xshape is ', x.shape, ', yshape is ', y.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
       shading='gouraud')
-  circle1=plt.Circle((0,0),dump['hdr']['Reh'],color='k'); 
-  ax.add_artist(circle1)
+
+  if (not arrayspace):
+    circle1=plt.Circle((0,0),hdr['Reh'],color='k');
+    ax.add_artist(circle1)
+
   if cbar:
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
@@ -151,6 +174,8 @@ def plot_xy(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
     else:
       plt.colorbar(mesh, cax=cax, ticks=ticks)
   ax.set_aspect('equal')
-  ax.set_xlabel('x/M'); ax.set_ylabel('y/M')
+  if (arrayspace):
+    ax.set_xlabel('r (arbitrary)'); ax.set_ylabel('phi (arbitrary)')
+  else:
+    ax.set_xlabel('x/M'); ax.set_ylabel('y/M')
   #ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
- 

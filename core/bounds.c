@@ -115,7 +115,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   if(global_start[1] == 0) {
     #pragma omp parallel for collapse(2)
     KSLOOP(0, N3-1) {
-      ISLOOP(-NG, N1-1+NG) {
+      ILOOPALL {
         JSLOOP(-NG, -1) {
           #if N2 < NG
           int jactive = NG;
@@ -151,7 +151,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   if(global_stop[1] == N2TOT) {
     #pragma omp parallel for collapse(2)
     KSLOOP(0, N3-1) {
-      ISLOOP(-NG, N1-1+NG) {
+      ILOOPALL {
         JSLOOP(N2, N2-1+NG) {
           #if N2 < NG
           int jactive = N2 - 1 + NG;
@@ -191,7 +191,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     #pragma omp parallel for collapse(2)
     JSLOOP(-NG, N2-1+NG) {
       ISLOOP(-NG, N1-1+NG) {
-	KSLOOP(-NG, -1) {
+	      KSLOOP(-NG, -1) {
           #if N3 < NG
           int kactive = NG;
           PLOOP state->P[ip][k][j][i] = state->P[ip][kactive][j][i];
@@ -223,7 +223,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     #pragma omp parallel for collapse(2)
     JSLOOP(-NG, N2-1+NG) {
       ISLOOP(-NG, N1-1+NG) {
-	KSLOOP(N3, N3-1+NG) {
+        KSLOOP(N3, N3-1+NG) {
           #if N3 < NG
           int kactive = NG;
           PLOOP state->P[ip][k][j][i] = state->P[ip][kactive][j][i];
@@ -258,8 +258,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   if(global_start[0] == 0  && X1L_INFLOW == 0) {
     // Make sure there is no inflow at the inner boundary
 #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3 - 1 + NG) {
-      JSLOOP(-NG, N2 - 1 + NG) {
+    KLOOPALL {
+      JLOOPALL {
         ISLOOP(-NG, -1) {
           inflow_check(geom, state, i, j, k, 0);
         }
@@ -270,8 +270,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   if(global_stop[0] == N1TOT && X1R_INFLOW == 0) {
     // Make sure there is no inflow at the outer boundary
 #pragma omp parallel for collapse(2)
-    KSLOOP(-NG, N3 - 1 + NG) {
-      JSLOOP(-NG, N2 - 1 + NG) {
+    KLOOPALL {
+      JLOOPALL {
         ISLOOP(N1, N1 - 1 + NG) {
           inflow_check(geom, state, i, j, k, 1);
         }

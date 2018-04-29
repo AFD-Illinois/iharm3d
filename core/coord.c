@@ -28,7 +28,7 @@ void coord(int i, int j, int k, int loc, double *X)
   j += global_start[1];
   k += global_start[2];
 
-	X[0] = 0; // Make sure all memory passed in is initialized
+  X[0] = 0; // Make sure all memory passed in is initialized
   if (loc == FACE1) {
     X[1] = startx[1] + (i - NG) * dx[1];
     X[2] = startx[2] + (j + 0.5 - NG) * dx[2];
