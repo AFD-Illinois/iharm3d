@@ -9,6 +9,7 @@
 #include "decs.h"
 
 static int nfixed = 0;
+static int nfixed_b = 0;
 
 // Apply floors to density, internal energy
 void fixup(struct GridGeom *G, struct FluidState *S)
@@ -17,8 +18,9 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   #pragma omp parallel for collapse(3)
   ZLOOP fixup1zone(G, S, i, j, k);
   timer_stop(TIMER_FIXUP);
-  printf("Fixed %d zones\n", nfixed);
+  printf("Fixed %d zones, %d from new floor\n", nfixed, nfixed_b);
   nfixed = 0;
+  nfixed_b = 0;
 }
 
 void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
@@ -53,7 +55,10 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
   // Floor on density and internal energy density (momentum *not* conserved)
   if (S->P[RHO][k][j][i] < rhoflr || isnan(S->P[RHO][k][j][i])) {
 #if METRIC == MKS
-    //printf("Adding rho at r = %f, th = %f (%d %d %d): ", r, th, i, j, k);
+    if (S->P[RHO][k][j][i] > RHOMIN*rhoscal) {
+      nfixed_b++;
+      //printf("Adding from B floor at r = %f, th = %f (%d %d %d): ", r, th, i, j, k);
+    }
     nfixed++;
 #endif
     S->P[RHO][k][j][i] = rhoflr;

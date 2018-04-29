@@ -291,7 +291,7 @@ struct of_photon {
 #endif
 
 #if POLYTH
-extern double poly_norm, poly_xt, poly_alpha;
+extern double poly_norm, poly_xt, poly_alpha, mks_smooth;
 #endif
 
 extern gsl_rng *r;

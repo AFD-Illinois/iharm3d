@@ -35,7 +35,7 @@ double Ne_unit, Thetae_unit, kphys_to_num;
 
 double Rin, Rout, hslope, R0;
 #if POLYTH
-double poly_norm, poly_xt, poly_alpha;
+double poly_norm, poly_xt, poly_alpha, mks_smooth;
 #endif
 #if RADIATION
 double Rout_rad, tune_emiss, tune_scatt;

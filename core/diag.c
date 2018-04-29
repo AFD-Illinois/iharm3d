@@ -38,14 +38,6 @@ void diag_flux(struct FluidFlux *F)
 
 void diag(struct GridGeom *G, struct FluidState *S, int call_code)
 {
-  //double U[NVAR], divb;
-  double divb;
-  double pp = 0.;
-  double divbmax = 0.;
-  double rmed = 0.;
-  double e = 0.;
-  //struct of_geom *geom;
-  //struct of_state q;
   static FILE *ener_file;
 
   if (call_code == DIAG_INIT) {
@@ -60,6 +52,12 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     }
   }
 
+  double pp = 0.;
+  double divbmax = 0.;
+  double rmed = 0.;
+  double e = 0.;
+  double Phi = 0;
+
   // Calculate conserved quantities
   if ((call_code == DIAG_INIT || call_code == DIAG_LOG ||
        call_code == DIAG_FINAL) && !failed) {
@@ -67,21 +65,19 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     get_state_vec(G, S, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
     prim_to_flux_vec(G, S, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, S->U);
 
-    pp = 0.;
-    e = 0.;
-    rmed = 0.;
-    divbmax = 0.;
-    ZSLOOP(0, N3 - 1, 0, N2 - 1, 0, N1 - 1) {
-      //geom = get_geometry(i, j, CENT) ;
-
+    ZLOOP {
       rmed += S->U[RHO][k][j][i]*dV;
       pp += S->U[U3][k][j][i]*dV;
       e += S->U[UU][k][j][i]*dV;
 
-      divb = flux_ct_divb(G, S, i, j, k);
+      double divb = flux_ct_divb(G, S, i, j, k);
 
       if (divb > divbmax) {
         divbmax = divb;
+      }
+
+      if (global_start[1] == 0 && i == 5+NG) {
+        Phi += 0.5*fabs(S->P[B1][k][j][i])*dx[2]*dx[3]*G->gdet[j][i][CENT];
       }
     }
   }
@@ -90,6 +86,12 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   pp = mpi_io_reduce(pp);
   e = mpi_io_reduce(e);
   divbmax = mpi_io_max(divbmax);
+  if (mdot > SMALL) {
+    Phi = mpi_io_reduce(Phi);
+    Phi /= sqrt(mdot);
+  } else {
+      Phi = 0;
+  }
 
   if ((call_code == DIAG_INIT && !is_restart) ||
     call_code == DIAG_DUMP || call_code == DIAG_FINAL) {
@@ -112,7 +114,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
       //  P[N1/2][N2/2][N3/2][UU]*pow(P[N1/2][N2/2][N3/2][RHO], -gam),
       //  P[N1/2][N2/2][N3/2][UU]);
       // REEVALUATE MDOT LOCALLY!
-      fprintf(ener_file, "%15.8g %15.8g %15.8g ", mdot, edot, ldot);
+      fprintf(ener_file, "%15.8g %15.8g %15.8g %15.8g ", mdot, edot, ldot, Phi);
       fprintf(ener_file, "%15.8g ", divbmax);
       fprintf(ener_file, "\n");
       fflush(ener_file);
