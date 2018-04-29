@@ -39,9 +39,7 @@ int main(int argc, char *argv[])
     fprintf(stdout, "          *                                                          *\n");
     fprintf(stdout, "          *                          SYNTAX                          *\n");
     fprintf(stdout, "          *                                                          *\n");
-    fprintf(stdout, "          *    -o /path/to/output/directory/                         *\n");
-    fprintf(stdout, "          *    -m [black hole mass in solar masses]                  *\n");
-    fprintf(stdout, "          *    -M [mass unit in grams]                               *\n");
+    fprintf(stdout, "          *    -p /path/to/param.dat                                 *\n");
     fprintf(stdout, "          *                                                          *\n");
     fprintf(stdout, "          ************************************************************\n\n");
   }
@@ -53,6 +51,7 @@ int main(int argc, char *argv[])
   mbh = -1.;
   M_unit = -1.;
   #endif
+  char pfname[STRLEN];
   for (int n = 0; n < argc; n++) {
     // Check for argv[n] of the form '-*'
     if (*argv[n] == '-' && *(argv[n]+1) != '\0' && *(argv[n]+2) == '\0' &&
@@ -65,14 +64,14 @@ int main(int argc, char *argv[])
             exit(2);
         }
       }
-      #if RADIATION
-      else if (*(argv[n]+1) == 'm') { // Set black hole mass in solar masses
-        mbh = strtof(argv[++n], NULL)*MSUN;
-      } else if (*(argv[n]+1) == 'M') { // Set mass unit in grams
-        M_unit = strtof(argv[++n], NULL);
+      if (*(argv[n]+1) == 'p') { // Set parameter file path
+	strcpy(pfname, argv[++n]);
       }
-      #endif
     }
+  }
+  // Default parameter file
+  if (strlen(pfname) == 1) {
+      strcpy(pfname, "param.dat");
   }
 
   strcpy(dumpdir, "dumps/");
@@ -106,6 +105,7 @@ int main(int argc, char *argv[])
   } // omp parallel
 
   // Initialize global variables and arrays
+  init_io(pfname);
   reset_log_variables();
   nstep = 0;
   struct GridGeom *G = (struct GridGeom*)malloc(sizeof(struct GridGeom));

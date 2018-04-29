@@ -74,6 +74,7 @@ SRC/
 # Executable #
 ##############
 bhlight
+harm
 
 # Output #
 ##########
@@ -85,7 +86,7 @@ dumps/
 dumps*/
 restarts/
 test_*/
+build_archive/
 TMP/
 *.png
-*.dat
 vtune_*

@@ -77,6 +77,7 @@
 // I/O format strings
 #define FMT_DBL_OUT "%28.18e"
 #define FMT_INT_OUT "%10d"
+#define STRLEN (2048)
 
 // Reconstruction algorithms
 #define LINEAR (0)
@@ -275,21 +276,6 @@ extern double game, gamp;
 extern double fel0;
 #endif
 
-// Set global variables that indicate current local metric, etc.
-/*struct of_geom {
-  double gcon[NDIM][NDIM];
-  double gcov[NDIM][NDIM];
-  double g;
-  double alpha;
-};*/
-
-/*struct of_state {
-  double ucon[NDIM];
-  double ucov[NDIM];
-  double bcon[NDIM];
-  double bcov[NDIM];
-};*/
-
 #if RADIATION
 struct of_photon {
   double X[NDIM];
@@ -418,6 +404,10 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sl,
 void flux_ct(struct FluidFlux *F);
 
 // io.c
+void set_core_params();
+void set_param(char *key, void *data);
+void read_params(char *pfname);
+void init_io(char *pfname);
 void dump(struct GridGeom *G, struct FluidState *S);
 void restart_write(struct FluidState *S);
 void restart_read(char *fname, struct FluidState *S);
@@ -443,8 +433,6 @@ void lower(double ucon[NDIM], double gcov[NDIM][NDIM], double ucov[NDIM]);
 void raise(double ucov[NDIM], double gcon[NDIM][NDIM], double ucon[NDIM]);
 double dot_grid(GridVector vcon, GridVector vcov, int i, int j, int k);
 double dot(double vcon[NDIM], double vcov[NDIM]);
-//struct of_geom *get_geometry(int ii, int jj, int kk);
-//void blgset(int i, int j, struct of_geom *geom);
 //double bl_gdet_func(double r, double th);
 //void bl_gcov_func(double r, double th, double gcov[][NDIM]);
 //void bl_gcon_func(double r, double th, double gcon[][NDIM]);
@@ -491,6 +479,7 @@ void mhd_vchar(struct GridGeom *G, struct FluidState *Sr, int i, int j, int k,
   int loc, int dir, GridDouble cmax, GridDouble cmin);
 
 // problem.c
+void set_problem_params();
 void init(struct GridGeom *G, struct FluidState *S);
 // Boundary condition (currently used for Bondi flow)
 void bound_gas_prob_x1r(int i, int j, int k, GridPrim  P, struct GridGeom *G);
