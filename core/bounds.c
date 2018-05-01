@@ -26,9 +26,9 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   // TODO Rewrite/clean this function to put prim index on the outside
 
-  timer_start (TIMER_BOUND_COMMS);
-  sync_mpi_bound_X1 (state);
-  timer_stop (TIMER_BOUND_COMMS);
+  //timer_start (TIMER_BOUND_COMMS);
+  //sync_mpi_bound_X1 (state);
+  //timer_stop (TIMER_BOUND_COMMS);
 
   if(global_start[0] == 0) {
     #pragma omp parallel for collapse(2)
@@ -109,7 +109,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   } // global_stop[0] == N1TOT
 
   timer_start (TIMER_BOUND_COMMS);
-  sync_mpi_bound_X2 (state);
+  sync_mpi_bound_X1 (state);
   timer_stop (TIMER_BOUND_COMMS);
 
   if(global_start[1] == 0) {
@@ -184,7 +184,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   } // global_stop[1] == N2TOT
 
   timer_start (TIMER_BOUND_COMMS);
-  sync_mpi_bound_X3 (state);
+  sync_mpi_bound_X2 (state);
   timer_stop (TIMER_BOUND_COMMS);
 
   if (global_start[2] == 0) {
@@ -251,7 +251,9 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   } // global_stop[2] == N3TOT
 
-//  sync_mpi_bound_X3(state);
+	timer_start(TIMER_BOUND_COMMS);
+  sync_mpi_bound_X3(state);
+  timer_stop(TIMER_BOUND_COMMS);
 
 #if METRIC == MKS
   //ucon_calc(geom, state);

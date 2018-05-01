@@ -43,13 +43,15 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
   // Rho_min from T,N,M '10
   // TODO check factors, insert mass in local frame, retire solid floor
   get_state(G, S, i, j, k, CENT);
-  double rho_min = bsq_calc(S, i, j, k) / (8*M_PI) / GAMMAAGN;
 
-  rhoflr = MY_MAX(RHOMIN*rhoscal, rho_min*rhoscal);
+  //double rho_min = bsq_calc(S, i, j, k) / (8*M_PI) / GAMMAAGN;
+  //rhoflr = MY_MAX(RHOMIN*rhoscal, rho_min*rhoscal);
+  rhoflr = RHOMIN*rhoscal;
+
   uuflr = UUMIN*uuscal;
 
+  // Set absolute limits for machine precision
   rhoflr = MY_MAX(rhoflr, RHOMINLIMIT);
-
   uuflr = MY_MAX(uuflr, UUMINLIMIT);
 
   // Floor on density and internal energy density (momentum *not* conserved)
