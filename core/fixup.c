@@ -15,7 +15,7 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
 
-//#pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
   ZLOOP fixup1zone(G, S, i, j, k);
 
   timer_stop(TIMER_FIXUP);
@@ -88,7 +88,7 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
   pv[RHO] = MY_MAX(rhoflr, pv[RHO]);
   pv[UU] = MY_MAX(uflr, pv[UU]);
   if (mhd_gamma_calc(pv, geom, &gamma)) {
-    pflag[i][j][k] = -333;
+    pflag[k][j][i] = -333;
   } else {
     if (gamma > GAMMAMAX) {
       f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
@@ -253,7 +253,7 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
   // Limit gamma with respect to normal observer
   double gamma;
   if (mhd_gamma_calc(G, S, i, j, k, CENT, &gamma)) {
-    pflag[i][j][k] = -333;
+    pflag[k][j][i] = -333;
   } else {
     if (gamma > GAMMAMAX) {
       f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
