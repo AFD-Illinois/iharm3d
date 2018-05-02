@@ -14,6 +14,15 @@ double gcon_func(double gcov[NDIM][NDIM], double gcon[NDIM][NDIM])
   return sqrt(fabs(gdet));
 }
 
+inline void get_gcov(struct GridGeom *G, int i, int j, int loc, double gcov[NDIM][NDIM]) {
+  DLOOP2 gcov[mu][nu] = G->gcov[loc][mu][nu][j][i];
+}
+
+inline void get_gcon(struct GridGeom *G, int i, int j, int loc, double gcon[NDIM][NDIM])
+{
+  DLOOP2 gcon[mu][nu] = G->gcon[loc][mu][nu][j][i];
+}
+
 // Set the spatial discretization in numerical derivatives
 #define DELTA 1.e-5
 

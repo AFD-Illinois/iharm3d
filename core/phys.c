@@ -32,6 +32,7 @@ inline void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double 
   }
 }
 
+// TODO OLD only used in fixup.c and even then hacked to hell
 void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int dir, int loc, GridPrim flux)
 {
@@ -307,9 +308,7 @@ inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, int i, in
   int k, GridPrim dU)
 {
   double mhd[NDIM][NDIM];
-  //struct of_state q;
 
-  //get_state(Ph, geom, &q);
   mhd_calc(S, i, j, k, 0, mhd[0]);
   mhd_calc(S, i, j, k, 1, mhd[1]);
   mhd_calc(S, i, j, k, 2, mhd[2]);

@@ -13,24 +13,24 @@
 #define ITERMAX 8
 #define DEL 1.e-5
 
-//int U_to_P(double U[NVAR], struct of_geom *geom, double prim[NVAR])
+double Pressure_rho0_u(double rho0, double u);
+double Pressure_rho0_w(double rho0, double w);
+double err_eqn(double Bsq, double D, double Ep, double QdB, double Qtsq,
+  double Wp, int *eflag);
+double gamma_func(double Bsq, double D, double QdB, double Qtsq, double Wp,
+  int *eflag);
+double Wp_func(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
+  int loc, int *eflag);
+//double Wp_func(double *prim, struct of_geom *geom, int *eflag);
+
 int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k, 
   int loc)
 {
   int iter, eflag;
   double Bcon[NDIM], Bcov[NDIM], Qcov[NDIM], Qcon[NDIM], ncov[NDIM], ncon[NDIM],
     Qtcon[NDIM];
-  double lapse, Bsq, D, Ep, QdB, Qtsq, Qsq, Qdotn, rho0, u, gamma, Wp, Wp1, W, 
+  double lapse, Bsq, D, Ep, QdB, Qtsq, Qsq, Qdotn, rho0, u, gamma, Wp, Wp1, W,
     w, P, err, err1, dW;
-  double Pressure_rho0_u(double rho0, double u);
-  double Pressure_rho0_w(double rho0, double w);
-  double err_eqn(double Bsq, double D, double Ep, double QdB, double Qtsq, 
-    double Wp, int *eflag);
-  double gamma_func(double Bsq, double D, double QdB, double Qtsq, double Wp, 
-    int *eflag);
-  double Wp_func(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
-    int loc, int *eflag);
-  //double Wp_func(double *prim, struct of_geom *geom, int *eflag);
 
   eflag = 0 ;
 
@@ -55,6 +55,7 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   Bcon[1] = S->U[B1][k][j][i]*lapse/gdet;
   Bcon[2] = S->U[B2][k][j][i]*lapse/gdet;
   Bcon[3] = S->U[B3][k][j][i]*lapse/gdet;
+
   Qcov[0] = (S->U[UU][k][j][i] - S->U[RHO][k][j][i])*lapse/gdet;
   Qcov[1] = S->U[U1][k][j][i]*lapse/gdet;
   Qcov[2] = S->U[U2][k][j][i]*lapse/gdet;

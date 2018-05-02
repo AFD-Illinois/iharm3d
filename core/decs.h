@@ -424,6 +424,8 @@ void get_dnz(grid_prim_type Prad);
 
 // metric.c
 double gcon_func(double gcov[NDIM][NDIM], double gcon[NDIM][NDIM]);
+void get_gcov(struct GridGeom *G, int i, int j, int loc, double gcov[NDIM][NDIM]);
+void get_gcon(struct GridGeom *G, int i, int j, int loc, double gcon[NDIM][NDIM]);
 void conn_func(struct GridGeom *G, int i, int j, int k);
 void lower_grid(GridVector vcon, GridVector vcov, struct GridGeom *G, int i,
   int j, int k, int loc);
