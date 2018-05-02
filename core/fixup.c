@@ -187,7 +187,7 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 
       // Convert 3-velocity to relative 4-velocity and store in primitives
       for (int mu = 1; mu < NDIM; mu++) {
-	  S->P[mu+UU][k][j][mu] = utcon[mu]*trans + pv_prefloor[mu+UU]*(1. - trans);
+	  S->P[mu+UU][k][j][i] = utcon[mu]*trans + pv_prefloor[mu+UU]*(1. - trans);
       }
     } else { // Weakly magnetized region; use normal observer frame floors
       nfixed++;
