@@ -38,13 +38,13 @@ inline void ucon_to_utcon(struct GridGeom *G, int i, int j, double ucon[NDIM], d
 
   utcon[0] = 0.;
   for (int mu = 1; mu < NDIM; mu++) {
-    utcon[i] = ucon[mu] + gamma*beta[i]/alpha;
+    utcon[mu] = ucon[mu] + gamma*beta[mu]/alpha;
   }
 }
 
-inline void ut_calc_3vel(struct GridGeom *G, int i, int j, double vcon[NDIM], double *ut)
+inline double ut_calc_3vel(struct GridGeom *G, int i, int j, double vcon[NDIM])
 {
-  double AA, BB, CC, DD, one_over_alpha_sq;
+  double AA, BB, CC, DD;
 
   AA = G->gcov[CENT][0][0][j][i];
   BB = 2.*(G->gcov[CENT][0][1][j][i]*vcon[1] +
@@ -58,13 +58,11 @@ inline void ut_calc_3vel(struct GridGeom *G, int i, int j, double vcon[NDIM], do
 	   G->gcov[CENT][2][3][j][i]*vcon[2]*vcon[3]);
   DD = 1./(AA + BB + CC);
 
-  one_over_alpha_sq = -G->gcon[CENT][0][0][j][i];
-
-  if (DD < one_over_alpha_sq) {
-    DD = one_over_alpha_sq;
+  if (DD < -G->gcon[CENT][0][0][j][i]) {
+    DD = -G->gcon[CENT][0][0][j][i];
   }
 
-  *ut = sqrt(DD);
+  return sqrt(DD);
 }
 
 #define BSQORHOMAX (50.)
@@ -141,8 +139,8 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 
       // Set velocity to drift velocity
       double betapar = -S->bcon[0][k][j][i]/((bsq + SMALL)*S->ucon[0][k][j][i]);
-      double betasq = MY_MIN(betapar*betapar*bsq,
-			     1. - 1./(GAMMAMAX*GAMMAMAX));
+      double betasq = MY_MIN((betapar*betapar*bsq),
+			     (1. - 1./(GAMMAMAX*GAMMAMAX)));
 
       double gamma = 1./sqrt(1. - betasq);
 
@@ -153,7 +151,9 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
       }
 
       double bcon_local[NDIM], bcov_local[NDIM];
-      DLOOP1 bcon_local[mu] = (mu == 0) ? 0 : S->P[B1-1+mu][k][j][i];
+      DLOOP1 {
+	bcon_local[mu] = (mu == 0) ? 0 : S->P[B1-1+mu][k][j][i];
+      }
 
       double gcov_local[NDIM][NDIM];
       get_gcov(G, i, j, CENT, gcov_local);
@@ -180,7 +180,7 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
       }
 
       double ut = 0, utcon[NDIM];
-      ut_calc_3vel(G, i, j, vcon, &ut);
+      ut = ut_calc_3vel(G, i, j, vcon);
 
       DLOOP1 ucon[mu] = ut*vcon[mu];
       ucon_to_utcon(G, i, j, ucon, utcon);
