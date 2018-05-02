@@ -349,6 +349,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   // Enforce boundary conditions
   fixup(G, S);
   set_bounds(G, S);
+
+  fprintf(stderr, "Finished init()\n");
 }
 
 // Convert Boyer-Lindquist four-velocity to MKS 3-velocity

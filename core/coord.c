@@ -155,38 +155,6 @@ void gcov_func(double *X, double gcov[NDIM][NDIM])
   gcov[3][3] = s2*(rho2 + a*a*s2*(1. + 2.*r/rho2))*pfac*pfac;
   #endif // METRIC
 }
-/*
-void get_gcon(double X[NDIM], double gcon[NDIM][NDIM]) {
-  memset(gcon, 0, NDIM*NDIM*sizeof(double));
-
-  #if METRIC == MINKOWSKI
-  gcov[0][0] = -1.;
-  for (int j = 1; j < NDIM; j++) {
-    gcov[j][j] = 1.;
-  }
-  #elif METRIC == MKS
-  double r, th;
-  double tfac, rfac, hfac, pfac;
-
-  bl_coord(X, &r, &th);
-
-  cth = cos(th);
-  sth = sin(th);
-
-  s2 = sth*sth;
-  rho2 = r*r + a*a*cth*cth;
-
-  tfac = 1.;
-  rfac = 1./dr_dx(X[1]);
-  hfac = 1./dth_dx(X[2]);
-  pfac = 1.;
-
-  gcon[0][0] = rho2/(2.*r - rho2)*tfac*tfac;
-  gcon[0][1] = -2.*r*rho2/(4.*r*r - rho2*rho2);
-
-
-  #endif // METRIC
-}*/
 
 // Establish X coordinates
 void set_points()

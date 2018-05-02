@@ -251,7 +251,7 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
     }
   } // global_stop[2] == N3TOT
 
-	timer_start(TIMER_BOUND_COMMS);
+  timer_start(TIMER_BOUND_COMMS);
   sync_mpi_bound_X3(state);
   timer_stop(TIMER_BOUND_COMMS);
 
@@ -289,11 +289,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 void inflow_check(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int type)
 {
-  //double ucon[NDIM];
   double alpha, beta1, gamma, vsq;
 
-  //geom = get_geometry(ii, jj, CENT);
-  //ucon_calc(Pr, geom, ucon);
   ucon_calc(G, S, i, j, k, CENT);
 
   if (((S->ucon[1][k][j][i] > 0.) && (type == 0)) ||
