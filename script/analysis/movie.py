@@ -18,11 +18,11 @@ import plot as bplt
 
 FIGX = 20
 FIGY = 10
-SIZE = 40
+SIZE = 200
 NLINES = 20
 
 # For plotting debug, "array-space" plots
-USEARRSPACE = True
+USEARRSPACE = False
 
 # TODO this is a dirty hack
 args_bad = False
@@ -109,14 +109,16 @@ def plot(args):
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
-  ax = plt.subplot(2,2,2)
-  slc = np.nonzero(diag['mdot'])
-  ax.semilogy(diag['t'][slc], diag['mdot'][slc], color='k')
-  ax.axvline(dump['t'], color='r') # Trace on finished plot, don't draw it as we go
-  ax.set_xlim([0, dump['tf']])
-  ax.set_ylim([10**(-2),2])
-  ax.set_xlabel('t/M')
-  ax.set_ylabel('mdot')
+  # Don't add time-based variables if plotting initial conditions
+  if dump['t'].size > 1:
+    ax = plt.subplot(2,2,2)
+    slc = np.nonzero(diag['mdot'])
+    ax.semilogy(diag['t'][slc], diag['mdot'][slc], color='k')
+    ax.axvline(dump['t'], color='r') # Trace on finished plot, don't draw it as we go
+    ax.set_xlim([0, dump['tf']])
+    ax.set_ylim([10**(-2),2])
+    ax.set_xlabel('t/M')
+    ax.set_ylabel('mdot')
 
   plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95) # Avoid crowding
   #plt.tight_layout()
