@@ -115,8 +115,8 @@ int main(int argc, char *argv[])
   // Perform initializations, either directly or via checkpoint
   init_random(1); // NEED RANDOM SEED BASED ON TIME() HERE
   is_restart = restart_init(G, S);
+  time_init();
   if (!is_restart) {
-    time_init();
     init(G, S);
     #if RADIATION
     init_rad(P);

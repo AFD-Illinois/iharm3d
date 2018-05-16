@@ -20,7 +20,8 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 
   timer_stop(TIMER_FIXUP);
 
-  printf("Fixed %d zones, %d from new floor, %d failures in UtoP\n", nfixed, nfixed_b, nfails);
+  //if(mpi_io_proc()) etc.
+  //printf("Fixed %d zones, %d from new floor, %d failures in UtoP\n", nfixed, nfixed_b, nfails);
   nfixed = 0;
   nfixed_b = 0;
   nfails = 0;
