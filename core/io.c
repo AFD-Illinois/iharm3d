@@ -33,6 +33,7 @@ static int dump_id = 0;
 static int restart_id = 0;
 
 // O(n) dictionary for converting strings to pointers to global variables
+// TODO I think this relies on leaking memory.  Not so great
 struct paramtable_entry {
   char *key;
   void *data;
@@ -285,6 +286,11 @@ void dump(struct GridGeom *G, struct FluidState *S)
   add_dbl_value(Rhor, "Reh", file_id, filespace, memspace);
   add_dbl_value(hslope, "hslope", file_id, filespace, memspace);
   add_dbl_value(a, "a", file_id, filespace, memspace);
+  #if POLYTH
+  add_dbl_value(poly_xt, "poly_xt", file_id, filespace, memspace);
+  add_dbl_value(poly_alpha, "poly_alpha", file_id, filespace, memspace);
+  add_dbl_value(mks_smooth, "mks_smooth", file_id, filespace, memspace);
+  #endif
   #endif
   add_dbl_value(gam, "gam", file_id, filespace, memspace);
   #if ELECTRONS

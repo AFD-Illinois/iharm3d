@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
     fprintf(stdout, "          *                          SYNTAX                          *\n");
     fprintf(stdout, "          *                                                          *\n");
     fprintf(stdout, "          *    -p /path/to/param.dat                                 *\n");
+    fprintf(stdout, "          *    -o /path/to/output/dir                                *\n");
     fprintf(stdout, "          *                                                          *\n");
     fprintf(stdout, "          ************************************************************\n\n");
   }
