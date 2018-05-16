@@ -8,10 +8,8 @@
 
 #include "decs.h"
 
-// Switch for extra MAD B-field renormalization
-#define MAD 1
-
 // Local declarations
+// TODO clean this not to use old of_geom style
 struct of_geom {
 	double gcon[NDIM][NDIM];
 	double gcov[NDIM][NDIM];
@@ -26,9 +24,10 @@ double bl_gdet_func(double r, double th);
 void bl_gcov_func(double r, double th, double gcov[][NDIM]);
 void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 
-void set_problem_params()
-{
 
+static int MAD, OLD_MAD;
+void set_problem_params() {
+  set_param("MAD", &MAD);
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
@@ -38,75 +37,43 @@ void init(struct GridGeom *G, struct FluidState *S)
   double X[NDIM];
 
   // Disk interior
-  double l, rin, lnh, expm2chi, up1;
+  double lnh, expm2chi, up1;
   double DD, AA, SS, thin, sthin, cthin, DDin, AAin, SSin;
-  double kappa, hm1;
+  double hm1;
 
   // Magnetic field
   static double A[N1 + 2*NG][N2 + 2*NG];
-  double rho_av, rhomax, umax, beta, bsq_ij, bsq_max, norm, q,
-      beta_act;
-  double rmax;
-
-  // Adiabatic index
-  gam = 13./9.; // TODO check
-  #if ELECTRONS
-  game = 4./3.;
-  gamp = 5./3.;
-  fel0 = 1.;
-  #else
-  tp_over_te = 3.;
-  #endif
+  double rho_av, beta, bsq_max, q;
 
   // Fishbone-Moncrief parameters
-  a = 0.9375; // TODO check these
-  rin = 15.;
-  rmax = 34.;
-  l = lfish_calc(rmax);
-  kappa = 1.e-3; //TODO is this relevant?
+  double rin = 15.;
+  double rmax = 34.;
+  double l = lfish_calc(rmax);
+  double kappa = 1.e-3;
 
   // Plasma minimum beta for initial magnetic field
   beta = 1.e2;
 
-  // Numerical parameters
-  lim = MC;
+  // Grid parameters
   failed = 0;
-  cour = 0.9;
-  dt = 1.e-8;
   R0 = 0.0;
   Rhor = (1. + sqrt(1. - a*a));
   double z1 = 1 + pow(1 - a*a,1./3.)*(pow(1+a,1./3.) + pow(1-a,1./3.));
   double z2 = sqrt(3*a*a + z1*z1);
   Risco = 3 + z2 - sqrt((3-z1)*(3 + z1 + 2*z2));
-  Rout = 1000.;
-  #if RADIATION
-  Rout_rad = 40.;
-  numin = 1.e8;
-  numax = 1.e20;
-  tune_emiss = 1.e5;
-  tune_scatt = 1.;
-  #endif
-  tf = 10000.0;
-  hslope = 0.3; // TODO check
 
   zero_arrays();
   set_grid(G);
-
   printf("grid set\n");
-  t = 0.;
 
-  // Output choices
-  DTd = 1.0;   // Dump interval
-  DTl = 0.5;  // Log interval
-  DTr = 1000;  // Restart interval, in timesteps
-  DTp = 200;   // Performance interval, in timesteps
+  t = 0.; // TODO set this in main?
 
   // Diagnostic counters
   dump_cnt = 0;
   rdump_cnt = 0;
 
-  rhomax = 0.;
-  umax = 0.;
+  double rhomax = 0.;
+  double umax = 0.;
   ZSLOOP(-1, N3, -1, N2, -1, N1) {
     coord(i, j, k, CENT, X);
     bl_coord(X, &r, &th);
@@ -229,90 +196,104 @@ void init(struct GridGeom *G, struct FluidState *S)
   // first find corner-centered vector potential
   ZSLOOP(0, 0, 0, N2, 0, N1) A[i][j] = 0.;
   ZSLOOP(0, 0, 0, N2, 0, N1) {
-    coord(i,j,k,CORN,X) ;
-    bl_coord(X,&r,&th) ;
-    // Vertical field version
-    //A[i][j] = 0.5*r*sin(th) ;
+    coord(i,j,k,CORN,X);
+    bl_coord(X,&r,&th);
 
-    /* field-in-disk version */
-    /* flux_ct */
+    // Raw vertical field
+    //q = 0.5*r*sin(th);
+
+    // Field in disk
     rho_av = 0.25*(S->P[RHO][NG][j][i] + S->P[RHO][NG][j][i-1] +
                    S->P[RHO][NG][j-1][i] + S->P[RHO][NG][j-1][i-1])
                        *(1. + 0.0*(get_random() - 0.5));
 
-#if MAD
-    // Larger, MAD threaded field
-    //q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax - 0.2;
-
-    // T,N,M (2011) uses phi = r^5 rho^2
-    q = pow(r/rin,5.)*pow(rho_av/rhomax, 2) - 0.2; //TODO A ~= Phi?
-#else
-    // Smaller average B-field for SANE
-    //q = rho_av/rhomax - 0.2;
-
-    // Larger, MAD threaded field
-    q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax - 0.2;
-#endif
-
-    if (q > 0.) A[i][j] = q;
-  }
-
-#if MAD
-
-  // MAD: "Fake" B-field step for initial flux function
-  // Add one zone outside domain for subsequent calculation
-  ZSLOOP(-1, N3, -1, N2, -1, N1) {
-
-    // Flux-ct
-    S->P[B1][k][j][i] = -(A[i][j] - A[i][j + 1]
-        + A[i + 1][j] - A[i + 1][j + 1]) /
-        (2. * dx[2] * G->gdet[CENT][j][i]);
-    S->P[B2][k][j][i] = (A[i][j] + A[i][j + 1]
-             - A[i + 1][j] - A[i + 1][j + 1]) /
-             (2. * dx[1] * G->gdet[CENT][j][i]);
-
-    S->P[B3][k][j][i] = 0.;
-
-    // MAD: normalize field for constant beta
-    get_state(G, S, i, j, k, CENT);
-    bsq_ij = bsq_calc(S, i, j, k);
-
-    if (bsq_ij > 0) {
-      beta_act = (gam - 1.) *  S->P[UU][k][j][i] / (0.5 * bsq_ij);
-      norm = sqrt(beta_act / beta);
-      S->P[B1][k][j][i] *= norm;
-      S->P[B2][k][j][i] *= norm;
-    }
-  }
-
-  //MAD: New flux function integrating B^r
-  ZSLOOP(0, 0, 0, N2, 0, N1) {
-    coord(i,j,k,CORN,X);
-    bl_coord(X,&r,&th);
-
-    double brsum = 0.0;
-
-    if (j < N2/2 + NG) {
-      for (int ks = 0 + NG; ks < N3 + NG; ks++) {
-	for (int js = 0 + NG; js <= j; js++) {
-	  double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
-	      S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
-	  brsum += b_avg;
-	}
+    double b_buffer = 0.0; //Minimum rho at which there will be B field
+    if (N3 > 1) {
+      if (MAD == 1) { // Classic
+        q = rho_av/rhomax;
+        OLD_MAD = 0;
+      } else if (MAD == 2) { // Vertical threaded
+        q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax;
+        OLD_MAD = 0;
+      } else if (MAD == 3) { // Additional r^3 term
+	q = pow(r/rin,3.)*rho_av/rhomax;
+	OLD_MAD = 0;
+      } else if (MAD == 4) { // T,N,M (2011) uses phi = r^5 rho^2
+	q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
+	OLD_MAD = 1;
+      } else {
+        printf("MAD = %i not supported!\n", MAD);
+        exit(-1);
       }
-    } else {
-      for (int ks = 0 + NG; ks < N3 + NG; ks++) {
-	for (int js = N2 + NG - 1; js >= j; js--) {
-	  double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
-	      S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
-	  brsum -= b_avg;
-	}
+    } else { // TODO SANE not supported in 2D?
+      q = rho_av/rhomax;
+    }
+
+    // Apply floor
+    q -= b_buffer;
+
+    A[i][j] = 0.;
+    if (q > 0.)
+      A[i][j] = q;
+  } // ZSLOOP
+
+  if (OLD_MAD) {
+
+    // MAD: "Fake" B-field step for initial flux function
+    // Add one zone outside domain for subsequent calculation
+    ZSLOOP(-1, N3, -1, N2, -1, N1) {
+
+      // Flux-ct
+      S->P[B1][k][j][i] = -(A[i][j] - A[i][j + 1]
+	   + A[i + 1][j] - A[i + 1][j + 1]) /
+	   (2. * dx[2] * G->gdet[CENT][j][i]);
+      S->P[B2][k][j][i] = (A[i][j] + A[i][j + 1]
+	   - A[i + 1][j] - A[i + 1][j + 1]) /
+	   (2. * dx[1] * G->gdet[CENT][j][i]);
+
+      S->P[B3][k][j][i] = 0.;
+
+      // MAD: normalize field for constant beta (!!)
+      get_state(G, S, i, j, k, CENT);
+      double bsq_ij = bsq_calc(S, i, j, k);
+
+      if (bsq_ij > 0) {
+	double beta_act = (gam - 1.) *  S->P[UU][k][j][i] / (0.5 * bsq_ij);
+	double norm = sqrt(beta_act / beta);
+	S->P[B1][k][j][i] *= norm;
+	S->P[B2][k][j][i] *= norm;
       }
     }
 
-    A[i][j] = brsum;
+    //MAD: New flux function integrating B^r
+    //TODO This is one-node only!! Also does not accommodate POLYTH
+    ZSLOOP(0, 0, 0, N2, 0, N1) {
+      coord(i,j,k,CORN,X);
+      bl_coord(X,&r,&th);
+
+      double brsum = 0.0;
+
+      if (j < N2/2 + NG) {
+	for (int ks = 0 + NG; ks < N3 + NG; ks++) {
+	  for (int js = 0 + NG; js <= j; js++) {
+	    double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
+		S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
+	    brsum += b_avg;
+	  }
+	}
+      } else {
+	for (int ks = 0 + NG; ks < N3 + NG; ks++) {
+	  for (int js = N2 + NG - 1; js >= j; js--) {
+	    double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
+		S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
+	    brsum -= b_avg;
+	  }
+	}
+      }
+
+      A[i][j] = brsum;
+    }
   }
-#endif
 
   // Calculate B-field and find bsq_max
   bsq_max = 0.;
@@ -320,37 +301,38 @@ void init(struct GridGeom *G, struct FluidState *S)
 
     // Flux-ct
     S->P[B1][k][j][i] = -(A[i][j] - A[i][j + 1]
-        + A[i + 1][j] - A[i + 1][j + 1]) /
-        (2. * dx[2] * G->gdet[CENT][j][i]);
+	+ A[i + 1][j] - A[i + 1][j + 1]) /
+	(2. * dx[2] * G->gdet[CENT][j][i]);
     S->P[B2][k][j][i] = (A[i][j] + A[i][j + 1]
-             - A[i + 1][j] - A[i + 1][j + 1]) /
-             (2. * dx[1] * G->gdet[CENT][j][i]);
+	     - A[i + 1][j] - A[i + 1][j + 1]) /
+	     (2. * dx[1] * G->gdet[CENT][j][i]);
 
     S->P[B3][k][j][i] = 0.;
 
     get_state(G, S, i, j, k, CENT);
-    bsq_ij = bsq_calc(S, i, j, k);
+    double bsq_ij = bsq_calc(S, i, j, k);
     if (bsq_ij > bsq_max) bsq_max = bsq_ij;
   }
   bsq_max = mpi_max(bsq_max);
 
   // beta_min = 100 normalization
-  beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
-  norm = sqrt(beta_act / beta);
+  double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
+  double norm = sqrt(beta_act / beta);
   ZLOOP {
     S->P[B1][k][j][i] *= norm;
     S->P[B2][k][j][i] *= norm;
   }
 
-  #if ELECTRONS
+#if ELECTRONS
   init_electrons();
-  #endif
+#endif
 
   // Enforce boundary conditions
   fixup(G, S);
   set_bounds(G, S);
 
   fprintf(stderr, "Finished init()\n");
+
 }
 
 // Convert Boyer-Lindquist four-velocity to MKS 3-velocity

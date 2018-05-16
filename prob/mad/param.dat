@@ -16,6 +16,7 @@
 [int] DTp = 100
 
 # PROBLEM
+[int] MAD = 1
 [dbl] hslope = 3.000000e-01
 [dbl] mks_smooth = 5.000000e-01
 [dbl] poly_xt = 8.200000e-01
