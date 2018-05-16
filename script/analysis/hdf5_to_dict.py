@@ -130,7 +130,7 @@ def load_geom(hdr, fname):
 
   return geom
 
-def load_dump(hdr, geom, fname):
+def load_dump(hdr, geom, diag, fname):
   dfile = h5py.File(fname, 'r')
 
   keys = ['RHO', 'UU', 'U1', 'U2', 'U3', 'B1', 'B2', 'B3']
@@ -179,6 +179,11 @@ def load_dump(hdr, geom, fname):
   #dump['bsq_diff'] = dump['bsq'] - dump['bsq_py'] # Check the python-based bsq
 
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
+  
+  dump['mdot'] = log_time(diag, 'mdot', dump['t'])
+  dump['Phi'] = np.sum(np.abs(dump['B1'][5::]*hdr['dx2']*hdr['dx3'])) #* gdet[i][j][CENT]
+  dump['Phi'] *= 1/(4*np.pi*np.sqrt(dump['mdot']))
+  print "t: %f mdot: %f Phi: %f" % (dump['t'], dump['mdot'], dump['Phi'])
 
   dump.update(geom)
   dump.update(hdr)
@@ -187,7 +192,6 @@ def load_dump(hdr, geom, fname):
 
   return dump
 
-# TODO TODO match this with the real logfile
 def load_log(logfile):
   diag = {}
   dfile = np.loadtxt(logfile).transpose()
@@ -198,9 +202,17 @@ def load_log(logfile):
   diag['mdot'] = dfile[4]
   diag['edot'] = dfile[5]
   diag['ldot'] = dfile[6]
-  diag['divbmax'] = dfile[7]
+  diag['Phi'] = dfile[7]
+  diag['divbmax'] = dfile[8]
   
   return diag
+
+def log_time(diag, var, t):
+  i = 0
+  while diag['t'][i] < t:
+    i += 1
+  
+  return diag[var][i]
 
 def harm_coord(hdr, i, j, k):
   startx = [0, hdr['startx1'], hdr['startx2'], hdr['startx3']]
@@ -224,7 +236,6 @@ def bl_coord(hdr, X):
   phi = X[3]
 
   # Calculate theta differently depending on POLYTH
-  # TODO ask about this
   if not poly_xt:
     th = np.pi*X[2] + ((1. - hslope)/2.)*np.sin(2.*np.pi*X[2]);
 
@@ -238,6 +249,7 @@ def bl_coord(hdr, X):
 
   return r, th, phi
 
+# TODO rewrite w/numpy
 def get_gcov(hdr, X):
   gcov = np.zeros([4,4])
   if hdr['METRIC'] == 'MINKOWSKI':

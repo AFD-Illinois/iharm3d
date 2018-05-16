@@ -43,7 +43,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   if (call_code == DIAG_INIT) {
     // Set things up
     if(mpi_io_proc()) {
-      ener_file = fopen("dumps/log.out", "a"); //TODO make this more flexible
+      ener_file = fopen("dumps/log.out", "a");
       if (ener_file == NULL) {
         fprintf(stderr,
           "error opening energy output file\n");
@@ -65,6 +65,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     get_state_vec(G, S, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
     prim_to_flux_vec(G, S, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, S->U);
 
+    //TODO OpenMP this
     ZLOOP {
       rmed += S->U[RHO][k][j][i]*dV;
       pp += S->U[U3][k][j][i]*dV;
@@ -76,8 +77,8 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
         divbmax = divb;
       }
 
-      if (global_start[1] == 0 && i == 5+NG) {
-        Phi += 0.5*fabs(S->P[B1][k][j][i])*dx[2]*dx[3]*G->gdet[j][i][CENT];
+      if (global_start[0] + i == 5+NG) {
+        Phi += fabs(S->P[B1][k][j][i])*dx[2]*dx[3];//*G->gdet[j][i][CENT];
       }
     }
   }
@@ -86,11 +87,12 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   pp = mpi_io_reduce(pp);
   e = mpi_io_reduce(e);
   divbmax = mpi_io_max(divbmax);
+
+  Phi = mpi_io_reduce(Phi);
   if (mdot > SMALL) {
-    Phi = mpi_io_reduce(Phi);
-    Phi /= sqrt(mdot);
+    Phi *= 1/(4*M_PI*sqrt(mdot));
   } else {
-      Phi = 0;
+    Phi = 0;
   }
 
   if ((call_code == DIAG_INIT && !is_restart) ||

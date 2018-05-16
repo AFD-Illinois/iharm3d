@@ -51,7 +51,7 @@ FRAMEDIR = 'FRAMES'
 util.make_dir(FRAMEDIR)
 
 hdr = io.load_hdr(files[0])
-geom = io.load_geom(hdr, files[0])
+geom = io.load_geom(hdr, files[0]) # TODO Necessary?
 
 diag = io.load_log(os.path.join(path, "log.out"))
 
@@ -65,7 +65,7 @@ def plot(args):
   if os.path.isfile(imname):
     return
 
-  dump = io.load_dump(hdr, geom, files[n])
+  dump = io.load_dump(hdr, geom, diag, files[n])
   fig = plt.figure(figsize=(FIGX, FIGY))
 
   ax = plt.subplot(2,4,1)

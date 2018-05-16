@@ -176,6 +176,7 @@ void set_points()
   #endif
   #elif METRIC == MKS
   // Set Rin such that we have 5 zones completely inside the event horizon
+  // TODO Error out if there are not enough zones
   Rin = exp((N1TOT*log(Rhor)/5.5 - log(Rout))/(1. + N1TOT/5.5));
 
   startx[1] = log(Rin);
