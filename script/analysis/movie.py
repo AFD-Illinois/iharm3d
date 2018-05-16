@@ -109,8 +109,8 @@ def plot(args):
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
-  # Don't add time-based variables if plotting initial conditions
-  if dump['t'].size > 1:
+  # TODO Don't add time-based variables if plotting initial conditions
+  if True:
     ax = plt.subplot(2,2,2)
     slc = np.nonzero(diag['mdot'])
     ax.semilogy(diag['t'][slc], diag['mdot'][slc], color='k')
@@ -138,8 +138,8 @@ import multiprocessing
 import signal
 import psutil
 
-nthreads = 40
-#nthreads = psutil.cpu_count(logical=False)
+#nthreads = 40
+nthreads = psutil.cpu_count(logical=False)
 print 'Number of threads: %i' % nthreads
 
 original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
