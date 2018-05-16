@@ -66,9 +66,8 @@ double tdump, tlog;
 int failed;
 int lim;
 
-double mdot = 0.;
-double edot = 0.;
-double ldot = 0.;
+double mdot, edot, ldot;
+double mdot_eh, edot_eh, ldot_eh;
 int icurr, jcurr, kcurr;
 
 int nthreads;

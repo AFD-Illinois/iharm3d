@@ -181,7 +181,7 @@ def load_dump(hdr, geom, diag, fname):
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
   
   dump['mdot'] = log_time(diag, 'mdot', dump['t'])
-  dump['Phi'] = np.sum(np.abs(dump['B1'][5::]*hdr['dx2']*hdr['dx3'])) #* gdet[i][j][CENT]
+  dump['Phi'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:]*hdr['dx2']*hdr['dx3']))
   dump['Phi'] *= 1/(4*np.pi*np.sqrt(dump['mdot']))
   print "t: %f mdot: %f Phi: %f" % (dump['t'], dump['mdot'], dump['Phi'])
 
