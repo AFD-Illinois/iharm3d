@@ -192,7 +192,9 @@ def load_dump(hdr, geom, diag, fname):
   gdet_shape = np.reshape(np.repeat(geom['gdet'][:,N2/2],N3),(N1,N3))
   dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*gdet_shape*hdr['dx1']*hdr['dx3']))
   
-  print "t: %f mdot: %f Phi_BH: %f Phi_disk: %f" % (dump['t'], dump['mdot'], dump['Phi_BH'], dump['Phi_disk'])
+  
+  print "From Log: t: %f mdot: %f Phi_BH: %f" % (dump['t'], dump['mdot'], log_time(diag, 'phi', dump['t']))
+  print "Calculated: Phi_BH: %f Phi_disk: %f" % (dump['Phi_BH'], dump['Phi_disk'])
 
   dump.update(geom)
   dump.update(hdr)
@@ -208,11 +210,28 @@ def load_log(logfile):
   diag['rmed'] = dfile[1]
   diag['pp'] = dfile[2]
   diag['e'] = dfile[3]
-  diag['mdot'] = dfile[4]
-  diag['edot'] = dfile[5]
-  diag['ldot'] = dfile[6]
-  diag['Phi'] = dfile[7]
-  diag['divbmax'] = dfile[8]
+  
+  diag['uu_rho_gam_cent'] = dfile[4]
+  diag['uu_cent'] = dfile[5]
+  
+  diag['mdot'] = dfile[6]
+  diag['edot'] = dfile[7]
+  diag['ldot'] = dfile[8]
+  
+  diag['mass'] = dfile[9]
+  diag['egas'] = dfile[10]
+  
+  diag['Phi'] = dfile[11]
+  diag['phi'] = dfile[12]
+  diag['jet_EM_flux'] = dfile[13]
+  
+  diag['divbmax'] = dfile[14]
+  
+  diag['lum_eht'] = dfile[15]
+  
+  diag['mdot_eh'] = dfile[16]
+  diag['edot_eh'] = dfile[17]
+  diag['ldot_eh'] = dfile[18]
   
   return diag
 
