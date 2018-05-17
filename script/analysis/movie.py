@@ -18,7 +18,7 @@ import plot as bplt
 
 FIGX = 20
 FIGY = 10
-SIZE = 200
+SIZE = 100
 NLINES = 20
 
 # For plotting debug, "array-space" plots

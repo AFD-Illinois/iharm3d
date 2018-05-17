@@ -105,14 +105,14 @@ def load_geom(hdr, fname):
   print '\nGeometry loaded'
 
   if hdr['METRIC'] == 'MKS':
-    if hdr['N3'] == 1:
+    if N3 == 1:
       phi = np.zeros([N1, N2, N3])
 
     x = r*np.sin(th)*np.cos(phi)
     y = r*np.sin(th)*np.sin(phi)
     z = r*np.cos(th)
 
-    if hdr['N3'] == 1:
+    if N3 == 1:
       x[:,0,:] = 0.
       x[:,-1,:] = 0.
 
@@ -170,6 +170,10 @@ def load_dump(hdr, geom, diag, fname):
     dump['Thetae'] = (hdr['gam']-1.)*units['MP']/units['ME']*(
                      1./(1. + hdr['tp_over_te'])*dump['UU']/dump['RHO'])
 
+  N1 = hdr['N1']
+  N2 = hdr['N2']
+  N3 = hdr['N3']
+
   # This procedure seems correct but is expensive
   #ucon, ucov, bcon, bcov = get_state(dump, geom)
   #dump['bsq_py'] = (bcon*bcov).sum(axis=-1)
@@ -181,9 +185,14 @@ def load_dump(hdr, geom, diag, fname):
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
   
   dump['mdot'] = log_time(diag, 'mdot', dump['t'])
-  dump['Phi'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:]*hdr['dx2']*hdr['dx3']))
-  dump['Phi'] *= 1/(4*np.pi*np.sqrt(dump['mdot']))
-  print "t: %f mdot: %f Phi: %f" % (dump['t'], dump['mdot'], dump['Phi'])
+  gdet_shape = np.reshape(np.repeat(geom['gdet'][5,:],N3),(N2,N3))
+  dump['Phi_BH'] = np.sum(np.abs(0.5*dump['B1'][5,:,:]*gdet_shape*hdr['dx2']*hdr['dx3']))
+  dump['Phi_BH'] *= 1/(np.sqrt(dump['mdot']))
+  
+  gdet_shape = np.reshape(np.repeat(geom['gdet'][:,N2/2],N3),(N1,N3))
+  dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*gdet_shape*hdr['dx1']*hdr['dx3']))
+  
+  print "t: %f mdot: %f Phi_BH: %f Phi_disk: %f" % (dump['t'], dump['mdot'], dump['Phi_BH'], dump['Phi_disk'])
 
   dump.update(geom)
   dump.update(hdr)
@@ -300,20 +309,6 @@ def get_gcov(hdr, X):
       trans[2,2] = hfac
       trans[3,3] = pfac
       
-
-#       gcov[0,0] = gcovKS[0,0]*tfac*tfac
-#       gcov[0,1] = gcovKS[0,1]*tfac*rfac
-#       gcov[0,3] = gcovKS[0,3]*tfac*pfac
-# 
-#       gcov[1,0] = gcov[0,1]
-#       gcov[1,1] = gcovKS[1,1]*rfac*rfac
-#       gcov[1,3] = gcovKS[1,3]*rfac*pfac
-# 
-#       gcov[2,2] = gcovKS[2,2]*hfac*hfac
-# 
-#       gcov[3,0] = gcov[0,3]
-#       gcov[3,1] = gcov[1,3]
-#       gcov[3,3] = gcovKS[3,3]*pfac*pfac
     else:
       # Modified modified KS
       poly_norm = 0.5*np.pi*1./(1. + 1./(poly_alpha + 1.)*1./pow(poly_xt, poly_alpha));
