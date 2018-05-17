@@ -26,36 +26,27 @@ void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 
 
 static int MAD, OLD_MAD;
+static double BHflux, beta;
+static double rin, rmax;
 void set_problem_params() {
+  set_param("rin", &rin);
+  set_param("rmax", &rmax);
+
   set_param("MAD", &MAD);
+  set_param("BHflux", &BHflux);
+  set_param("beta", &beta);
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
 {
-  double r, th, sth, cth;
-  double ur, uh, up, u, rho;
-  double X[NDIM];
-
-  // Disk interior
-  double lnh, expm2chi, up1;
-  double DD, AA, SS, thin, sthin, cthin, DDin, AAin, SSin;
-  double hm1;
-
   // Magnetic field
-  static double A[N1 + 2*NG][N2 + 2*NG];
-  double rho_av, beta, bsq_max, q;
+  static double A[N1 + 2*NG][N2 + 2*NG]; //TODO move this to heap?
 
   // Fishbone-Moncrief parameters
-  double rin = 15.;
-  double rmax = 34.;
   double l = lfish_calc(rmax);
   double kappa = 1.e-3;
 
-  // Plasma minimum beta for initial magnetic field
-  beta = 1.e2;
-
   // Grid parameters
-  failed = 0;
   R0 = 0.0;
   Rhor = (1. + sqrt(1. - a*a));
   double z1 = 1 + pow(1 - a*a,1./3.)*(pow(1+a,1./3.) + pow(1-a,1./3.));
@@ -66,45 +57,45 @@ void init(struct GridGeom *G, struct FluidState *S)
   set_grid(G);
   printf("grid set\n");
 
-  t = 0.; // TODO set this in main?
-
-  // Diagnostic counters
+  // Initialize counters and such
+  t = 0.; // TODO set these in main?
+  failed = 0;
   dump_cnt = 0;
   rdump_cnt = 0;
 
   double rhomax = 0.;
   double umax = 0.;
   ZSLOOP(-1, N3, -1, N2, -1, N1) {
+    double X[NDIM];
     coord(i, j, k, CENT, X);
+    double r, th;
     bl_coord(X, &r, &th);
 
-    sth = sin(th);
-    cth = cos(th);
+    double sth = sin(th);
+    double cth = cos(th);
 
     // Calculate lnh
-    DD = r * r - 2. * r + a * a;
-    AA = (r * r + a * a) * (r * r + a * a) -
-        DD * a * a * sth * sth;
-    SS = r * r + a * a * cth * cth;
+    double DD = r * r - 2. * r + a * a;
+    double AA = (r * r + a * a) * (r * r + a * a) -
+             DD * a * a * sth * sth;
+    double SS = r * r + a * a * cth * cth;
 
-    thin = M_PI / 2.;
+    double thin = M_PI / 2.;
+    double sthin = sin(thin);
+    double cthin = cos(thin);
 
-    sthin = sin(thin);
-    cthin = cos(thin);
-    DDin = rin * rin - 2. * rin + a * a;
-    AAin = (rin * rin + a * a) * (rin * rin + a * a)
-        - DDin * a * a * sthin * sthin;
-    SSin = rin * rin + a * a * cthin * cthin;
+    double DDin = rin * rin - 2. * rin + a * a;
+    double AAin = (rin * rin + a * a) * (rin * rin + a * a)
+             - DDin * a * a * sthin * sthin;
+    double SSin = rin * rin + a * a * cthin * cthin;
 
+    double lnh;
     if (r >= rin) {
       lnh =
           0.5 *
           log((1. +
          sqrt(1. +
-              4. * (l * l * SS * SS) * DD / (AA *
-                     sth *
-                     AA *
-                     sth)))
+              4. * (l * l * SS * SS) * DD / (AA * AA * sth * sth)))
         / (SS * DD / AA))
           - 0.5 * sqrt(1. +
            4. * (l * l * SS * SS) * DD /
@@ -117,9 +108,7 @@ void init(struct GridGeom *G, struct FluidState *S)
                (AAin * AAin * sthin * sthin))) /
          (SSin * DDin / AAin))
            - 0.5 * sqrt(1. +
-            4. * (l * l * SSin * SSin) *
-            DDin / (AAin * AAin * sthin *
-              sthin))
+            4. * (l * l * SSin * SSin) * DDin / (AAin * AAin * sthin * sthin))
            - 2. * a * rin * l / AAin);
     } else {
       lnh = 1.;
@@ -128,36 +117,28 @@ void init(struct GridGeom *G, struct FluidState *S)
     // regions outside torus
     if (lnh < 0. || r < rin) {
       // Nominal values; real value set by fixup
-      rho = 1.e-7 * RHOMIN;
-      u = 1.e-7 * UUMIN;
 
-      ur = 0.;
-      uh = 0.;
-      up = 0.;
-
-      S->P[RHO][k][j][i] = rho;
-      S->P[UU][k][j][i] = u;
-      S->P[U1][k][j][i] = ur;
-      S->P[U2][k][j][i] = uh;
-      S->P[U3][k][j][i] = up;
+      S->P[RHO][k][j][i] = 1.e-7 * RHOMIN;
+      S->P[UU][k][j][i] = 1.e-7 * UUMIN;
+      S->P[U1][k][j][i] = 0.;
+      S->P[U2][k][j][i] = 0.;
+      S->P[U3][k][j][i] = 0.;
     }
     /* region inside magnetized torus; u^i is calculated in
      * Boyer-Lindquist coordinates, as per Fishbone & Moncrief,
      * so it needs to be transformed at the end */
     else {
-      hm1 = exp(lnh) - 1.;
-      rho = pow(hm1 * (gam - 1.) / (kappa * gam),
-          1. / (gam - 1.));
-      u = kappa * pow(rho, gam) / (gam - 1.);
-      ur = 0.;
-      uh = 0.;
+      double hm1 = exp(lnh) - 1.;
+      double rho = pow(hm1 * (gam - 1.) / (kappa * gam),
+               1. / (gam - 1.));
+      double u = kappa * pow(rho, gam) / (gam - 1.);
 
       // Calculate u^phi
-      expm2chi = SS * SS * DD / (AA * AA * sth * sth);
-      up1 =
+      double expm2chi = SS * SS * DD / (AA * AA * sth * sth);
+      double up1 =
           sqrt((-1. +
           sqrt(1. + 4. * l * l * expm2chi)) / 2.);
-      up = 2. * a * r * sqrt(1. +
+      double up = 2. * a * r * sqrt(1. +
                  up1 * up1) / sqrt(AA * SS *
                  DD) +
           sqrt(SS / AA) * up1 / sth;
@@ -167,8 +148,8 @@ void init(struct GridGeom *G, struct FluidState *S)
       if (rho > rhomax) rhomax = rho;
       S->P[UU][k][j][i] = u * (1. + 4.e-2 * (get_random() - 0.5));
       if (u > umax && r > rin) umax = u;
-      S->P[U1][k][j][i] = ur;
-      S->P[U2][k][j][i] = uh;
+      S->P[U1][k][j][i] = 0.;
+      S->P[U2][k][j][i] = 0.;
       S->P[U3][k][j][i] = up;
 
       // Convert from 4-velocity to 3-velocity
@@ -196,16 +177,19 @@ void init(struct GridGeom *G, struct FluidState *S)
   // first find corner-centered vector potential
   ZSLOOP(0, 0, 0, N2, 0, N1) A[i][j] = 0.;
   ZSLOOP(0, 0, 0, N2, 0, N1) {
+    double X[NDIM];
     coord(i,j,k,CORN,X);
+    double r, th;
     bl_coord(X,&r,&th);
+
+    double q;
 
     // Raw vertical field
     //q = 0.5*r*sin(th);
 
     // Field in disk
-    rho_av = 0.25*(S->P[RHO][NG][j][i] + S->P[RHO][NG][j][i-1] +
-                   S->P[RHO][NG][j-1][i] + S->P[RHO][NG][j-1][i-1])
-                       *(1. + 0.0*(get_random() - 0.5));
+    double rho_av = 0.25*(S->P[RHO][NG][j][i] + S->P[RHO][NG][j][i-1] +
+                    S->P[RHO][NG][j-1][i] + S->P[RHO][NG][j-1][i-1]);
 
     double b_buffer = 0.0; //Minimum rho at which there will be B field
     if (N3 > 1) {
@@ -221,6 +205,9 @@ void init(struct GridGeom *G, struct FluidState *S)
       } else if (MAD == 4) { // T,N,M (2011) uses phi = r^5 rho^2
 	q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
 	OLD_MAD = 1;
+      } else if (MAD == 5) { // T,N,M (2011) without renormalization step
+	q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
+	OLD_MAD = 0;
       } else {
         printf("MAD = %i not supported!\n", MAD);
         exit(-1);
@@ -266,27 +253,36 @@ void init(struct GridGeom *G, struct FluidState *S)
     }
 
     //MAD: New flux function integrating B^r
-    //TODO This is one-node only!! Also does not accommodate POLYTH
     ZSLOOP(0, 0, 0, N2, 0, N1) {
-      coord(i,j,k,CORN,X);
-      bl_coord(X,&r,&th);
 
       double brsum = 0.0;
 
-      if (j < N2/2 + NG) {
+      if (j <= N2/2 + NG) {
 	for (int ks = 0 + NG; ks < N3 + NG; ks++) {
 	  for (int js = 0 + NG; js <= j; js++) {
+	    double X[NDIM];
+	    coord(i,js,ks,CORN,X);
+	    double r, th;
+	    bl_coord(X,&r,&th);
+
 	    double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
 		S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
-	    brsum += b_avg;
+
+	    brsum += b_avg*bl_gdet_func(r,th);
 	  }
 	}
       } else {
 	for (int ks = 0 + NG; ks < N3 + NG; ks++) {
-	  for (int js = N2 + NG - 1; js >= j; js--) {
+	  for (int js = N2 + NG; js >= j; js--) {
+	    double X[NDIM];
+	    coord(i,js,ks,CORN,X);
+	    double r, th;
+	    bl_coord(X,&r,&th);
+
 	    double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
 		S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
-	    brsum -= b_avg;
+
+	    brsum -= b_avg*bl_gdet_func(r,th);
 	  }
 	}
       }
@@ -296,7 +292,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
 
   // Calculate B-field and find bsq_max
-  bsq_max = 0.;
+  double bsq_max = 0.;
   ZLOOP {
 
     // Flux-ct
@@ -321,6 +317,81 @@ void init(struct GridGeom *G, struct FluidState *S)
   ZLOOP {
     S->P[B1][k][j][i] *= norm;
     S->P[B2][k][j][i] *= norm;
+  }
+
+  // This adds a field according to some initial net flux on the black hole
+  if (!OLD_MAD) {
+    // Initialize a net magnetic field inside the initial torus
+    ZSLOOP(0, 0, 0, N2, 0, N1) {
+      double X[NDIM];
+      coord(i,j,k,CORN,X);
+      double r,th;
+      bl_coord(X, &r, &th);
+
+      A[i][j] = 0.;
+
+      double x = r*sin(th);
+      double z = r*cos(th);
+      double a_hyp = 20.;
+      double b_hyp = 60.;
+      double x_hyp = a_hyp*sqrt(1. + pow(z/b_hyp,2));
+
+      double q = (pow(x,2) - pow(x_hyp,2))/pow(x_hyp,2);
+      if (x < x_hyp) {
+	A[i][j] = 10.*q;
+      }
+    }
+
+    // Evaluate net flux
+    double Phi_proc = 0.;
+    ISLOOP(5, N1-1) {
+      JSLOOP(0, N2-1) {
+	int jglobal = j - NG + global_start[2];
+	//int j = N2/2+NG;
+	int k = NG;
+	if (jglobal == N2TOT/2) {
+	  double X[NDIM];
+	  coord(i, j, k, CENT, X);
+	  double r,th;
+	  bl_coord(X, &r, &th);
+
+	  if (r < rin) {
+	    double B2net =  (A[i][j] + A[i][j+1] - A[i+1][j] - A[i+1][j+1])/
+			    (2.*dx[1]*G->gdet[CENT][j][i]);
+	    Phi_proc += G->gdet[CENT][j][i]*2.*M_PI*dx[1]*fabs(B2net)/N3CPU;
+	  }
+	}
+      }
+    }
+
+    //If left bound in X1.  Note different convention from bhlight!
+    if (global_start[0] == 0) {
+      JSLOOP(0, N2/2-1) {
+	int i = 5 + NG;
+	int k = NG;
+	double X[NDIM];
+	coord(i, j, k, CENT, X);
+	double r,th;
+	bl_coord(X, &r, &th);
+
+	double B1net = -(A[i][j] - A[i][j+1] + A[i+1][j] - A[i+1][j+1])/(2.*dx[2]*G->gdet[CENT][j][i]);
+	Phi_proc += G->gdet[CENT][j][i]*dx[2]*2.*M_PI*fabs(B1net)/N3CPU;
+      }
+    }
+    double Phi = mpi_io_reduce(Phi_proc);
+
+    double norm = BHflux/(Phi + SMALL);
+
+    ZLOOP {
+      // Flux-ct
+      S->P[B1][k][j][i] += -norm*(A[i][j] - A[i][j + 1]
+	  + A[i + 1][j] - A[i + 1][j + 1]) /
+	  (2. * dx[2] * G->gdet[CENT][j][i]);
+      S->P[B2][k][j][i] += norm*(A[i][j] + A[i][j + 1]
+	       - A[i + 1][j] - A[i + 1][j + 1]) /
+	       (2. * dx[1] * G->gdet[CENT][j][i]);
+    }
+
   }
 
 #if ELECTRONS

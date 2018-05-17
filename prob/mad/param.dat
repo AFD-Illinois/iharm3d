@@ -3,6 +3,7 @@
 # COORDINATES
 [dbl] tf = 1.000000e+04
 [dbl] dt = 1.000000e-06
+
 [dbl] Rout = 1.000000e+03
 
 # FLUID
@@ -17,6 +18,8 @@
 
 # PROBLEM
 [int] MAD = 1
+[dbl] BHflux = 0.000000e+00
+[dbl] beta = 1.000000e+02
 [dbl] hslope = 3.000000e-01
 [dbl] mks_smooth = 5.000000e-01
 [dbl] poly_xt = 8.200000e-01
