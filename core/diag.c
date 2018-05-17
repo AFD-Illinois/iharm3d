@@ -59,8 +59,6 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   double divbmax = 0.;
   double rmed = 0.;
   double e = 0.;
-  double Phi = 0;
-
   // Calculate conserved quantities
   if ((call_code == DIAG_INIT || call_code == DIAG_LOG ||
        call_code == DIAG_FINAL) && !failed) {
@@ -79,10 +77,6 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
       if (divb > divbmax) {
         divbmax = divb;
       }
-
-      if (global_start[0] + i == 5+NG) {
-        Phi += fabs(S->P[B1][k][j][i])*dx[2]*dx[3];//*G->gdet[j][i][CENT];
-      }
     }
   }
 
@@ -97,8 +91,8 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   double jet_EM_flux_proc = 0.;
   double lum_eht_proc = 0.;
   ZLOOP {
-    mass_proc += S->U[RHO]*dV; // TODO should these be RHO, UU?
-    egas_proc += S->U[UU]*dV;
+    mass_proc += S->U[RHO][k][j][i]*dV; // TODO should these be RHO, UU?
+    egas_proc += S->U[UU][k][j][i]*dV;
     double rho = S->P[RHO][k][j][i];
     double Pg = (gam - 1.)*S->P[UU][k][j][i];
     double bsq = bsq_calc(S, i, j, k);
@@ -109,24 +103,24 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     if (global_start[0] + i == 5+NG) {
       Phi_proc += 0.5*fabs(S->P[B1][k][j][i])*dx[2]*dx[3]*G->gdet[CENT][j][i];
 
-      //TODO fully port this
+      // TODO port properly.  Needs speculative get_state
 //      double P_EM[NVAR];
 //      PLOOP P_EM[ip] = S->P[ip][k][j][i];
 //      P_EM[RHO] = 0.;
 //      P_EM[UU] = 0.;
 //      get_state(P_EM, &(ggeom[i][j][CENT]), &q);
-//      double sig = dot(q.bcon, q.bcov)/P[RHO][k][j][i];
+//      double sig = bsq/S->P[RHO][k][j][i];
 //      if (sig > 1.) {
 //        primtoflux(P_EM, &q, 1, &(ggeom[i][j][CENT]), U);
 //        jet_EM_flux_proc += -U[U1]*dx[2]*dx[3];
 //      }
     }
   }
-  double mass = mpi_reduce(mass_proc);
-  double egas = mpi_reduce(egas_proc);
-  double Phi = mpi_reduce(Phi_proc);
-  double jet_EM_flux = mpi_reduce(jet_EM_flux_proc);
-  double lum_eht = mpi_reduce(lum_eht_proc);
+  double mass = mpi_io_reduce(mass_proc);
+  double egas = mpi_io_reduce(egas_proc);
+  double Phi = mpi_io_reduce(Phi_proc);
+  double jet_EM_flux = mpi_io_reduce(jet_EM_flux_proc);
+  double lum_eht = mpi_io_reduce(lum_eht_proc);
 
   if ((call_code == DIAG_INIT && !is_restart) ||
     call_code == DIAG_DUMP || call_code == DIAG_FINAL) {
@@ -156,10 +150,12 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
         t, rmed, pp, e,
         S->P[UU][N3/2][N2/2][N1/2]*pow(S->P[RHO][N3/2][N2/2][N1/2], -gam),
         S->P[UU][N3/2][N2/2][N1/2]);
-      fprintf(ener_file, "%15.8g %15.8g %15.8g %15.8g ", mdot_all, edot_all, ldot_all);
+      fprintf(ener_file, "%15.8g %15.8g %15.8g ", mdot_all, edot_all, ldot_all);
       fprintf(ener_file, "%15.8g %15.8g ", mass, egas);
       fprintf(ener_file, "%15.8g %15.8g %15.8g ", Phi, phi, jet_EM_flux);
       fprintf(ener_file, "%15.8g ", divbmax);
+      fprintf(ener_file, "%15.8g ", lum_eht);
+      fprintf(ener_file, "%15.8g %15.8g %15.8g ", mdot_eh_all, edot_eh_all, ldot_eh_all);
       fprintf(ener_file, "\n");
       fflush(ener_file);
     }

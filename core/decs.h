@@ -260,9 +260,8 @@ extern int failed;
 extern int lim;
 
 // Diagnostics
-extern double mdot;
-extern double edot;
-extern double ldot;
+extern double mdot, edot, ldot;
+extern double mdot_eh, edot_eh, ldot_eh;
 extern int icurr, jcurr, kcurr;
 
 // Parallelism
