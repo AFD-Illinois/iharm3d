@@ -22,13 +22,14 @@ void diag_flux(struct FluidFlux *F)
   mdot = edot = ldot = 0.;
   mdot_eh = edot_eh = ldot_eh = 0.;
   int iEH = NG + 5;
-  if (global_start[1] == 0) {
+  if (global_start[0] == 0) {
     #pragma omp parallel for \
       reduction(+:mdot) reduction(+:edot) reduction(+:ldot) \
+      reduction(+:mdot_eh) reduction(+:edot_eh) reduction(+:ldot_eh) \
       collapse(2)
     JSLOOP(0, N2 - 1) {
       KSLOOP(0, N3 - 1) {
-        mdot -= F->X1[RHO][k][j][NG]*dx[2]*dx[3];
+        mdot += F->X1[RHO][k][j][NG]*dx[2]*dx[3];
         edot += (F->X1[UU][k][j][NG] - F->X1[RHO][k][j][NG])*dx[2]*dx[3];
         ldot += F->X1[U3][k][j][NG]*dx[2]*dx[3];
         mdot_eh += F->X1[RHO][k][j][iEH]*dx[2]*dx[3];
