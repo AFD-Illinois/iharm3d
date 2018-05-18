@@ -37,6 +37,11 @@ void set_problem_params() {
   set_param("beta", &beta);
 }
 
+// I need either a utils area, or to learn GSL
+inline double gaussian(double x, double a, double b, double c) {
+  return a * exp( -pow(x-b,2) / (2*c*c) );
+}
+
 void init(struct GridGeom *G, struct FluidState *S)
 {
   // Magnetic field
@@ -207,6 +212,10 @@ void init(struct GridGeom *G, struct FluidState *S)
 	OLD_MAD = 1;
       } else if (MAD == 5) { // T,N,M (2011) without renormalization step
 	q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
+	OLD_MAD = 0;
+      } else if (MAD == 6) { // Gaussian-strength vertical threaded field
+	double wid = 3; //Units of rin
+	q = gaussian((r/rin)*sin(th), 1, 0, wid/sqrt(2*log(2)));
 	OLD_MAD = 0;
       } else {
         printf("MAD = %i not supported!\n", MAD);

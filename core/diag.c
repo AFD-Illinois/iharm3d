@@ -142,7 +142,8 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     double edot_eh_all = mpi_io_reduce(edot_eh);
     double ldot_eh_all = mpi_io_reduce(ldot_eh);
 
-    double phi = Phi/sqrt(mdot_all + SMALL);
+    //mdot will be negative w/scheme above
+    double phi = Phi/sqrt(fabs(mdot_all) + SMALL);
 
     if(mpi_io_proc()) {
       fprintf(stdout, "LOG      t=%g \t divbmax: %g\n",
@@ -198,22 +199,6 @@ void fail(int fail_type, int i, int j, int k)
   }
 
   fprintf(stderr, "****************\n");
-}*/
-
-// Evaluate flux based diagnostics; put results in global variables
-/*void diag_flux(grid_prim_type F1, grid_prim_type F2, grid_prim_type F3)
-{
-  mdot = edot = ldot = 0.;
-  #pragma omp parallel for \
-    reduction(+:mdot) reduction(-:edot) reduction(+:ldot) \
-    collapse(2)
-  JSLOOP(0, N2 - 1) {
-    KSLOOP(0, N3 - 1) {
-      mdot += F1[0][j][k][RHO]*dx[2]*dx[3];
-      edot -= (F1[0][j][k][UU] - F1[0][j][k][RHO])*dx[2]*dx[3];
-      ldot += F1[0][j][k][U3]*dx[2]*dx[3];
-    }
-  }
 }*/
 
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
