@@ -57,7 +57,7 @@ void coord(int i, int j, int k, int loc, double *X)
 
 double r_of_x(double x)
 {
-  return exp(x);
+  return exp(x); //TODO R0?
 }
 
 double dr_dx(double x)

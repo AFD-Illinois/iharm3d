@@ -61,6 +61,8 @@
 
 // Numerical convenience to represent a small (<< 1) non-zero quantity
 #define SMALL (1.e-20)
+// Set the spatial discretization in numerical derivatives
+#define DELTA 1.e-5
 
 // Maximum value of gamma, the Lorentz factor
 #define GAMMAMAX (50.)

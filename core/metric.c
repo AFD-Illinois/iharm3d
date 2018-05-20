@@ -23,9 +23,6 @@ inline void get_gcon(struct GridGeom *G, int i, int j, int loc, double gcon[NDIM
   DLOOP2 gcon[mu][nu] = G->gcon[loc][mu][nu][j][i];
 }
 
-// Set the spatial discretization in numerical derivatives
-#define DELTA 1.e-5
-
 // Calculate connection coefficient \Gamma^{i}_{j,k} = conn[..][i][j][k]
 void conn_func(struct GridGeom *G, int i, int j, int k)
 {
