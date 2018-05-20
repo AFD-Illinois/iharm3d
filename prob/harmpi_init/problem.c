@@ -115,7 +115,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   double kappa,hm1 ;
 
   /* for magnetic field */
-  double A[N1+2*NG][N2+2*NG][N3+2*NG] ;
+  GridDouble *A = (GridDouble *) malloc(sizeof(GridDouble)) ;
+  
   double rho_av,umax,beta,bsq_max,norm,q,beta_act ;
   double lfish_calc(double rmax) ;
   
@@ -380,7 +381,7 @@ void init(struct GridGeom *G, struct FluidState *S)
           if (WHICHFIELD == NORMALFIELD) {
             q -= 0.2;
           }
-          if(q > 0.) A[i][j][k] = q ;
+          if(q > 0.) (*A)[i][j][k] = q ;
 
   }
   
@@ -430,12 +431,12 @@ void init(struct GridGeom *G, struct FluidState *S)
 }
 
 //note that only axisymmetric A is supported
-double compute_Amax( double (*A)[N2+2*NG][N3+2*NG] )
+double compute_Amax( GridDouble *A )
 {
   double Amax = 0.;
   
   ZLOOP {
-    if(A[i][j][k] > Amax) Amax = A[i][j][k];
+    if((*A)[i][j][k] > Amax) Amax = (*A)[i][j][k];
   }
   
 #ifdef MPI
@@ -448,17 +449,17 @@ double compute_Amax( double (*A)[N2+2*NG][N3+2*NG] )
 
 
 //note that only axisymmetric A is supported
-double compute_B_from_A(struct GridGeom *G, struct FluidState *S, double (*A)[N2+2*NG][N3+2*NG])
+double compute_B_from_A(struct GridGeom *G, struct FluidState *S, GridDouble *A )
 {
   double bsq_max = 0., bsq_ij ;
   
   ZLOOP {
     
     /* flux-ct */
-    S->P[B1][k][j][i] = -(A[i][j][k] - A[i][j+1][k]
-                       + A[i+1][j][k] - A[i+1][j+1][k])/(2.*dx[2]*G->gdet[CENT][j][i]) ;
-    S->P[B2][k][j][i] = (A[i][j][k] + A[i][j+1][k]
-                      - A[i+1][j][k] - A[i+1][j+1][k])/(2.*dx[1]*G->gdet[CENT][j][i]) ;
+    S->P[B1][k][j][i] = -((*A)[i][j][k] - (*A)[i][j+1][k]
+                       + (*A)[i+1][j][k] - (*A)[i+1][j+1][k])/(2.*dx[2]*G->gdet[CENT][j][i]) ;
+    S->P[B2][k][j][i] = ((*A)[i][j][k] + (*A)[i][j+1][k]
+                      - (*A)[i+1][j][k] - (*A)[i+1][j+1][k])/(2.*dx[1]*G->gdet[CENT][j][i]) ;
     
     S->P[B3][k][j][i] = 0. ;
     
