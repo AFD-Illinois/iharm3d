@@ -19,7 +19,7 @@ import plot as bplt
 FIGX = 20
 FIGY = 10
 SIZE = 100
-NLINES = 20
+NLINES = 10
 
 # For plotting debug, "array-space" plots
 USEARRSPACE = False
@@ -112,13 +112,25 @@ def plot(args):
   # TODO Don't add time-based variables if plotting initial conditions
   if True:
     ax = plt.subplot(2,2,2)
-    slc = np.nonzero(diag['mdot'])
-    ax.semilogy(diag['t'][slc], diag['mdot'][slc], color='k')
+    slc = np.nonzero(np.abs(diag['mdot']))
+    #ax.semilogy(diag['t'][slc], np.abs(diag['mdot'][slc]), color='k')
+    ax.plot(diag['t'][slc], np.abs(diag['mdot'][slc]), color='k')
     ax.axvline(dump['t'], color='r') # Trace on finished plot, don't draw it as we go
     ax.set_xlim([0, dump['tf']])
-    ax.set_ylim([10**(-2),2])
+    ax.set_ylim([10**(-2),50])
     ax.set_xlabel('t/M')
     ax.set_ylabel('mdot')
+
+    ax = plt.subplot(2,2,4)
+    slc = np.nonzero(np.abs(diag['phi_calc']))
+    #ax.semilogy(diag['t'][slc], diag['Phi'][slc] / np.sqrt(np.abs(diag['mdot'][slc])) , color='k')
+    #ax.plot(diag['t'][slc], diag['Phi'][slc] / np.sqrt(np.abs(diag['mdot'][slc])) , color='k')
+    ax.plot(diag['t'][slc], np.abs(diag['phi_calc'][slc]), color='k')
+    ax.axvline(dump['t'], color='r') # Trace on finished plot, don't draw it as$
+    ax.set_xlim([0, dump['tf']])
+    ax.set_ylim([10**(-1),80])
+    ax.set_xlabel('t/M')
+    ax.set_ylabel('phi_BH')
 
   plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95) # Avoid crowding
   #plt.tight_layout()

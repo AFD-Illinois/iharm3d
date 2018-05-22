@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
   struct FluidState *S = (struct FluidState*)malloc(sizeof(struct FluidState));
 
   // Perform initializations, either directly or via checkpoint
-  init_random(1); // NEED RANDOM SEED BASED ON TIME() HERE
+  init_random(mpi_myrank()); //TODO more random?
   is_restart = restart_init(G, S);
   time_init();
   if (!is_restart) {

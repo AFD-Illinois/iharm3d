@@ -186,8 +186,8 @@ def load_dump(hdr, geom, diag, fname):
   
   dump['mdot'] = log_time(diag, 'mdot', dump['t'])
   gdet_shape = np.reshape(np.repeat(geom['gdet'][5,:],N3),(N2,N3))
-  dump['Phi_BH'] = np.sum(np.abs(0.5*dump['B1'][5,:,:]*gdet_shape*hdr['dx2']*hdr['dx3']))
-  dump['Phi_BH'] *= 1/(np.sqrt(dump['mdot']))
+  dump['Phi_calc'] = np.sum(np.abs(0.5*dump['B1'][5,:,:]*gdet_shape*hdr['dx2']*hdr['dx3']))
+  dump['phi_calc'] *= dump['Phi_calc']/(np.sqrt(dump['mdot']))
   
   gdet_shape = np.reshape(np.repeat(geom['gdet'][:,N2/2],N3),(N1,N3))
   dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*gdet_shape*hdr['dx1']*hdr['dx3']))
@@ -206,33 +206,49 @@ def load_dump(hdr, geom, diag, fname):
 def load_log(logfile):
   diag = {}
   dfile = np.loadtxt(logfile).transpose()
-  diag['t'] = dfile[0]
-  diag['rmed'] = dfile[1]
-  diag['pp'] = dfile[2]
-  diag['e'] = dfile[3]
   
-  diag['uu_rho_gam_cent'] = dfile[4]
-  diag['uu_cent'] = dfile[5]
+  if True:
+    diag['t'] = dfile[0]
+    diag['rmed'] = dfile[1]
+    diag['pp'] = dfile[2]
+    diag['e'] = dfile[3]
   
-  diag['mdot'] = dfile[6]
-  diag['edot'] = dfile[7]
-  diag['ldot'] = dfile[8]
+    diag['uu_rho_gam_cent'] = dfile[4]
+    diag['uu_cent'] = dfile[5]
   
-  diag['mass'] = dfile[9]
-  diag['egas'] = dfile[10]
+    diag['mdot'] = dfile[6]
+    diag['edot'] = dfile[7]
+    diag['ldot'] = dfile[8]
   
-  diag['Phi'] = dfile[11]
-  diag['phi'] = dfile[12]
-  diag['jet_EM_flux'] = dfile[13]
+    diag['mass'] = dfile[9]
+    diag['egas'] = dfile[10]
   
-  diag['divbmax'] = dfile[14]
+    diag['Phi'] = dfile[11]
+    diag['phi'] = dfile[12]
+    diag['phi_calc'] = diag['Phi']/np.sqrt(diag['mdot'])
+    diag['jet_EM_flux'] = dfile[13]
   
-  diag['lum_eht'] = dfile[15]
+    diag['divbmax'] = dfile[14]
   
-  diag['mdot_eh'] = dfile[16]
-  diag['edot_eh'] = dfile[17]
-  diag['ldot_eh'] = dfile[18]
+    diag['lum_eht'] = dfile[15]
   
+    diag['mdot_eh'] = dfile[16]
+    diag['edot_eh'] = dfile[17]
+    diag['ldot_eh'] = dfile[18]
+  else:
+    diag['t'] = dfile[0]
+    diag['rmed'] = dfile[1]
+    diag['pp'] = dfile[2]
+    diag['e'] = dfile[3]
+
+    diag['mdot'] = dfile[4]
+    diag['edot'] = dfile[5]
+    diag['ldot'] = dfile[6]
+
+    diag['phi'] = dfile[7]
+
+    diag['divbmax'] = dfile[8]
+
   return diag
 
 def log_time(diag, var, t):
