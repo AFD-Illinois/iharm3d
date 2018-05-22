@@ -8,6 +8,8 @@
 
 #include "decs.h"
 
+#include <gsl/gsl_randist.h>
+
 // Local declarations
 // TODO clean this not to use old of_geom style
 struct of_geom {
@@ -35,11 +37,6 @@ void set_problem_params() {
   set_param("MAD", &MAD);
   set_param("BHflux", &BHflux);
   set_param("beta", &beta);
-}
-
-// I need either a utils area, or to learn GSL
-inline double gaussian(double x, double a, double b, double c) {
-  return a * exp( -pow(x-b,2) / (2*c*c) );
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
@@ -70,7 +67,8 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   double rhomax = 0.;
   double umax = 0.;
-  ZSLOOP(-1, N3, -1, N2, -1, N1) {
+  //ZSLOOP(-1, N3, -1, N2, -1, N1) {
+  ZLOOPALL {
     double X[NDIM];
     coord(i, j, k, CENT, X);
     double r, th;
@@ -170,7 +168,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   umax = mpi_max(umax);
   rhomax = mpi_max(rhomax);
 
-  ZSLOOP(-1, N3, -1, N2, -1, N1) {
+  //ZSLOOP(-1, N3, -1, N2, -1, N1) {
+  ZLOOPALL {
     S->P[RHO][k][j][i] /= rhomax;
     S->P[UU][k][j][i] /= rhomax;
   }
@@ -180,8 +179,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   set_bounds(G, S);
 
   // first find corner-centered vector potential
-  ZSLOOP(0, 0, 0, N2, 0, N1) A[i][j] = 0.;
-  ZSLOOP(0, 0, 0, N2, 0, N1) {
+  ZSLOOP(0, 0, -NG, N2+NG-1, -NG, N1+NG-1) A[i][j] = 0.;
+  ZSLOOP(0, 0, -NG+1, N2+NG-1, -NG+1, N1+NG-1) {
     double X[NDIM];
     coord(i,j,k,CORN,X);
     double r, th;
@@ -205,18 +204,18 @@ void init(struct GridGeom *G, struct FluidState *S)
         q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax;
         OLD_MAD = 0;
       } else if (MAD == 3) { // Additional r^3 term
-	q = pow(r/rin,3.)*rho_av/rhomax;
-	OLD_MAD = 0;
+        q = pow(r/rin,3.)*rho_av/rhomax;
+        OLD_MAD = 0;
       } else if (MAD == 4) { // T,N,M (2011) uses phi = r^5 rho^2
-	q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
-	OLD_MAD = 1;
+        q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
+        OLD_MAD = 1;
       } else if (MAD == 5) { // T,N,M (2011) without renormalization step
-	q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
-	OLD_MAD = 0;
+        q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
+        OLD_MAD = 0;
       } else if (MAD == 6) { // Gaussian-strength vertical threaded field
-	double wid = 3; //Units of rin
-	q = gaussian((r/rin)*sin(th), 1, 0, wid/sqrt(2*log(2)));
-	OLD_MAD = 0;
+        double wid = 2; //Radius of half-maximum. Units of rin
+        q = gsl_ran_gaussian_pdf((r/rin)*sin(th), wid/sqrt(2*log(2)));
+        OLD_MAD = 0;
       } else {
         printf("MAD = %i not supported!\n", MAD);
         exit(-1);
@@ -237,7 +236,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
     // MAD: "Fake" B-field step for initial flux function
     // Add one zone outside domain for subsequent calculation
-    ZSLOOP(-1, N3, -1, N2, -1, N1) {
+    ZSLOOP(-1, N3-1, -1, N2-1, -1, N1-1) {
 
       // Flux-ct
       S->P[B1][k][j][i] = -(A[i][j] - A[i][j + 1]
@@ -254,10 +253,10 @@ void init(struct GridGeom *G, struct FluidState *S)
       double bsq_ij = bsq_calc(S, i, j, k);
 
       if (bsq_ij > 0) {
-	double beta_act = (gam - 1.) *  S->P[UU][k][j][i] / (0.5 * bsq_ij);
-	double norm = sqrt(beta_act / beta);
-	S->P[B1][k][j][i] *= norm;
-	S->P[B2][k][j][i] *= norm;
+        double beta_act = (gam - 1.) *  S->P[UU][k][j][i] / (0.5 * bsq_ij);
+        double norm = sqrt(beta_act / beta);
+        S->P[B1][k][j][i] *= norm;
+        S->P[B2][k][j][i] *= norm;
       }
     }
 
@@ -267,33 +266,33 @@ void init(struct GridGeom *G, struct FluidState *S)
       double brsum = 0.0;
 
       if (j <= N2/2 + NG) {
-	for (int ks = 0 + NG; ks < N3 + NG; ks++) {
-	  for (int js = 0 + NG; js <= j; js++) {
-	    double X[NDIM];
-	    coord(i,js,ks,CORN,X);
-	    double r, th;
-	    bl_coord(X,&r,&th);
+        for (int ks = 0 + NG; ks < N3 + NG; ks++) {
+          for (int js = 0 + NG; js <= j; js++) {
+            double X[NDIM];
+            coord(i,js,ks,CORN,X);
+            double r, th;
+            bl_coord(X,&r,&th);
 
-	    double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
-		S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
+            double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
+                                 S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
 
-	    brsum += b_avg*bl_gdet_func(r,th);
-	  }
-	}
+            brsum += b_avg*bl_gdet_func(r,th);
+          }
+        }
       } else {
-	for (int ks = 0 + NG; ks < N3 + NG; ks++) {
-	  for (int js = N2 + NG; js >= j; js--) {
-	    double X[NDIM];
-	    coord(i,js,ks,CORN,X);
-	    double r, th;
-	    bl_coord(X,&r,&th);
+        for (int ks = 0 + NG; ks < N3 + NG; ks++) {
+          for (int js = N2 + NG; js >= j; js--) {
+            double X[NDIM];
+            coord(i,js,ks,CORN,X);
+            double r, th;
+            bl_coord(X,&r,&th);
 
-	    double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
-		S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
+            double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
+                                 S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
 
-	    brsum -= b_avg*bl_gdet_func(r,th);
-	  }
-	}
+            brsum -= b_avg*bl_gdet_func(r,th);
+          }
+        }
       }
 
       A[i][j] = brsum;
@@ -328,6 +327,23 @@ void init(struct GridGeom *G, struct FluidState *S)
     S->P[B2][k][j][i] *= norm;
   }
 
+  // Print bsq profile for plotting
+  // TODO doesn't support N1CPU > 1
+  if(global_start[1] == 0 && global_start[2] == 0) {
+    printf("Bsq profile along r:\n");
+    ZSLOOP(0,0,0,0,0,N1) {
+      double X[NDIM];
+      coord(i,j,k,CENT,X);
+      double r, th;
+      bl_coord(X,&r,&th);
+
+      get_state(G, S, i, j, k, CENT);
+      double bsq_ij = bsq_calc(S, i, j, k);
+
+      printf("%.10e %.10e\n", r/rin, bsq_ij);
+    }
+  }
+
   // This adds a field according to some initial net flux on the black hole
   if (!OLD_MAD) {
     // Initialize a net magnetic field inside the initial torus
@@ -347,7 +363,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
       double q = (pow(x,2) - pow(x_hyp,2))/pow(x_hyp,2);
       if (x < x_hyp) {
-	A[i][j] = 10.*q;
+        A[i][j] = 10.*q;
       }
     }
 
@@ -355,36 +371,31 @@ void init(struct GridGeom *G, struct FluidState *S)
     double Phi_proc = 0.;
     ISLOOP(5, N1-1) {
       JSLOOP(0, N2-1) {
-	int jglobal = j - NG + global_start[2];
-	//int j = N2/2+NG;
-	int k = NG;
-	if (jglobal == N2TOT/2) {
-	  double X[NDIM];
-	  coord(i, j, k, CENT, X);
-	  double r,th;
-	  bl_coord(X, &r, &th);
+        int jglobal = j - NG + global_start[1];
+        //int j = N2/2+NG;
+        int k = NG;
+        if (jglobal == N2TOT/2) {
+          double X[NDIM];
+          coord(i, j, k, CENT, X);
+          double r,th;
+          bl_coord(X, &r, &th);
 
-	  if (r < rin) {
-	    double B2net =  (A[i][j] + A[i][j+1] - A[i+1][j] - A[i+1][j+1])/
-			    (2.*dx[1]*G->gdet[CENT][j][i]);
-	    Phi_proc += G->gdet[CENT][j][i]*2.*M_PI*dx[1]*fabs(B2net)/N3CPU;
-	  }
-	}
+          if (r < rin) {
+            double B2net =  (A[i][j] + A[i][j+1] - A[i+1][j] - A[i+1][j+1]);
+              // / (2.*dx[1]*G->gdet[CENT][j][i]);
+            Phi_proc += fabs(B2net)*M_PI/N3CPU; // * 2.*dx[1]*G->gdet[CENT][j][i]
+          }
+        }
       }
     }
 
     //If left bound in X1.  Note different convention from bhlight!
     if (global_start[0] == 0) {
       JSLOOP(0, N2/2-1) {
-	int i = 5 + NG;
-	int k = NG;
-	double X[NDIM];
-	coord(i, j, k, CENT, X);
-	double r,th;
-	bl_coord(X, &r, &th);
+        int i = 5 + NG;
 
-	double B1net = -(A[i][j] - A[i][j+1] + A[i+1][j] - A[i+1][j+1])/(2.*dx[2]*G->gdet[CENT][j][i]);
-	Phi_proc += G->gdet[CENT][j][i]*dx[2]*2.*M_PI*fabs(B1net)/N3CPU;
+        double B1net = -(A[i][j] - A[i][j+1] + A[i+1][j] - A[i+1][j+1]); // /(2.*dx[2]*G->gdet[CENT][j][i]);
+        Phi_proc += fabs(B1net)*M_PI/N3CPU;  // * 2.*dx[2]*G->gdet[CENT][j][i]
       }
     }
     double Phi = mpi_io_reduce(Phi_proc);
@@ -394,11 +405,11 @@ void init(struct GridGeom *G, struct FluidState *S)
     ZLOOP {
       // Flux-ct
       S->P[B1][k][j][i] += -norm*(A[i][j] - A[i][j + 1]
-	  + A[i + 1][j] - A[i + 1][j + 1]) /
-	  (2. * dx[2] * G->gdet[CENT][j][i]);
+                                  + A[i + 1][j] - A[i + 1][j + 1]) /
+        (2. * dx[2] * G->gdet[CENT][j][i]);
       S->P[B2][k][j][i] += norm*(A[i][j] + A[i][j + 1]
-	       - A[i + 1][j] - A[i + 1][j + 1]) /
-	       (2. * dx[1] * G->gdet[CENT][j][i]);
+                                 - A[i + 1][j] - A[i + 1][j + 1]) /
+        (2. * dx[1] * G->gdet[CENT][j][i]);
     }
 
   }
@@ -411,7 +422,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   fixup(G, S);
   set_bounds(G, S);
 
-  fprintf(stderr, "Finished init()\n");
+  if(mpi_io_proc()) fprintf(stderr, "Finished init()\n");
 
 }
 
@@ -470,7 +481,7 @@ void coord_transform(struct GridGeom *G, struct FluidState *S, int i, int j,
   for (int mu = 0; mu < NDIM; mu++) {
     ucon[mu] = tmp[mu];
   }
-	
+
   // This is ucon in KS coords
 
   // Transform to KS' coords
@@ -599,4 +610,3 @@ void bl_gcon_func(double r, double th, double gcon[NDIM][NDIM])
   gcon[2][2] = 1./(r2*mu);
   gcon[3][3] = (1. - 2./(r*mu))/(r2*sth*sth*DD);
 }
-

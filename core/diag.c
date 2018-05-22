@@ -29,10 +29,10 @@ void diag_flux(struct FluidFlux *F)
       collapse(2)
     JSLOOP(0, N2 - 1) {
       KSLOOP(0, N3 - 1) {
-        mdot += F->X1[RHO][k][j][NG]*dx[2]*dx[3];
+        mdot += -F->X1[RHO][k][j][NG]*dx[2]*dx[3];
         edot += (F->X1[UU][k][j][NG] - F->X1[RHO][k][j][NG])*dx[2]*dx[3];
         ldot += F->X1[U3][k][j][NG]*dx[2]*dx[3];
-        mdot_eh += F->X1[RHO][k][j][iEH]*dx[2]*dx[3];
+        mdot_eh += -F->X1[RHO][k][j][iEH]*dx[2]*dx[3];
         edot_eh += (F->X1[UU][k][j][iEH] - F->X1[RHO][k][j][iEH])*dx[2]*dx[3];
         ldot_eh += F->X1[U3][k][j][iEH]*dx[2]*dx[3];
       }
@@ -92,7 +92,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   double jet_EM_flux_proc = 0.;
   double lum_eht_proc = 0.;
   ZLOOP {
-    mass_proc += S->U[RHO][k][j][i]*dV; // TODO should these be RHO, UU?
+    mass_proc += S->U[RHO][k][j][i]*dV;
     egas_proc += S->U[UU][k][j][i]*dV;
     double rho = S->P[RHO][k][j][i];
     double Pg = (gam - 1.)*S->P[UU][k][j][i];

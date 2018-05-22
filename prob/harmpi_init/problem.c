@@ -63,8 +63,8 @@ struct of_geom {
 };
 
 void coord_transform(struct GridGeom *G, struct FluidState *S, int i, int j,int k) ;
-double compute_Amax( double (*A)[N2+2*NG][N3+2*NG] );
-double compute_B_from_A( struct GridGeom *G, struct FluidState *S, double (*A)[N2+2*NG][N3+2*NG]);
+double compute_Amax( GridDouble *A );
+double compute_B_from_A( struct GridGeom *G, struct FluidState *S, GridDouble *A );
 double normalize_B_by_maxima_ratio(struct GridGeom *G, struct FluidState *S, double beta_target, double *norm_value);
 double normalize_B_by_beta(struct GridGeom *G, struct FluidState *S, double beta_target, double rmax, double *norm_value);
 void blgset(int i, int j, struct of_geom *geom);
@@ -82,6 +82,7 @@ void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 #define NORMALIZE_FIELD_BY_MAX_RATIO (1)
 #define NORMALIZE_FIELD_BY_BETAMIN (2)
 #define WHICH_FIELD_NORMALIZATION NORMALIZE_FIELD_BY_MAX_RATIO
+//#define WHICH_FIELD_NORMALIZATION NORMALIZE_FIELD_BY_BETAMIN
 //end magnetic field
 //////////////////////
 
@@ -104,7 +105,6 @@ void set_problem_params() {}
 
 void init(struct GridGeom *G, struct FluidState *S)
 {
-  int i,j,k ;
   double r,th,sth,cth ;
   double ur,uh,up,u,rho ;
   double X[NDIM] ;
@@ -116,15 +116,14 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   /* for magnetic field */
   GridDouble *A = (GridDouble *) malloc(sizeof(GridDouble)) ;
-  
+
   double rho_av,umax,beta,bsq_max,norm,q,beta_act ;
   double lfish_calc(double rmax) ;
-  
-  int iglob, jglob, kglob;
+
   double rancval;
-  
+
   double aphipow;
-  
+
   /* some physics parameters */
   gam = 5./3. ;
 
@@ -145,17 +144,16 @@ void init(struct GridGeom *G, struct FluidState *S)
   R0 = 0.0 ;
   Rin = 0.87*(1. + sqrt(1. - a*a)) ;  //.98
   Rout = 1e5;
-  
+
   //Extra grid params VHARM uses
   Rhor = (1. + sqrt(1. - a*a));
   double z1 = 1 + pow(1 - a*a,1./3.)*(pow(1+a,1./3.) + pow(1-a,1./3.));
   double z2 = sqrt(3*a*a + z1*z1);
   Risco = 3 + z2 - sqrt((3-z1)*(3 + z1 + 2*z2));
-  
+
 //  rbr = 400.;
 //  npow2=4.0; //power exponent
 //  cpow2=1.0; //exponent prefactor (the larger it is, the more hyperexponentiation is)
-
 
   t = 0. ;
   hslope = 0.3 ;
@@ -205,23 +203,23 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   rhomax = 0. ;
   umax = 0. ;
-  //ZSLOOP(0,N1-1,0,N2-1,0,N3-1) {
-  for(iglob=0;iglob<N1TOT;iglob++) {
-    for(jglob=0;jglob<N2TOT;jglob++) {
-      for(kglob=0;kglob<N3TOT;kglob++) {
-        
+  ZSLOOP(-1,N3,-1,N2,-1,N1) {
+  //for(iglob=NG;iglob<N1TOT+NG;iglob++) {
+  //  for(jglob=NG;jglob<N2TOT+NG;jglob++) {
+  //    for(kglob=NG;kglob<N3TOT+NG;kglob++) {
+
         rancval = get_random();
-        i = iglob - global_start[0];
-        j = jglob - global_start[1];
-        k = kglob - global_start[2];
-        if(i<0 ||
-           j<0 ||
-           k<0 ||
-           i>=N1 ||
-           j>=N2 ||
-           k>=N3){
-          continue;
-        }
+        //i = iglob - global_start[0];
+        //j = jglob - global_start[1];
+        //k = kglob - global_start[2];
+        //if(i<0 ||
+        //   j<0 ||
+        //   k<0 ||
+        //   i>=N1 ||
+        //   j>=N2 ||
+        //   k>=N3){
+        //  continue;
+        //}
 
         //get_phys_coord(i,j,k,&r,&th) ;
         coord(i,j,k,CENT,X) ;
@@ -261,8 +259,8 @@ void init(struct GridGeom *G, struct FluidState *S)
         /* regions outside torus */
         if(lnh < 0. || r < rin) {
           //reset density and internal energy to zero outside torus
-          rho = 0.; //1.e-7*RHOMIN ;
-          u = 0.; //1.e-7*UUMIN ;
+          rho = 1.e-7*RHOMIN ;
+          u = 1.e-7*UUMIN ;
 
           ur = 0. ;
           uh = 0. ;
@@ -277,10 +275,10 @@ void init(struct GridGeom *G, struct FluidState *S)
         /* region inside magnetized torus; u^i is calculated in
          * Boyer-Lindquist coordinates, as per Fishbone & Moncrief,
          * so it needs to be transformed at the end */
-        else { 
+        else {
           hm1 = exp(lnh) - 1. ;
           rho = pow(hm1*(gam - 1.)/(kappa*gam),
-                                  1./(gam - 1.)) ; 
+                                  1./(gam - 1.)) ;
           u = kappa*pow(rho,gam)/(gam - 1.) ;
           ur = 0. ;
           uh = 0. ;
@@ -308,8 +306,8 @@ void init(struct GridGeom *G, struct FluidState *S)
         S->P[B1][k][j][i] = 0. ;
         S->P[B2][k][j][i] = 0. ;
         S->P[B3][k][j][i] = 0. ;
-      }
-    }
+    //  }
+    //}
   }
 
 #ifdef MPI
@@ -317,10 +315,10 @@ void init(struct GridGeom *G, struct FluidState *S)
   MPI_Allreduce(MPI_IN_PLACE,&rhomax,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
   MPI_Allreduce(MPI_IN_PLACE,&umax,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 #endif
-  
+
   /* Normalize the densities so that max(rho) = 1 */
   if(mpi_io_proc()) fprintf(stderr,"rhomax: %g\n",rhomax) ;
-  ZSLOOP(0,N3-1,0,N2-1,0,N1-1) {
+  ZSLOOP(-1,N3,-1,N2,-1,N1) {
           S->P[RHO][k][j][i] /= rhomax ;
           S->P[UU][k][j][i]  /= rhomax ;
   }
@@ -330,42 +328,42 @@ void init(struct GridGeom *G, struct FluidState *S)
   rhomax = 1. ;
 
   //(fixup here)?
+  //fixup(G, S);
   set_bounds(G, S);
 
   if (WHICHFIELD == NORMALFIELD) {
     aphipow = 0.;
   } else if (WHICHFIELD == MADFIELD) {
-    aphipow = 5.;
+    aphipow = 3.;
   } else {
     fprintf(stderr, "Unknown field type: %d\n", (int)WHICHFIELD);
     exit(321);
   }
 
   /* first find corner-centered vector potential */
-  ZSLOOP(0,N3-1+NG,0,N2-1+NG,0,N1-1+NG) A[i][j][k] = 0. ;
-  ZSLOOP(0,N3-1+NG,0,N2-1+NG,0,N1-1+NG) {
+  //ZSLOOP(-1,N3,-1,N2,-1,N1)
+  ZLOOPALL (*A)[k][j][i] = 0. ;
+  ZSLOOP(-1,N3,-1,N2,-1,N1) {
           /* radial field version */
           /*
           coord(i,j,k,CORN,X) ;
           bl_coord(X,&r,&th) ;
-         
-          A[i][j][k] = (1-cos(th)) ;
+
+          A[k][j][i] = (1-cos(th)) ;
           */
 
-    
+
           /* vertical field version */
           /*
           coord(i,j,k,CORN,X) ;
           bl_coord(X,&r,&th) ;
 
-          A[i][j][k] = r*r*sin(th)*sin(th) ;
+          A[k][j][i] = r*r*sin(th)*sin(th) ;
           */
-    
-    
 
           /* field-in-disk version */
           /* flux_ct */
-    
+
       //cannot use get_phys_coords() here because it can only provide coords at CENT
       coord(i,j,k,CORN,X) ;
       bl_coord(X,&r,&th) ;
@@ -381,17 +379,16 @@ void init(struct GridGeom *G, struct FluidState *S)
           if (WHICHFIELD == NORMALFIELD) {
             q -= 0.2;
           }
-          if(q > 0.) (*A)[i][j][k] = q ;
-
+          if(q > 0.) (*A)[k][j][i] = q ;
   }
-  
+
   fixup(G, S);
 
   /* now differentiate to find cell-centered B,
      and begin normalization */
-  
+
   bsq_max = compute_B_from_A(G, S, A);
-  
+
     if(mpi_io_proc())
       fprintf(stderr,"initial bsq_max: %g\n",bsq_max) ;
 
@@ -400,22 +397,22 @@ void init(struct GridGeom *G, struct FluidState *S)
 
     if(mpi_io_proc())
       fprintf(stderr,"initial beta: %g (should be %g)\n",beta_act,beta) ;
-    
+
     if(WHICH_FIELD_NORMALIZATION == NORMALIZE_FIELD_BY_BETAMIN) {
       beta_act = normalize_B_by_beta(G, S, beta, 10*rmax, &norm);
     } else if(WHICH_FIELD_NORMALIZATION == NORMALIZE_FIELD_BY_MAX_RATIO) {
       beta_act = normalize_B_by_maxima_ratio(G, S, beta, &norm);
     } else {
-      if(mpi_io_proc()) {
+      if(mpi_io_proc())
         fprintf(stderr, "Unknown magnetic field normalization %d\n",
                 WHICH_FIELD_NORMALIZATION);
-        MPI_Finalize();
-        exit(2345);
-      }
+      MPI_Finalize();
+      exit(2345);
+    }
 
     if(mpi_io_proc())
       fprintf(stderr,"final beta: %g (should be %g)\n",beta_act,beta) ;
-    }
+
 
     
   /* enforce boundary conditions */
@@ -436,7 +433,7 @@ double compute_Amax( GridDouble *A )
   double Amax = 0.;
   
   ZLOOP {
-    if((*A)[i][j][k] > Amax) Amax = (*A)[i][j][k];
+    if((*A)[k][j][i] > Amax) Amax = (*A)[k][j][i];
   }
   
 #ifdef MPI
@@ -452,17 +449,17 @@ double compute_Amax( GridDouble *A )
 double compute_B_from_A(struct GridGeom *G, struct FluidState *S, GridDouble *A )
 {
   double bsq_max = 0., bsq_ij ;
-  
-  ZLOOP {
-    
+
+  ZSLOOP(-1,N3,-1,N2,-1,N1) {
+
     /* flux-ct */
-    S->P[B1][k][j][i] = -((*A)[i][j][k] - (*A)[i][j+1][k]
-                       + (*A)[i+1][j][k] - (*A)[i+1][j+1][k])/(2.*dx[2]*G->gdet[CENT][j][i]) ;
-    S->P[B2][k][j][i] = ((*A)[i][j][k] + (*A)[i][j+1][k]
-                      - (*A)[i+1][j][k] - (*A)[i+1][j+1][k])/(2.*dx[1]*G->gdet[CENT][j][i]) ;
-    
+    S->P[B1][k][j][i] = -((*A)[k][j][i] - (*A)[k][j+1][i]
+                       + (*A)[k][j][i+1] - (*A)[k][j+1][i+1])/(2.*dx[2]*G->gdet[CENT][j][i]) ;
+    S->P[B2][k][j][i] = ((*A)[k][j][i] + (*A)[k][j+1][i]
+                      - (*A)[k][j][i+1] - (*A)[k][j+1][i+1])/(2.*dx[1]*G->gdet[CENT][j][i]) ;
+
     S->P[B3][k][j][i] = 0. ;
-    
+
     get_state(G, S, i, j, k, CENT);
     bsq_ij = bsq_calc(S, i,j,k) ;
     if(bsq_ij > bsq_max) bsq_max = bsq_ij ;
@@ -495,13 +492,13 @@ double normalize_B_by_maxima_ratio(struct GridGeom *G, struct FluidState *S, dou
 
   /* finally, normalize to set field strength */
   beta_act =(gam - 1.)*umax/(0.5*bsq_max) ;
-  
+
   norm = sqrt(beta_act/beta_target) ;
   bsq_max = 0. ;
   ZLOOP {
     S->P[B1][k][j][i] *= norm ;
     S->P[B2][k][j][i] *= norm ;
-    
+
     get_state(G, S, i, j, k, CENT);
     bsq_ij = bsq_calc(S, i, j, k);
     if(bsq_ij > bsq_max) bsq_max = bsq_ij ;
@@ -510,7 +507,7 @@ double normalize_B_by_maxima_ratio(struct GridGeom *G, struct FluidState *S, dou
   //exchange the info between the MPI processes to get the true max
   MPI_Allreduce(MPI_IN_PLACE,&bsq_max,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 #endif
-  
+
   beta_act = (gam - 1.)*umax/(0.5*bsq_max) ;
 
   if(norm_value) {
