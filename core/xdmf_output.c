@@ -157,20 +157,22 @@ void write_scalar_int(int *data, hid_t file_id, const char *name,
   }
 }
 
-
-void dump_grid()
+#define NGRIDVARS 10
+void dump_grid(struct GridGeom *G)
 {
-  float *x[3];
+  float *x[NGRIDVARS];
   double xp[4];
   hid_t dset_id;
   hsize_t file_start[3], file_count[3];
   hsize_t mem_start[3];
-  hsize_t fdims[] = {N3TOT+1, N2TOT+1, N1TOT+1};
-  hsize_t dims[] = {N3, N2, N1};
-  const char *coordNames[] = {"/Z", "/Y", "/X"};
+  hsize_t fdims[] = {N1TOT+1, N2TOT+1, N3TOT+1};
+  hsize_t dims[] = {N1, N2, N3};
+
+  // TODO output gcov,gcon
+  const char *coordNames[] = {"/X", "/Y", "/Z", "/r", "/th", "/phi", "X1", "X2", "X3", "gdet"};
 
   for (int d = 0; d < 3; d++) {
-    if (global_stop[2-d] == fdims[d]-1)
+    if (global_stop[d] == fdims[d]-1)
       dims[d]++;
   }
 
@@ -181,7 +183,7 @@ void dump_grid()
 
   hid_t filespace = H5Screate_simple(3, fdims, NULL);
   for (int d = 0; d < 3; d++) {
-    file_start[d] = global_start[2-d];
+    file_start[d] = global_start[d];
     file_count[d] = dims[d];
   }
   H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count, NULL);
@@ -191,7 +193,7 @@ void dump_grid()
   H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count, NULL);
 
   int total_size = dims[0]*dims[1]*dims[2];
-  for(int d = 0; d < 3; d++) {
+  for(int d = 0; d < NGRIDVARS; d++) {
     x[d] = malloc(total_size*sizeof(float));
     if(x[d] == NULL) {
       fprintf(stderr,"Failed to allocate x[d] in dump_grid\n");
@@ -201,23 +203,35 @@ void dump_grid()
 
   int ind = 0;
   ZSLOOP(0, dims[2]-1, 0, dims[1]-1, 0, dims[0]-1) {
-    coord(i, j, k, CORN, xp);
+    coord(i, j, k, CENT, xp); //TODO This was the corner. Why?
     #if METRIC == MINKOWSKI
     x[0][ind] = xp[1];
     x[1][ind] = xp[2];
     x[2][ind] = xp[3];
-    ind++;
+    x[3][ind] = 0;
+    x[4][ind] = 0;
+    x[5][ind] = 0;
     #elif METRIC == MKS
     double r, th;
     bl_coord(xp, &r, &th);
     x[0][ind] = r*cos(xp[3])*sin(th);
     x[1][ind] = r*sin(xp[3])*sin(th);
     x[2][ind] = r*cos(th);
-    ind++;
+    x[3][ind] = r;
+    x[4][ind] = th;
+    x[5][ind] = xp[3];
     #endif
+
+    x[6][ind] = xp[1];
+    x[7][ind] = xp[2];
+    x[8][ind] = xp[3];
+
+    x[9][ind] = G->gdet[CENT][j][i];
+
+    ind++;
   }
 
-  for (int d = 0; d < 3; d++){
+  for (int d = 0; d < NGRIDVARS; d++){
     plist_id = H5Pcreate(H5P_DATASET_CREATE);
     dset_id = H5Dcreate(file_id, coordNames[d], H5T_NATIVE_FLOAT, filespace,
       H5P_DEFAULT, plist_id, H5P_DEFAULT);
@@ -233,7 +247,7 @@ void dump_grid()
   H5Sclose(filespace);
   H5Sclose(memspace);
 
-  for (int d = 0; d < 3; d++) free(x[d]);
+  for (int d = 0; d < NGRIDVARS; d++) free(x[d]);
 
   H5Fclose(file_id);
 }

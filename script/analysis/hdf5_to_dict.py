@@ -69,6 +69,26 @@ def load_hdr(fname):
 
   return hdr
 
+def load_geom_file(hdr, fname):
+  gfile = h5py.File(fname, 'r')
+
+  # TODO add gcon,gcov to dumps
+  keys = ['X1','X2','X3','gdet','X','Y','Z']
+
+  if hdr['METRIC'] == 'MKS':
+    keys += ['r','th','phi']
+
+  geom = {}
+  for key in keys:
+    geom[key] = (gfile[key][()]).transpose()
+
+  geom['x'] = geom['X']
+  geom['y'] = geom['Y']
+  geom['z'] = geom['Z']
+
+  return geom
+
+
 def load_geom(hdr, fname):
   N1 = hdr['N1']
   N2 = hdr['N2']
@@ -99,9 +119,9 @@ def load_geom(hdr, fname):
           x[i,j,k], y[i,j,k], z[i,j,k] = X[1], X[2], X[3]
       X = harm_coord(hdr, i, j, 0)
       gcov[i,j,:,:] = get_gcov(hdr, X)
-      gcon[i,j,:,:] = get_gcon(gcov[i,j,:,:])     
+      gcon[i,j,:,:] = get_gcon(gcov[i,j,:,:])
       gdet[i,j] = np.sqrt(-np.linalg.det(gcov[i,j,:,:]))
-          
+
   print '\nGeometry loaded'
 
   if hdr['METRIC'] == 'MKS':
@@ -185,12 +205,12 @@ def load_dump(hdr, geom, diag, fname):
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
   
   dump['mdot'] = log_time(diag, 'mdot', dump['t'])
-  gdet_shape = np.reshape(np.repeat(geom['gdet'][5,:],N3),(N2,N3))
-  dump['Phi_calc'] = np.sum(np.abs(0.5*dump['B1'][5,:,:]*gdet_shape*hdr['dx2']*hdr['dx3']))
+  #gdet_shape = np.reshape(np.repeat(geom['gdet'][5,:],N3),(N2,N3))
+  dump['Phi_calc'] = np.sum(np.abs(0.5*dump['B1'][5,:,:]*geom['gdet'][5,:N2,:N3]*hdr['dx2']*hdr['dx3']))
   dump['phi_calc'] = dump['Phi_calc']/(np.sqrt(dump['mdot']))
   
-  gdet_shape = np.reshape(np.repeat(geom['gdet'][:,N2/2],N3),(N1,N3))
-  dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*gdet_shape*hdr['dx1']*hdr['dx3']))
+  #gdet_shape = np.reshape(np.repeat(geom['gdet'][:,N2/2],N3),(N1,N3))
+  dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:N1,N2/2,:N3]*hdr['dx1']*hdr['dx3']))
   
   
   print "From Log: t: %f mdot: %f Phi_BH: %f" % (dump['t'], dump['mdot'], log_time(diag, 'phi', dump['t']))
@@ -253,8 +273,11 @@ def load_log(logfile):
 
 def log_time(diag, var, t):
   i = 0
-  while diag['t'][i] < t:
-    i += 1
+  if len(diag['t'].shape) < 1:
+    return diag[var]
+  else:
+    while diag['t'][i] < t:
+      i += 1
   
   return diag[var][i]
 

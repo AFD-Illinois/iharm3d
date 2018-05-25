@@ -231,7 +231,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   zero = 0;
 
   if(firstc) {
-    dump_grid();
+    dump_grid(G);
     data = malloc(N1*N2*N3*NVAR*sizeof(float));
     idata = malloc(N1*N2*N3*sizeof(int));
     if(data == NULL) {

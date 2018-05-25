@@ -19,7 +19,7 @@ import plot as bplt
 FIGX = 20
 FIGY = 10
 SIZE = 100
-NLINES = 10
+NLINES = 20
 
 # For plotting debug, "array-space" plots
 USEARRSPACE = False
@@ -42,6 +42,7 @@ if args_bad:
   sys.exit(1)
 
 files = np.sort(glob.glob(os.path.join(path, "dump*.h5")))
+gridfile = os.path.join(path,"grid.h5")
 
 if len(files) == 0:
     util.warn("INVALID PATH TO DUMP FOLDER")
@@ -51,7 +52,8 @@ FRAMEDIR = 'FRAMES'
 util.make_dir(FRAMEDIR)
 
 hdr = io.load_hdr(files[0])
-geom = io.load_geom(hdr, files[0]) # TODO Necessary?
+geom = io.load_geom_file(hdr, gridfile)
+#geom = io.load_geom(hdr, files[0])
 
 diag = io.load_log(os.path.join(path, "log.out"))
 
@@ -109,8 +111,8 @@ def plot(args):
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
-  # TODO Don't add time-based variables if plotting initial conditions
-  if True:
+  # TODO Does this properly screen initial condition calculations
+  if len(diag['t'].shape) > 0:
     ax = plt.subplot(2,2,2)
     slc = np.nonzero(np.abs(diag['mdot']))
     #ax.semilogy(diag['t'][slc], np.abs(diag['mdot'][slc]), color='k')
@@ -136,7 +138,7 @@ def plot(args):
   #plt.tight_layout()
 
   #ax.pcolormesh(dump['X1'][:,:,0], dump['X2'][:,:,0], dump['RHO'][:,:,0])
-  plt.savefig(imname, dpi=100) # bbox_inches='tight', # Messing with bounds risks odd pixel count
+  plt.savefig(imname, dpi=100) #, bbox_inches='tight') # Messing with bounds risks odd pixel count
   plt.close(fig)
 
 # Test plot so that backtraces work

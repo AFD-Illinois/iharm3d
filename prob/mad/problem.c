@@ -27,7 +27,7 @@ void bl_gcov_func(double r, double th, double gcov[][NDIM]);
 void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 
 
-static int MAD, OLD_MAD;
+static int MAD, OLD_MAD = 0, NORM_WITH_MAXR = 0;
 static double BHflux, beta;
 static double rin, rmax;
 void set_problem_params() {
@@ -199,23 +199,19 @@ void init(struct GridGeom *G, struct FluidState *S)
     if (N3 > 1) {
       if (MAD == 1) { // Classic
         q = rho_av/rhomax;
-        OLD_MAD = 0;
       } else if (MAD == 2) { // Vertical threaded
         q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax;
-        OLD_MAD = 0;
       } else if (MAD == 3) { // Additional r^3 term
         q = pow(r/rin,3.)*rho_av/rhomax;
-        OLD_MAD = 0;
       } else if (MAD == 4) { // T,N,M (2011) uses phi = r^5 rho^2
         q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
         OLD_MAD = 1;
       } else if (MAD == 5) { // T,N,M (2011) without renormalization step
         q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
-        OLD_MAD = 0;
+        NORM_WITH_MAXR=1;
       } else if (MAD == 6) { // Gaussian-strength vertical threaded field
         double wid = 2; //Radius of half-maximum. Units of rin
         q = gsl_ran_gaussian_pdf((r/rin)*sin(th), wid/sqrt(2*log(2)));
-        OLD_MAD = 0;
       } else {
         printf("MAD = %i not supported!\n", MAD);
         exit(-1);
@@ -276,7 +272,7 @@ void init(struct GridGeom *G, struct FluidState *S)
             double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
                                  S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
 
-            brsum += b_avg*bl_gdet_func(r,th);
+            brsum += b_avg; // TODO Is there a Jacobian here?
           }
         }
       } else {
@@ -290,7 +286,7 @@ void init(struct GridGeom *G, struct FluidState *S)
             double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
                                  S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
 
-            brsum -= b_avg*bl_gdet_func(r,th);
+            brsum -= b_avg;
           }
         }
       }
@@ -319,30 +315,61 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
   bsq_max = mpi_max(bsq_max);
 
-  // beta_min = 100 normalization
-  double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
-  double norm = sqrt(beta_act / beta);
-  ZLOOP {
-    S->P[B1][k][j][i] *= norm;
-    S->P[B2][k][j][i] *= norm;
+  if (!NORM_WITH_MAXR) {
+    // beta_min = 100 normalization
+    double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
+    double norm = sqrt(beta_act / beta);
+    ZLOOP {
+      S->P[B1][k][j][i] *= norm;
+      S->P[B2][k][j][i] *= norm;
+    }
+  } else {
+    //normalize the magnetic field using the values inside r < rmax
+    double beta_min = 1e100, beta_ij, beta_act, bsq_ij, u_ij;
+    double norm;
+    double X[NDIM], r, th;
+
+    ZLOOP {
+      coord(i, j, k, CENT, X);
+      bl_coord(X, &r, &th);
+      if (r > rmax) {
+        continue;
+      }
+      get_state(G, S, i, j, k, CENT) ;
+      bsq_ij = bsq_calc(S, i, j, k) ;
+      u_ij = S->P[UU][k][j][i];
+      beta_ij = (gam - 1.)*u_ij/(0.5*(bsq_ij+SMALL)) ;
+      if(beta_ij < beta_min) beta_min = beta_ij ;
+    }
+    beta_min = mpi_io_reduce(beta_min);
+
+    /* finally, normalize to set field strength */
+    beta_act = beta_min;
+
+    norm = sqrt(beta_act/beta) ;
+    ZLOOP {
+      S->P[B1][k][j][i] *= norm ;
+      S->P[B2][k][j][i] *= norm ;
+      S->P[B3][k][j][i] *= norm ;
+    }
   }
 
   // Print bsq profile for plotting
   // TODO doesn't support N1CPU > 1
-  if(global_start[1] == 0 && global_start[2] == 0) {
-    printf("Bsq profile along r:\n");
-    ZSLOOP(0,0,0,0,0,N1) {
-      double X[NDIM];
-      coord(i,j,k,CENT,X);
-      double r, th;
-      bl_coord(X,&r,&th);
-
-      get_state(G, S, i, j, k, CENT);
-      double bsq_ij = bsq_calc(S, i, j, k);
-
-      printf("%.10e %.10e\n", r/rin, bsq_ij);
-    }
-  }
+//  if(global_start[1] == 0 && global_start[2] == 0) {
+//    printf("Bsq profile along r:\n");
+//    ZSLOOP(0,0,0,0,0,N1) {
+//      double X[NDIM];
+//      coord(i,j,k,CENT,X);
+//      double r, th;
+//      bl_coord(X,&r,&th);
+//
+//     get_state(G, S, i, j, k, CENT);
+//      double bsq_ij = bsq_calc(S, i, j, k);
+//
+//      printf("%.10e %.10e\n", r/rin, bsq_ij);
+//    }
+//  }
 
   // This adds a field according to some initial net flux on the black hole
   if (!OLD_MAD) {
