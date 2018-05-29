@@ -18,9 +18,12 @@
 # PROBLEM
 [dbl] rin = 1.500000e+01
 [dbl] rmax = 3.400000e+01
+[dbl] rBstart = 2.500000e+01
+[dbl] rBend = 8.100000e+02
 
-[int] MAD = 6
-[dbl] beta = 1.000000e+02
+
+[int] MAD = 7
+[dbl] beta = 5.000000e+01
 [dbl] BHflux = 0.000000e+00
 
 [dbl] a = 9.375000e-01
