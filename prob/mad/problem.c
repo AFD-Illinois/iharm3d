@@ -30,6 +30,7 @@ void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 static int MAD, OLD_MAD = 0, NORM_WITH_MAXR = 0;
 static double BHflux, beta;
 static double rin, rmax;
+static double rBstart, rBend;
 void set_problem_params() {
   set_param("rin", &rin);
   set_param("rmax", &rmax);
@@ -37,6 +38,9 @@ void set_problem_params() {
   set_param("MAD", &MAD);
   set_param("BHflux", &BHflux);
   set_param("beta", &beta);
+
+  set_param("rBstart", &rBstart);
+  set_param("rBend", &rBend);
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
@@ -67,6 +71,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   double rhomax = 0.;
   double umax = 0.;
+  int iend = N1+NG;
   //ZSLOOP(-1, N3, -1, N2, -1, N1) {
   ZLOOPALL {
     double X[NDIM];
@@ -149,7 +154,8 @@ void init(struct GridGeom *G, struct FluidState *S)
 
       S->P[RHO][k][j][i] = rho;
       if (rho > rhomax) rhomax = rho;
-      S->P[UU][k][j][i] = u * (1. + 4.e-2 * (get_random() - 0.5));
+      u *= (1. + 4.e-2 * (get_random() - 0.5));
+      S->P[UU][k][j][i] = u;
       if (u > umax && r > rin) umax = u;
       S->P[U1][k][j][i] = 0.;
       S->P[U2][k][j][i] = 0.;
@@ -163,6 +169,18 @@ void init(struct GridGeom *G, struct FluidState *S)
     S->P[B2][k][j][i] = 0.;
     S->P[B3][k][j][i] = 0.;
   } // ZSLOOP
+
+  iend = NG;
+  double r_iend = 0.0;
+  while (r_iend < rBend) {
+    iend++;
+    double Xend[NDIM];
+    coord(iend,N2/2+NG,NG,CORN,Xend);
+    double thend;
+    bl_coord(Xend,&r_iend,&thend);
+  }
+  iend--;
+  printf("Furthest torus zone is %d, at r = %f\n", iend, r_iend);
 
   // Normalize the densities so that max(rho) = 1
   umax = mpi_max(umax);
@@ -192,8 +210,16 @@ void init(struct GridGeom *G, struct FluidState *S)
     //q = 0.5*r*sin(th);
 
     // Field in disk
-    double rho_av = 0.25*(S->P[RHO][NG][j][i] + S->P[RHO][NG][j][i-1] +
-                    S->P[RHO][NG][j-1][i] + S->P[RHO][NG][j-1][i-1]);
+    double rho_av = 0.25*(S->P[RHO][k][j][i] + S->P[RHO][k][j][i-1] +
+                    S->P[RHO][k][j-1][i] + S->P[RHO][k][j-1][i-1]);
+    double uu_av = 0.25*(S->P[UU][k][j][i] + S->P[UU][k][j][i-1] +
+                         S->P[UU][k][j-1][i] + S->P[UU][k][j-1][i-1]);
+    int j_mid = N2/2+NG;
+    double uu_plane_av = 0.25*(S->P[UU][k][j_mid][i] + S->P[UU][k][j_mid][i-1] +
+                               S->P[UU][k][j_mid-1][i] + S->P[UU][k][j_mid-1][i-1]);
+
+    double uu_end = 0.25*(S->P[UU][k][j_mid][iend] + S->P[UU][k][j_mid][iend-1] +
+                          S->P[UU][k][j_mid-1][iend] + S->P[UU][k][j_mid-1][iend-1]);
 
     double b_buffer = 0.0; //Minimum rho at which there will be B field
     if (N3 > 1) {
@@ -208,15 +234,25 @@ void init(struct GridGeom *G, struct FluidState *S)
         OLD_MAD = 1;
       } else if (MAD == 5) { // T,N,M (2011) without renormalization step
         q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
-        NORM_WITH_MAXR=1;
+        NORM_WITH_MAXR = 1;
       } else if (MAD == 6) { // Gaussian-strength vertical threaded field
         double wid = 2; //Radius of half-maximum. Units of rin
         q = gsl_ran_gaussian_pdf((r/rin)*sin(th), wid/sqrt(2*log(2)));
+      } else if (MAD == 7) {
+        // Narayan '12, Penna '12 conditions
+        // Former uses rstart=25, rend=810, lam_B=25
+        double uc = uu_av - uu_end;
+        double ucm = uu_plane_av - uu_end;
+        q = pow(sin(th),3)*(uc/(ucm+SMALL) - 0.2) / 0.8;
+        if ( r > rBend || r < rBstart || q > 1.e2 ) q = 0; //Exclude large q resulting from low resolution
+        NORM_WITH_MAXR = 0;
+
+        //if (q != 0) printf("q is %.10e\n", q);
       } else {
         printf("MAD = %i not supported!\n", MAD);
         exit(-1);
       }
-    } else { // TODO SANE not supported in 2D?
+    } else { // TODO How about 2D?
       q = rho_av/rhomax;
     }
 
@@ -224,8 +260,20 @@ void init(struct GridGeom *G, struct FluidState *S)
     q -= b_buffer;
 
     A[i][j] = 0.;
-    if (q > 0.)
-      A[i][j] = q;
+    //if (q == 0) printf("q is 0 at %d %d %d\n",k,j,i);
+    //if (q < 0) q = -q;
+    if (q > 0.) {
+      if (MAD == 7) { // Narayan limit
+        double lam_B = 25; //TODO should rstart=rin?
+        double pre_norm = 1;
+        double flux_correction = sin( 1/lam_B * (pow(r,2./3) + 15./8*pow(r,-2./5) - pow(rBstart,2./3) - 15./8*pow(rBstart,-2./5)));
+        double q_mod = q*pre_norm*flux_correction;
+        printf("Correction is %.10e; Adjusted q is %.10e\n", flux_correction, q_mod);
+        A[i][j] = q_mod;
+      } else {
+        A[i][j] = q;
+      }
+    }
   } // ZSLOOP
 
   if (OLD_MAD) {
@@ -293,11 +341,16 @@ void init(struct GridGeom *G, struct FluidState *S)
 
       A[i][j] = brsum;
     }
-  }
+  } // OLD_MAD
 
   // Calculate B-field and find bsq_max
   double bsq_max = 0.;
+  double beta_min = 1e100;
   ZLOOP {
+    double X[NDIM];
+    coord(i,j,k,CORN,X);
+    double r, th;
+    bl_coord(X,&r,&th);
 
     // Flux-ct
     S->P[B1][k][j][i] = -(A[i][j] - A[i][j + 1]
@@ -312,64 +365,52 @@ void init(struct GridGeom *G, struct FluidState *S)
     get_state(G, S, i, j, k, CENT);
     double bsq_ij = bsq_calc(S, i, j, k);
     if (bsq_ij > bsq_max) bsq_max = bsq_ij;
-  }
-  bsq_max = mpi_max(bsq_max);
-
-  if (!NORM_WITH_MAXR) {
-    // beta_min = 100 normalization
-    double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
-    double norm = sqrt(beta_act / beta);
-    ZLOOP {
-      S->P[B1][k][j][i] *= norm;
-      S->P[B2][k][j][i] *= norm;
-    }
-  } else {
-    //normalize the magnetic field using the values inside r < rmax
-    double beta_min = 1e100, beta_ij, beta_act, bsq_ij, u_ij;
-    double norm;
-    double X[NDIM], r, th;
-
-    ZLOOP {
-      coord(i, j, k, CENT, X);
-      bl_coord(X, &r, &th);
-      if (r > rmax) {
-        continue;
-      }
-      get_state(G, S, i, j, k, CENT) ;
-      bsq_ij = bsq_calc(S, i, j, k) ;
-      u_ij = S->P[UU][k][j][i];
-      beta_ij = (gam - 1.)*u_ij/(0.5*(bsq_ij+SMALL)) ;
+    if (r > rBstart && r < rBend) {
+      double beta_ij = (gam - 1.)*(S->P[UU][k][j][i])/(0.5*(bsq_ij+SMALL)) ;
       if(beta_ij < beta_min) beta_min = beta_ij ;
     }
-    beta_min = mpi_io_reduce(beta_min);
+  }
+  bsq_max = mpi_max(bsq_max);
+  beta_min = mpi_min(beta_min);
 
-    /* finally, normalize to set field strength */
-    beta_act = beta_min;
+  fixup(G,S);
+  set_bounds(G,S);
 
-    norm = sqrt(beta_act/beta) ;
-    ZLOOP {
-      S->P[B1][k][j][i] *= norm ;
-      S->P[B2][k][j][i] *= norm ;
-      S->P[B3][k][j][i] *= norm ;
-    }
+  double norm = 0;
+  if (!NORM_WITH_MAXR) {
+    // Ratio of max UU, beta
+    double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
+    printf("Umax is %f, bsq_max is %f, beta is %f\n", umax, bsq_max, beta_act);
+    norm = sqrt(beta_act / beta);
+  } else {
+    // Beta_min = 100 normalization
+    printf("Min beta in torus is %f\n", beta_min);
+    norm = sqrt(beta_min / beta) ;
+  }
+
+  // Apply normalization
+  printf("Normalization is %f\n", norm);
+  ZLOOP {
+    S->P[B1][k][j][i] *= norm ;
+    S->P[B2][k][j][i] *= norm ;
   }
 
   // Print bsq profile for plotting
   // TODO doesn't support N1CPU > 1
-//  if(global_start[1] == 0 && global_start[2] == 0) {
-//    printf("Bsq profile along r:\n");
-//    ZSLOOP(0,0,0,0,0,N1) {
-//      double X[NDIM];
-//      coord(i,j,k,CENT,X);
-//      double r, th;
-//      bl_coord(X,&r,&th);
-//
-//     get_state(G, S, i, j, k, CENT);
-//      double bsq_ij = bsq_calc(S, i, j, k);
-//
-//      printf("%.10e %.10e\n", r/rin, bsq_ij);
-//    }
-//  }
+  if(global_start[1] == 0 && global_start[2] == 0) {
+    printf("Bsq profile along r:\n");
+    ZSLOOP(0,0,0,0,0,N1) {
+      double X[NDIM];
+      coord(i,j,k,CENT,X);
+      double r, th;
+      bl_coord(X,&r,&th);
+
+      get_state(G, S, i, j, k, CENT);
+      double bsq_ij = bsq_calc(S, i, j, k);
+
+      printf("%.10e %.10e\n", r/rin, bsq_ij);
+    }
+  }
 
   // This adds a field according to some initial net flux on the black hole
   if (!OLD_MAD) {
