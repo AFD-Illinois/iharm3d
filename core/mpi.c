@@ -219,6 +219,13 @@ double mpi_reduce(double f) {
   return local;
 }
 
+double mpi_reduce_int(int f) {
+
+  int local;
+  MPI_Allreduce(&f, &local, 1, MPI_INT, MPI_SUM, comm);
+  return local;
+}
+
 int mpi_io_proc()
 {
   return (rank == 0 ? 1 : 0);
