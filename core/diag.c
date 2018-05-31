@@ -81,10 +81,10 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     }
   }
 
-  rmed = mpi_io_reduce(rmed);
-  pp = mpi_io_reduce(pp);
-  e = mpi_io_reduce(e);
-  divbmax = mpi_io_max(divbmax);
+  rmed = mpi_reduce(rmed);
+  pp = mpi_reduce(pp);
+  e = mpi_reduce(e);
+  divbmax = mpi_max(divbmax);
 
   double mass_proc = 0.;
   double egas_proc = 0.;
@@ -117,11 +117,11 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
 //      }
     }
   }
-  double mass = mpi_io_reduce(mass_proc);
-  double egas = mpi_io_reduce(egas_proc);
-  double Phi = mpi_io_reduce(Phi_proc);
-  double jet_EM_flux = mpi_io_reduce(jet_EM_flux_proc);
-  double lum_eht = mpi_io_reduce(lum_eht_proc);
+  double mass = mpi_reduce(mass_proc);
+  double egas = mpi_reduce(egas_proc);
+  double Phi = mpi_reduce(Phi_proc);
+  double jet_EM_flux = mpi_reduce(jet_EM_flux_proc);
+  double lum_eht = mpi_reduce(lum_eht_proc);
 
   if ((call_code == DIAG_INIT && !is_restart) ||
     call_code == DIAG_DUMP || call_code == DIAG_FINAL) {
@@ -129,18 +129,14 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     dump_cnt++;
   }
 
-  //if (call_code == DIAG_FINAL) {
-  //  dump(G, S);
-  //}
-
   if (call_code == DIAG_INIT || call_code == DIAG_LOG ||
       call_code == DIAG_FINAL) {
-    double mdot_all = mpi_io_reduce(mdot);
-    double edot_all = mpi_io_reduce(edot);
-    double ldot_all = mpi_io_reduce(ldot);
-    double mdot_eh_all = mpi_io_reduce(mdot_eh);
-    double edot_eh_all = mpi_io_reduce(edot_eh);
-    double ldot_eh_all = mpi_io_reduce(ldot_eh);
+    double mdot_all = mpi_reduce(mdot);
+    double edot_all = mpi_reduce(edot);
+    double ldot_all = mpi_reduce(ldot);
+    double mdot_eh_all = mpi_reduce(mdot_eh);
+    double edot_eh_all = mpi_reduce(edot_eh);
+    double ldot_eh_all = mpi_reduce(ldot_eh);
 
     //mdot will be negative w/scheme above
     double phi = Phi/sqrt(fabs(mdot_all) + SMALL);
@@ -165,21 +161,21 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
 }
 
 // Diagnostic routines
-void fail(int fail_type, int i, int j, int k)
+void fail(struct GridGeom *G, struct FluidState *S, int fail_type, int i, int j, int k)
 {
   failed = 1;
 
   fprintf(stderr, "\n\n[%d %d %d] FAIL: %d\n", i, j, k, fail_type);
 
-  //area_map(i, j, k, P);
+  area_map(i, j, k, S->P);
 
-  //diag(DIAG_FINAL);
+  diag(G, S, DIAG_FINAL);
 
   exit(0);
 }
 
 // Map out region around failure point
-/*void area_map(int i, int j, int k, grid_prim_type prim)
+void area_map(int i, int j, int k, GridPrim prim)
 {
   fprintf(stderr, "*** AREA MAP ***\n");
 
@@ -188,18 +184,18 @@ void fail(int fail_type, int i, int j, int k)
     fprintf(stderr, "i = \t %12d %12d %12d\n", i - 1, i,
       i + 1);
     fprintf(stderr, "j = %d \t %12.5g %12.5g %12.5g\n", j + 1,
-      prim[i - 1][j + 1][k][ip], prim[i][j + 1][k][ip],
-      prim[i + 1][j + 1][k][ip]);
+      prim[ip][k][j + 1][i - 1], prim[ip][k][j + 1][i],
+      prim[ip][k][j + 1][i + 1]);
     fprintf(stderr, "j = %d \t %12.5g %12.5g %12.5g\n", j,
-      prim[i - 1][j][k][ip], prim[i][j][k][ip],
-      prim[i + 1][j][k][ip]);
+      prim[ip][k][j][i - 1], prim[ip][k][j][i],
+      prim[ip][k][j][i + 1]);
     fprintf(stderr, "j = %d \t %12.5g %12.5g %12.5g\n", j - 1,
-      prim[i - 1][j - 1][k][ip], prim[i][j - 1][k][ip],
-      prim[i + 1][j - 1][k][ip]);
+      prim[ip][k][j - 1][i - 1], prim[ip][k][j - 1][i],
+      prim[ip][k][j - 1][i + 1]);
   }
 
   fprintf(stderr, "****************\n");
-}*/
+}
 
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k)

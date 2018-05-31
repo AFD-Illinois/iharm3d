@@ -194,6 +194,10 @@ int mpi_nprocs() {
   return numprocs;
 }
 
+int mpi_myrank() {
+  return rank;
+}
+
 double mpi_max(double f)
 {
   double fmax;
@@ -208,35 +212,14 @@ double mpi_min(double f)
   return fmin;
 }
 
+double mpi_reduce(double f) {
+
+  double local;
+  MPI_Allreduce(&f, &local, 1, MPI_DOUBLE, MPI_SUM, comm);
+  return local;
+}
+
 int mpi_io_proc()
 {
   return (rank == 0 ? 1 : 0);
-}
-
-void mpi_int_broadcast(int *val)
-{
-  MPI_Bcast(val, 1, MPI_INT, 0, comm);
-}
-
-void mpi_dbl_broadcast(double *val)
-{
-  MPI_Bcast(val, 1, MPI_DOUBLE, 0, comm);
-}
-
-double mpi_io_reduce(double val) {
-
-  double local;
-  MPI_Reduce(&val, &local, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-  return local;
-}
-
-double mpi_io_max(double val) {
-
-  double local;
-  MPI_Reduce(&val, &local, 1, MPI_DOUBLE, MPI_MAX, 0, comm);
-  return local;
-}
-
-int mpi_myrank() {
-  return rank;
 }

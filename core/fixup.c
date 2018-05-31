@@ -9,6 +9,7 @@
 #include "decs.h"
 
 static int nfixed = 0, nfixed_b = 0, nfails = 0;
+static double mass_added = 0.0;
 
 // Apply floors to density, internal energy
 void fixup(struct GridGeom *G, struct FluidState *S)
@@ -20,8 +21,7 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 
   timer_stop(TIMER_FIXUP);
 
-  //if(mpi_io_proc()) etc.
-  //printf("Fixed %d zones, %d from new floor, %d failures in UtoP\n", nfixed, nfixed_b, nfails);
+  //if(mpi_io_proc()) printf("Fixed %d zones, %d from new floor, %d failures in UtoP\n", nfixed, nfixed_b, nfails);
   nfixed = 0;
   nfixed_b = 0;
   nfails = 0;
@@ -134,6 +134,7 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 
       // Update according to floor
       S->P[RHO][k][j][i] = MY_MAX(S->P[RHO][k][j][i], rhoflr);
+      mass_added += ( MY_MAX(0., rhoflr - S->P[RHO][k][j][i]) )*G->gdet[CENT][j][i]*dV; // TODO correct?
       S->P[UU][k][j][i] = MY_MAX(S->P[UU][k][j][i], uflr);
 
       trans = MY_MIN(trans, 1.);
@@ -148,12 +149,13 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
       double ucon[NDIM], ucon_dr[NDIM]; // TODO ucon name is reused for ut*vcon below
       DLOOP1 {
 	ucon[mu] = S->ucon[mu][k][j][i];
-	ucon_dr[mu] = gamma*(S->ucon[mu][k][j][i] + betapar*S->bcon[mu][k][j][i]);
+	ucon_dr[mu] = gamma
+	    * (S->ucon[mu][k][j][i] + betapar * S->bcon[mu][k][j][i]);
       }
 
       double bcon_local[NDIM], bcov_local[NDIM];
       DLOOP1 {
-	bcon_local[mu] = (mu == 0) ? 0 : S->P[B1-1+mu][k][j][i];
+	bcon_local[mu] = (mu == 0) ? 0 : S->P[B1 - 1 + mu][k][j][i];
       }
 
       double gcov_local[NDIM][NDIM];
@@ -196,6 +198,7 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
       double Padd[NVAR];
       PLOOP Padd[ip] = 0.;
       Padd[RHO] = MY_MAX(0., rhoflr - S->P[RHO][k][j][i]);
+      mass_added += Padd[RHO]*G->gdet[CENT][j][i]*dV;
       Padd[UU] = MY_MAX(0., uflr - S->P[UU][k][j][i]);
 
       // Pull a /pretty bad/ hack to get 1-zone calculations

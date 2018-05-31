@@ -293,7 +293,7 @@ struct of_photon {
 extern double poly_norm, poly_xt, poly_alpha, mks_smooth;
 #endif
 
-extern gsl_rng *r;
+extern gsl_rng *r; // TODO single-letter practically unused variable
 
 
 // MPI-specific stuff
@@ -370,8 +370,8 @@ void zero_arrays();
 // diag.c
 void reset_log_variables();
 void diag(struct GridGeom *G, struct FluidState *S, int call_code);
-void fail(int fail_type, int i, int j, int k);
-//void area_map(int i, int j, int k, grid_prim_type prim);
+void fail(struct GridGeom *G, struct FluidState *S, int fail_type, int i, int j, int k);
+void area_map(int i, int j, int k, GridPrim prim);
 void diag_flux(struct FluidFlux *F);
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k);
@@ -449,14 +449,13 @@ MPI_Status* sync_mpi_bound_X2(struct FluidState *S);
 MPI_Status* sync_mpi_bound_X3(struct FluidState *S);
 void mpi_barrier();
 int mpi_nprocs();
+int mpi_myrank();
 double mpi_max(double f);
 double mpi_min(double f);
+double mpi_reduce(double f);
 int mpi_io_proc();
-void mpi_int_broadcast(int *val);
-void mpi_dbl_broadcast(double *val);
-double mpi_io_reduce(double val);
-double mpi_io_max(double val);
-int mpi_myrank();
+//void mpi_int_broadcast(int *val);
+//void mpi_dbl_broadcast(double *val);
 
 // phys.c
 void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,

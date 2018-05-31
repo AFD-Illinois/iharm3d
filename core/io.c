@@ -652,7 +652,7 @@ void restart_read(char *fname, struct FluidState *S)
   H5Fflush(file_id,H5F_SCOPE_GLOBAL);
   H5Fclose(file_id);
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  mpi_barrier();
 }
 
 int restart_init(struct GridGeom *G, struct FluidState *S)
@@ -747,7 +747,7 @@ void get_int_value(int *val, const char *name, hid_t file_id, hid_t filespace,
   H5Dclose(dset_id);
   H5Pclose(plist_id);
 
-  mpi_int_broadcast(val);
+  //mpi_int_broadcast(val);
 }
 
 void get_dbl_value(double *val, const char *name, hid_t file_id,
@@ -762,7 +762,7 @@ void get_dbl_value(double *val, const char *name, hid_t file_id,
   H5Dclose(dset_id);
   H5Pclose(plist_id);
 
-  mpi_dbl_broadcast(val);
+  //mpi_dbl_broadcast(val);
 }
 
 // Error-handling wrappers for standard C functions

@@ -246,11 +246,11 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   // Sanity checks
   if (cms2 < 0.) {
     fprintf(stderr, "\n\ncms2: %g %g %g\n\n", gam, u, ef);
-    fail(FAIL_COEFF_NEG, i, j, k);
+    fail(G, S, FAIL_COEFF_NEG, i, j, k);
     cms2 = SMALL;
   }
   if (cms2 > 1.) {
-    fail(FAIL_COEFF_SUP, i, j, k);
+    fail(G, S, FAIL_COEFF_SUP, i, j, k);
     cms2 = 1.;
   }
 
@@ -286,7 +286,7 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
       Acon[3]);
     fprintf(stderr, "\n\t Bcon: %g %g %g %g\n", Bcon[0], Bcon[1], Bcon[2],
       Bcon[3]);
-    fail(FAIL_VCHAR_DISCR, i, j, k);
+    fail(G, S, FAIL_VCHAR_DISCR, i, j, k);
     discr = 0.;
   }
 

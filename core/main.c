@@ -132,8 +132,9 @@ int main(int argc, char *argv[])
 
   if (mpi_io_proc())
     fprintf(stdout, "t = %e tf = %e\n", t, tf);
-  //if (!is_restart)
-  //  diag(DIAG_DUMP);
+  if (!is_restart) {
+    diag(G, S, DIAG_DUMP);
+  }
 
 /*******************************************************************************
     MAIN LOOP
@@ -173,7 +174,7 @@ int main(int argc, char *argv[])
         diag(G, S, DIAG_LOG);
         tlog += DTl;
       }
-      if (nstep % DTr == 0)
+      if (nstep % DTr == 1)
         restart_write(S);
     }
 

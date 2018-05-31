@@ -302,7 +302,7 @@ void inflow_check(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
       fflush(stderr);
       fprintf(stderr, "\ninflow_check(): gamma failure\n");
       fflush(stderr);
-      fail(FAIL_GAMMA, i, j, k);
+      fail(G, S, FAIL_GAMMA, i, j, k);
     }
     S->P[U1][k][j][i] /= gamma;
     S->P[U2][k][j][i] /= gamma;

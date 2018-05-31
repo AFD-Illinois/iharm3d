@@ -466,7 +466,7 @@ void init(struct GridGeom *G, struct FluidState *S)
         Phi_proc += fabs(B1net)*M_PI/N3CPU;  // * 2.*dx[2]*G->gdet[CENT][j][i]
       }
     }
-    double Phi = mpi_io_reduce(Phi_proc);
+    double Phi = mpi_reduce(Phi_proc);
 
     double norm = BHflux/(Phi + SMALL);
 
