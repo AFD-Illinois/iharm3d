@@ -24,6 +24,11 @@ NLINES = 20
 # For plotting debug, "array-space" plots
 USEARRSPACE = False
 
+LOG_MDOT = True
+MAX_MDOT = 1000
+LOG_PHI = False
+MAX_PHI = 80
+
 # TODO this is a dirty hack
 args_bad = False
 if sys.argv[1] == '-d':
@@ -52,8 +57,7 @@ FRAMEDIR = 'FRAMES'
 util.make_dir(FRAMEDIR)
 
 hdr = io.load_hdr(files[0])
-geom = io.load_geom_file(hdr, gridfile)
-#geom = io.load_geom(hdr, files[0])
+geom = io.load_geom(hdr, gridfile)
 
 diag = io.load_log(os.path.join(path, "log.out"))
 
@@ -111,35 +115,29 @@ def plot(args):
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
-  # TODO Does this properly screen initial condition calculations
+  # Don't plot time-based variables for initial conditions
   if len(diag['t'].shape) > 0:
-    ax = plt.subplot(2,2,2)
-    slc = np.nonzero(np.abs(diag['mdot']))
-    #ax.semilogy(diag['t'][slc], np.abs(diag['mdot'][slc]), color='k')
-    ax.plot(diag['t'][slc], np.abs(diag['mdot'][slc]), color='k')
-    ax.axvline(dump['t'], color='r') # Trace on finished plot, don't draw it as we go
-    ax.set_xlim([0, dump['tf']])
-    ax.set_ylim([10**(-2),50])
-    ax.set_xlabel('t/M')
-    ax.set_ylabel('mdot')
+    ax = plt.subplot(4,2,2)
+    bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', ylim=[10**(-2),MAX_MDOT], logy=LOG_MDOT)
 
-    ax = plt.subplot(2,2,4)
-    slc = np.nonzero(np.abs(diag['phi_calc']))
-    #ax.semilogy(diag['t'][slc], diag['Phi'][slc] / np.sqrt(np.abs(diag['mdot'][slc])) , color='k')
-    #ax.plot(diag['t'][slc], diag['Phi'][slc] / np.sqrt(np.abs(diag['mdot'][slc])) , color='k')
-    ax.plot(diag['t'][slc], np.abs(diag['phi_calc'][slc]), color='k')
-    ax.axvline(dump['t'], color='r') # Trace on finished plot, don't draw it as$
-    ax.set_xlim([0, dump['tf']])
-    ax.set_ylim([10**(-1),80])
-    ax.set_xlabel('t/M')
-    ax.set_ylabel('phi_BH')
+    ax = plt.subplot(4,2,4)
+    bplt.diag_plot(ax, diag, dump, 'phi_calc', 'phi_BH', ylim=[10**(-1),MAX_PHI], logy=LOG_PHI)
+    
+    ax = plt.subplot(4,2,6)
+    bplt.diag_plot(ax, diag, dump, 'mass', 'Total mass', ylim=None, logy=False)
+    
+    ax = plt.subplot(4,2,8)
+    bplt.diag_plot(ax, diag, dump, 'egas', 'Gas energy', ylim=None, logy=False)
 
+  # TODO enlarge plots w/o messing up even pixel count
+  # Maybe share axes, even?
   plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95) # Avoid crowding
   #plt.tight_layout()
 
-  #ax.pcolormesh(dump['X1'][:,:,0], dump['X2'][:,:,0], dump['RHO'][:,:,0])
-  plt.savefig(imname, dpi=100) #, bbox_inches='tight') # Messing with bounds risks odd pixel count
+  plt.savefig(imname, dpi=100) #, bbox_inches='tight')
   plt.close(fig)
+
+# BEGIN SCRIPT
 
 # Test plot so that backtraces work
 # And for quicker turnaround

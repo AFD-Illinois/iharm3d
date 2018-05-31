@@ -179,3 +179,17 @@ def plot_xy(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
   else:
     ax.set_xlabel('x/M'); ax.set_ylabel('y/M')
   #ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
+  
+def diag_plot(ax, diag, dump, varname_dump, varname_pretty, ylim=None, logy=False):
+  var = diag[varname_dump]
+  slc = np.nonzero(var)
+  if logy:
+    ax.semilogy(diag['t'][slc], var[slc], color='k')
+  else:
+    ax.plot(diag['t'][slc], var[slc], color='k')
+  ax.axvline(dump['t'], color='r') # Trace current t on finished plot
+  ax.set_xlim([0, dump['tf']])
+  if ylim != None:
+    ax.set_ylim(ylim)
+  ax.set_xlabel('t/M')
+  ax.set_ylabel(varname_pretty)
