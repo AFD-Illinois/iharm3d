@@ -27,7 +27,7 @@ void bl_gcov_func(double r, double th, double gcov[][NDIM]);
 void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 
 
-static int MAD, OLD_MAD = 0, NORM_WITH_MAXR = 0;
+static int MAD, OLD_MAD = 0, NORM_WITH_MAXR = 0; //TODO clean up these parameters
 static double BHflux, beta;
 static double rin, rmax;
 static double rBstart, rBend;
@@ -46,7 +46,8 @@ void set_problem_params() {
 void init(struct GridGeom *G, struct FluidState *S)
 {
   // Magnetic field
-  static double A[N1 + 2*NG][N2 + 2*NG]; //TODO move this to heap?
+  double (*A)[N2 + 2*NG] = malloc(sizeof((*A) * (N1 + 2*NG))); //TODO possibly switched
+  //double *A[N1 + 2*NG] = ()[N2 + 2*NG]; //TODO move this to heap?
 
   // Fishbone-Moncrief parameters
   double l = lfish_calc(rmax);
@@ -66,7 +67,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   // Initialize counters and such
   t = 0.; // TODO set these in main?
   failed = 0;
-  dump_cnt = 0;
+  dump_cnt = 0; // TODO track this in dump
   rdump_cnt = 0;
 
   double rhomax = 0.;
@@ -243,8 +244,8 @@ void init(struct GridGeom *G, struct FluidState *S)
         // Former uses rstart=25, rend=810, lam_B=25
         double uc = uu_av - uu_end;
         double ucm = uu_plane_av - uu_end;
-        q = pow(sin(th),3)*(uc/(ucm+SMALL) - 0.2) / 0.8;
-        if ( r > rBend || r < rBstart || q > 1.e2 ) q = 0; //Exclude large q resulting from low resolution
+        q = pow(sin(th),3)*(uc/(ucm+SMALL) - 0.2) / 0.8; // Note builtin buffer of 0.2
+        if ( r > rBend || r < rBstart || q > 1.e2 ) q = 0; //Exclude large q resulting from division by SMALL
         NORM_WITH_MAXR = 0;
 
         //if (q != 0) printf("q is %.10e\n", q);

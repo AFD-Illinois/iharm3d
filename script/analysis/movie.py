@@ -24,8 +24,8 @@ NLINES = 20
 # For plotting debug, "array-space" plots
 USEARRSPACE = False
 
-LOG_MDOT = True
-MAX_MDOT = 1000
+LOG_MDOT = False
+MAX_MDOT = 120
 LOG_PHI = False
 MAX_PHI = 80
 

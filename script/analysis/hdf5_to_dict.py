@@ -108,7 +108,7 @@ def load_dump(hdr, geom, diag, fname):
   dump = {}
   dump['hdr'] = hdr
   for key in keys:
-    dump[key] = (dfile[key][()]).transpose()
+    dump[key] = (dfile[key][()]).transpose() # TODO add a marker to new dumps/grids to special-case this
   dump['t'] = dfile['t'][0]
 
   try:
@@ -145,18 +145,18 @@ def load_dump(hdr, geom, diag, fname):
   dump['mdot'] = log_time(diag, 'mdot', dump['t'])
   dump['phi'] = log_time(diag, 'phi', dump['t'])
   
-  dump['Phi_calc'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:N2,:N3]*hdr['dx2']*hdr['dx3']))
-  dump['phi_calc'] = 2*np.pi/np.sqrt(4*np.pi)*dump['Phi_calc']/(np.sqrt(dump['mdot']))
+  dump['Phi_py'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:N2,:N3]*hdr['dx2']*hdr['dx3']))
+  dump['phi_py'] = dump['Phi_py']/(np.sqrt(dump['mdot'])) # *2pi/sqrt(4pi) ? Just sqrt?
   
   dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:N1,N2/2,:N3]*hdr['dx1']*hdr['dx3']))
   
-  err = (dump['phi'] - dump['phi_calc'])/dump['phi']
+  err = (dump['phi'] - dump['phi_py'])/dump['phi']
   if err > 1e-3:
     print "Phi calculation is wrong! Error: %f" % err
   
   # Diagnostics
   #print "From Log: t: %f mdot: %f Phi_BH: %f" % (dump['t'], dump['mdot'], dump['phi'])
-  #print "Calculated: phi_BH: %f Phi_disk: %f" % (dump['phi_calc'], dump['Phi_disk'])
+  #print "Calculated: phi_BH: %f Phi_disk: %f" % (dump['phi_py'], dump['Phi_disk'])
 
   dump.update(geom)
   dump.update(hdr)
@@ -219,7 +219,7 @@ def log_time(diag, var, t):
   if len(diag['t'].shape) < 1:
     return diag[var]
   else:
-    while diag['t'][i] < t:
+    while i < len(diag['t']) and diag['t'][i] < t:
       i += 1
     return diag[var][i-1]
 
