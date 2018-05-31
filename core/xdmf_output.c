@@ -169,12 +169,14 @@ void dump_grid(struct GridGeom *G)
   hsize_t dims[] = {N1, N2, N3};
 
   // TODO output gcov,gcon
+  // TODO fix forward-index output
   const char *coordNames[] = {"/X", "/Y", "/Z", "/r", "/th", "/phi", "X1", "X2", "X3", "gdet"};
 
-  for (int d = 0; d < 3; d++) {
-    if (global_stop[d] == fdims[d]-1)
-      dims[d]++;
-  }
+  //This was for extra corner zones at the end.  We don't need them since we want center values
+//  for (int d = 0; d < 3; d++) {
+//    if (global_stop[d] == fdims[d]-1)
+//      dims[d]++;
+//  }
 
   hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
   H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
@@ -194,7 +196,7 @@ void dump_grid(struct GridGeom *G)
 
   int total_size = dims[0]*dims[1]*dims[2];
   for(int d = 0; d < NGRIDVARS; d++) {
-    x[d] = malloc(total_size*sizeof(float));
+    x[d] = calloc(total_size,sizeof(float));
     if(x[d] == NULL) {
       fprintf(stderr,"Failed to allocate x[d] in dump_grid\n");
       exit(5);
@@ -202,8 +204,8 @@ void dump_grid(struct GridGeom *G)
   }
 
   int ind = 0;
-  ZSLOOP(0, dims[2]-1, 0, dims[1]-1, 0, dims[0]-1) {
-    coord(i, j, k, CENT, xp); //TODO This was the corner. Why?
+  ZLOOP_OUT { //Change if reinstating full grid out
+    coord(i, j, k, CENT, xp);
     #if METRIC == MINKOWSKI
     x[0][ind] = xp[1];
     x[1][ind] = xp[2];
