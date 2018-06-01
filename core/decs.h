@@ -40,6 +40,8 @@
       COMPILE-TIME PARAMETERS :
 *******************************************************************************/
 
+#define VERSION "VHARM/5.0 (KHTML, like bhlight)"
+
 // Number of active zones on each MPI process
 #define N1       (N1TOT/N1CPU)
 #define N2       (N2TOT/N2CPU)
@@ -317,6 +319,8 @@ extern int global_stop[3];
   for (int k = 0; k < N3 + 2*NG; k++)
 #define ZLOOP	\
   KLOOP JLOOP ILOOP
+#define ZLOOP_OUT \
+  ILOOP JLOOP KLOOP
 #define ZLOOPALL \
   KLOOPALL JLOOPALL ILOOPALL
 #define ISLOOP(istart,istop) \
@@ -333,6 +337,9 @@ extern int global_stop[3];
   for (int k = (kstop) + NG; k >= (kstart) + NG; k--) \
   for (int j = (jstop) + NG; j >= (jstart) + NG; j--) \
   for (int i = (istop) + NG; i >= (istart) + NG; i--)
+#define ZSLOOP_OUT(kstart,kstop,jstart,jstop,istart,istop) \
+  ISLOOP(istart,istop) JSLOOP(jstart,jstop) KSLOOP(kstart,kstop)
+
 // Loop over primitive variables
 #define PLOOP for(int ip = 0; ip < NVAR; ip++)
 
