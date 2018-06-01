@@ -221,8 +221,6 @@ void init(struct GridGeom *G, struct FluidState *S)
   mpi_reduce_vector(uu_plane_send, uu_plane, N1TOT);
   free(uu_plane_send);
 
-  for (int i = 0; i < N1TOT; i++) printf("%f ", uu_plane[i]);
-
   // first find corner-centered vector potential
   ZSLOOP(0, 0, -NG, N2+NG-1, -NG, N1+NG-1) A[i][j] = 0.;
   ZSLOOP(0, 0, -NG+1, N2+NG-1, -NG+1, N1+NG-1) {
