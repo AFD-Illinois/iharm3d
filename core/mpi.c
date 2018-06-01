@@ -219,11 +219,15 @@ double mpi_reduce(double f) {
   return local;
 }
 
-double mpi_reduce_int(int f) {
+int mpi_reduce_int(int f) {
 
   int local;
   MPI_Allreduce(&f, &local, 1, MPI_INT, MPI_SUM, comm);
   return local;
+}
+
+void mpi_reduce_vector(double *vec_send, double *vec_recv, int len) {
+  MPI_Allreduce(vec_send, vec_recv, len, MPI_DOUBLE, MPI_SUM, comm);
 }
 
 int mpi_io_proc()

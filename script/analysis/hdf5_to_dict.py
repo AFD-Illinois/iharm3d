@@ -147,7 +147,8 @@ def load_dump(hdr, geom, diag, fname):
   
   dump['Phi_py'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:N2,:N3]*hdr['dx2']*hdr['dx3']))
   dump['phi_py'] = dump['Phi_py']/(np.sqrt(dump['mdot'])) # *2pi/sqrt(4pi) ? Just sqrt?
-  
+
+  # TODO this is not normalized or anything
   dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:N1,N2/2,:N3]*hdr['dx1']*hdr['dx3']))
   
   err = (dump['phi'] - dump['phi_py'])/dump['phi']
