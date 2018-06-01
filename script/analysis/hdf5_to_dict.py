@@ -22,6 +22,14 @@ def get_dumps_full(folder):
 def load_hdr(fname):
   dfile = h5py.File(fname, 'r')
 
+  # Every version with a string outputs forward
+  hdr = {}
+  try:
+    hdr['VERSION'] = dfile['VERSION']
+    hdr['reverse'] = False
+  except KeyError, e:
+    hdr['reverse'] = True
+
   keys = ['METRIC', 'FULL_DUMP', 'ELECTRONS', 'RADIATION',
           'N1', 'N2', 'N3',
           'startx1', 'startx2', 'startx3', 'dx1', 'dx2', 'dx3',
@@ -48,7 +56,6 @@ def load_hdr(fname):
     if has_radiation:
       keys += ['Mbh', 'mbh']
 
-  hdr = {}
   for key in keys:
     try:
       hdr[key] = dfile[key][0]
@@ -93,6 +100,7 @@ def load_dump(hdr, geom, diag, fname):
   dfile = h5py.File(fname, 'r')
 
   keys = ['RHO', 'UU', 'U1', 'U2', 'U3', 'B1', 'B2', 'B3']
+  keys += ['bsq', 'divb', 'gamma', 'fail']
   if hdr['ELECTRONS']:
     keys += ['KTOT', 'KEL']
 
@@ -108,7 +116,11 @@ def load_dump(hdr, geom, diag, fname):
   dump = {}
   dump['hdr'] = hdr
   for key in keys:
-    dump[key] = dfile[key][()]
+    if hdr['reverse']:
+      dump[key] = (dfile[key][()]).transpose()
+    else:
+      dump[key] = dfile[key][()]
+      
   dump['t'] = dfile['t'][0]
 
   try:
@@ -136,9 +148,6 @@ def load_dump(hdr, geom, diag, fname):
   # This recalculates bsq
   #ucon, ucov, bcon, bcov = get_state(dump, geom)
   #dump['bsq_py'] = (bcon*bcov).sum(axis=-1)
-  
-  # Instead we just read it
-  dump['bsq'] = dfile['bsq'][()]
 
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
   

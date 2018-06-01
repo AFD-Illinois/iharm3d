@@ -40,6 +40,8 @@
       COMPILE-TIME PARAMETERS :
 *******************************************************************************/
 
+#define VERSION "VHARM/5.0 (KHTML, like bhlight)"
+
 // Number of active zones on each MPI process
 #define N1       (N1TOT/N1CPU)
 #define N2       (N2TOT/N2CPU)

@@ -261,6 +261,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   H5Sselect_hyperslab(filespace, H5S_SELECT_SET, &zero, NULL, &single_var_count,
     NULL);
   memspace  = H5Screate_simple(1, &single_var_count, NULL);
+  add_str_value(VERSION, "VERSION", file_id, filespace, memspace);
   #if METRIC == MINKOWSKI
   add_str_value("MINKOWSKI", "METRIC", file_id, filespace, memspace);
   #elif METRIC == MKS
@@ -322,12 +323,12 @@ void dump(struct GridGeom *G, struct FluidState *S)
   H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, mem_copy_dims,
     NULL);
 
-  /* printf("Size of memspace: %lld x %lld x %lld\n", */
-  /*       mem_copy_dims[0], mem_copy_dims[1], mem_copy_dims[2]); */
-  /* printf("Location of memspace: %lld %lld %lld\n", */
-  /*        file_start[0], file_start[1], file_start[2]); */
-  /* printf("Size of filespace: %lld x %lld x %lld\n", */
-  /*       fdims[0], fdims[1], fdims[2]); */
+//  printf("Size of memspace: %lld x %lld x %lld\n",
+//       mem_copy_dims[0], mem_copy_dims[1], mem_copy_dims[2]);
+//  printf("Location of memspace: %lld %lld %lld\n",
+//	file_start[0], file_start[1], file_start[2]);
+//  printf("Size of filespace: %lld x %lld x %lld\n",
+//       fdims[0], fdims[1], fdims[2]);
 
   // Write primitive variables
   PLOOP {
@@ -620,16 +621,6 @@ int restart_init(struct GridGeom *G, struct FluidState *S)
   zero_arrays();
 
   restart_read(fname, S);
-
-#if METRIC == MINKOWSKI
-  // TODO these are not written to restart files, but /tend/ to be 0,1
-  x1Min = 0.;
-  x1Max = 1.;
-  x2Min = 0.;
-  x2Max = 1.;
-  x3Min = 0.;
-  x3Max = 1.;
-#endif
 
   set_grid(G);
 
