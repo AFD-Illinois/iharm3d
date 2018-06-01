@@ -418,7 +418,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   // Print bsq profile for plotting
   // TODO doesn't support N1CPU > 1 -- ordering is bad
   // If N2TOT/2,0 is ours...
-  if(global_start[1] < N2TOT/2 && global_stop[1] > N2TOT/2 && global_start[2] == 0) {
+  if(global_start[1] == N2TOT/2 && global_start[2] == 0) {
     printf("Bsq profile along r at th=pi/2:\n");
     int j_mid = N2TOT/2 - global_start[1] + NG;
     ZSLOOP(0,0,j_mid,j_mid,0,N1) {

@@ -6,8 +6,8 @@ import os
 import glob
 units = units.get_dict()
 
-def get_dumps_reduced(folder):
-  return np.sort(glob.glob(folder+'dump_*.h5'))
+def get_dumps_reduced(path):
+  return np.sort(glob.glob(os.path.join(path, "dump*.h5")))
 
 def get_dumps_full(folder):
   alldumps = np.sort(glob.glob(folder+'dump_*.h5'))
@@ -93,10 +93,14 @@ def load_geom(hdr, fname):
   geom['x'] = geom['X']
   geom['y'] = geom['Y']
   geom['z'] = geom['Z']
+  
+  # Compress gdet for normal use
+  geom['gdet_full'] = geom['gdet']
+  geom['gdet'] = geom['gdet'][:,:,0]
 
   return geom
 
-def load_dump(hdr, geom, diag, fname):
+def load_dump(fname, geom, hdr, diag=None):
   dfile = h5py.File(fname, 'r')
 
   keys = ['RHO', 'UU', 'U1', 'U2', 'U3', 'B1', 'B2', 'B3']
@@ -151,22 +155,24 @@ def load_dump(hdr, geom, diag, fname):
 
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
   
-  dump['mdot'] = log_time(diag, 'mdot', dump['t'])
-  dump['phi'] = log_time(diag, 'phi', dump['t'])
+  if diag is not None:
+    dump['mdot'] = log_time(diag, 'mdot', dump['t'])
+    dump['phi'] = log_time(diag, 'phi', dump['t'])
+    dump['phi_calc'] = log_time(diag, 'phi_calc', dump['t'])
   
-  dump['Phi_py'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:,:]*hdr['dx2']*hdr['dx3']))
-  dump['phi_py'] = dump['Phi_py']/(np.sqrt(dump['mdot'])) # *2pi/sqrt(4pi) ? Just sqrt?
-
-  # TODO this is not normalized or anything
-  dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:,N2/2,:]*hdr['dx1']*hdr['dx3']))
+    dump['Phi_py'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:,:]*hdr['dx2']*hdr['dx3']))
+    dump['phi_py'] = dump['Phi_py']/(np.sqrt(dump['mdot'])) # *2pi/sqrt(4pi) ? Just sqrt?
   
-  err = (dump['phi'] - dump['phi_py'])/dump['phi']
-  if err > 1e-3:
-    print "Phi calculation is wrong! Error: %f" % err
+    # TODO this is not normalized or anything
+    dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:,N2/2,:]*hdr['dx1']*hdr['dx3']))
   
-  # Diagnostics
-  #print "From Log: t: %f mdot: %f Phi_BH: %f" % (dump['t'], dump['mdot'], dump['phi'])
-  #print "Calculated: phi_BH: %f Phi_disk: %f" % (dump['phi_py'], dump['Phi_disk'])
+    err = (dump['phi_calc'] - dump['phi_py'])/dump['phi_calc']
+    if err > 1e-3:
+      print "Phi calculation is wrong! Error: %f" % err
+  
+    # Diagnostics
+    #print "From Log: t: %f mdot: %f Phi_BH: %f" % (dump['t'], dump['mdot'], dump['phi'])
+    #print "Calculated: phi_BH: %f Phi_disk: %f" % (dump['phi_py'], dump['Phi_disk'])
 
   dump.update(geom)
   dump.update(hdr)
@@ -174,6 +180,10 @@ def load_dump(hdr, geom, diag, fname):
   dfile.close()
 
   return dump
+
+# For compatibility with bhlight scripts
+def load_diag(path):
+  return load_log(os.path.join(path, "log.out"))
 
 def load_log(logfile):
   diag = {}

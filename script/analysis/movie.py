@@ -71,7 +71,7 @@ def plot(args):
   if os.path.isfile(imname):
     return
 
-  dump = io.load_dump(hdr, geom, diag, files[n])
+  dump = io.load_dump(files[n], geom, hdr, diag)
   fig = plt.figure(figsize=(FIGX, FIGY))
 
   ax = plt.subplot(2,4,1)
