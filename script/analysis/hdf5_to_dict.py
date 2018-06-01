@@ -80,7 +80,7 @@ def load_geom(hdr, fname):
 
   geom = {}
   for key in keys:
-    geom[key] = (gfile[key][()]).transpose()
+    geom[key] = gfile[key][()]
 
   # these get used interchangeably
   geom['x'] = geom['X']
@@ -108,7 +108,7 @@ def load_dump(hdr, geom, diag, fname):
   dump = {}
   dump['hdr'] = hdr
   for key in keys:
-    dump[key] = (dfile[key][()]).transpose() # TODO add a marker to new dumps/grids to special-case this
+    dump[key] = dfile[key][()]
   dump['t'] = dfile['t'][0]
 
   try:
@@ -138,18 +138,18 @@ def load_dump(hdr, geom, diag, fname):
   #dump['bsq_py'] = (bcon*bcov).sum(axis=-1)
   
   # Instead we just read it
-  dump['bsq'] = (dfile['bsq'][()]).transpose()
+  dump['bsq'] = dfile['bsq'][()]
 
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
   
   dump['mdot'] = log_time(diag, 'mdot', dump['t'])
   dump['phi'] = log_time(diag, 'phi', dump['t'])
   
-  dump['Phi_py'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:N2,:N3]*hdr['dx2']*hdr['dx3']))
+  dump['Phi_py'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:,:]*hdr['dx2']*hdr['dx3']))
   dump['phi_py'] = dump['Phi_py']/(np.sqrt(dump['mdot'])) # *2pi/sqrt(4pi) ? Just sqrt?
 
   # TODO this is not normalized or anything
-  dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:N1,N2/2,:N3]*hdr['dx1']*hdr['dx3']))
+  dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:,N2/2,:]*hdr['dx1']*hdr['dx3']))
   
   err = (dump['phi'] - dump['phi_py'])/dump['phi']
   if err > 1e-3:

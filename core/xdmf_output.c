@@ -165,14 +165,14 @@ void dump_grid(struct GridGeom *G)
   hid_t dset_id;
   hsize_t file_start[3], file_count[3];
   hsize_t mem_start[3];
-  hsize_t fdims[] = {N1TOT+1, N2TOT+1, N3TOT+1};
+  hsize_t fdims[] = {N1TOT, N2TOT, N3TOT};
   hsize_t dims[] = {N1, N2, N3};
 
   // TODO output gcov,gcon
-  // TODO fix forward-index output
-  const char *coordNames[] = {"/X", "/Y", "/Z", "/r", "/th", "/phi", "X1", "X2", "X3", "gdet"};
+  const char *coordNames[] = {"X", "Y", "Z", "r", "th", "phi", "X1", "X2", "X3", "gdet"};
 
-  //This was for extra corner zones at the end.  We don't need them since we want center values
+  // This was for extra corner zones at the end.  We don't need them since we want center values
+  // TODO ... right?
 //  for (int d = 0; d < 3; d++) {
 //    if (global_stop[d] == fdims[d]-1)
 //      dims[d]++;
