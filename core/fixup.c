@@ -9,7 +9,7 @@
 #include "decs.h"
 
 static int nfixed = 0, nfixed_b = 0, nfails = 0;
-static double mass_added = 0.0;
+static double mass_added = 0.0, mass_added_total = 0.0;
 
 // Apply floors to density, internal energy
 void fixup(struct GridGeom *G, struct FluidState *S)
@@ -21,6 +21,19 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 
   timer_stop(TIMER_FIXUP);
 
+  mass_added = mpi_reduce(mass_added);
+  mass_added_total += mass_added;
+
+  if(mpi_io_proc()) {
+      printf("Added %.10e of mass (total %.10e)\n",mass_added, mass_added_total);
+      //printf("Total added now %f\% of mass\n", mass_added_total/mass*100);
+  }
+
+  mass_added = 0;
+
+  nfixed = mpi_reduce_int(nfixed);
+  nfixed_b = mpi_reduce_int(nfixed_b);
+  nfails = mpi_reduce_int(nfails);
   //if(mpi_io_proc()) printf("Fixed %d zones, %d from new floor, %d failures in UtoP\n", nfixed, nfixed_b, nfails);
   nfixed = 0;
   nfixed_b = 0;

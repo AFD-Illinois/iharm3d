@@ -129,12 +129,10 @@ int main(int argc, char *argv[])
 
   // Initial diagnostics
   diag(G, S, DIAG_INIT);
+  if (!is_restart) restart_write(S);
 
   if (mpi_io_proc())
     fprintf(stdout, "t = %e tf = %e\n", t, tf);
-  if (!is_restart) {
-    diag(G, S, DIAG_DUMP);
-  }
 
 /*******************************************************************************
     MAIN LOOP
@@ -174,7 +172,7 @@ int main(int argc, char *argv[])
         diag(G, S, DIAG_LOG);
         tlog += DTl;
       }
-      if (nstep % DTr == 1)
+      if (nstep % DTr == 0)
         restart_write(S);
     }
 

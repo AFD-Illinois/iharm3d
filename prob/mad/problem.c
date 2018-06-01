@@ -27,7 +27,7 @@ void bl_gcov_func(double r, double th, double gcov[][NDIM]);
 void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 
 
-static int MAD, OLD_MAD = 0, NORM_WITH_MAXR = 0;
+static int MAD, OLD_MAD = 0, NORM_WITH_MAXR = 0; //TODO clean up these parameters
 static double BHflux, beta;
 static double rin, rmax;
 static double rBstart, rBend;
@@ -46,7 +46,7 @@ void set_problem_params() {
 void init(struct GridGeom *G, struct FluidState *S)
 {
   // Magnetic field
-  static double A[N1 + 2*NG][N2 + 2*NG]; //TODO move this to heap?
+  double (*A)[N2 + 2*NG] = malloc(sizeof(*A) * (N1 + 2*NG)); //TODO possibly switched
 
   // Fishbone-Moncrief parameters
   double l = lfish_calc(rmax);
@@ -66,7 +66,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   // Initialize counters and such
   t = 0.; // TODO set these in main?
   failed = 0;
-  dump_cnt = 0;
+  dump_cnt = 0; // TODO track this in dump
   rdump_cnt = 0;
 
   double rhomax = 0.;
@@ -196,6 +196,21 @@ void init(struct GridGeom *G, struct FluidState *S)
   fixup(G, S);
   set_bounds(G, S);
 
+  // Calculate UU along midplane
+  double *uu_plane_send = (double*) calloc(N1TOT,sizeof(double));
+
+  if (global_start[1] < N2TOT/2+1 && global_stop[1] > N2TOT/2+1 && global_start[2] == 0) {
+    int j_mid = N2TOT/2+1 - global_start[1] + NG;
+    int k = NG; // Axisymmetric
+    ILOOP {
+      int itot = i + global_start[0] - NG;
+      uu_plane_send[itot] = 0.25*(S->P[UU][k][j_mid][i] + S->P[UU][k][j_mid][i-1] +
+                          S->P[UU][k][j_mid-1][i] + S->P[UU][k][j_mid-1][i-1]);
+    }
+  }
+  double *uu_plane = (double*) calloc(N1TOT,sizeof(double));
+  mpi_reduce_vector(uu_plane_send, uu_plane, N1TOT);
+
   // first find corner-centered vector potential
   ZSLOOP(0, 0, -NG, N2+NG-1, -NG, N1+NG-1) A[i][j] = 0.;
   ZSLOOP(0, 0, -NG+1, N2+NG-1, -NG+1, N1+NG-1) {
@@ -214,12 +229,8 @@ void init(struct GridGeom *G, struct FluidState *S)
                     S->P[RHO][k][j-1][i] + S->P[RHO][k][j-1][i-1]);
     double uu_av = 0.25*(S->P[UU][k][j][i] + S->P[UU][k][j][i-1] +
                          S->P[UU][k][j-1][i] + S->P[UU][k][j-1][i-1]);
-    int j_mid = N2/2+NG;
-    double uu_plane_av = 0.25*(S->P[UU][k][j_mid][i] + S->P[UU][k][j_mid][i-1] +
-                               S->P[UU][k][j_mid-1][i] + S->P[UU][k][j_mid-1][i-1]);
-
-    double uu_end = 0.25*(S->P[UU][k][j_mid][iend] + S->P[UU][k][j_mid][iend-1] +
-                          S->P[UU][k][j_mid-1][iend] + S->P[UU][k][j_mid-1][iend-1]);
+    double uu_plane_av = uu_plane[i];
+    double uu_end = uu_plane[iend];
 
     double b_buffer = 0.0; //Minimum rho at which there will be B field
     if (N3 > 1) {
@@ -243,9 +254,9 @@ void init(struct GridGeom *G, struct FluidState *S)
         // Former uses rstart=25, rend=810, lam_B=25
         double uc = uu_av - uu_end;
         double ucm = uu_plane_av - uu_end;
-        q = pow(sin(th),3)*(uc/(ucm+SMALL) - 0.2) / 0.8;
-        if ( r > rBend || r < rBstart || q > 1.e2 ) q = 0; //Exclude large q resulting from low resolution
-        NORM_WITH_MAXR = 0;
+        q = pow(sin(th),3)*(uc/(ucm+SMALL) - 0.2) / 0.8; // Note builtin buffer of 0.2
+        if ( r > rBend || r < rBstart || q > 1.e2 ) q = 0; //Exclude large q resulting from division by SMALL
+        NORM_WITH_MAXR = 0; //?
 
         //if (q != 0) printf("q is %.10e\n", q);
       } else {
@@ -268,7 +279,7 @@ void init(struct GridGeom *G, struct FluidState *S)
         double pre_norm = 1;
         double flux_correction = sin( 1/lam_B * (pow(r,2./3) + 15./8*pow(r,-2./5) - pow(rBstart,2./3) - 15./8*pow(rBstart,-2./5)));
         double q_mod = q*pre_norm*flux_correction;
-        printf("Correction is %.10e; Adjusted q is %.10e\n", flux_correction, q_mod);
+        //printf("Correction is %.10e; Adjusted q is %.10e\n", flux_correction, q_mod);
         A[i][j] = q_mod;
       } else {
         A[i][j] = q;
@@ -396,10 +407,12 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
 
   // Print bsq profile for plotting
-  // TODO doesn't support N1CPU > 1
-  if(global_start[1] == 0 && global_start[2] == 0) {
-    printf("Bsq profile along r:\n");
-    ZSLOOP(0,0,0,0,0,N1) {
+  // TODO doesn't support N1CPU > 1 -- ordering is bad
+  // If N2TOT/2,0 is ours...
+  if(global_start[1] < N2TOT/2 && global_stop[1] > N2TOT/2 && global_start[2] == 0) {
+    printf("Bsq profile along r at th=pi/2:\n");
+    int j_mid = N2TOT/2 - global_start[1] + NG;
+    ZSLOOP(0,0,j_mid,j_mid,0,N1) {
       double X[NDIM];
       coord(i,j,k,CENT,X);
       double r, th;
@@ -412,7 +425,7 @@ void init(struct GridGeom *G, struct FluidState *S)
     }
   }
 
-  // This adds a field according to some initial net flux on the black hole
+  // This adds a central flux based on specifying some BHflux
   if (!OLD_MAD) {
     // Initialize a net magnetic field inside the initial torus
     ZSLOOP(0, 0, 0, N2, 0, N1) {
