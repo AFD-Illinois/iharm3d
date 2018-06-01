@@ -46,7 +46,7 @@ void set_problem_params() {
 void init(struct GridGeom *G, struct FluidState *S)
 {
   // Magnetic field
-  double (*A)[N2 + 2*NG] = malloc(sizeof(*A) * (N1 + 2*NG)); //TODO possibly switched
+  double (*A)[N2 + 2*NG] = malloc(sizeof(*A) * (N1 + 2*NG));
 
   // Fishbone-Moncrief parameters
   double l = lfish_calc(rmax);
@@ -61,7 +61,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   zero_arrays();
   set_grid(G);
-  printf("grid set\n");
+  if (mpi_io_proc()) printf("grid set\n");
 
   // Initialize counters and such
   t = 0.; // TODO set these in main?
@@ -71,7 +71,6 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   double rhomax = 0.;
   double umax = 0.;
-  int iend = N1+NG;
   //ZSLOOP(-1, N3, -1, N2, -1, N1) {
   ZLOOPALL {
     double X[NDIM];
@@ -170,17 +169,25 @@ void init(struct GridGeom *G, struct FluidState *S)
     S->P[B3][k][j][i] = 0.;
   } // ZSLOOP
 
-  iend = NG;
-  double r_iend = 0.0;
-  while (r_iend < rBend) {
-    iend++;
-    double Xend[NDIM];
-    coord(iend,N2/2+NG,NG,CORN,Xend);
-    double thend;
-    bl_coord(Xend,&r_iend,&thend);
+  // Find the zone in which rBend of Narayan condition resides
+  // This just uses the farthest process in R
+  // For /very/ large N1CPU it might fail
+  int iend_global = 0;
+  if (global_stop[0] == N1TOT && global_start[1] == 0 && global_start[2] == 0) {
+    int iend = NG;
+    double r_iend = 0.0;
+    while (r_iend < rBend) {
+      iend++;
+      double Xend[NDIM];
+      coord(iend,N2/2+NG,NG,CORN,Xend);
+      double thend;
+      bl_coord(Xend,&r_iend,&thend);
+    }
+    iend--;
+    iend_global = global_start[0] + iend - NG; //Translate to coordinates for uu_mid below
+    printf("[MPI %d] Furthest torus zone is %d (locally %d), at r = %f\n", mpi_myrank(), iend_global, iend, r_iend);
   }
-  iend--;
-  printf("Furthest torus zone is %d, at r = %f\n", iend, r_iend);
+  iend_global = mpi_reduce_int(iend_global); //TODO This should be a broadcast I know.
 
   // Normalize the densities so that max(rho) = 1
   umax = mpi_max(umax);
@@ -196,20 +203,25 @@ void init(struct GridGeom *G, struct FluidState *S)
   fixup(G, S);
   set_bounds(G, S);
 
-  // Calculate UU along midplane
+  // Calculate UU along midplane, propagate to all processes
   double *uu_plane_send = (double*) calloc(N1TOT,sizeof(double));
 
-  if (global_start[1] < N2TOT/2+1 && global_stop[1] > N2TOT/2+1 && global_start[2] == 0) {
-    int j_mid = N2TOT/2+1 - global_start[1] + NG;
+  // This relies on an even N2TOT /and/ N2CPU
+  if (global_start[1] == N2TOT/2 && global_start[2] == 0) {
+    int j_mid = N2TOT/2 - global_start[1] + NG;
     int k = NG; // Axisymmetric
     ILOOP {
-      int itot = i + global_start[0] - NG;
-      uu_plane_send[itot] = 0.25*(S->P[UU][k][j_mid][i] + S->P[UU][k][j_mid][i-1] +
+      int i_global = global_start[0] + i - NG;
+      uu_plane_send[i_global] = 0.25*(S->P[UU][k][j_mid][i] + S->P[UU][k][j_mid][i-1] +
                           S->P[UU][k][j_mid-1][i] + S->P[UU][k][j_mid-1][i-1]);
     }
   }
+
   double *uu_plane = (double*) calloc(N1TOT,sizeof(double));
   mpi_reduce_vector(uu_plane_send, uu_plane, N1TOT);
+  free(uu_plane_send);
+
+  for (int i = 0; i < N1TOT; i++) printf("%f ", uu_plane[i]);
 
   // first find corner-centered vector potential
   ZSLOOP(0, 0, -NG, N2+NG-1, -NG, N1+NG-1) A[i][j] = 0.;
@@ -221,16 +233,15 @@ void init(struct GridGeom *G, struct FluidState *S)
 
     double q;
 
-    // Raw vertical field
-    //q = 0.5*r*sin(th);
-
     // Field in disk
     double rho_av = 0.25*(S->P[RHO][k][j][i] + S->P[RHO][k][j][i-1] +
                     S->P[RHO][k][j-1][i] + S->P[RHO][k][j-1][i-1]);
     double uu_av = 0.25*(S->P[UU][k][j][i] + S->P[UU][k][j][i-1] +
                          S->P[UU][k][j-1][i] + S->P[UU][k][j-1][i-1]);
-    double uu_plane_av = uu_plane[i];
-    double uu_end = uu_plane[iend];
+
+    int i_global = global_start[0] + i - NG;
+    double uu_plane_av = uu_plane[i_global];
+    double uu_end = uu_plane[iend_global];
 
     double b_buffer = 0.0; //Minimum rho at which there will be B field
     if (N3 > 1) {
@@ -274,8 +285,8 @@ void init(struct GridGeom *G, struct FluidState *S)
     //if (q == 0) printf("q is 0 at %d %d %d\n",k,j,i);
     //if (q < 0) q = -q;
     if (q > 0.) {
-      if (MAD == 7) { // Narayan limit
-        double lam_B = 25; //TODO should rstart=rin?
+      if (MAD == 7) { // Narayan limit for MAD
+        double lam_B = 25;
         double pre_norm = 1;
         double flux_correction = sin( 1/lam_B * (pow(r,2./3) + 15./8*pow(r,-2./5) - pow(rBstart,2./3) - 15./8*pow(rBstart,-2./5)));
         double q_mod = q*pre_norm*flux_correction;
@@ -391,16 +402,16 @@ void init(struct GridGeom *G, struct FluidState *S)
   if (!NORM_WITH_MAXR) {
     // Ratio of max UU, beta
     double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
-    printf("Umax is %f, bsq_max is %f, beta is %f\n", umax, bsq_max, beta_act);
+    if (mpi_io_proc()) printf("Umax is %f, bsq_max is %f, beta is %f\n", umax, bsq_max, beta_act);
     norm = sqrt(beta_act / beta);
   } else {
     // Beta_min = 100 normalization
-    printf("Min beta in torus is %f\n", beta_min);
+    if (mpi_io_proc()) printf("Min beta in torus is %f\n", beta_min);
     norm = sqrt(beta_min / beta) ;
   }
 
   // Apply normalization
-  printf("Normalization is %f\n", norm);
+  if (mpi_io_proc()) printf("Normalization is %f\n", norm);
   ZLOOP {
     S->P[B1][k][j][i] *= norm ;
     S->P[B2][k][j][i] *= norm ;

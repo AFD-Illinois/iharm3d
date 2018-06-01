@@ -54,6 +54,7 @@ void init_mpi()
   }
 
   // Diagnostic for processor topology
+  // TODO add flag to enable this?
 //  int me = mpi_myrank();
 //  fprintf(stderr,"Process %d topology:\n", me);
 //  fprintf(stderr,"%d in X:[%d]\t[%d]\t[%d]\n", me, neighbors[1][1][0], neighbors[1][1][1], neighbors[1][1][2]);
@@ -67,10 +68,10 @@ void init_mpi()
     global_start[2-d] = coord[d] * sdims[d]/cpudims[d];
     global_stop[2-d] = (coord[d]+1) * sdims[d]/cpudims[d];
   }
-  printf("Process %d has X,Y,Z space [%d-%d, %d-%d, %d-%d]\n", rank,
-         global_start[0], global_stop[0],
-         global_start[1], global_stop[1],
-         global_start[2], global_stop[2]);
+//  printf("Process %d has X,Y,Z space [%d-%d, %d-%d, %d-%d]\n", rank,
+//         global_start[0], global_stop[0],
+//         global_start[1], global_stop[1],
+//         global_start[2], global_stop[2]);
 
 
   // Make MPI datatypes
