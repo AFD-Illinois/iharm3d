@@ -101,8 +101,19 @@ def load_geom(hdr, fname):
   return geom
 
 def load_dump(fname, geom, hdr, diag=None):
-  dfile = h5py.File(fname, 'r')
+  dfile = h5py.File(fname)
+  dump = {}
+  
+  # "Header" variables that change per dump
+  # Not always present
+  dump['t'] = dfile['t'][0]
+  try:
+    dump['mass'] = dfile['mass'][0]
+    dump['egas'] = dfile['egas'][0]
+  except KeyError, e:
+    pass
 
+  # Usual primitive and derived variables
   keys = ['RHO', 'UU', 'U1', 'U2', 'U3', 'B1', 'B2', 'B3']
   keys += ['bsq', 'divb', 'gamma', 'fail']
   if hdr['ELECTRONS']:
@@ -117,21 +128,21 @@ def load_dump(fname, geom, hdr, diag=None):
     if hdr['RADIATION']:
       keys += ['Rmunu', 'Nsph', 'nph', 'nuLnu']
 
-  dump = {}
   dump['hdr'] = hdr
   for key in keys:
     if hdr['reverse']:
       dump[key] = (dfile[key][()]).transpose()
     else:
       dump[key] = dfile[key][()]
-      
-  dump['t'] = dfile['t'][0]
 
-  try:
-    dump['mass'] = dfile['mass'][0]
-    dump['egas'] = dfile['egas'][0]
-  except KeyError, e:
-    pass
+  # Not all VHARM/bhlight output all variables
+  ext_keys = ['bcon', 'bcov', 'ucon', 'ucov', 'jcon']
+
+  for key in ext_keys:
+    try:
+      dump[key] = dfile[key][()]
+    except KeyError, e:
+      pass
 
   if hdr['RADIATION']:
     dump['ur'] = -dfile['erad'][0]

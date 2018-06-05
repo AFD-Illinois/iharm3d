@@ -183,7 +183,13 @@ def plot_xy(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
 # TODO allow coordinate x2,3? Allow average over said?
 def plot_r(ax, geom, var, n2, n3, label, logx=False, logy=False):
   r = geom['r'][:,0,0]
-  data = var[:,n2,n3]
+  if var.ndim == 1:
+    data = var
+  elif var.ndim == 2:
+    data = var[:,n2]
+  elif var.ndim == 3:
+    data = var[:,n2,n3]
+  
   if logx and logy:
     ax.loglog(r,data)
   elif logx:
