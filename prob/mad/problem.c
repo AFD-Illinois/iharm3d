@@ -249,9 +249,9 @@ void init(struct GridGeom *G, struct FluidState *S)
         q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax;
       } else if (MAD == 3) { // Additional r^3 term
         q = pow(r/rin,3.)*rho_av/rhomax;
-      } else if (MAD == 4) { // T,N,M (2011) uses phi = r^5 rho^2
-        q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
-        //OLD_MAD = 1;
+//      } else if (MAD == 4) { // T,N,M (2011) uses phi = r^5 rho^2
+//        q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
+//        OLD_MAD = 1; //Consult git history if this is of interest
       } else if (MAD == 5) { // T,N,M (2011) without renormalization step
         q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
         NORM_WITH_MAXR = 1;
@@ -280,13 +280,11 @@ void init(struct GridGeom *G, struct FluidState *S)
     q -= b_buffer;
 
     A[i][j] = 0.;
-    //if (q == 0) printf("q is 0 at %d %d %d\n",k,j,i);
-    //if (q < 0) q = -q;
     if (q > 0.) {
       if (MAD == 7) { // Narayan limit for MAD
         double lam_B = 25;
         double pre_norm = 1;
-        double flux_correction = sin( 1/lam_B * (pow(r/rin,2./3) + 15./8*pow(r/rin,-2./5) - pow(rBstart/rin,2./3) - 15./8*pow(rBstart/rin,-2./5)));
+        double flux_correction = sin( 1/lam_B * (pow(r,2./3) + 15./8*pow(r,-2./5) - pow(rBstart,2./3) - 15./8*pow(rBstart,-2./5)));
         double q_mod = q*pre_norm*flux_correction;
         //printf("Correction is %.10e\n", flux_correction);
         A[i][j] = q_mod;
@@ -316,9 +314,9 @@ void init(struct GridGeom *G, struct FluidState *S)
     S->P[B3][k][j][i] = 0.;
 
     get_state(G, S, i, j, k, CENT);
-    double bsq_ij = bsq_calc(S, i, j, k);
-    if (bsq_ij > bsq_max) bsq_max = bsq_ij;
     if (r > rBstart && r < rBend) {
+      double bsq_ij = bsq_calc(S, i, j, k);
+      if (bsq_ij > bsq_max) bsq_max = bsq_ij;
       double beta_ij = (gam - 1.)*(S->P[UU][k][j][i])/(0.5*(bsq_ij+SMALL)) ;
       if(beta_ij < beta_min) beta_min = beta_ij ;
     }
@@ -342,7 +340,7 @@ void init(struct GridGeom *G, struct FluidState *S)
     // Ratio of max UU, beta
     //double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
     double beta_act = (gam - 1.) * umax_plane / (0.5 * bsq_max);
-    if (mpi_io_proc()) printf("Umax is %f, bsq_max is %f, beta is %f\n", umax_plane, bsq_max, beta_act);
+    if (mpi_io_proc()) printf("Umax is %.10e, bsq_max is %.10e, beta is %.10e\n", umax_plane, bsq_max, beta_act);
     norm = sqrt(beta_act / beta);
   } else {
     // Beta_min = 100 normalization
