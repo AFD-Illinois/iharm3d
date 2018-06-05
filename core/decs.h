@@ -154,20 +154,23 @@
 #define TIMER_U_TO_P   (6)
 #define TIMER_FIXUP    (7)
 #define TIMER_BOUND    (8)
-#define TIMER_DIAG     (9)
-#define TIMER_LR_STATE      (10)
-#define TIMER_LR_PTOF      (11)
-#define TIMER_LR_VCHAR      (12)
-#define TIMER_LR_CMAX      (13)
-#define TIMER_LR_FLUX      (14)
-#define TIMER_BOUND_COMMS (15)
-#define TIMER_ALL      (16)
+#define TIMER_BOUND_COMMS (9)
+#define TIMER_DIAG     (10)
+#define TIMER_LR_STATE      (11)
+#define TIMER_LR_PTOF      (12)
+#define TIMER_LR_VCHAR      (13)
+#define TIMER_LR_CMAX      (14)
+#define TIMER_LR_FLUX      (15)
+#define TIMER_IO 	(16)
+#define TIMER_RESTART 	(17)
+#define TIMER_CURRENT   (18)
+#define TIMER_ALL      (19)
 #if ELECTRONS
 #define TIMER_ELECTRON_FIXUP (21)
 #define TIMER_ELECTRON_HEAT  (22)
 #define NUM_TIMERS           (23)
 #else
-#define NUM_TIMERS     (17)
+#define NUM_TIMERS     (20)
 #endif
 
 /*******************************************************************************

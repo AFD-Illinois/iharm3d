@@ -13,7 +13,6 @@ void reset_log_variables()
   #if RADIATION
   step_tot = step_made = step_abs = step_scatt = step_rec = 0;
   #endif
-  mass_added = 0.0;
 }
 
 // Evaluate flux based diagnostics; put results in global variables
@@ -55,6 +54,8 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
         exit(1);
       }
     }
+    // Initialize tracking of run-cumulative variables
+    mass_added = 0.0;
   }
 
   double pp = 0.;

@@ -67,6 +67,12 @@ void report_performance()
       times[TIMER_BOUND_COMMS]/steps, 100.*times[TIMER_BOUND_COMMS]/times[TIMER_ALL]);
     fprintf(stdout, "   DIAG:     %8.4g s (%.4g %%)\n",
       times[TIMER_DIAG]/steps, 100.*times[TIMER_DIAG]/times[TIMER_ALL]);
+    fprintf(stdout, "   IO:     %8.4g s (%.4g %%)\n",
+      times[TIMER_IO]/steps, 100.*times[TIMER_IO]/times[TIMER_ALL]);
+    fprintf(stdout, "   RESTART:     %8.4g s (%.4g %%)\n",
+      times[TIMER_RESTART]/steps, 100.*times[TIMER_RESTART]/times[TIMER_ALL]);
+    fprintf(stdout, "   CURRENT:     %8.4g s (%.4g %%)\n",
+      times[TIMER_CURRENT]/steps, 100.*times[TIMER_CURRENT]/times[TIMER_ALL]);
     fprintf(stdout, "   LR_STATE:     %8.4g s (%.4g %%)\n",
       times[TIMER_LR_STATE]/steps, 100.*times[TIMER_LR_STATE]/times[TIMER_ALL]);
     fprintf(stdout, "   LR_PTOF:     %8.4g s (%.4g %%)\n",

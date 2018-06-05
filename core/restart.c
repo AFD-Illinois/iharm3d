@@ -15,6 +15,7 @@ static int restart_id = 0;
 
 void restart_write(struct FluidState *S)
 {
+  timer_start(TIMER_RESTART);
   hsize_t file_start[4],mem_start[4],one,zero;
   hsize_t fdims[4] = {NVAR, N3TOT, N2TOT, N1TOT};
   hsize_t mem_copy_dims[4] = {NVAR, N3, N2, N1};
@@ -129,7 +130,7 @@ void restart_write(struct FluidState *S)
       exit(-1);
     }
   }
-
+  timer_stop(TIMER_RESTART);
 }
 
 void restart_read(char *fname, struct FluidState *S)

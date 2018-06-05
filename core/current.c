@@ -15,10 +15,16 @@ int pp(int n, int *P);
 
 static struct FluidState *Sa;
 
+// The current calculation takes a /lot/ of time.  This is for cutting it out easily
+void current_calc_nop(struct GridGeom *G, struct FluidState *S, struct FluidState *Ssave, double dtsave)
+{}
+
 void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *Ssave, double dtsave)
 {
   double gF0p[NDIM], gF0m[NDIM], gF1p[NDIM], gF1m[NDIM], gF2p[NDIM], gF2m[NDIM];
   double gF3p[NDIM], gF3m[NDIM];
+
+  timer_start(TIMER_CURRENT);
 
   if (nstep == 0) {
 #pragma omp parallel for simd collapse(2)
@@ -44,7 +50,8 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
   }
 
   // Calculate j^{\mu} using centered differences for active zones
-#pragma omp parallel for simd collapse(2)
+  // TODO rewrite this vector-style
+#pragma omp parallel for collapse(3)
   ZLOOP {
     for (int mu = 0; mu < NDIM; mu++) S->jcon[mu][k][j][i] = 0.;
 
@@ -83,10 +90,12 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
                            (gF3p[mu] - gF3m[mu])/(2.*dx[3]));
     }
   }
+
+  timer_stop(TIMER_CURRENT);
 }
 
 // Return mu, nu component of contravarient Maxwell tensor at grid zone i, j, k
-double Fcon_calc(struct GridGeom *G, struct FluidState *S, int mu, int nu, int i, int j, int k)
+inline double Fcon_calc(struct GridGeom *G, struct FluidState *S, int mu, int nu, int i, int j, int k)
 {
   double Fcon, gFcon, dFcon;
 
@@ -102,13 +111,13 @@ double Fcon_calc(struct GridGeom *G, struct FluidState *S, int mu, int nu, int i
     }
   }
 
-  gFcon = Fcon*G->gdet[CENT][i][j];
+  gFcon = Fcon*G->gdet[CENT][j][i];
 
   return gFcon;
 }
 
 // Completely antisymmetric 4D symbol
-int antisym(int a, int b, int c, int d)
+inline int antisym(int a, int b, int c, int d)
 {
   // Check for valid permutation
   if (a < 0 || a > 3) return 100;
@@ -131,7 +140,7 @@ int antisym(int a, int b, int c, int d)
 }
 
 // Due to Norm Hardy; good for general n
-int pp(int n, int P[n])
+inline int pp(int n, int P[n])
 {
   int x;
   int p = 0;

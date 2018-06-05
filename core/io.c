@@ -19,6 +19,8 @@ void init_io()
 
 void dump(struct GridGeom *G, struct FluidState *S)
 {
+  timer_start(TIMER_IO);
+
   static int firstc = 1;
   static float *data; // TODO option to output double
   static int *idata;
@@ -264,6 +266,8 @@ void dump(struct GridGeom *G, struct FluidState *S)
   H5Fclose(file_id);
 
   dump_id++;
+
+  timer_stop(TIMER_IO);
 }
 
 // TODO delete this when possible

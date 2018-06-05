@@ -28,6 +28,7 @@ void step(struct GridGeom *G, struct FluidState *S)
   double dtsave = dt;
 
   // Need both P_n and P_n+1 to calculate current
+#pragma omp parallel for simd collapse(3)
   PLOOP {
     ZLOOPALL {
       Ssave->P[ip][k][j][i] = S->P[ip][k][j][i];
@@ -80,10 +81,14 @@ void step(struct GridGeom *G, struct FluidState *S)
     (N1+2*NG)*(N2+2*NG)*(N3+2*NG)*NDIM*sizeof(double));
   #endif
 
-  current_calc(G, S, Ssave, dtsave);
-
   // Increment time
   t += dt;
+
+  // If we're dumping this step, update the current
+  // TODO tdump should not be global and this should not be possible
+  if (t > tdump) {
+    current_calc(G, S, Ssave, dtsave);
+  }
 
   // Set next timestep
   if (ndt > SAFE * dt) {

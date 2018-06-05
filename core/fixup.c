@@ -12,11 +12,12 @@ static int nfixed = 0, nfixed_b = 0, nfails = 0;
 static double mass_added_step = 0.0;
 
 // Apply floors to density, internal energy
+// TODO make this faster with masks
 void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
 
-#pragma omp parallel for collapse(3)
+#pragma omp parallel for simd collapse(2) reduction(+:mass_added_step)
   ZLOOP fixup1zone(G, S, i, j, k);
 
   timer_stop(TIMER_FIXUP);
