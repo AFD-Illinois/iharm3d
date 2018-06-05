@@ -125,7 +125,7 @@ def overlay_field(ax, geom, dump, NLEV):
   x = flatten_xz(geom['x'], hdr).transpose()
   z = flatten_xz(geom['z'], hdr).transpose()
   A_phi = np.zeros([N2, 2*N1])
-  gdet = geom['gdet'][:,:,0].transpose()
+  gdet = geom['gdet'][:,:].transpose()
   B1 = dump['B1'].mean(axis=-1).transpose()
   B2 = dump['B2'].mean(axis=-1).transpose()
   for j in xrange(N2):
@@ -179,7 +179,28 @@ def plot_xy(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
   else:
     ax.set_xlabel('x/M'); ax.set_ylabel('y/M')
   #ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
+
+# TODO allow coordinate x2,3? Allow average over said?
+def plot_r(ax, geom, var, n2, n3, label, logx=False, logy=False):
+  r = geom['r'][:,0,0]
+  if var.ndim == 1:
+    data = var
+  elif var.ndim == 2:
+    data = var[:,n2]
+  elif var.ndim == 3:
+    data = var[:,n2,n3]
   
+  if logx and logy:
+    ax.loglog(r,data)
+  elif logx:
+    ax.semilogx(r,data)
+  elif logy:
+    ax.semilogy(r,data)
+  else:
+    ax.plot(r,data)
+  ax.set_xlabel('r (M)')
+  ax.set_ylabel(label)
+
 def diag_plot(ax, diag, dump, varname_dump, varname_pretty, ylim=None, logy=False):
   var = diag[varname_dump]
   slc = np.nonzero(var)

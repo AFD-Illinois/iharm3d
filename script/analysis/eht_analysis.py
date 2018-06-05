@@ -117,8 +117,8 @@ def avg_dump(args):
   betainv_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*betainv[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
 
   # TODO output ucon
-  #uphi = (dump['ucon'][:,:,:,3])
-  #uphi_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*uphi[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) 
+  uphi = (dump['ucon'][:,:,:,3])
+  uphi_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*uphi[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) 
 
   rho_r[n,:] /= vol
   Theta_r[n,:] /= vol
@@ -130,15 +130,15 @@ def avg_dump(args):
 
   # FLUXES
   iF = 5
-  #Mdot[n] = (dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
-  #Phi[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  Mdot[n] = (dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  #Phi_old[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
   Phi[n] = 0.5*(np.fabs(dump['B1'][iF,:,:])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
-  #Trphi = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,3]
-  #Trphi -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,3]
-  #Trt = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,0]
-  #Trt -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,0]
-  #Ldot[n] = (Trphi[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
-  #Edot[n] = -(Trt[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  Trphi = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,3]
+  Trphi -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,3]
+  Trt = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,0]
+  Trt -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,0]
+  Ldot[n] = (Trphi[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  Edot[n] = -(Trt[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
 
   rho = dump['RHO']
   P = (hdr['gam']-1.)*dump['UU']
