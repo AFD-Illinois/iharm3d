@@ -13,6 +13,7 @@ void reset_log_variables()
   #if RADIATION
   step_tot = step_made = step_abs = step_scatt = step_rec = 0;
   #endif
+  mass_added = 0.0;
 }
 
 // Evaluate flux based diagnostics; put results in global variables
@@ -153,6 +154,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
       fprintf(ener_file, "%15.8g %15.8g %15.8g ", Phi, phi, jet_EM_flux);
       fprintf(ener_file, "%15.8g ", divbmax);
       fprintf(ener_file, "%15.8g ", lum_eht);
+      fprintf(ener_file, "%15.8g ", mass_added);
       fprintf(ener_file, "%15.8g %15.8g %15.8g ", mdot_eh_all, edot_eh_all, ldot_eh_all);
       fprintf(ener_file, "\n");
       fflush(ener_file);

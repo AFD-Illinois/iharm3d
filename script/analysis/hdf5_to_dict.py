@@ -25,9 +25,15 @@ def load_hdr(fname):
   # Every version with a string outputs forward
   hdr = {}
   try:
-    hdr['VERSION'] = dfile['VERSION']
+    hdr['VERSION'] = dfile['VERSION'][0]
     hdr['reverse'] = False
+    if len(hdr['VERSION'].split("-")) > 1:
+      hdr['version_number'] = float(hdr['VERSION'].split("-")[-1])
+    else:
+      hdr['version_number'] = 0.05
   except KeyError, e:
+    hdr['VERSION'] = None
+    hdr['version_number'] = 0.0
     hdr['reverse'] = True
 
   keys = ['METRIC', 'FULL_DUMP', 'ELECTRONS', 'RADIATION',
@@ -200,12 +206,12 @@ def load_log(logfile):
   diag = {}
   dfile = np.loadtxt(logfile).transpose()
   
-  # TODO need version strings to parse here
-  if True: # New VHARM format
-    diag['t'] = dfile[0]
-    diag['rmed'] = dfile[1]
-    diag['pp'] = dfile[2]
-    diag['e'] = dfile[3]
+  diag['t'] = dfile[0]
+  diag['rmed'] = dfile[1]
+  diag['pp'] = dfile[2]
+  diag['e'] = dfile[3]
+  
+  if hdr['version_number'] > 0.0:
   
     diag['uu_rho_gam_cent'] = dfile[4]
     diag['uu_cent'] = dfile[5]
@@ -225,16 +231,19 @@ def load_log(logfile):
     diag['divbmax'] = dfile[14]
   
     diag['lum_eht'] = dfile[15]
+    
+    if hdr['version_number'] >= 0.1:
+      diag['mass_added'] = dfile[16]
   
-    diag['mdot_eh'] = dfile[16]
-    diag['edot_eh'] = dfile[17]
-    diag['ldot_eh'] = dfile[18]
+      diag['mdot_eh'] = dfile[17]
+      diag['edot_eh'] = dfile[18]
+      diag['ldot_eh'] = dfile[19]
+    else:
+      diag['mdot_eh'] = dfile[16]
+      diag['edot_eh'] = dfile[17]
+      diag['ldot_eh'] = dfile[18]
   else: # old format
-    diag['t'] = dfile[0]
-    diag['rmed'] = dfile[1]
-    diag['pp'] = dfile[2]
-    diag['e'] = dfile[3]
-
+    
     diag['mdot'] = dfile[4]
     diag['edot'] = dfile[5]
     diag['ldot'] = dfile[6]
