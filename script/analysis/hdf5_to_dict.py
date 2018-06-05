@@ -160,11 +160,11 @@ def load_dump(fname, geom, hdr, diag=None):
     dump['phi'] = log_time(diag, 'phi', dump['t'])
     dump['phi_calc'] = log_time(diag, 'phi_calc', dump['t'])
   
-    dump['Phi_py'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:,:]*hdr['dx2']*hdr['dx3']))
+    dump['Phi_py'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:,None]*hdr['dx2']*hdr['dx3']))
     dump['phi_py'] = dump['Phi_py']/(np.sqrt(dump['mdot'])) # *2pi/sqrt(4pi) ? Just sqrt?
   
     # TODO this is not normalized or anything
-    dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:,N2/2,:]*hdr['dx1']*hdr['dx3']))
+    dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:,N2/2,None]*hdr['dx1']*hdr['dx3']))
   
     err = (dump['phi_calc'] - dump['phi_py'])/dump['phi_calc']
     if err > 1e-3:

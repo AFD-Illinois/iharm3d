@@ -131,7 +131,7 @@ def avg_dump(args):
   # FLUXES
   iF = 5
   #Mdot[n] = (dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
-  #Phi[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  #Phi_old[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
   Phi[n] = 0.5*(np.fabs(dump['B1'][iF,:,:])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
   #Trphi = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,3]
   #Trphi -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,3]
