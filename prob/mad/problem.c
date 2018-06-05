@@ -27,7 +27,7 @@ void bl_gcov_func(double r, double th, double gcov[][NDIM]);
 void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 
 
-static int MAD, OLD_MAD = 0, NORM_WITH_MAXR = 0; //TODO clean up these parameters
+static int MAD, NORM_WITH_MAXR = 0; //TODO clean up these parameters
 static double BHflux, beta;
 static double rin, rmax;
 static double rBstart, rBend;
@@ -71,8 +71,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   double rhomax = 0.;
   double umax = 0.;
-  //ZSLOOP(-1, N3, -1, N2, -1, N1) {
-  ZLOOPALL {
+  ZSLOOP(-1, N3, -1, N2, -1, N1) {
     double X[NDIM];
     coord(i, j, k, CENT, X);
     double r, th;
@@ -153,7 +152,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
       S->P[RHO][k][j][i] = rho;
       if (rho > rhomax) rhomax = rho;
-      u *= (1. + 4.e-2 * (get_random() - 0.5));
+      //u *= (1. + 4.e-2 * (get_random() - 0.5));
       S->P[UU][k][j][i] = u;
       if (u > umax && r > rin) umax = u;
       S->P[U1][k][j][i] = 0.;
@@ -204,10 +203,10 @@ void init(struct GridGeom *G, struct FluidState *S)
   set_bounds(G, S);
 
   // Calculate UU along midplane, propagate to all processes
-  double *uu_plane_send = (double*) calloc(N1TOT,sizeof(double));
+  double *uu_plane_send = calloc(N1TOT,sizeof(double));
 
   // This relies on an even N2TOT /and/ N2CPU
-  if (global_start[1] == N2TOT/2 && global_start[2] == 0) {
+  if ((global_start[1] == N2TOT/2 || N2CPU == 1) && global_start[2] == 0) {
     int j_mid = N2TOT/2 - global_start[1] + NG;
     int k = NG; // Axisymmetric
     ILOOP {
@@ -217,9 +216,10 @@ void init(struct GridGeom *G, struct FluidState *S)
     }
   }
 
-  double *uu_plane = (double*) calloc(N1TOT,sizeof(double));
+  double *uu_plane = calloc(N1TOT,sizeof(double));
   mpi_reduce_vector(uu_plane_send, uu_plane, N1TOT);
   free(uu_plane_send);
+  //printf ("UU in plane is "); for (int i =0; i < N1TOT; i++) printf("%.10e ", uu_plane[i]);
 
   // first find corner-centered vector potential
   ZSLOOP(0, 0, -NG, N2+NG-1, -NG, N1+NG-1) A[i][j] = 0.;
@@ -251,7 +251,7 @@ void init(struct GridGeom *G, struct FluidState *S)
         q = pow(r/rin,3.)*rho_av/rhomax;
       } else if (MAD == 4) { // T,N,M (2011) uses phi = r^5 rho^2
         q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
-        OLD_MAD = 1;
+        //OLD_MAD = 1;
       } else if (MAD == 5) { // T,N,M (2011) without renormalization step
         q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
         NORM_WITH_MAXR = 1;
@@ -264,10 +264,10 @@ void init(struct GridGeom *G, struct FluidState *S)
         double uc = uu_av - uu_end;
         double ucm = uu_plane_av - uu_end;
         q = pow(sin(th),3)*(uc/(ucm+SMALL) - 0.2) / 0.8; // Note builtin buffer of 0.2
-        if ( r > rBend || r < rBstart || q > 1.e2 ) q = 0; //Exclude large q resulting from division by SMALL
+        if ( r > rBend || r < rBstart || fabs(q) > 1.e2 ) q = 0; //Exclude q outside torus and large q resulting from division by SMALL
         NORM_WITH_MAXR = 0; //?
 
-        //if (q != 0) printf("q is %.10e\n", q);
+        //if (q != 0 && th > M_PI/2-0.1 && th < M_PI/2+0.1) printf("q_mid is %.10e\n", q);
       } else {
         printf("MAD = %i not supported!\n", MAD);
         exit(-1);
@@ -286,82 +286,15 @@ void init(struct GridGeom *G, struct FluidState *S)
       if (MAD == 7) { // Narayan limit for MAD
         double lam_B = 25;
         double pre_norm = 1;
-        double flux_correction = sin( 1/lam_B * (pow(r,2./3) + 15./8*pow(r,-2./5) - pow(rBstart,2./3) - 15./8*pow(rBstart,-2./5)));
+        double flux_correction = sin( 1/lam_B * (pow(r/rin,2./3) + 15./8*pow(r/rin,-2./5) - pow(rBstart/rin,2./3) - 15./8*pow(rBstart/rin,-2./5)));
         double q_mod = q*pre_norm*flux_correction;
-        //printf("Correction is %.10e; Adjusted q is %.10e\n", flux_correction, q_mod);
+        //printf("Correction is %.10e\n", flux_correction);
         A[i][j] = q_mod;
       } else {
         A[i][j] = q;
       }
     }
   } // ZSLOOP
-
-  if (OLD_MAD) {
-
-    // MAD: "Fake" B-field step for initial flux function
-    // Add one zone outside domain for subsequent calculation
-    ZSLOOP(-1, N3-1, -1, N2-1, -1, N1-1) {
-
-      // Flux-ct
-      S->P[B1][k][j][i] = -(A[i][j] - A[i][j + 1]
-	   + A[i + 1][j] - A[i + 1][j + 1]) /
-	   (2. * dx[2] * G->gdet[CENT][j][i]);
-      S->P[B2][k][j][i] = (A[i][j] + A[i][j + 1]
-	   - A[i + 1][j] - A[i + 1][j + 1]) /
-	   (2. * dx[1] * G->gdet[CENT][j][i]);
-
-      S->P[B3][k][j][i] = 0.;
-
-      // MAD: normalize field for constant beta (!!)
-      get_state(G, S, i, j, k, CENT);
-      double bsq_ij = bsq_calc(S, i, j, k);
-
-      if (bsq_ij > 0) {
-        double beta_act = (gam - 1.) *  S->P[UU][k][j][i] / (0.5 * bsq_ij);
-        double norm = sqrt(beta_act / beta);
-        S->P[B1][k][j][i] *= norm;
-        S->P[B2][k][j][i] *= norm;
-      }
-    }
-
-    //MAD: New flux function integrating B^r
-    ZSLOOP(0, 0, 0, N2, 0, N1) {
-
-      double brsum = 0.0;
-
-      if (j <= N2/2 + NG) {
-        for (int ks = 0 + NG; ks < N3 + NG; ks++) {
-          for (int js = 0 + NG; js <= j; js++) {
-            double X[NDIM];
-            coord(i,js,ks,CORN,X);
-            double r, th;
-            bl_coord(X,&r,&th);
-
-            double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
-                                 S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
-
-            brsum += b_avg; // TODO Is there a Jacobian here?
-          }
-        }
-      } else {
-        for (int ks = 0 + NG; ks < N3 + NG; ks++) {
-          for (int js = N2 + NG; js >= j; js--) {
-            double X[NDIM];
-            coord(i,js,ks,CORN,X);
-            double r, th;
-            bl_coord(X,&r,&th);
-
-            double b_avg = 0.25*(S->P[B1][ks][js-1][i-1] + S->P[B1][ks][js-1][i] +
-                                 S->P[B1][ks][js][i-1] + S->P[B1][ks][js][i]);
-
-            brsum -= b_avg;
-          }
-        }
-      }
-
-      A[i][j] = brsum;
-    }
-  } // OLD_MAD
 
   // Calculate B-field and find bsq_max
   double bsq_max = 0.;
@@ -393,14 +326,23 @@ void init(struct GridGeom *G, struct FluidState *S)
   bsq_max = mpi_max(bsq_max);
   beta_min = mpi_min(beta_min);
 
-  fixup(G,S);
-  set_bounds(G,S);
+  double umax_plane = 0;
+  for (int i; i < N1TOT; i++) {
+      double X[NDIM];
+      coord(i,NG,NG,CORN,X);
+      double r, th;
+      bl_coord(X,&r,&th);
+      if (r > rBstart && r < rBend) {
+	if (uu_plane[i] > umax_plane) umax_plane = uu_plane[i];
+      }
+  }
 
   double norm = 0;
   if (!NORM_WITH_MAXR) {
     // Ratio of max UU, beta
-    double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
-    if (mpi_io_proc()) printf("Umax is %f, bsq_max is %f, beta is %f\n", umax, bsq_max, beta_act);
+    //double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
+    double beta_act = (gam - 1.) * umax_plane / (0.5 * bsq_max);
+    if (mpi_io_proc()) printf("Umax is %f, bsq_max is %f, beta is %f\n", umax_plane, bsq_max, beta_act);
     norm = sqrt(beta_act / beta);
   } else {
     // Beta_min = 100 normalization
@@ -415,94 +357,73 @@ void init(struct GridGeom *G, struct FluidState *S)
     S->P[B2][k][j][i] *= norm ;
   }
 
-  // Print bsq profile for plotting
-  // TODO doesn't support N1CPU > 1 -- ordering is bad
-  // If N2TOT/2,0 is ours...
-  if(global_start[1] == N2TOT/2 && global_start[2] == 0) {
-    printf("Bsq profile along r at th=pi/2:\n");
-    int j_mid = N2TOT/2 - global_start[1] + NG;
-    ZSLOOP(0,0,j_mid,j_mid,0,N1) {
-      double X[NDIM];
-      coord(i,j,k,CENT,X);
-      double r, th;
-      bl_coord(X,&r,&th);
-
-      get_state(G, S, i, j, k, CENT);
-      double bsq_ij = bsq_calc(S, i, j, k);
-
-      printf("%.10e %.10e\n", r/rin, bsq_ij);
-    }
-  }
-
   // This adds a central flux based on specifying some BHflux
-  if (!OLD_MAD) {
-    // Initialize a net magnetic field inside the initial torus
-    ZSLOOP(0, 0, 0, N2, 0, N1) {
-      double X[NDIM];
-      coord(i,j,k,CORN,X);
-      double r,th;
-      bl_coord(X, &r, &th);
+  // Initialize a net magnetic field inside the initial torus
+  ZSLOOP(0, 0, 0, N2, 0, N1) {
+    double X[NDIM];
+    coord(i,j,k,CORN,X);
+    double r,th;
+    bl_coord(X, &r, &th);
 
-      A[i][j] = 0.;
+    A[i][j] = 0.;
 
-      double x = r*sin(th);
-      double z = r*cos(th);
-      double a_hyp = 20.;
-      double b_hyp = 60.;
-      double x_hyp = a_hyp*sqrt(1. + pow(z/b_hyp,2));
+    double x = r*sin(th);
+    double z = r*cos(th);
+    double a_hyp = 20.;
+    double b_hyp = 60.;
+    double x_hyp = a_hyp*sqrt(1. + pow(z/b_hyp,2));
 
-      double q = (pow(x,2) - pow(x_hyp,2))/pow(x_hyp,2);
-      if (x < x_hyp) {
-        A[i][j] = 10.*q;
-      }
+    double q = (pow(x,2) - pow(x_hyp,2))/pow(x_hyp,2);
+    if (x < x_hyp) {
+      A[i][j] = 10.*q;
     }
-
-    // Evaluate net flux
-    double Phi_proc = 0.;
-    ISLOOP(5, N1-1) {
-      JSLOOP(0, N2-1) {
-        int jglobal = j - NG + global_start[1];
-        //int j = N2/2+NG;
-        int k = NG;
-        if (jglobal == N2TOT/2) {
-          double X[NDIM];
-          coord(i, j, k, CENT, X);
-          double r,th;
-          bl_coord(X, &r, &th);
-
-          if (r < rin) {
-            double B2net =  (A[i][j] + A[i][j+1] - A[i+1][j] - A[i+1][j+1]);
-              // / (2.*dx[1]*G->gdet[CENT][j][i]);
-            Phi_proc += fabs(B2net)*M_PI/N3CPU; // * 2.*dx[1]*G->gdet[CENT][j][i]
-          }
-        }
-      }
-    }
-
-    //If left bound in X1.  Note different convention from bhlight!
-    if (global_start[0] == 0) {
-      JSLOOP(0, N2/2-1) {
-        int i = 5 + NG;
-
-        double B1net = -(A[i][j] - A[i][j+1] + A[i+1][j] - A[i+1][j+1]); // /(2.*dx[2]*G->gdet[CENT][j][i]);
-        Phi_proc += fabs(B1net)*M_PI/N3CPU;  // * 2.*dx[2]*G->gdet[CENT][j][i]
-      }
-    }
-    double Phi = mpi_reduce(Phi_proc);
-
-    double norm = BHflux/(Phi + SMALL);
-
-    ZLOOP {
-      // Flux-ct
-      S->P[B1][k][j][i] += -norm*(A[i][j] - A[i][j + 1]
-                                  + A[i + 1][j] - A[i + 1][j + 1]) /
-        (2. * dx[2] * G->gdet[CENT][j][i]);
-      S->P[B2][k][j][i] += norm*(A[i][j] + A[i][j + 1]
-                                 - A[i + 1][j] - A[i + 1][j + 1]) /
-        (2. * dx[1] * G->gdet[CENT][j][i]);
-    }
-
   }
+
+  // Evaluate net flux
+  double Phi_proc = 0.;
+  ISLOOP(5, N1-1) {
+    JSLOOP(0, N2-1) {
+      int jglobal = j - NG + global_start[1];
+      //int j = N2/2+NG;
+      int k = NG;
+      if (jglobal == N2TOT/2) {
+	double X[NDIM];
+	coord(i, j, k, CENT, X);
+	double r,th;
+	bl_coord(X, &r, &th);
+
+	if (r < rin) {
+	  double B2net =  (A[i][j] + A[i][j+1] - A[i+1][j] - A[i+1][j+1]);
+	    // / (2.*dx[1]*G->gdet[CENT][j][i]);
+	  Phi_proc += fabs(B2net)*M_PI/N3CPU; // * 2.*dx[1]*G->gdet[CENT][j][i]
+	}
+      }
+    }
+  }
+
+  //If left bound in X1.  Note different convention from bhlight!
+  if (global_start[0] == 0) {
+    JSLOOP(0, N2/2-1) {
+      int i = 5 + NG;
+
+      double B1net = -(A[i][j] - A[i][j+1] + A[i+1][j] - A[i+1][j+1]); // /(2.*dx[2]*G->gdet[CENT][j][i]);
+      Phi_proc += fabs(B1net)*M_PI/N3CPU;  // * 2.*dx[2]*G->gdet[CENT][j][i]
+    }
+  }
+  double Phi = mpi_reduce(Phi_proc);
+
+  norm = BHflux/(Phi + SMALL);
+
+  ZLOOP {
+    // Flux-ct
+    S->P[B1][k][j][i] += -norm*(A[i][j] - A[i][j + 1]
+				+ A[i + 1][j] - A[i + 1][j + 1]) /
+      (2. * dx[2] * G->gdet[CENT][j][i]);
+    S->P[B2][k][j][i] += norm*(A[i][j] + A[i][j + 1]
+			       - A[i + 1][j] - A[i + 1][j + 1]) /
+      (2. * dx[1] * G->gdet[CENT][j][i]);
+  }
+
 
 #if ELECTRONS
   init_electrons();
