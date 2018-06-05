@@ -43,7 +43,7 @@
       COMPILE-TIME PARAMETERS :
 *******************************************************************************/
 
-#define VERSION "VHARM/5.0 (KHTML, like bhlight)"
+#define VERSION "vharm-alpha-0.1"
 
 // Number of active zones on each MPI process
 #define N1       (N1TOT/N1CPU)
@@ -271,6 +271,7 @@ extern int lim;
 extern double mdot, edot, ldot;
 extern double mdot_eh, edot_eh, ldot_eh;
 extern int icurr, jcurr, kcurr;
+extern double mass_added;
 
 // Parallelism
 extern int nthreads;

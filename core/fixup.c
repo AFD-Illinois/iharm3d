@@ -9,7 +9,7 @@
 #include "decs.h"
 
 static int nfixed = 0, nfixed_b = 0, nfails = 0;
-static double mass_added = 0.0, mass_added_total = 0.0;
+static double mass_added_step = 0.0;
 
 // Apply floors to density, internal energy
 void fixup(struct GridGeom *G, struct FluidState *S)
@@ -21,15 +21,15 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 
   timer_stop(TIMER_FIXUP);
 
-  mass_added = mpi_reduce(mass_added);
-  mass_added_total += mass_added;
+  mass_added_step = mpi_reduce(mass_added_step);
+  mass_added += mass_added_step;
 
   if(mpi_io_proc()) {
-      printf("Added %.10e of mass (total %.10e)\n",mass_added, mass_added_total);
+      printf("Added %.10e of mass (total %.10e)\n",mass_added_step, mass_added);
       //printf("Total added now %f\% of mass\n", mass_added_total/mass*100);
   }
 
-  mass_added = 0;
+  mass_added_step = 0;
 
   nfixed = mpi_reduce_int(nfixed);
   nfixed_b = mpi_reduce_int(nfixed_b);
@@ -147,7 +147,7 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 
       // Update according to floor
       S->P[RHO][k][j][i] = MY_MAX(S->P[RHO][k][j][i], rhoflr);
-      mass_added += ( MY_MAX(0., rhoflr - S->P[RHO][k][j][i]) )*G->gdet[CENT][j][i]*dV; // TODO correct?
+      mass_added_step += ( MY_MAX(0., rhoflr - S->P[RHO][k][j][i]) )*dV; // TODO correct?
       S->P[UU][k][j][i] = MY_MAX(S->P[UU][k][j][i], uflr);
 
       trans = MY_MIN(trans, 1.);
@@ -211,7 +211,7 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
       double Padd[NVAR];
       PLOOP Padd[ip] = 0.;
       Padd[RHO] = MY_MAX(0., rhoflr - S->P[RHO][k][j][i]);
-      mass_added += Padd[RHO]*G->gdet[CENT][j][i]*dV;
+      mass_added_step += Padd[RHO]*dV;
       Padd[UU] = MY_MAX(0., uflr - S->P[UU][k][j][i]);
 
       // Pull a /pretty bad/ hack to get 1-zone calculations
@@ -279,6 +279,9 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
       S->P[U3][k][j][i] *= f;
     }
   }
+
+  // For good measure, in case we expect P/u/b to be consistent
+  get_state(G, S, i, j, k, CENT);
 }
 
 // Replace bad points with values interpolated from neighbors
