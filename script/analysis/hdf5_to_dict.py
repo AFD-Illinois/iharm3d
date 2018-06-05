@@ -36,6 +36,8 @@ def load_hdr(fname):
     hdr['version_number'] = 0.0
     hdr['reverse'] = True
 
+  print "Loading from VHARM version %f" % hdr['version_number']
+
   keys = ['METRIC', 'FULL_DUMP', 'ELECTRONS', 'RADIATION',
           'N1', 'N2', 'N3',
           'startx1', 'startx2', 'startx3', 'dx1', 'dx2', 'dx3',
@@ -203,7 +205,7 @@ def load_dump(fname, geom, hdr, diag=None):
 def load_diag(path):
   return load_log(os.path.join(path, "log.out"))
 
-def load_log(logfile):
+def load_log(hdr, logfile):
   diag = {}
   dfile = np.loadtxt(logfile).transpose()
   
@@ -212,7 +214,8 @@ def load_log(logfile):
   diag['pp'] = dfile[2]
   diag['e'] = dfile[3]
   
-  if hdr['version_number'] > 0.0:
+  # TODO find differentiator for /very/ old versions?
+  if hdr['version_number'] >= 0.0:
   
     diag['uu_rho_gam_cent'] = dfile[4]
     diag['uu_cent'] = dfile[5]

@@ -18,7 +18,7 @@ import plot as bplt
 
 FIGX = 20
 FIGY = 10
-SIZE = 100
+SIZE = 40
 NLINES = 20
 
 # For plotting debug, "array-space" plots
@@ -59,7 +59,7 @@ util.make_dir(FRAMEDIR)
 hdr = io.load_hdr(files[0])
 geom = io.load_geom(hdr, gridfile)
 
-diag = io.load_log(os.path.join(path, "log.out"))
+diag = io.load_log(hdr, os.path.join(path, "log.out"))
 
 def plot(args):
   n = args
