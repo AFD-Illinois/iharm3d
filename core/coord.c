@@ -87,7 +87,7 @@ double dth_dx(double x)
 }
 
 // Boyer-Lindquist coordinate of point X
-void bl_coord(double *X, double *r, double *th)
+void bl_coord(const double X[NDIM], double *r, double *th)
 {
   *r = r_of_x(X[1]);
   *th = th_of_x(X[2]);
@@ -109,6 +109,28 @@ void bl_coord(double *X, double *r, double *th)
 #endif
 
   return;
+}
+
+// Cartesian coordinate Xcart = {t,x,y,z} of point X
+void cart_coord(const double X[NDIM], double Xcart[NDIM])
+{
+  Xcart[0] = X[0]; // t
+  #if METRIC == MKS
+  {
+    double r,th,ph;
+    bl_coord(X,&r,&th);
+    ph = X[3];
+    Xcart[1] = r*sin(th)*cos(ph); // r
+    Xcart[2] = r*sin(th)*sin(ph); // th
+    Xcart[3] = r*cos(th);         // ph
+  }
+  #else
+  {
+    Xcart[1] = X[1];
+    Xcart[2] = X[2];
+    Xcart[3] = X[3];
+  }
+  #endif // METRIC == MKS
 }
 
 // Insert metric here

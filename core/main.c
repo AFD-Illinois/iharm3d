@@ -106,9 +106,14 @@ int main(int argc, char *argv[])
   } // omp parallel
 
   // Initialize global variables and arrays
-  init_io(pfname);
+  init_io();
+  set_core_params();
+  set_problem_params();
+  read_params(pfname);
+
   reset_log_variables();
   nstep = 0;
+  // TODO centralize allocations
   struct GridGeom *G = (struct GridGeom*)malloc(sizeof(struct GridGeom));
   struct FluidState *S = (struct FluidState*)malloc(sizeof(struct FluidState));
 

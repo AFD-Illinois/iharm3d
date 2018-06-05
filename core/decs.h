@@ -23,6 +23,9 @@
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf_bessel.h>
 
+// Hopefully can eliminate this dependency at some point
+#include <hdf5.h>
+
 #include "constants.h"
 #include "parameters.h"
 
@@ -190,6 +193,7 @@ struct FluidState {
   GridVector ucov;
   GridVector bcon;
   GridVector bcov;
+  GridVector jcon;
 };
 
 struct FluidFlux {
@@ -319,10 +323,14 @@ extern int global_stop[3];
   for (int k = 0; k < N3 + 2*NG; k++)
 #define ZLOOP	\
   KLOOP JLOOP ILOOP
-#define ZLOOP_OUT \
-  ILOOP JLOOP KLOOP
 #define ZLOOPALL \
   KLOOPALL JLOOPALL ILOOPALL
+// Transpose loops for forward-index output
+#define ZLOOP_OUT \
+  ILOOP JLOOP KLOOP
+#define ZLOOP_TRANSPOSE \
+  ILOOPALL JLOOPALL KLOOPALL
+
 #define ISLOOP(istart,istop) \
   for (int i = (istart) + NG; i <= (istop) + NG; i++)
 #define JSLOOP(jstart,jstop) \
@@ -367,12 +375,16 @@ double r_of_x(double x);
 double dr_dx(double x);
 double th_of_x(double x);
 double dth_dx(double x);
-void bl_coord(double *X, double *r, double *th);
+void bl_coord(const double *X, double *r, double *th);
+void cart_coord(const double X[NDIM], double Xcart[NDIM]);
 void gcov_func(double *X, double gcov[NDIM][NDIM]);
 void set_points();
 void set_grid(struct GridGeom *G);
 void set_grid_loc(struct GridGeom *G, int i, int j, int k, int loc);
 void zero_arrays();
+
+// current.c
+void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *Ssave, double dtsave);
 
 // diag.c
 void reset_log_variables();
@@ -410,16 +422,10 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sl,
 void flux_ct(struct FluidFlux *F);
 
 // io.c
-void set_core_params();
-void set_param(char *key, void *data);
-void read_params(char *pfname);
-void init_io(char *pfname);
+void init_io();
 void dump(struct GridGeom *G, struct FluidState *S);
-void restart_write(struct FluidState *S);
-void restart_read(char *fname, struct FluidState *S);
-int restart_init(struct GridGeom *G, struct FluidState *S);
-void safe_system(const char *command);
-void safe_fscanf(FILE *stream, const char *format, ...);
+void dump_grid(struct GridGeom *G);
+
 
 // make_superphotons.c
 #if RADIATION
@@ -465,6 +471,11 @@ void mpi_reduce_vector(double *vec_send, double *vec_recv, int len);
 int mpi_io_proc();
 //void mpi_int_broadcast(int *val);
 //void mpi_dbl_broadcast(double *val);
+
+// params.c
+void set_core_params();
+void set_param(char *key, void *data);
+void read_params(char *pfname);
 
 // phys.c
 void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
@@ -531,6 +542,11 @@ double get_random();
 // reconstruction.c
 void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir);
 
+// restart.c
+void restart_write(struct FluidState *S);
+void restart_read(char *fname, struct FluidState *S);
+int restart_init(struct GridGeom *G, struct FluidState *S);
+
 // step.c
 void step(struct GridGeom *G, struct FluidState *state);
 
@@ -558,4 +574,23 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
 // xdmf_output.c
 void write_xml_closing(FILE *xml);
 FILE *write_xml_head(char *fname, double t);
-void dump_grid();
+void write_scalar(float *data, hid_t file_id, const char *name, hid_t filespace,
+  hid_t memspace, FILE *xml);
+void write_scalar_dbl(double *data, hid_t file_id, char *name, hid_t filespace,
+  hid_t memspace, FILE *xml);
+void write_scalar_int(int *data, hid_t file_id, const char *name,
+  hid_t filespace, hid_t memspace, FILE *xml);
+void write_vector(float *data, hid_t file_id, const char *name, hid_t filespace,
+  hid_t memspace, FILE *xml);
+void add_int_value(int val, const char *name, hid_t file_id, hid_t filespace,
+  hid_t memspace);
+void add_dbl_value(double val, const char *name, hid_t file_id, hid_t filespace,
+  hid_t memspace);
+void add_str_value(const char* val, const char *name, hid_t file_id,
+  hid_t filespace, hid_t memspace);
+
+void get_dbl_value(double *val, const char *name, hid_t file_id,
+                   hid_t filespace, hid_t memspace);
+void get_int_value(int *val, const char *name, hid_t file_id, hid_t filespace,
+                   hid_t memspace);
+

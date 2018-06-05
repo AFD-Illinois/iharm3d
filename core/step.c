@@ -12,15 +12,26 @@
 double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   struct FluidState *Ss, struct FluidState *Sf, double Dt);
 static struct FluidState *Stmp;
+static struct FluidState *Ssave;
 static struct FluidFlux *F;
-static int first_call = 1;
 
 void step(struct GridGeom *G, struct FluidState *S)
 {
+  static int first_call = 1;
   if (first_call) {
-    Stmp = (struct FluidState*)calloc(1,sizeof(struct FluidState));
-    F = (struct FluidFlux*)calloc(1,sizeof(struct FluidFlux));
+    Stmp = calloc(1,sizeof(struct FluidState));
+    Ssave = calloc(1,sizeof(struct FluidState));
+    F = calloc(1,sizeof(struct FluidFlux));
     first_call = 0;
+  }
+
+  double dtsave = dt;
+
+  // Need both P_n and P_n+1 to calculate current
+  PLOOP {
+    ZLOOPALL {
+      Ssave->P[ip][k][j][i] = S->P[ip][k][j][i];
+    }
   }
 
   // Predictor setup
@@ -68,6 +79,8 @@ void step(struct GridGeom *G, struct FluidState *S)
   memset((void*)&radG[0][0][0][0], 0,
     (N1+2*NG)*(N2+2*NG)*(N3+2*NG)*NDIM*sizeof(double));
   #endif
+
+  current_calc(G, S, Ssave, dtsave);
 
   // Increment time
   t += dt;
