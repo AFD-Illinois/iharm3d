@@ -152,7 +152,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
       S->P[RHO][k][j][i] = rho;
       if (rho > rhomax) rhomax = rho;
-      //u *= (1. + 4.e-2 * (get_random() - 0.5));
+      u *= (1. + 4.e-2 * (get_random() - 0.5));
       S->P[UU][k][j][i] = u;
       if (u > umax && r > rin) umax = u;
       S->P[U1][k][j][i] = 0.;
@@ -338,9 +338,9 @@ void init(struct GridGeom *G, struct FluidState *S)
   double norm = 0;
   if (!NORM_WITH_MAXR) {
     // Ratio of max UU, beta
-    //double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
-    double beta_act = (gam - 1.) * umax_plane / (0.5 * bsq_max);
-    if (mpi_io_proc()) printf("Umax is %.10e, bsq_max is %.10e, beta is %.10e\n", umax_plane, bsq_max, beta_act);
+    double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
+    //double beta_act = (gam - 1.) * umax_plane / (0.5 * bsq_max);
+    if (mpi_io_proc()) printf("Umax is %.10e, bsq_max is %.10e, beta is %.10e\n", umax, bsq_max, beta_act);
     norm = sqrt(beta_act / beta);
   } else {
     // Beta_min = 100 normalization
