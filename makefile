@@ -29,10 +29,11 @@ PARAM = param.dat
 # Override these defaults if we know the machine we're working with
 # Once you know what compiles, add it as a machine def here
 MAKEFILE_PATH := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
-ifneq (,$(findstring stampede2,$(HOSTNAME)))
+HOST = $(shell hostname)
+ifneq (,$(findstring stampede2,$(HOST)))
 	-include $(MAKEFILE_PATH)/machines/stampede2.make
 endif
--include $(MAKEFILE_PATH)/machines/$(HOSTNAME).make
+-include $(MAKEFILE_PATH)/machines/$(HOST).make
 
 ## LINKING PARAMETERS ##
 # Everything below this should be static
