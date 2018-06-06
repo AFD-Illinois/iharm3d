@@ -44,12 +44,12 @@ ax.set_yscale('log')
 ax.set_ylabel('<|B|>')
 ax.set_ylim([1.e-4, 1.e-1])
 
-# ax = plt.subplot(2,3,4)
-# ax.plot(avg['r'], avg['uphi_r'], color='k', linewidth=2)
-# #ax.set_xscale('log')
-# ax.set_yscale('log')
-# ax.set_ylabel('<u^phi>')
-# ax.set_ylim([1.e-3, 1.e1])
+ax = plt.subplot(2,3,4)
+ax.plot(avg['r'], avg['uphi_r'], color='k', linewidth=2)
+#ax.set_xscale('log')
+ax.set_yscale('log')
+ax.set_ylabel('<u^phi>')
+ax.set_ylim([1.e-3, 1.e1])
 
 ax = plt.subplot(2,3,5)
 ax.plot(avg['r'], avg['Ptot_r'], color='k', linewidth=2)
@@ -79,9 +79,9 @@ plt.close(fig)
 
 fig = plt.figure(figsize=(FIGX, FIGY))
 
-#sx = ''
+sx = ''
 # Use diagnostic output fluxes
-sx = '_d'
+#sx = '_d'
 
 ax = plt.subplot(5,1,1)
 ax.plot(avg['t'+sx], np.fabs(avg['Mdot'+sx]), color='k')
@@ -90,7 +90,7 @@ ax.set_xticklabels([])
 ax.set_ylabel('|Mdot|')
 
 ax = plt.subplot(5,1,2)
-ax.plot(avg['t'+sx], avg['Phi'], color='k')
+ax.plot(avg['t'+sx], avg['Phi'+sx], color='k')
 ax.set_xlim([0,1e4])
 ax.set_xticklabels([])
 ax.set_ylabel('Phi')
@@ -128,7 +128,7 @@ ax.set_ylabel('|Mdot|')
 print np.fabs(avg['Mdot'+sx]).max()
 
 ax = plt.subplot(5,1,2)
-ax.plot(avg['t'+sx], avg['Phi']/np.sqrt(np.fabs(avg['Mdot'+sx])), color='k')
+ax.plot(avg['t'+sx], avg['Phi'+sx]/np.sqrt(np.fabs(avg['Mdot'+sx])), color='k')
 ax.set_xlim([0,1e4])
 ax.set_xticklabels([])
 ax.set_ylabel('Phi/sqrt(|Mdot|)')

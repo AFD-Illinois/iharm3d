@@ -202,8 +202,8 @@ def load_dump(fname, geom, hdr, diag=None):
   return dump
 
 # For compatibility with bhlight scripts
-def load_diag(path):
-  return load_log(os.path.join(path, "log.out"))
+def load_diag(hdr, path):
+  return load_log(hdr, os.path.join(path, "log.out"))
 
 def load_log(hdr, logfile):
   diag = {}

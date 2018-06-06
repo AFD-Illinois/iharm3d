@@ -48,7 +48,7 @@ for n in xrange(len(ths)):
     jmax = n
     break
 
-diag = io.load_diag(path)
+diag = io.load_diag(hdr, path)
 
 dx1 = hdr['dx1']
 dx2 = hdr['dx2']
