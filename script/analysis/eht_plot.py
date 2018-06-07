@@ -141,7 +141,7 @@ ax.set_xticklabels([])
 ax.set_ylabel('Phi/sqrt(|Mdot|)')
 
 ax = plt.subplot(5,1,3)
-ax.plot(avg['t'], np.fabs(avg['Ldot_d'])/(np.fabs(avg['Mdot'])), color='k')
+ax.plot(avg['t'], np.fabs(avg['Ldot'])/(np.fabs(avg['Mdot'])), color='k')
 if diags: ax.plot(avg['t_d'], np.fabs(avg['Ldot_d'])/(np.fabs(avg['Mdot_d'])), color='r')
 ax.set_xlim([0,1e4])
 ax.set_xticklabels([])

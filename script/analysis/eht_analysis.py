@@ -87,9 +87,8 @@ def INT(var):
 def WAVG(var, w):
   return INT(w*var)/INT(w)
 
-def avg_dump(args):
+def avg_dump(n):
   global t
-  n = args
   print '%08d / ' % (n+1) + '%08d' % len(dumps) 
   dump = io.load_dump(dumps[n], geom, hdr)
   t[n] = dump['t']
@@ -146,24 +145,25 @@ def avg_dump(args):
   j = rho**3*P**(-2)*np.exp(-C*(rho**2/(B*P**2))**(1./3.))
   Lum[n] = (j*geom['gdet'][:,:,None]*dx1*dx2*dx3).sum()
 
-for n in xrange(len(dumps)):
-  avg_dump(n)
+# SERIAL
+# for n in xrange(len(dumps)):
+#   avg_dump(n)
 
-# PARALLEL EXECUTION
-#import multiprocessing
-#import signal
-#import psutil
-#original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-#pool = multiprocessing.Pool(NTHREADS)
-#signal.signal(signal.SIGINT, original_sigint_handler)
-#try:
-#  res = pool.map_async(avg_dump, range(len(dumps)))
-#  res.get(720000)
-#except KeyboardInterrupt:
-#  pool.terminate()
-#else:
-#  pool.close()
-#pool.join()
+# PARALLEL
+import multiprocessing
+import signal
+import psutil
+original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+pool = multiprocessing.Pool(NTHREADS)
+signal.signal(signal.SIGINT, original_sigint_handler)
+try:
+  res = pool.map_async(avg_dump, range(len(dumps)))
+  res.get(720000)
+except KeyboardInterrupt:
+  pool.terminate()
+else:
+  pool.close()
+pool.join()
 
 # Time average
 n = 0
