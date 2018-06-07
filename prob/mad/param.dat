@@ -12,7 +12,7 @@
 # OUTPUT
 [dbl] DTd = 5.000000e+00
 [dbl] DTl = 5.000000e-01
-[int] DTr = 1000
+[int] DTr = 10000
 [int] DTp = 100
 
 # PROBLEM
@@ -20,7 +20,6 @@
 [dbl] rmax = 2.200000e+01
 [dbl] rBstart = 2.500000e+01
 [dbl] rBend = 8.100000e+02
-
 
 [int] MAD = 7
 [dbl] beta = 1.000000e+02
