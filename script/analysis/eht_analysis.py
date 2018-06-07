@@ -77,6 +77,24 @@ Ldot = np.zeros(ND)
 Edot = np.zeros(ND)
 Lum = np.zeros(ND)
 
+# Pointers are magical things
+out = {}
+out['rho_SADW'] = rho_SADW[n:,:].mean(axis=0)
+out['r'] = r
+out['rho_r'] = rho_r
+out['Theta_r'] = Theta_r
+out['B_r'] = B_r
+out['Pg_r'] = Pg_r
+out['Ptot_r'] = Ptot_r
+out['betainv_r'] = betainv_r
+out['uphi_r'] = uphi_r
+out['t'] = t
+out['Mdot'] = Mdot
+out['Phi'] = Phi
+out['Ldot'] = Ldot
+out['Edot'] = Edot
+out['Lum'] = Lum
+
 # EVALUATE DIAGNOSTICS
   
 vol = (dx2*2.*np.pi*geom['gdet'][:,:]).sum(axis=-1)
@@ -88,7 +106,6 @@ def WAVG(var, w):
   return INT(w*var)/INT(w)
 
 def avg_dump(n):
-  global t
   print '%08d / ' % (n+1) + '%08d' % len(dumps) 
   dump = io.load_dump(dumps[n], geom, hdr)
   t[n] = dump['t']
@@ -144,10 +161,14 @@ def avg_dump(n):
   C = 0.2
   j = rho**3*P**(-2)*np.exp(-C*(rho**2/(B*P**2))**(1./3.))
   Lum[n] = (j*geom['gdet'][:,:,None]*dx1*dx2*dx3).sum()
+  
+  return out
 
 # SERIAL
 # for n in xrange(len(dumps)):
-#   avg_dump(n)
+#   new_out = avg_dump(n)
+#   for key in out:
+#     out[key] += new_out[key]
 
 # PARALLEL
 import multiprocessing
@@ -157,13 +178,26 @@ original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
 pool = multiprocessing.Pool(NTHREADS)
 signal.signal(signal.SIGINT, original_sigint_handler)
 try:
-  res = pool.map_async(avg_dump, range(len(dumps)))
-  res.get(720000)
+  out_list = pool.map(avg_dump, range(len(dumps)))  # This is /real big/ in memory
+  for key in out:
+    for i in range(len(out_list)):
+      slc = np.where(out[key] == 0) # Avoid double-fill from threads that got 2+ indices
+      out[key][slc] += out_list[i][key][slc]
+  pool.close()
 except KeyboardInterrupt:
   pool.terminate()
 else:
   pool.close()
 pool.join()
+
+# Variables that can be read once
+out['t_d'] = diag['t']
+out['Mdot_d'] = diag['mdot']
+out['Phi_d'] = diag['Phi']
+out['Ldot_d'] = diag['ldot']
+out['Edot_d'] = -diag['edot']
+out['Lum_d'] = diag['lum_eht']
+
 
 # Time average
 n = 0
@@ -172,41 +206,12 @@ for n in xrange(ND):
     break
 
 print 'nmin = %i' % n
-avg = {}
-rho = rho_r[n:,:].mean(axis=0) 
-Theta = Theta_r[n:,:].mean(axis=0)
-B = B_r[n:,:].mean(axis=0)
-Pg = Pg_r[n:,:].mean(axis=0)
-Ptot = Ptot_r[n:,:].mean(axis=0)
-betainv = betainv_r[n:,:].mean(axis=0)
-uphi = uphi_r[n:,:].mean(axis=0)
+
+for key in ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r']:
+  out[key] = (out[key][n:,:]).mean(axis=0) 
 
 # OUTPUT
 import pickle
-
-out = {}
-out['rho_SADW'] = rho_SADW[n:,:].mean(axis=0)
-out['r'] = r
-out['rho_r'] = rho
-out['Theta_r'] = Theta
-out['B_r'] = B
-out['Pg_r'] = Pg
-out['Ptot_r'] = Ptot
-out['betainv_r'] = betainv
-out['uphi_r'] = uphi
-out['t'] = t
-out['Mdot'] = Mdot
-out['Phi'] = Phi
-out['Ldot'] = Ldot
-out['Edot'] = Edot
-out['Lum'] = Lum
-
-out['t_d'] = diag['t']
-out['Mdot_d'] = diag['mdot']
-out['Phi_d'] = diag['Phi']
-out['Ldot_d'] = diag['ldot']
-out['Edot_d'] = -diag['edot']
-out['Lum_d'] = diag['lum_eht']
 
 pickle.dump(out, open('eht_out.p', 'w'))
 
