@@ -116,7 +116,6 @@ def avg_dump(args):
   betainv = (dump['bsq'][:,:,:]/2)/Pg
   betainv_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*betainv[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
 
-  # TODO output ucon
   uphi = (dump['ucon'][:,:,:,3])
   uphi_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*uphi[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) 
 
@@ -126,12 +125,12 @@ def avg_dump(args):
   Pg_r[n,:] /= vol
   Ptot_r[n,:] /= vol
   betainv_r[n,:] /= vol
-  #uphi_r[n,:] /= vol
+  uphi_r[n,:] /= vol
 
   # FLUXES
   iF = 5
   Mdot[n] = (dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
-  #Phi_old[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  #Phi_bcon[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
   Phi[n] = 0.5*(np.fabs(dump['B1'][iF,:,:])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
   Trphi = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,3]
   Trphi -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,3]
