@@ -231,6 +231,16 @@ void mpi_reduce_vector(double *vec_send, double *vec_recv, int len) {
   MPI_Allreduce(vec_send, vec_recv, len, MPI_DOUBLE, MPI_SUM, comm);
 }
 
+void mpi_int_broadcast(int *val)
+{
+  MPI_Bcast(val, 1, MPI_INT, 0, comm);
+}
+
+void mpi_dbl_broadcast(double *val)
+{
+  MPI_Bcast(val, 1, MPI_DOUBLE, 0, comm);
+}
+
 int mpi_io_proc()
 {
   return (rank == 0 ? 1 : 0);

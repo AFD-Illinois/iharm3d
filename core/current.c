@@ -133,9 +133,9 @@ inline int antisym(int a, int b, int c, int d)
   if (b == d) return 0;
   if (c == d) return 0;
 
-  // Determine parity of permutation        
+  // Determine parity of permutation
   int p[4] = {a, b, c, d};
-  
+
   return pp(4, p);
 }
 

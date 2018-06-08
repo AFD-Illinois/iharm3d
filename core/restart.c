@@ -309,7 +309,7 @@ void get_int_value(int *val, const char *name, hid_t file_id, hid_t filespace,
   H5Dclose(dset_id);
   H5Pclose(plist_id);
 
-  //mpi_int_broadcast(val);
+  mpi_int_broadcast(val);
 }
 
 void get_dbl_value(double *val, const char *name, hid_t file_id,
@@ -324,6 +324,6 @@ void get_dbl_value(double *val, const char *name, hid_t file_id,
   H5Dclose(dset_id);
   H5Pclose(plist_id);
 
-  //mpi_dbl_broadcast(val);
+  mpi_dbl_broadcast(val);
 }
 
