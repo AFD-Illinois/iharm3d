@@ -473,8 +473,8 @@ double mpi_reduce(double f);
 int mpi_reduce_int(int f);
 void mpi_reduce_vector(double *vec_send, double *vec_recv, int len);
 int mpi_io_proc();
-//void mpi_int_broadcast(int *val);
-//void mpi_dbl_broadcast(double *val);
+void mpi_int_broadcast(int *val);
+void mpi_dbl_broadcast(double *val);
 
 // params.c
 void set_core_params();
