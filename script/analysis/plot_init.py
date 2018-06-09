@@ -81,7 +81,7 @@ for n in range(N1):
 
 ax = plt.subplot(NPLOTSY,NPLOTSX,2)
 bplt.plot_r(ax, geom, flux_in, None, None, 'flux_in', logx=False, logy=False)
-ax.set_xlim([0, SIZE]); ax.set_ylim([-200, 10])
+ax.set_xlim([0, SIZE]) #; ax.set_ylim([-200, 10])
 
 # Density 2D
 ax = plt.subplot(NPLOTSY,NPLOTSX,3)

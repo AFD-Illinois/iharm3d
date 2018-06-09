@@ -59,6 +59,15 @@ N3 = hdr['N3']
 
 r = geom['r'][:,N2/2,0]
 
+# Calculate fluxes at r = 10
+# Except Phi at EH, zone 5
+iF = 0
+while r[iF] < 5:
+  iF += 1
+iF -= 1
+
+iEH = 5  
+
 ND = len(dumps)
 
 t = np.zeros(ND)
@@ -79,7 +88,7 @@ Lum = np.zeros(ND)
 
 # Pointers are magical things
 out = {}
-out['rho_SADW'] = rho_SADW[n:,:].mean(axis=0)
+out['rho_SADW'] = rho_SADW
 out['r'] = r
 out['rho_r'] = rho_r
 out['Theta_r'] = Theta_r
@@ -144,10 +153,9 @@ def avg_dump(n):
   uphi_r[n,:] /= vol
 
   # FLUXES
-  iF = 5
   Mdot[n] = np.abs((dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum())
   #Phi_bcon[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
-  Phi[n] = 0.5*(np.fabs(dump['B1'][iF,:,:])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  Phi[n] = 0.5*(np.fabs(dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
   Trphi = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,3]
   Trphi -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,3]
   Trt = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,0]
@@ -165,10 +173,8 @@ def avg_dump(n):
   return out
 
 # SERIAL
-# for n in xrange(len(dumps)):
-#   new_out = avg_dump(n)
-#   for key in out:
-#     out[key] += new_out[key]
+#for n in xrange(len(dumps)):
+#  avg_dump(n)
 
 # PARALLEL
 import multiprocessing
@@ -179,7 +185,7 @@ pool = multiprocessing.Pool(NTHREADS)
 signal.signal(signal.SIGINT, original_sigint_handler)
 try:
   out_list = pool.map(avg_dump, range(len(dumps)))  # This is /real big/ in memory
-  for key in out:
+  for key in out.keys():
     for i in range(len(out_list)):
       slc = np.where(out[key] == 0) # Avoid double-fill from threads that got 2+ indices
       out[key][slc] += out_list[i][key][slc]
@@ -190,14 +196,15 @@ else:
   pool.close()
 pool.join()
 
-# Variables that can be read once
-out['t_d'] = diag['t']
-out['Mdot_d'] = diag['mdot']
-out['Phi_d'] = diag['Phi']
-out['Ldot_d'] = diag['ldot']
-out['Edot_d'] = -diag['edot']
-out['Lum_d'] = diag['lum_eht']
-
+# Sort
+order = np.argsort(out['t'])
+for key in out.keys():
+  if key in ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r']:
+    out[key] = out[key][order,:]
+  elif key in ['r']:
+    pass
+  else:
+    out[key] = out[key][order]
 
 # Time average
 n = 0
@@ -207,14 +214,22 @@ for n in xrange(ND):
 
 print 'nmin = %i' % n
 
-for key in ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r']:
-  out[key] = (out[key][n:,:]).mean(axis=0) 
+for key in ['rho_SADW', 'rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r']:
+  out[key] = (out[key][n:,:]).mean(axis=0)
+
+# Names for compatibility with hdf5_to_dict
+out['mdot'] = out['Mdot']
+out['phi'] = out['Phi']/np.sqrt(np.abs(out['Mdot']))
+
+# Variables that can be read once
+out['t_d'] = diag['t']
+out['Mdot_d'] = diag['mdot']
+out['Phi_d'] = diag['Phi']
+out['Ldot_d'] = diag['ldot']
+out['Edot_d'] = -diag['edot']
+out['Lum_d'] = diag['lum_eht']
 
 # OUTPUT
 import pickle
 
 pickle.dump(out, open('eht_out.p', 'w'))
-
-
-
-

@@ -177,16 +177,15 @@ def load_dump(fname, geom, hdr, diag=None):
   if diag is not None:
     dump['mdot'] = log_time(diag, 'mdot', dump['t'])
     dump['phi'] = log_time(diag, 'phi', dump['t'])
-    dump['phi_calc'] = log_time(diag, 'phi_calc', dump['t'])
-  
+
     #dump['Phi_py'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:,None]*hdr['dx2']*hdr['dx3']))
     dump['Phi_py'] = 0.5*(np.abs(dump['B1'][5,:,:])*geom['gdet'][5,:,None]*hdr['dx2']*hdr['dx3']).sum()
-    dump['phi_py'] = dump['Phi_py']/(np.sqrt(dump['mdot'])) # *2pi? Just sqrt?
+    dump['phi_py'] = dump['Phi_py']/(np.sqrt(dump['mdot'])) # No norm; see Narayan '12
 
     # TODO this is not normalized or anything
     dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:,N2/2,None]*hdr['dx1']*hdr['dx3']))
-  
-    err = (dump['phi_calc'] - dump['phi_py'])/dump['phi_calc']
+
+    err = (dump['phi'] - dump['phi_py'])/dump['phi']
     if err > 1e-3:
       print "Phi calculation is wrong! Error: %f" % err
   
@@ -229,7 +228,6 @@ def load_log(hdr, logfile):
   
     diag['Phi'] = dfile[11]
     diag['phi'] = dfile[12]
-    diag['phi_calc'] = diag['Phi'] / np.sqrt(np.abs(diag['mdot']))
     diag['jet_EM_flux'] = dfile[13]
   
     diag['divbmax'] = dfile[14]

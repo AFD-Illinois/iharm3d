@@ -15,6 +15,7 @@ import util
 import glob
 import os
 import plot as bplt
+import pickle
 
 FIGX = 20
 FIGY = 10
@@ -25,7 +26,7 @@ NLINES = 20
 USEARRSPACE = False
 
 LOG_MDOT = False
-MAX_MDOT = 120
+MAX_MDOT = 80
 LOG_PHI = False
 MAX_PHI = 80
 
@@ -59,7 +60,12 @@ util.make_dir(FRAMEDIR)
 hdr = io.load_hdr(files[0])
 geom = io.load_geom(hdr, gridfile)
 
-diag = io.load_log(hdr, os.path.join(path, "log.out"))
+# Load diagnostics from HARM itself
+#diag = io.load_log(hdr, os.path.join(path, "log.out"))
+
+# Or from  Python post-analysis
+# TODO better loading here and above
+diag = pickle.load(open("eht_out.p", 'rb'))
 
 def plot(args):
   n = args
@@ -85,12 +91,19 @@ def plot(args):
 
 
   # I change this a lot
+  #var2_str = 'ucon_r'
+  #var2_data = dump['RHO'][:,:,:]*dump['ucon'][:,:,:,1]*dump['gdet'][:,:,None]*hdr['dx2']*hdr['dx3']
+  #var2_min = -0.025
+  #var2_max = 0.025
+
   var2_str = 'beta'
-  var2_data = np.log10(dump[var2_str])
+  var2_data = np.log10(dump['beta'])
+  var2_min = -2
+  var2_max = 2
 
   ax = plt.subplot(2,4,2)
   bplt.plot_xz(ax, geom, var2_data, dump,
-               label=var2_str, cmap='RdBu_r', vmin=-2, vmax=2, arrayspace=USEARRSPACE)
+               label=var2_str, cmap='RdBu_r', vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
@@ -107,7 +120,7 @@ def plot(args):
 
   ax = plt.subplot(2,4,6)
   bplt.plot_xy(ax, geom, var2_data, dump,
-               label=var2_str, cmap='RdBu_r', vmin=-2, vmax=2, arrayspace=USEARRSPACE)
+               label=var2_str, cmap='RdBu_r', vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
@@ -121,13 +134,13 @@ def plot(args):
     bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', ylim=[10**(-2),MAX_MDOT], logy=LOG_MDOT)
 
     ax = plt.subplot(4,2,4)
-    bplt.diag_plot(ax, diag, dump, 'phi_calc', 'phi_BH', ylim=[10**(-1),MAX_PHI], logy=LOG_PHI)
+    bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', ylim=[10**(-1),MAX_PHI], logy=LOG_PHI)
     
-    ax = plt.subplot(4,2,6)
-    bplt.diag_plot(ax, diag, dump, 'mass', 'Total mass', ylim=None, logy=False)
+    #ax = plt.subplot(4,2,6)
+    #bplt.diag_plot(ax, diag, dump, 'mass', 'Total mass', ylim=None, logy=False)
     
-    ax = plt.subplot(4,2,8)
-    bplt.diag_plot(ax, diag, dump, 'egas', 'Gas energy', ylim=None, logy=False)
+    #ax = plt.subplot(4,2,8)
+    #bplt.diag_plot(ax, diag, dump, 'egas', 'Gas energy', ylim=None, logy=False)
 
   # TODO enlarge plots w/o messing up even pixel count
   # Maybe share axes, even?
