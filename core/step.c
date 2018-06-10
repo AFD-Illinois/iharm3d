@@ -52,12 +52,6 @@ void step(struct GridGeom *G, struct FluidState *S)
 
   set_bounds(G, Stmp);
 
-  // Radiation step
-  #if RADIATION
-  make_superphotons(Ph, t, dt);
-  push_superphotons(t, dt);
-  #endif
-
   // Corrector step
   double ndt = advance_fluid(G, S, Stmp, S, dt);
 
@@ -73,13 +67,6 @@ void step(struct GridGeom *G, struct FluidState *S)
   #endif
 
   set_bounds(G, S);
-
-
-  #if RADIATION
-  // Apply radiation four-force to fluid
-  memset((void*)&radG[0][0][0][0], 0,
-    (N1+2*NG)*(N2+2*NG)*(N3+2*NG)*NDIM*sizeof(double));
-  #endif
 
   // Increment time
   t += dt;

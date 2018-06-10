@@ -216,11 +216,6 @@ extern GridInt pflag;
 extern GridInt fail_save;
 //};
 
-#if RADIATION
-extern grid_fourvector_type radG; // Radiation four-force
-extern struct of_photon **photon_lists;
-#endif
-
 /*******************************************************************************
     GLOBAL VARIABLES SECTION
 *******************************************************************************/
@@ -234,21 +229,9 @@ extern double M_unit;
 extern double Rhor;
 extern double Risco;
 extern double tp_over_te;
-#if RADIATION
-extern double mbh, L_unit, T_unit, M_unit, RHO_unit, U_unit, B_unit;
-extern double Ne_unit, Thetae_unit, kphys_to_num;
-#endif
 
 // Numerical parameters
 extern double Rin, Rout, hslope, R0;
-#if RADIATION
-extern double Rout_rad, tune_emiss, tune_scatt;
-extern double numin, numax;
-extern double kappa;
-extern double startx_rad[NDIM], stopx_rad[NDIM];
-extern double wgtC;
-extern int step_made, step_abs, step_scatt, step_lost, step_rec, step_tot;
-#endif
 extern double cour;
 extern double dV, dx[NDIM], startx[NDIM];
 extern double x1Min, x1Max, x2Min, x2Max, x3Min, x3Max;
@@ -283,20 +266,6 @@ extern int nthreads;
 #if ELECTRONS
 extern double game, gamp;
 extern double fel0;
-#endif
-
-#if RADIATION
-struct of_photon {
-  double X[NDIM];
-  double Kcov[NDIM];
-  double Xprev[NDIM];
-  double Kcovprev[NDIM];
-  double w;
-  double dl;
-  int nscatt;
-  int origin[4];
-  struct of_photon *next;
-};
 #endif
 
 #if POLYTH
@@ -407,13 +376,6 @@ double get_fel(int i, int j, int k, double p[NVAR]);
 void fixup_electrons(grid_prim_type p);
 #endif
 
-// emissivity.c
-#if RADIATION
-double jnu(double nu, double Ne, double Thetae, double B, double theta);
-double Jnu(double nu, double Ne, double Thetae, double B);
-void init_emissivity();
-#endif
-
 // fixup.c
 void fixup(struct GridGeom *G, struct FluidState *S);
 void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
@@ -429,14 +391,6 @@ void flux_ct(struct FluidFlux *F);
 void init_io();
 void dump(struct GridGeom *G, struct FluidState *S);
 void dump_grid(struct GridGeom *G);
-
-
-// make_superphotons.c
-#if RADIATION
-void make_superphotons(grid_prim_type Prad, double t, double dt);
-void set_weight(grid_prim_type Prad);
-void get_dnz(grid_prim_type Prad);
-#endif
 
 // metric.c
 double gcon_func(double gcov[NDIM][NDIM], double gcon[NDIM][NDIM]);
@@ -508,37 +462,6 @@ void init(struct GridGeom *G, struct FluidState *S);
 // Boundary condition (currently used for Bondi flow)
 void bound_gas_prob_x1r(int i, int j, int k, GridPrim  P, struct GridGeom *G);
 
-// push_superphotons.c
-#if RADIATION
-void push_superphotons(double t, double dt);
-#endif
-
-// rad_utils.c
-#if RADIATION
-void init_rad(grid_prim_type Prad);
-void init_superphoton_resolution();
-double linear_interp_log(double x, double *table, double lmin, double dl);
-void set_units();
-void list_remove(struct of_photon **ph, struct of_photon **ph_head,
-  struct of_photon **ph_prev);
-void get_fluid_zone(int i, int j, int k, grid_prim_type Prad, double *Ne,
-  double *Thetae, double *B, double Ucon[NDIM], double Ucov[NDIM],
-  double Bcon[NDIM], double Bcov[NDIM]);
-void *my_malloc(int cnt, int size);
-#endif
-
-// radiation.c
-#if RADIATION
-double Bnu_inv(double nu, double Thetae);
-double jnu_inv(double nu, double Thetae, double Ne, double B, double theta);
-double alpha_inv_scatt(double nu, double Thetae, double Ne);
-double alpha_inv_abs(double nu, double Thetae, double Ne, double B,
-  double theta);
-double get_fluid_nu(double X[4], double K[4], double Ucov[NDIM]);
-double get_bk_angle(double X[NDIM], double K[NDIM], double Ucov[NDIM],
-  double Bcov[NDIM], double B);
-#endif
-
 // random.c
 void init_random(int seed);
 double get_random();
@@ -553,17 +476,6 @@ int restart_init(struct GridGeom *G, struct FluidState *S);
 
 // step.c
 void step(struct GridGeom *G, struct FluidState *state);
-
-// tetrads.c
-#if RADIATION
-void coord_to_tetrad(double Ecov[NDIM][NDIM], double Kcoord[NDIM],
-  double Ktetrad[NDIM]);
-void tetrad_to_coord(double Econ[NDIM][NDIM], double Ktetrad[NDIM],
-  double Kcoord[NDIM]);
-void make_tetrad(int i, int j, int k, double Ucon[NDIM], double trial[NDIM],
-  double Gcov[NDIM][NDIM], double Econ[NDIM][NDIM], double Ecov[NDIM][NDIM]);
-void normalize_null(double Gcov[NDIM][NDIM], double K[NDIM]);
-#endif
 
 // timing.c
 void time_init();

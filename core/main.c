@@ -48,10 +48,6 @@ int main(int argc, char *argv[])
 
   // Read command line arguments
 
-  #if RADIATION
-  mbh = -1.;
-  M_unit = -1.;
-  #endif
   char pfname[STRLEN];
   for (int n = 0; n < argc; n++) {
     // Check for argv[n] of the form '-*'
@@ -89,13 +85,6 @@ int main(int argc, char *argv[])
     fprintf(stderr, "PPM/WENO/MP5 + NG < 3\n") ;
     exit(1);
   }
-  #if (RADIATION && METRIC == MKS)
-  if (mbh < 0. || M_unit < 0.) {
-    fprintf(stderr, "Error! Bad parameters! mbh = %e and M_unit = %e\n",
-      mbh, M_unit);
-    exit(-1);
-  }
-  #endif
 
   #pragma omp parallel
   {
@@ -111,7 +100,6 @@ int main(int argc, char *argv[])
   set_problem_params();
   read_params(pfname);
 
-  reset_log_variables();
   nstep = 0;
   // TODO centralize allocations
   struct GridGeom *G = (struct GridGeom*)malloc(sizeof(struct GridGeom));
@@ -123,9 +111,6 @@ int main(int argc, char *argv[])
   time_init();
   if (!is_restart) {
     init(G, S);
-    #if RADIATION
-    init_rad(P);
-    #endif
     tdump = DTd;
     tlog  = DTl;
     if (mpi_io_proc())
@@ -160,10 +145,6 @@ int main(int argc, char *argv[])
 
     if (mpi_io_proc()) {
       fprintf(stdout, "t = %10.5g dt = %10.5g n = %8d\n", t, dt, nstep);
-      #if RADIATION
-      fprintf(stdout, "made = %d abs = %d scatt = %d lost = %d tot = %d\n",
-        step_made, step_abs, step_scatt, step_lost, step_tot);
-      #endif
     }
 
     // File I/O with set frequencies
@@ -186,7 +167,6 @@ int main(int argc, char *argv[])
     if (nstep % DTp == 0)
       report_performance();
 
-    reset_log_variables();
   }
 /*******************************************************************************
     END MAIN LOOP

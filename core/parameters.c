@@ -61,23 +61,10 @@ void set_core_params() {
 #endif
   if (N2 < NG) hslope = 1.;
   set_param("Rout", &Rout);
-  #if RADIATION
-  set_param("Rout_rad", &Rout_rad);
-  #endif
 #endif
 
   set_param("cour", &cour);
   set_param("gam", &gam);
-
-  #if RADIATION
-  #if METRIC == MINKOWSKI
-  set_param("L_unit", &L_unit);
-  set_param("M_unit", &M_unit);
-  #elif METRIC == MKS
-  set_param("mbh", &mbh);
-  set_param("M_unit", &M_unit);
-  #endif
-  #endif
 
   #if ELECTRONS
   set_param("game", &game);
@@ -85,23 +72,6 @@ void set_core_params() {
   set_param("fel0", &fel0);
   set_param("tptemin", &tptemin);
   set_param("tptemax", &tptemax);
-  #endif
-
-  #if RADIATION
-  #if !ELECTRONS
-  set_param("tp_over_te", &tp_over_te);
-  #endif
-  set_param("nph_per_proc", &nph_per_proc);
-  set_param("numin", &numin);
-  set_param("numax", &numax);
-  set_param("tune_emiss", &tune_emiss);
-  set_param("tune_scatt", &tune_scatt);
-  set_param("t0_tune_emiss", &t_tune_emiss);
-  set_param("t0_tune_scatt", &t_tune_scatt);
-  set_param("thetae_max", &thetae_max);
-  set_param("sigma_max", &sigma_max);
-  set_param("kdotk_tol", &kdotk_tol);
-  set_param("Nph_to_track", &Nph_to_track);
   #endif
 
   set_param("DTd", &DTd);
@@ -163,10 +133,6 @@ void read_params(char* pfname)
       }
     }
   }
-
-  #if (METRIC == MKS) && RADIATION
-  Mbh = mbh*MSUN;
-  #endif
 
   if (nparamset != nparam && mpi_io_proc()) {
     fprintf(stderr, "Set %i parameters, needed %i!\n", nparamset, nparam);

@@ -142,76 +142,6 @@ void init_io()
     file_hdr_count, NULL);
   memspace_hdr = H5Screate_simple(hdr_rank, file_hdr_count, NULL);
 
-  #if RADIATION
-    // Create custom datatypes for arrays inside struct
-  hsize_t array_dim[2] = {NSUP, NDIM};
-  hid_t array_tid = H5Tarray_create(H5T_NATIVE_DOUBLE, 2, array_dim);
-  hsize_t int_vec_dim[1] = {NDIM};
-  hid_t int_vec_tid = H5Tarray_create(H5T_NATIVE_INT, 1, int_vec_dim);
-
-  // Memory contiguous in file
-  phfiletype = H5Tcreate(H5T_COMPOUND, sizeof(struct of_photon));
-  int offset = 0;
-  // Function that accepts phfiletype, name, offset, size
-  H5Tinsert(phfiletype, "X", offset, array_tid);
-  offset += NSUP*NDIM*sizeof(double);
-  H5Tinsert(phfiletype, "Kcov", offset, array_tid);
-  offset += NSUP*NDIM*sizeof(double);
-  H5Tinsert(phfiletype, "Kcon", offset, array_tid);
-  offset += NSUP*NDIM*sizeof(double);
-  H5Tinsert(phfiletype, "w", offset, H5T_NATIVE_DOUBLE);
-  offset += sizeof(double);
-  H5Tinsert(phfiletype, "KdotKprev", offset, H5T_NATIVE_DOUBLE);
-  offset += sizeof(double);
-  H5Tinsert(phfiletype, "nscatt", offset, H5T_NATIVE_INT);
-  offset += sizeof(int);
-  H5Tinsert(phfiletype, "origin", offset, int_vec_tid);
-  offset += NDIM*sizeof(int);
-  H5Tinsert(phfiletype, "t0", offset, H5T_NATIVE_DOUBLE);
-  offset += sizeof(double);
-  H5Tinsert(phfiletype, "is_tracked", offset, H5T_NATIVE_INT);
-
-  // Use HOFFSET to account for struct padding in memory
-  phmemtype = H5Tcreate(H5T_COMPOUND, sizeof(struct of_photon));
-  H5Tinsert(phmemtype, "X", HOFFSET(struct of_photon, X), array_tid);
-  H5Tinsert(phmemtype, "Kcov", HOFFSET(struct of_photon, Kcov),
-    array_tid);
-  H5Tinsert(phmemtype, "Kcon", HOFFSET(struct of_photon, Kcon),
-    array_tid);
-  H5Tinsert(phmemtype, "w", HOFFSET(struct of_photon, w),
-    H5T_NATIVE_DOUBLE);
-  H5Tinsert(phmemtype, "KdotKprev",
-    HOFFSET(struct of_photon, KdotKprev), H5T_NATIVE_DOUBLE);
-  H5Tinsert(phmemtype, "nscatt", HOFFSET(struct of_photon, nscatt),
-    H5T_NATIVE_INT);
-  H5Tinsert(phmemtype, "origin", HOFFSET(struct of_photon, origin),
-    int_vec_tid);
-  H5Tinsert(phmemtype, "t0", HOFFSET(struct of_photon, t0),
-    H5T_NATIVE_DOUBLE);
-  H5Tinsert(phmemtype, "is_tracked", HOFFSET(struct of_photon, is_tracked),
-    H5T_NATIVE_INT);
-
-  trackphfiletype = H5Tcreate(H5T_COMPOUND, sizeof(struct of_photon));
-  offset = 0;
-  H5Tinsert(trackphfiletype, "X1", offset, H5T_NATIVE_DOUBLE);
-  offset += sizeof(double);
-  H5Tinsert(trackphfiletype, "X2", offset, H5T_NATIVE_DOUBLE);
-  offset += sizeof(double);
-  H5Tinsert(trackphfiletype, "X3", offset, H5T_NATIVE_DOUBLE);
-  offset += sizeof(double);
-  H5Tinsert(trackphfiletype, "nscatt", offset, H5T_NATIVE_INT);
-
-  trackphmemtype = H5Tcreate(H5T_COMPOUND, sizeof(struct of_track_photon));
-  H5Tinsert(trackphmemtype, "X1", HOFFSET(struct of_track_photon, X1),
-    H5T_NATIVE_DOUBLE);
-  H5Tinsert(trackphmemtype, "X2", HOFFSET(struct of_track_photon, X2),
-    H5T_NATIVE_DOUBLE);
-  H5Tinsert(trackphmemtype, "X3", HOFFSET(struct of_track_photon, X3),
-    H5T_NATIVE_DOUBLE);
-  H5Tinsert(trackphmemtype, "nscatt", HOFFSET(struct of_track_photon, nscatt),
-    H5T_NATIVE_INT);
-  #endif // RADIATION
-
   PLOOP {
     vnams[ip] = vnams_base[ip];
   }
@@ -223,91 +153,6 @@ void init_io()
   vnams[KTOT] = "KTOT";
   #endif // ELECTRONS
 }
-
-#if RADIATION
-void track_ph()
-{
-  #if TRACK_PH
-  static int track_id = 0;
-  // Count number of tracked photons on this processor
-  int num_tracked = 0;
-  #pragma omp parallel
-  {
-    struct of_photon *ph = photon_lists[omp_get_thread_num()];
-    while (ph != NULL) {
-      if (ph->is_tracked == 1) {
-        #pragma omp atomic
-        num_tracked++;
-      }
-      ph = ph->next;
-    }
-  }
-
-  // Create buffer for output
-  struct of_track_photon *io_track = malloc(
-    num_tracked*sizeof(struct of_track_photon));
-  int nio = 0;
-  double X[NDIM], Kcov[NDIM], Kcon[NDIM];
-  for (int n = 0; n < nthreads; n++) {
-    struct of_photon *ph = photon_lists[n];
-    while (ph != NULL) {
-      if (ph->is_tracked == 1) {
-        get_X_K_interp(ph, t, X, Kcov, Kcon);
-
-        io_track[nio].X1 = X[1];
-        io_track[nio].X2 = X[2];
-        io_track[nio].X3 = X[3];
-        io_track[nio].nscatt = ph->nscatt;
-        nio++;
-      }
-      ph = ph->next;
-    }
-  }
-
-  if (Nph_to_track > 0.) {
-
-    char name[STRLEN];
-    char fname[STRLEN];
-    sprintf(fname, "trackph_%08d.h5", track_id);
-    strcpy(name, dumpdir);
-    strcat(name, fname);
-
-    hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
-    H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
-    hid_t file_id = H5Fcreate(name, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
-    H5Pclose(plist_id);
-
-    // One dataset per processor; each processor must create all datasets
-    hid_t *ph_dsets = malloc(mpi_nprocs()*sizeof(hid_t));
-    for (int n = 0; n < mpi_nprocs(); n++) {
-      char dsetnam[STRLEN];
-      sprintf(dsetnam, "trackph_%08d", n);
-      int num_tracked_buf = num_tracked;
-      mpi_int_broadcast_proc(&num_tracked_buf, n);
-      hsize_t dims[1] = {num_tracked_buf};
-      hid_t space = H5Screate_simple(1, dims, NULL);
-      ph_dsets[n] = H5Dcreate(file_id, dsetnam, trackphfiletype, space,
-        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-      H5Sclose(space);
-    }
-    if (num_tracked > 0)
-      H5Dwrite(ph_dsets[mpi_myrank()], trackphmemtype, H5S_ALL, H5S_ALL,
-        H5P_DEFAULT, io_track);
-
-    // Close and release resources
-    free(io_track);
-    for (int n = 0; n < mpi_nprocs(); n++) {
-      H5Dclose(ph_dsets[n]);
-    }
-    free(ph_dsets);
-    H5Fflush(file_id, H5F_SCOPE_GLOBAL);
-    H5Fclose(file_id);
-
-    track_id++;
-  }
-  #endif // TRACK_PH
-}
-#endif // RADIATION
 
 void dump_grid(struct GridGeom *G)
 {
@@ -605,29 +450,12 @@ void dump(struct GridGeom *G, struct FluidState *S)
 //    WRITE_HDR(poly_xt, TYPE_DBL);
 //    WRITE_HDR(poly_alpha, TYPE_DBL);
 //    WRITE_HDR(mks_smooth, TYPE_DBL);
-    #if RADIATION
-      WRITE_HDR(Mbh, TYPE_DBL);
-      WRITE_HDR(mbh, TYPE_DBL);
-      WRITE_HDR(Rout_rad, TYPE_DBL);
-    #endif // RADIATION
   #endif // METRIC
 
   WRITE_HDR(gam, TYPE_DBL);
   #if ELECTRONS
     WRITE_HDR(game, TYPE_DBL);
     WRITE_HDR(gamp, TYPE_DBL);
-  #endif
-
-  #if RADIATION
-    WRITE_HDR(tp_over_te, TYPE_DBL);
-    WRITE_HDR(L_unit, TYPE_DBL);
-    WRITE_HDR(T_unit, TYPE_DBL);
-    WRITE_HDR(M_unit, TYPE_DBL);
-    WRITE_HDR(RHO_unit, TYPE_DBL);
-    WRITE_HDR(U_unit, TYPE_DBL);
-    WRITE_HDR(B_unit, TYPE_DBL);
-    WRITE_HDR(Ne_unit, TYPE_DBL);
-    WRITE_HDR(Thetae_unit, TYPE_DBL);
   #endif
 
   WRITE_HDR(cour, TYPE_DBL);
@@ -640,12 +468,6 @@ void dump(struct GridGeom *G, struct FluidState *S)
   WRITE_HDR(dump_cnt, TYPE_INT);
   WRITE_HDR(dt, TYPE_DBL);
   WRITE_HDR(failed, TYPE_INT);
-  #if RADIATION
-    int maxnscatt = MAXNSCATT; WRITE_HDR(maxnscatt, TYPE_INT);
-    int nubins = NUBINS; WRITE_HDR(nubins, TYPE_INT);
-    WRITE_HDR(numin, TYPE_DBL);
-    WRITE_HDR(numax, TYPE_DBL);
-  #endif
 
   #if NVAR_PASSIVE > 0
   //WRITE_(passive_type, TYPE_INT);
@@ -722,52 +544,6 @@ void dump(struct GridGeom *G, struct FluidState *S)
     // TODO Current is tracked all the time -- slow?
     WRITE_VEC(S->jcon, TYPE_FLOAT);
 
-    #if RADIATION
-      WRITE_GRID(Nsph, TYPE_INT);
-
-      WRITE_GRID(nph, TYPE_FLOAT);
-
-      {
-        #define RANK (4)
-        hsize_t fdims[RANK] = {MAXNSCATT+2, N1TOT, N2TOT, N3TOT};
-        hsize_t fstart[RANK] = {0, global_start[0], global_start[1],
-          global_start[2]};
-        hsize_t fcount[RANK] = {MAXNSCATT+2, N1, N2, N3};
-        hsize_t mdims[RANK] = {MAXNSCATT+2, N1+2*NG, N2+2*NG, N3+2*NG};
-        hsize_t mstart[RANK] = {0, NG, NG, NG};
-        WRITE_ARRAY(Jrad, RANK, fdims, fstart, fcount, mdims, mstart, TYPE_FLOAT);
-        #undef RANK
-      }
-
-      WRITE_GRID(Nem, TYPE_INT);
-
-      WRITE_GRID(Nabs, TYPE_INT);
-
-      WRITE_GRID(Nsc, TYPE_INT);
-
-      set_Rmunu(); 
-      WRITE_TENSOR(Rmunu, TYPE_FLOAT);
-	
-      // nuLnu reduced over MPI, now just io proc outputs it
-      {
-        mpi_reduce_nuLnu();
-        #define RANK (4)
-        hsize_t fdims[RANK] = {MAXNSCATT+1, NTH, NPHI, NUBINS};
-        hsize_t fstart[RANK] = {0, 0, 0, 0};
-        hsize_t fcount[RANK] = {MAXNSCATT+1, NTH, NPHI, NUBINS};
-        hsize_t mdims[RANK] = {MAXNSCATT+1, NTH, NPHI, NUBINS};
-        hsize_t mstart[RANK] = {0, 0, 0, 0};
-        if (!mpi_io_proc()) {
-          fcount[0] = 0;
-          fcount[1] = 0;
-          fcount[2] = 0;
-          fcount[3] = 0;
-        }
-        WRITE_ARRAY(nuLnu, RANK, fdims, fstart, fcount, mdims, mstart,
-          TYPE_DBL);
-        #undef RANK
-      }
-    #endif // RADIATION
   }
 
   H5Fflush(file_id, H5F_SCOPE_GLOBAL);

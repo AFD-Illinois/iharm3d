@@ -8,13 +8,6 @@
 
 #include "decs.h"
 
-void reset_log_variables()
-{
-  #if RADIATION
-  step_tot = step_made = step_abs = step_scatt = step_rec = 0;
-  #endif
-}
-
 // Evaluate flux based diagnostics; put results in global variables
 // Note this is still per-process
 void diag_flux(struct FluidFlux *F)

@@ -188,14 +188,6 @@ void set_points()
   dx[1] = (x1Max - x1Min)/N1TOT;
   dx[2] = (x2Max - x2Min)/N2TOT;
   dx[3] = (x3Max - x3Min)/N3TOT;
-  #if RADIATION
-  startx_rad[1] = startx[1];
-  startx_rad[2] = startx[2];
-  startx_rad[3] = startx[3];
-  stopx_rad[1] = startx_rad[1] + N1TOT*dx[1];
-  stopx_rad[2] = startx_rad[2] + N1TOT*dx[2];
-  stopx_rad[3] = startx_rad[3] + N1TOT*dx[3];
-  #endif
   #elif METRIC == MKS
   // Set Rin such that we have 5 zones completely inside the event horizon
   // TODO Error out if there are not enough zones
@@ -208,15 +200,6 @@ void set_points()
   dx[1] = log(Rout/Rin)/N1TOT;
   dx[2] = 1./N2TOT;
   dx[3] = 2.*M_PI/N3TOT;
-
-  #if RADIATION
-  startx_rad[1] = log(Rhor);
-  startx_rad[2] = startx[2];
-  startx_rad[3] = startx[3];
-  stopx_rad[1] = log(Rout_rad);
-  stopx_rad[2] = startx[2] + N2TOT*dx[2];
-  stopx_rad[3] = startx[3] + N3TOT*dx[3];
-  #endif
 
   #if POLYTH
   poly_alpha = 8.;
