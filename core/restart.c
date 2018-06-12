@@ -60,6 +60,7 @@ void restart_write(struct FluidState *S)
   add_int_value(DTr, "DTr", file_id, filespace, memspace);
   add_int_value(DTp, "DTp", file_id, filespace, memspace);
   add_int_value(restart_id, "restart_id", file_id, filespace, memspace);
+  add_int_value(dump_cnt, "dump_cnt", file_id, filespace, memspace);
   add_dbl_value(dt, "dt", file_id, filespace, memspace);
   add_int_value(lim, "lim", file_id, filespace, memspace);
   add_int_value(failed, "failed", file_id, filespace, memspace);
@@ -177,6 +178,7 @@ void restart_read(char *fname, struct FluidState *S)
   get_int_value(&DTp, "DTp", file_id, filespace, memspace);
   get_int_value(&restart_id, "restart_id", file_id, filespace, memspace);
   get_dbl_value(&dt, "dt", file_id, filespace, memspace);
+  get_int_value(&dump_cnt, "dump_cnt", file_id, filespace, memspace);
   get_int_value(&lim, "lim", file_id, filespace, memspace);
   get_int_value(&failed, "failed", file_id, filespace, memspace);
   get_dbl_value(&Rin, "Rin", file_id, filespace, memspace);

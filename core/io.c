@@ -11,8 +11,6 @@
 #include <sys/stat.h>
 #include <ctype.h>
 
-static int dump_id = 0;
-
 void init_io()
 {
 }
@@ -56,11 +54,11 @@ void dump(struct GridGeom *G, struct FluidState *S)
   }
 
   if(mpi_io_proc()) {
-    sprintf(fname, "dumps/dump_%08d.xmf", dump_id); // TODO define filenames elsewhere?
+    sprintf(fname, "dumps/dump_%08d.xmf", dump_cnt); // TODO define filenames elsewhere?
     xml = write_xml_head(fname,t);
   }
 
-  sprintf(fname, "dumps/dump_%08d.h5", dump_id);
+  sprintf(fname, "dumps/dump_%08d.h5", dump_cnt);
   if(mpi_io_proc()) {
     fprintf(stdout, "DUMP %s\n", fname);
   }
@@ -264,8 +262,6 @@ void dump(struct GridGeom *G, struct FluidState *S)
   // TODO
   H5Fflush(file_id,H5F_SCOPE_GLOBAL);
   H5Fclose(file_id);
-
-  dump_id++;
 
   timer_stop(TIMER_IO);
 }
