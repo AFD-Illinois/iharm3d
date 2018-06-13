@@ -11,19 +11,29 @@
 #include <sys/stat.h>
 #include <ctype.h>
 
+void add_int_value(int val, const char *name, hid_t file_id, hid_t filespace,
+  hid_t memspace);
+void add_dbl_value(double val, const char *name, hid_t file_id, hid_t filespace,
+  hid_t memspace);
+void add_str_value(const char* val, const char *name, hid_t file_id,
+  hid_t filespace, hid_t memspace);
+
+void get_dbl_value(double *val, const char *name, hid_t file_id,
+                   hid_t filespace, hid_t memspace);
+void get_int_value(int *val, const char *name, hid_t file_id, hid_t filespace,
+                   hid_t memspace);
+
 static int restart_id = 0;
 
 void restart_write(struct FluidState *S)
 {
   timer_start(TIMER_RESTART);
-  hsize_t file_start[4],mem_start[4],one,zero;
+  hsize_t file_start[4],mem_start[4];
   hsize_t fdims[4] = {NVAR, N3TOT, N2TOT, N1TOT};
   hsize_t mem_copy_dims[4] = {NVAR, N3, N2, N1};
   hsize_t mem_full_dims[4] = {NVAR, N3 + 2*NG, N2 + 2*NG, N1 + 2*NG};
-
   // Pass by reference, baby
-  one = 1;
-  zero = 0;
+  hsize_t one = 1, zero = 0;
 
   // Keep track of our own index
   restart_id++;
@@ -109,7 +119,6 @@ void restart_write(struct FluidState *S)
   H5Fflush(file_id, H5F_SCOPE_GLOBAL);
   H5Fclose(file_id);
 
-  MPI_Barrier(MPI_COMM_WORLD);
   if(mpi_io_proc()) {
     fprintf(stdout, "RESTART %s\n", fname);
 

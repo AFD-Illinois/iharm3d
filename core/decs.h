@@ -41,7 +41,7 @@
       COMPILE-TIME PARAMETERS :
 *******************************************************************************/
 
-#define VERSION "vharm-alpha-0.1"
+#define VERSION "iharm-alpha-3.2"
 
 // Number of active zones on each MPI process
 #define N1       (N1TOT/N1CPU)
@@ -386,6 +386,23 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sl,
   struct FluidState *Sr, int dir, int loc, GridPrim flux, GridDouble ctop);
 void flux_ct(struct FluidFlux *F);
 
+// hdf5_utils.c
+hid_t hdf5_open(char *fname);
+void hdf5_close(hid_t file_id);
+void hdf5_write_scalar(void *data, const char *name, hid_t file_id, hsize_t hdf5_type);
+void hdf5_write_vector(void *data, const char *name, hid_t file_id, int len, hsize_t hdf5_type);
+void hdf5_write_tensor(void *data, const char *name, hid_t file_id, int n1, int n2, hsize_t hdf5_type);
+void hdf5_write_header_val(void *val, const char *name, hid_t file_id, hsize_t hdf5_type);
+void pack_scalar_double(double in[N3+2*NG][N2+2*NG][N1+2*NG], double *out);
+void pack_scalar_float(double in[N3+2*NG][N2+2*NG][N1+2*NG], float *out);
+void pack_scalar_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], int *out);
+void pack_vector_double(double in[][N3+2*NG][N2+2*NG][N1+2*NG], double *out, int vector_len);
+void pack_vector_float(double in[][N3+2*NG][N2+2*NG][N1+2*NG], float *out, int vector_len);
+void pack_Gtensor_double(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], double *out);
+void pack_Gtensor_float(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], float *out);
+//void pack_tensor_double(double in[NDIM][NDIM][N3+2*NG][N2+2*NG][N1+2*NG], double *out);
+//void pack_tensor_float(double in[NDIM][NDIM][N3+2*NG][N2+2*NG][N1+2*NG], float *out);
+
 // io.c
 void init_io();
 void dump(struct GridGeom *G, struct FluidState *S);
@@ -485,27 +502,3 @@ void report_performance();
 // u_to_p.c
 int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc);
-
-// xdmf_output.c
-void write_xml_closing(FILE *xml);
-FILE *write_xml_head(char *fname, double t);
-void write_scalar(float *data, hid_t file_id, const char *name, hid_t filespace,
-  hid_t memspace, FILE *xml);
-void write_scalar_dbl(double *data, hid_t file_id, char *name, hid_t filespace,
-  hid_t memspace, FILE *xml);
-void write_scalar_int(int *data, hid_t file_id, const char *name,
-  hid_t filespace, hid_t memspace, FILE *xml);
-void write_vector(float *data, hid_t file_id, const char *name, hid_t filespace,
-  hid_t memspace, FILE *xml);
-void add_int_value(int val, const char *name, hid_t file_id, hid_t filespace,
-  hid_t memspace);
-void add_dbl_value(double val, const char *name, hid_t file_id, hid_t filespace,
-  hid_t memspace);
-void add_str_value(const char* val, const char *name, hid_t file_id,
-  hid_t filespace, hid_t memspace);
-
-void get_dbl_value(double *val, const char *name, hid_t file_id,
-                   hid_t filespace, hid_t memspace);
-void get_int_value(int *val, const char *name, hid_t file_id, hid_t filespace,
-                   hid_t memspace);
-
