@@ -49,17 +49,13 @@ int main(int argc, char *argv[])
   // Read command line arguments
 
   char pfname[STRLEN];
+  char outputdir[STRLEN] = ".";
   for (int n = 0; n < argc; n++) {
     // Check for argv[n] of the form '-*'
     if (*argv[n] == '-' && *(argv[n]+1) != '\0' && *(argv[n]+2) == '\0' &&
         n < argc-1) {
       if (*(argv[n]+1) == 'o') { // Set output directory path
         strcpy(outputdir, argv[++n]);
-
-        if( chdir(outputdir) != 0) {
-            fprintf(stderr, "Output directory does not exist!\n");
-            exit(2);
-        }
       }
       if (*(argv[n]+1) == 'p') { // Set parameter file path
 	strcpy(pfname, argv[++n]);
@@ -69,6 +65,17 @@ int main(int argc, char *argv[])
   // Default parameter file
   if (strlen(pfname) == 1) {
       strcpy(pfname, "param.dat");
+  }
+
+  // Read parameter file before we move away from invocation dir
+  set_core_params();
+  set_problem_params();
+  read_params(pfname);
+
+  // Chdir to output directory and make output folders
+  if( chdir(outputdir) != 0) {
+    fprintf(stderr, "Output directory does not exist!\n");
+    exit(2);
   }
 
   strcpy(dumpdir, "dumps/");
@@ -96,10 +103,6 @@ int main(int argc, char *argv[])
 
   // Initialize global variables and arrays
   init_io();
-  set_core_params();
-  set_problem_params();
-  read_params(pfname);
-
   nstep = 0;
   // TODO centralize allocations
   struct GridGeom *G = (struct GridGeom*)malloc(sizeof(struct GridGeom));

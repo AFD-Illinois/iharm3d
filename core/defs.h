@@ -11,7 +11,7 @@
 *******************************************************************************/
 // TODO encapsulate better maybe
 
-char outputdir[2048], dumpdir[2048], restartdir[2048];
+char dumpdir[2048], restartdir[2048];
 
 GridInt pflag;
 GridInt fail_save;
