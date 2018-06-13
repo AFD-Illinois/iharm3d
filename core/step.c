@@ -72,7 +72,6 @@ void step(struct GridGeom *G, struct FluidState *S)
   t += dt;
 
   // If we're dumping this step, update the current
-  // TODO tdump should not be global and this should not be possible
   if (t > tdump) {
     current_calc(G, S, Ssave, dtsave);
   }

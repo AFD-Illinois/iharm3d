@@ -357,6 +357,7 @@ void zero_arrays();
 
 // current.c
 void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *Ssave, double dtsave);
+void omega_calc(struct GridGeom *G, struct FluidState *S, GridDouble *omega);
 
 // diag.c
 void reset_log_variables();

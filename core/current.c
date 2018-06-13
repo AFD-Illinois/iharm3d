@@ -15,10 +15,7 @@ int pp(int n, int *P);
 
 static struct FluidState *Sa;
 
-// The current calculation takes a /lot/ of time.  This is for cutting it out easily
-void current_calc_nop(struct GridGeom *G, struct FluidState *S, struct FluidState *Ssave, double dtsave)
-{}
-
+// Calculate the current
 void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *Ssave, double dtsave)
 {
   double gF0p[NDIM], gF0m[NDIM], gF1p[NDIM], gF1m[NDIM], gF2p[NDIM], gF2m[NDIM];
@@ -49,12 +46,14 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
     }
   }
 
+#pragma omp parallel for simd collapse(3)
+  for (int mu = 0; mu < NDIM; mu++)
+	  ZLOOP S->jcon[mu][k][j][i] = 0.;
+
   // Calculate j^{\mu} using centered differences for active zones
   // TODO rewrite this vector-style
 #pragma omp parallel for collapse(3)
   ZLOOP {
-    for (int mu = 0; mu < NDIM; mu++) S->jcon[mu][k][j][i] = 0.;
-
     // Get sqrt{-g}*F^{mu nu} at neighboring points
 
     // X0
@@ -83,7 +82,8 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
 
     // Difference: D_mu F^{mu nu} = 4 \pi j^nu
     for (int mu = 0; mu < NDIM; mu++) {
-	S->jcon[mu][k][j][i] = (1./(4.*M_PI*G->gdet[CENT][j][i]))*(
+      // Extra factor of sqrt(4*PI)*J given HARM's B_unit
+      S->jcon[mu][k][j][i] = (1./(sqrt(4.*M_PI)*G->gdet[CENT][j][i]))*(
                            (gF0p[mu] - gF0m[mu])/dtsave +
                            (gF1p[mu] - gF1m[mu])/(2.*dx[1]) +
                            (gF2p[mu] - gF2m[mu])/(2.*dx[2]) +
@@ -94,20 +94,47 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
   timer_stop(TIMER_CURRENT);
 }
 
+GridDouble *Fcov01, *Fcov13;
+
+// Calculate field rotation rate
+void omega_calc(struct GridGeom *G, struct FluidState *S, GridDouble *omega)
+{
+  static int firstc = 1;
+  if (firstc) {
+	  Fcov01 = calloc(1,sizeof(GridDouble));
+	  Fcov13 = calloc(1,sizeof(GridDouble));
+	  firstc = 0;
+  }
+
+  //TODO test inverting these loops, esp if allows writing to omega sooner
+#pragma omp parallel for simd collapse(3)
+  DLOOP2 {
+    ZLOOP {
+      double Fmunu = Fcon_calc(G, S, mu, nu, i, j, k);
+      (*Fcov01)[k][j][i] += Fmunu*G->gcov[CENT][mu][0][j][i]*G->gcov[CENT][nu][1][j][i];
+      (*Fcov13)[k][j][i] += Fmunu*G->gcov[CENT][mu][1][j][i]*G->gcov[CENT][nu][3][j][i];
+    }
+  }
+
+#pragma omp parallel for simd collapse(2)
+  ZLOOP {
+    (*omega)[k][j][i] = (*Fcov01)[k][j][i]/(*Fcov13)[k][j][i];
+  }
+}
+
 // Return mu, nu component of contravarient Maxwell tensor at grid zone i, j, k
 inline double Fcon_calc(struct GridGeom *G, struct FluidState *S, int mu, int nu, int i, int j, int k)
 {
-  double Fcon, gFcon, dFcon;
+  double Fcon, gFcon;
 
   if (mu == nu) return 0.;
 
-  get_state(G,S,i,j,k, CENT);
+  get_state(G,S,i,j,k, CENT); //TODO split this outside loop
 
   Fcon = 0.;
   for (int kap = 0; kap < NDIM; kap++) {
     for (int lam = 0; lam < NDIM; lam++) {
-      dFcon = (-1./G->gdet[CENT][j][i])*antisym(mu,nu,kap,lam)*S->ucov[kap][k][j][i]*S->bcov[lam][k][j][i];
-      Fcon += dFcon;
+      Fcon += (-1./G->gdet[CENT][j][i])*antisym(mu,nu,kap,lam)*S->ucov[kap][k][j][i]*S->bcov[lam][k][j][i];
     }
   }
 
