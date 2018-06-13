@@ -384,7 +384,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S);
 // fluxes.c
 double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F);
 void lr_to_flux(struct GridGeom *G, struct FluidState *Sl,
-  struct FluidState *Sr, int dir, int loc, GridPrim flux, GridDouble ctop);
+  struct FluidState *Sr, int dir, int loc, GridPrim *flux, GridDouble *ctop);
 void flux_ct(struct FluidFlux *F);
 
 // hdf5_utils.c
