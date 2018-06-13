@@ -209,7 +209,7 @@ def diag_plot(ax, diag, dump, varname_dump, varname_pretty, ylim=None, logy=Fals
   else:
     ax.plot(diag['t'][slc], var[slc], color='k')
   ax.axvline(dump['t'], color='r') # Trace current t on finished plot
-  ax.set_xlim([0, dump['tf']])
+  ax.set_xlim([0, dump['hdr']['tf']])
   if ylim != None:
     ax.set_ylim(ylim)
   ax.set_xlabel('t/M')
