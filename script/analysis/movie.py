@@ -89,6 +89,14 @@ def plot(args):
     bplt.overlay_field(ax, geom, dump, NLINES)
     ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
+  ax = plt.subplot(2,4,2)
+  bplt.plot_xy(ax, geom, np.log10(dump['RHO']), dump,
+               vmin=-4, vmax=0, label='RHO', arrayspace=USEARRSPACE)
+  if (USEARRSPACE):
+    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+  else:
+    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+
 
   # I change this a lot
   #var2_str = 'ucon_r'
@@ -96,12 +104,12 @@ def plot(args):
   #var2_min = -0.025
   #var2_max = 0.025
 
-  var2_str = 'beta'
-  var2_data = np.log10(dump['beta'])
-  var2_min = -2
-  var2_max = 2
+  var2_str = 'omega'
+  var2_data = dump['omega']
+  var2_min = -1
+  var2_max = 1
 
-  ax = plt.subplot(2,4,2)
+  ax = plt.subplot(2,4,5)
   bplt.plot_xz(ax, geom, var2_data, dump,
                label=var2_str, cmap='RdBu_r', vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
   if (USEARRSPACE):
@@ -110,17 +118,31 @@ def plot(args):
     bplt.overlay_field(ax, geom, dump, NLINES)
     ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
-  ax = plt.subplot(2,4,5)
-  bplt.plot_xy(ax, geom, np.log10(dump['RHO']), dump,
-               vmin=-4, vmax=0, label='RHO', arrayspace=USEARRSPACE)
+  ax = plt.subplot(2,4,6)
+  bplt.plot_xy(ax, geom, var2_data, dump,
+               label=var2_str, cmap='RdBu_r', vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
     ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
-  ax = plt.subplot(2,4,6)
-  bplt.plot_xy(ax, geom, var2_data, dump,
-               label=var2_str, cmap='RdBu_r', vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
+  var3_str = 'sigma'
+  var3_data = np.log10(dump['bsq']/dump['RHO'])
+  var3_min = -2
+  var3_max = 2
+
+  ax = plt.subplot(2,4,7)
+  bplt.plot_xz(ax, geom, var3_data, dump,
+               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
+  if (USEARRSPACE):
+    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+  else:
+    bplt.overlay_field(ax, geom, dump, NLINES)
+    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+
+  ax = plt.subplot(2,4,8)
+  bplt.plot_xy(ax, geom, var3_data, dump,
+               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:

@@ -71,10 +71,16 @@ def load_hdr(fname):
         hdr[key] = dfile[key][0]
       except KeyError:
         hdr[key] = False
+    # Fill things not output
+    hdr['is_full'] = False
+    hdr['has_radiation'] = False
+    hdr['n_dim'] = 4
+    # Compat
     hdr['has_electrons'] = hdr['ELECTRONS']
     hdr['has_radiation'] = hdr['RADIATION']
     hdr['metric_name'] = hdr['METRIC']
-  
+    hdr['n1'] = hdr['N1']; hdr['n2'] = hdr['N2']; hdr['n3'] = hdr['N3']
+      
   # Set secondary keys based on properties
   keys = []
   if hdr['has_electrons']:
@@ -118,9 +124,12 @@ def load_hdr(fname):
 def load_geom(hdr, fname):
   gfile = h5py.File(fname, 'r')
 
-  keys = ['X1','X2','X3','X','Y','Z', 'gcon', 'gcov', 'gdet']
+  keys = ['X1','X2','X3','X','Y','Z', 'gdet']
 
-  if hdr['METRIC'] == 'MKS':
+  if hdr['version_number'] > 0.05:
+    keys += ['gcon', 'gcov']
+
+  if hdr['metric_name'] == 'MKS':
     keys += ['r','th','phi']
 
   geom = {}
@@ -136,7 +145,7 @@ def load_geom(hdr, fname):
   geom['gdet_full'] = geom['gdet']
   geom['gdet'] = geom['gdet'][:,:,0]
   
-  if hdr['version_number'] > 3.0:
+  if hdr['version_number'] > 0.05:
     geom['gcon_full'] = geom['gcon']
     geom['gcon'] = geom['gcon'][:,:,0,:,:]
     geom['gcov_full'] = geom['gcov']
@@ -247,6 +256,8 @@ def load_dump(fname, geom, hdr, diag=None):
     #print "Calculated: phi_BH: %f Phi_disk: %f" % (dump['phi_py'], dump['Phi_disk'])
 
   dfile.close()
+
+  dump['hdr'] = hdr
 
   return dump
 
@@ -378,7 +389,7 @@ def pp(P):
       while True:
         x = P[x]
         v[x] = 1
-        if x != j:
+        if x == j:
           break
 
   if p % 2 == 0:
