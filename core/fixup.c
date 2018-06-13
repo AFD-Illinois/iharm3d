@@ -11,14 +11,25 @@
 static int nfixed = 0, nfixed_b = 0, nfails = 0;
 static double mass_added_step = 0.0;
 
+void fixup1gamma(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
+
+
 // Apply floors to density, internal energy
 // TODO make this faster with masks
 void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
 
-#pragma omp parallel for simd collapse(2) reduction(+:mass_added_step)
+  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
+
+#pragma omp parallel for collapse(3) reduction(+:mass_added_step) \
+		reduction(+:nfixed) reduction(+:nfixed_b) reduction(+:nfails)
   ZLOOP fixup1zone(G, S, i, j, k);
+
+#pragma omp parallel for collapse(3)
+  ZLOOP fixup1gamma(G, S, i, j, k);
+
+  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
   timer_stop(TIMER_FIXUP);
 
@@ -83,9 +94,9 @@ inline double ut_calc_3vel(struct GridGeom *G, int i, int j, double vcon[NDIM])
 #define BSQORHOMAX (50.)
 #define BSQOUMAX (2500.)
 #define UORHOMAX (50.)
-void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
+inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
-  double rhoflr, uflr, f;
+  double rhoflr, uflr;
   double rhoscal, uscal;
 
   #if METRIC == MKS
@@ -129,7 +140,7 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
   uflr = MY_MAX(uflr, UUMINLIMIT);
 
   // Enhance floors in case of large magnetic energy density
-  get_state(G, S, i, j, k, CENT);
+  //Got state already -- see above
   double bsq = bsq_calc(S, i, j, k);
   rhoflr = MY_MAX(rhoflr, bsq/BSQORHOMAX);
   uflr = MY_MAX(uflr, bsq/BSQOUMAX);
@@ -162,14 +173,14 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 
       double ucon[NDIM], ucon_dr[NDIM]; // TODO ucon name is reused for ut*vcon below
       DLOOP1 {
-	ucon[mu] = S->ucon[mu][k][j][i];
-	ucon_dr[mu] = gamma
-	    * (S->ucon[mu][k][j][i] + betapar * S->bcon[mu][k][j][i]);
+		ucon[mu] = S->ucon[mu][k][j][i];
+		ucon_dr[mu] = gamma
+			* (S->ucon[mu][k][j][i] + betapar * S->bcon[mu][k][j][i]);
       }
 
       double bcon_local[NDIM], bcov_local[NDIM];
       DLOOP1 {
-	bcon_local[mu] = (mu == 0) ? 0 : S->P[B1 - 1 + mu][k][j][i];
+    	bcon_local[mu] = (mu == 0) ? 0 : S->P[B1 - 1 + mu][k][j][i];
       }
 
       double gcov_local[NDIM][NDIM];
@@ -204,7 +215,7 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 
       // Convert 3-velocity to relative 4-velocity and store in primitives
       for (int mu = 1; mu < NDIM; mu++) {
-	  S->P[mu+UU][k][j][i] = utcon[mu]*trans + pv_prefloor[mu+UU]*(1. - trans);
+	    S->P[mu+UU][k][j][i] = utcon[mu]*trans + pv_prefloor[mu+UU]*(1. - trans);
       }
     } else { // Weakly magnetized region; use normal observer frame floors
       nfixed++;
@@ -219,11 +230,11 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
       // TODO come back to this and re-think larger architecture
       double P_bkp[NVAR], U_bkp[NVAR];
       PLOOP {
-	P_bkp[ip] = S->P[ip][k][j][i];
-	U_bkp[ip] = S->U[ip][k][j][i];
+		P_bkp[ip] = S->P[ip][k][j][i];
+		U_bkp[ip] = S->U[ip][k][j][i];
 
-	S->P[ip][k][j][i] = Padd[ip];
-	S->U[ip][k][j][i] = 0;
+		S->P[ip][k][j][i] = Padd[ip];
+		S->U[ip][k][j][i] = 0;
       }
 
       double Uadd[NVAR];
@@ -231,29 +242,25 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
       prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
 
       PLOOP {
-	Uadd[ip] = S->U[ip][k][j][i];
+		Uadd[ip] = S->U[ip][k][j][i];
 
-	S->P[ip][k][j][i] = P_bkp[ip];
-	S->U[ip][k][j][i] = U_bkp[ip];
+		S->P[ip][k][j][i] = P_bkp[ip];
+		S->U[ip][k][j][i] = U_bkp[ip];
       }
 
       get_state(G, S, i, j, k, CENT);
       prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
 
       PLOOP {
-	S->U[ip][k][j][i] += Uadd[ip];
-	S->P[ip][k][j][i] += Padd[ip];
+		S->U[ip][k][j][i] += Uadd[ip];
+		S->P[ip][k][j][i] += Padd[ip];
       }
 
       // TODO Record fails here?
       if (U_to_P(G, S, i, j, k, CENT) != 0)
-	nfails++;
+	    nfails++;
     }
   }
-
-  #if NVAR_PASSIVE > 0
-  fixup_passive(i, j, k, pv, pv_prefloor);
-  #endif
 
   #if ELECTRONS
   // Reset entropy after floors
@@ -268,21 +275,22 @@ void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
   }
   #endif // ELECTRONS
 
+}
+
+inline void fixup1gamma(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
+{
   // Limit gamma with respect to normal observer
   double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
-//  if (mhd_gamma_calc(G, S, i, j, k, CENT, &gamma)) {
-//    pflag[k][j][i] = -333;
-//  } else {
-    if (gamma > GAMMAMAX) {
-      f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
-      S->P[U1][k][j][i] *= f;
-      S->P[U2][k][j][i] *= f;
-      S->P[U3][k][j][i] *= f;
-    }
+//    if (mhd_gamma_calc(G, S, i, j, k, CENT, &gamma)) {
+//      pflag[k][j][i] = -333;
+//    } else {
+  if (gamma > GAMMAMAX) {
+	double f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
+	S->P[U1][k][j][i] *= f;
+	S->P[U2][k][j][i] *= f;
+	S->P[U3][k][j][i] *= f;
+  }
 //  }
-
-  // For good measure, in case we expect P/u/b to be consistent
-  get_state(G, S, i, j, k, CENT);
 }
 
 // Replace bad points with values interpolated from neighbors
@@ -294,12 +302,13 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   double sum[B1], wsum;
 
   // Flip the logic of the pflag[] so that it now indicates which cells are good
-  ZSLOOP(-NG, N3 - 1 + NG, -NG, N2 - 1 + NG, -NG, N1 - 1 + NG) {
+#pragma omp parallel for simd collapse(2)
+  ZLOOPALL {
     pflag[k][j][i] = !pflag[k][j][i];
   }
 
   // Make sure we are not using ill defined corner regions
-  #pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
   for (int k = 0; k < NG; k++) {
     for (int j = 0; j < NG; j++) {
       for (int i = 0; i < NG; i++) {
@@ -316,9 +325,10 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   }
 
   // Fix the interior points first
+  // TODO parallelize
   do {
     bad = 0;
-    ZSLOOP(0, N3 - 1, 0, N2 - 1, 0, N1 - 1) {
+    ZLOOP {
       //if i == 6 && j == 4 
       //printf("[%i %i %i] N1 N2 N3 = %i %i %i pflag = %i\n", i,j,k,N1,N2,N3,pflag[k][j][i]);
       if (pflag[k][j][i] == 0) {
