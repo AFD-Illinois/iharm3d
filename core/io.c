@@ -11,8 +11,16 @@
 #include <sys/stat.h>
 #include <ctype.h>
 
+// Variables kept for output only
+GridDouble *omega;
+
+// TODO also need to change which packing routines are called
+#define OUT_TYPE float
+#define OUT_H5_TYPE H5T_NATIVE_FLOAT
+
 void init_io()
 {
+  omega = calloc(1,sizeof(GridDouble));
 }
 
 void dump(struct GridGeom *G, struct FluidState *S)
@@ -20,31 +28,19 @@ void dump(struct GridGeom *G, struct FluidState *S)
   timer_start(TIMER_IO);
 
   static int firstc = 1;
-  static float *data; // TODO option to output double
+  static OUT_TYPE *data;
   static int *idata;
   char fname[80];
-  FILE *xml = NULL;
-  hsize_t fdims[] = {N1TOT, N2TOT, N3TOT};
-  hsize_t fdims_vec[] = {N1TOT, N2TOT, N3TOT, NDIM};
-  hsize_t mem_copy_dims[] = {N1, N2, N3};
-  hsize_t mem_copy_dims_vec[] = {N1, N2, N3, NDIM};
+
   #if ELECTRONS
   const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
                             "KEL", "KTOT"};
   #else
-  const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"};
+  //const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"};
   #endif
 
-  hid_t file_id, plist_id;//, dset_id;
-  hsize_t mem_start[3], file_start[3], one, zero;
-  hsize_t mem_start_vec[4], file_start_vec[4];
-
-  one = 1;
-  zero = 0;
-
   if(firstc) {
-    dump_grid(G);
-    data = calloc(N1*N2*N3*NVAR,sizeof(float));
+    data = calloc(N1*N2*N3*NVAR,sizeof(OUT_TYPE));
     idata = calloc(N1*N2*N3,sizeof(int));
     if(data == NULL) {
       fprintf(stderr,"failed to allocate data in dump\n");
@@ -53,215 +49,125 @@ void dump(struct GridGeom *G, struct FluidState *S)
     firstc = 0;
   }
 
-  if(mpi_io_proc()) {
-    sprintf(fname, "dumps/dump_%08d.xmf", dump_cnt); // TODO define filenames elsewhere?
-    xml = write_xml_head(fname,t);
-  }
+  //Don't re-dump the grid on restart
+  if (dump_cnt == 0) dump_grid(G);
 
   sprintf(fname, "dumps/dump_%08d.h5", dump_cnt);
   if(mpi_io_proc()) {
     fprintf(stdout, "DUMP %s\n", fname);
   }
 
-  plist_id = H5Pcreate(H5P_FILE_ACCESS);
-  H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
-  file_id = H5Fcreate(fname, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
-  H5Pclose(plist_id);
+  hid_t file_id = hdf5_open(fname);
+
+  // Set our string type size.  None of our names are long so this should suffice
+  hid_t string_type = H5Tcopy(H5T_C_S1);
+  H5Tset_size(string_type, 20);
 
   // Write header
-  hid_t filespace = H5Screate_simple(1, &one, NULL);
-  hsize_t single_var_count = (mpi_io_proc() ? one : zero);
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, &zero, NULL, &single_var_count,
-    NULL);
-  hid_t memspace  = H5Screate_simple(1, &single_var_count, NULL);
-  add_str_value(VERSION, "VERSION", file_id, filespace, memspace);
+  hdf5_write_header_val(VERSION, "version_string", file_id, string_type);
   #if METRIC == MINKOWSKI
-  add_str_value("MINKOWSKI", "METRIC", file_id, filespace, memspace);
+  hdf5_write_header_val("MINKOWSKI", "metric_name", file_id, string_type);
   #elif METRIC == MKS
-  add_str_value("MKS", "METRIC", file_id, filespace, memspace);
+  hdf5_write_header_val("MKS", "metric_name", file_id, string_type);
   #endif
-  add_int_value(ELECTRONS, "ELECTRONS", file_id, filespace, memspace);
-  add_dbl_value(t, "t", file_id, filespace, memspace);
-  add_dbl_value(tf, "tf", file_id, filespace, memspace);
-  add_int_value(nstep, "nstep", file_id, filespace, memspace);
-  add_int_value(N1TOT, "N1", file_id, filespace, memspace);
-  add_int_value(N2TOT, "N2", file_id, filespace, memspace);
-  add_int_value(N3TOT, "N3", file_id, filespace, memspace);
-  add_dbl_value(startx[1], "startx1", file_id, filespace, memspace);
-  add_dbl_value(startx[2], "startx2", file_id, filespace, memspace);
-  add_dbl_value(startx[3], "startx3", file_id, filespace, memspace);
-  add_dbl_value(dx[1], "dx1", file_id, filespace, memspace);
-  add_dbl_value(dx[2], "dx2", file_id, filespace, memspace);
-  add_dbl_value(dx[3], "dx3", file_id, filespace, memspace);
-  #if METRIC == MKS
-  add_dbl_value(Rin, "Rin", file_id, filespace, memspace);
-  add_dbl_value(Rout, "Rout", file_id, filespace, memspace);
-  add_dbl_value(Rhor, "Reh", file_id, filespace, memspace);
-  add_dbl_value(hslope, "hslope", file_id, filespace, memspace);
-  add_dbl_value(a, "a", file_id, filespace, memspace);
-  #if POLYTH
-  add_dbl_value(poly_xt, "poly_xt", file_id, filespace, memspace);
-  add_dbl_value(poly_alpha, "poly_alpha", file_id, filespace, memspace);
-  add_dbl_value(mks_smooth, "mks_smooth", file_id, filespace, memspace);
-  #endif
-  #endif
-  add_dbl_value(gam, "gam", file_id, filespace, memspace);
+  int has_electrons = ELECTRONS;
+  hdf5_write_header_val(&has_electrons, "has_electrons", file_id, H5T_NATIVE_INT);
+  hdf5_write_header_val(&t, "t", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&tf, "tf", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&nstep, "n_step", file_id, H5T_NATIVE_INT);
+  int n1 = N1TOT, n2 = N2TOT, n3 = N3TOT;
+  hdf5_write_header_val(&n1, "n1", file_id, H5T_NATIVE_INT);
+  hdf5_write_header_val(&n2, "n2", file_id, H5T_NATIVE_INT);
+  hdf5_write_header_val(&n3, "n3", file_id, H5T_NATIVE_INT);
+
+  hdf5_write_header_val(&gam, "gam", file_id, H5T_NATIVE_DOUBLE);
   #if ELECTRONS
-  add_dbl_value(game, "game", file_id, filespace, memspace);
-  add_dbl_value(gamp, "gamp", file_id, filespace, memspace);
+  hdf5_write_header_val(&game, "gam_e", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&gamp, "gam_p", file_id, H5T_NATIVE_DOUBLE);
   #endif
-  add_dbl_value(cour, "cour", file_id, filespace, memspace);
-  add_dbl_value(DTd, "DTd", file_id, filespace, memspace);
-  add_dbl_value(DTl, "DTl", file_id, filespace, memspace);
-  add_int_value(DTr, "DTr", file_id, filespace, memspace);
-  add_int_value(DTp, "DTp", file_id, filespace, memspace);
-  add_int_value(dump_cnt, "dump_cnt", file_id, filespace, memspace);
-  add_dbl_value(dt, "dt", file_id, filespace, memspace);
-  add_int_value(failed, "failed", file_id, filespace, memspace);
+  hdf5_write_header_val(&cour, "cour", file_id, H5T_NATIVE_DOUBLE);
+//  hdf5_write_header_val(&DTd, "DTd", file_id, H5T_NATIVE_DOUBLE);
+//  hdf5_write_header_val(&DTl, "DTl", file_id, H5T_NATIVE_DOUBLE);
+//  hdf5_write_header_val(&DTr, "DTr", file_id, H5T_NATIVE_INT);
+//  hdf5_write_header_val(&DTp, "DTp", file_id, H5T_NATIVE_INT);
+  hdf5_write_header_val(&dump_cnt, "dump_cnt", file_id, H5T_NATIVE_INT);
+  hdf5_write_header_val(&dt, "dt", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&failed, "failed", file_id, H5T_NATIVE_INT);
 
-  H5Sclose(filespace);
-  H5Sclose(memspace);
-
-  // Tell HDF how data is laid out in memory and in file
-  filespace = H5Screate_simple(3, fdims, NULL);
-  for (int d = 0; d < 3; d++) {
-    file_start[d] = global_start[d];
-  }
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, mem_copy_dims,
-    NULL);
-
-  memspace = H5Screate_simple(3, mem_copy_dims, NULL);
-  for (int d = 0; d < 3; d++)
-    mem_start[d] = 0;
-  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, mem_copy_dims,
-    NULL);
-
-
-//  printf("Size of memspace: %lld x %lld x %lld\n",
-//       mem_copy_dims[0], mem_copy_dims[1], mem_copy_dims[2]);
-//  printf("Location of memspace: %lld %lld %lld\n",
-//	file_start[0], file_start[1], file_start[2]);
-//  printf("Size of filespace: %lld x %lld x %lld\n",
-//       fdims[0], fdims[1], fdims[2]);
+  //Geometry
+  hdf5_write_header_val(&(startx[1]), "startx1", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&(startx[2]), "startx2", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&(startx[3]), "startx3", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&(dx[1]), "dx1", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&(dx[2]), "dx2", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&(dx[3]), "dx3", file_id, H5T_NATIVE_DOUBLE);
+  #if METRIC == MKS
+  hdf5_write_header_val(&Rin, "Rin", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&Rout, "Rout", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&Rhor, "Reh", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&hslope, "hslope", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&a, "a", file_id, H5T_NATIVE_DOUBLE);
+  #if POLYTH
+  hdf5_write_header_val(&poly_xt, "poly_xt", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&poly_alpha, "poly_alpha", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_header_val(&mks_smooth, "mks_smooth", file_id, H5T_NATIVE_DOUBLE);
+  #endif
+  #endif
 
   // Write primitive variables
-  PLOOP {
-    int ind = 0;
-    ZLOOP_OUT {
-      data[ind] = (float)(S->P[ip][k][j][i]);
-      ind++;
-    }
-    write_scalar(data, file_id, varNames[ip], filespace, memspace, xml);
-  }
+  pack_vector_float(S->P, data, NVAR);
+  hdf5_write_vector(data, "prims", file_id, NVAR, OUT_H5_TYPE);
 
-  // Write other scalars
+  // Write derived scalars from functions
   int ind = 0;
   ZLOOP_OUT {
     get_state(G, S, i, j, k, CENT);
-    double bsq = bsq_calc(S, i, j, k);
-    data[ind] = bsq;
+    data[ind] = bsq_calc(S, i, j, k);
     ind++;
   }
-  write_scalar(data, file_id, "bsq", filespace, memspace, xml);
+  hdf5_write_scalar(data, "bsq", file_id, OUT_H5_TYPE);
+
+  omega_calc(G, S, omega);
+  pack_scalar_float(*omega, data);
+  hdf5_write_scalar(data, "omega", file_id, OUT_H5_TYPE);
 
   ind = 0;
   ZLOOP_OUT {
-    double gamma = 1.;
-    mhd_gamma_calc(G, S, i, j, k, CENT, &gamma);
-    data[ind] = gamma;
+    data[ind] = mhd_gamma_calc(G, S, i, j, k, CENT);
     ind++;
   }
-  write_scalar(data, file_id, "gamma", filespace, memspace, xml);
+  hdf5_write_scalar(data, "gamma", file_id, OUT_H5_TYPE);
 
+  // TODO be able to output divb in double separately?
+  // Cadence divb/fail differently from other vars?
   ind = 0;
   ZLOOP_OUT {
-    double divb = flux_ct_divb(G, S, i, j, k);
-    data[ind] = divb;
+    data[ind] = flux_ct_divb(G, S, i, j, k);
     ind++;
   }
-  write_scalar(data, file_id, "divb", filespace, memspace, xml);
+  hdf5_write_scalar(data, "divb", file_id, OUT_H5_TYPE);
 
-  ind = 0;
-  ZLOOP_OUT {
-    idata[ind] = fail_save[k][j][i];
-    fail_save[k][j][i] = 0;
-    ind++;
-  }
-  write_scalar_int(idata, file_id, "fail", filespace, memspace, xml);
-
-  H5Sclose(filespace);
-  H5Sclose(memspace);
+  pack_scalar_int(fail_save, idata);
+  ZLOOP_OUT fail_save[k][j][i] = 0;
+  hdf5_write_scalar(idata, "fail", file_id, H5T_NATIVE_INT);
 
   // Write vector quantities
-  filespace = H5Screate_simple(4, fdims_vec, NULL);
-  for (int d = 0; d < 3; d++)
-    file_start_vec[d] = global_start[d];
-  file_start_vec[3] = 0;
+  pack_vector_float(S->bcon, data, NDIM);
+  hdf5_write_vector(data, "bcon", file_id, NDIM, OUT_H5_TYPE);
 
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start_vec, NULL, mem_copy_dims_vec,
-    NULL);
+  pack_vector_float(S->bcov, data, NDIM);
+  hdf5_write_vector(data, "bcov", file_id, NDIM, OUT_H5_TYPE);
 
-  memspace = H5Screate_simple(4, mem_copy_dims_vec, NULL);
-  for (int d = 0; d < 4; d++)
-    mem_start_vec[d] = 0;
-  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start_vec, NULL, mem_copy_dims_vec,
-    NULL);
+  pack_vector_float(S->ucon, data, NDIM);
+  hdf5_write_vector(data, "ucon", file_id, NDIM, OUT_H5_TYPE);
 
-  ind = 0;
-  ZLOOP_OUT {
-    DLOOP1 {
-      data[ind] = S->bcon[mu][k][j][i];
-      ind++;
-    }
-  }
-  write_vector(data, file_id, "bcon", filespace, memspace, xml);
+  pack_vector_float(S->ucov, data, NDIM);
+  hdf5_write_vector(data, "ucov", file_id, NDIM, OUT_H5_TYPE);
 
-  ind = 0;
-  ZLOOP_OUT {
-    DLOOP1 {
-      data[ind] = S->bcov[mu][k][j][i];
-      ind++;
-    }
-  }
-  write_vector(data, file_id, "bcov", filespace, memspace, xml);
+  pack_vector_float(S->jcon, data, NDIM);
+  hdf5_write_vector(data, "jcon", file_id, NDIM, OUT_H5_TYPE);
 
-  ind = 0;
-  ZLOOP_OUT {
-    DLOOP1 {
-      data[ind] = S->ucon[mu][k][j][i];
-      ind++;
-    }
-  }
-  write_vector(data, file_id, "ucon", filespace, memspace, xml);
-
-  ind = 0;
-  ZLOOP_OUT {
-    DLOOP1 {
-      data[ind] = S->ucov[mu][k][j][i];
-      ind++;
-    }
-  }
-  write_vector(data, file_id, "ucov", filespace, memspace, xml);
-
-  ind = 0;
-  ZLOOP_OUT {
-    DLOOP1 {
-      data[ind] = S->jcon[mu][k][j][i];
-      ind++;
-    }
-  }
-  write_vector(data, file_id, "jcon", filespace, memspace, xml);
-
-  // Close file
-  if(mpi_io_proc()) {
-    write_xml_closing(xml);
-  }
-
-  H5Sclose(memspace);
-  H5Sclose(filespace);
-  // TODO
-  H5Fflush(file_id,H5F_SCOPE_GLOBAL);
-  H5Fclose(file_id);
+  hdf5_close(file_id);
 
   timer_stop(TIMER_IO);
 }
@@ -270,49 +176,18 @@ void dump(struct GridGeom *G, struct FluidState *S)
 #define NGRIDVARS 11
 void dump_grid(struct GridGeom *G)
 {
-  float *x[NGRIDVARS];
-  double xp[4];
-  hid_t dset_id;
-  hsize_t file_start[3], file_count[3];
-  hsize_t mem_start[] = {0, 0, 0};
-  hsize_t fdims[] = {N1TOT, N2TOT, N3TOT};
-  hsize_t dims[] = {N1, N2, N3};
-
+  OUT_TYPE *x[NGRIDVARS];
+  for (int d = 0; d < NGRIDVARS; d++) x[d] = calloc(N1*N2*N3,sizeof(OUT_TYPE));
   const char *coordNames[] = {"X", "Y", "Z", "r", "th", "phi", "X1", "X2", "X3", "gdet", "lapse"};
 
-  // This was for extra corner zones at the end.  We don't need them since we want center values
-  // TODO ... right?
-//  for (int d = 0; d < 3; d++) {
-//    if (global_stop[d] == fdims[d]-1)
-//      dims[d]++;
-//  }
+  OUT_TYPE *g = calloc(N1*N2*N3*NDIM*NDIM,sizeof(OUT_TYPE));
 
-  hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
-  H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
-  hid_t file_id = H5Fcreate("dumps/grid.h5", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
-  H5Pclose(plist_id);
+  hid_t file_id = hdf5_open("dumps/grid.h5");
 
-  hid_t filespace = H5Screate_simple(3, fdims, NULL);
-  for (int d = 0; d < 3; d++) {
-    file_start[d] = global_start[d];
-    file_count[d] = dims[d];
-  }
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start, NULL, file_count, NULL);
-
-  hid_t memspace = H5Screate_simple(3, dims, NULL);
-  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start, NULL, file_count, NULL);
-
-  int total_size = dims[0]*dims[1]*dims[2];
-  for(int d = 0; d < NGRIDVARS; d++) {
-    x[d] = calloc(total_size,sizeof(float));
-    if(x[d] == NULL) {
-      fprintf(stderr,"Failed to allocate x[d] in dump_grid\n");
-      exit(5);
-    }
-  }
-
+  // Batch fill grid var buffers since lots of them are the same
   int ind = 0;
   ZLOOP_OUT { //Change if reinstating full grid out
+	double xp[4];
     coord(i, j, k, CENT, xp);
     #if METRIC == MINKOWSKI
     x[0][ind] = xp[1];
@@ -343,81 +218,16 @@ void dump_grid(struct GridGeom *G)
   }
 
   for (int d = 0; d < NGRIDVARS; d++){
-    plist_id = H5Pcreate(H5P_DATASET_CREATE);
-    dset_id = H5Dcreate(file_id, coordNames[d], H5T_NATIVE_FLOAT, filespace,
-      H5P_DEFAULT, plist_id, H5P_DEFAULT);
-    H5Pclose(plist_id);
-
-    plist_id = H5Pcreate(H5P_DATASET_XFER);
-    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
-    H5Dwrite(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, plist_id, x[d]);
-    H5Dclose(dset_id);
-    H5Pclose(plist_id);
+    hdf5_write_scalar(x[d], coordNames[d], file_id, OUT_H5_TYPE);
   }
 
-  H5Sclose(filespace);
-  H5Sclose(memspace);
+  pack_Gtensor_float(G->gcon[CENT], g);
+  hdf5_write_tensor(g, "gcon", file_id, NDIM, NDIM, OUT_H5_TYPE);
 
-  hsize_t file_start_tens[5];
-  hsize_t mem_start_tens[5] = {0, 0, 0, 0, 0};
-  hsize_t fdims_tens[] = {N1TOT, N2TOT, N3TOT, NDIM, NDIM};
-  hsize_t dims_tens[] = {N1, N2, N3, NDIM, NDIM};
-
-  filespace = H5Screate_simple(5, fdims_tens, NULL);
-  for (int d = 0; d < 5; d++) {
-    file_start_tens[d] = (d < 3) ? global_start[d] : 0;
-  }
-  H5Sselect_hyperslab(filespace, H5S_SELECT_SET, file_start_tens, NULL, dims_tens, NULL);
-
-  memspace = H5Screate_simple(5, dims_tens, NULL);
-  H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mem_start_tens, NULL, dims_tens, NULL);
-
-  float *g = calloc(N1*N2*N3*NDIM*NDIM,sizeof(float));
-  if(g == NULL) {
-    fprintf(stderr,"Failed to allocate x[d] in dump_grid\n");
-    exit(5);
-  }
-
-  ind = 0;
-  ZLOOP_OUT {
-    DLOOP2 {
-      g[ind] = G->gcon[CENT][mu][nu][j][i];
-    }
-  }
-
-  plist_id = H5Pcreate(H5P_DATASET_CREATE);
-  dset_id = H5Dcreate(file_id, "gcon", H5T_NATIVE_FLOAT, filespace,
-    H5P_DEFAULT, plist_id, H5P_DEFAULT);
-  H5Pclose(plist_id);
-
-  plist_id = H5Pcreate(H5P_DATASET_XFER);
-  H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
-  H5Dwrite(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, plist_id, g);
-  H5Dclose(dset_id);
-  H5Pclose(plist_id);
-
-  ind = 0;
-  ZLOOP_OUT {
-    DLOOP2 {
-      g[ind] = G->gcon[CENT][mu][nu][j][i];
-    }
-  }
-
-  plist_id = H5Pcreate(H5P_DATASET_CREATE);
-  dset_id = H5Dcreate(file_id, "gcov", H5T_NATIVE_FLOAT, filespace,
-    H5P_DEFAULT, plist_id, H5P_DEFAULT);
-  H5Pclose(plist_id);
-
-  plist_id = H5Pcreate(H5P_DATASET_XFER);
-  H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
-  H5Dwrite(dset_id, H5T_NATIVE_FLOAT, memspace, filespace, plist_id, g);
-  H5Dclose(dset_id);
-  H5Pclose(plist_id);
-
-  H5Sclose(filespace);
-  H5Sclose(memspace);
+  pack_Gtensor_float(G->gcov[CENT], g);
+  hdf5_write_tensor(g, "gcov", file_id, NDIM, NDIM, OUT_H5_TYPE);
 
   for (int d = 0; d < NGRIDVARS; d++) free(x[d]);
 
-  H5Fclose(file_id);
+  hdf5_close(file_id);
 }
