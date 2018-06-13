@@ -450,8 +450,8 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
   int kstart, int kstop, int jstart, int jstop, int istart, int istop);
 void ucon_calc(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc);
-int mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k, int loc, double *gamma);
+double mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, int j,
+  int k, int loc);
 void mhd_vchar(struct GridGeom *G, struct FluidState *Sr, int i, int j, int k,
   int loc, int dir, GridDouble cmax, GridDouble cmin);
 

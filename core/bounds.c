@@ -289,21 +289,22 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 void inflow_check(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int type)
 {
-  double alpha, beta1, gamma, vsq;
+  double alpha, beta1, vsq;
 
   ucon_calc(G, S, i, j, k, CENT);
 
   if (((S->ucon[1][k][j][i] > 0.) && (type == 0)) ||
       ((S->ucon[1][k][j][i] < 0.) && (type == 1)))
   {
-    //double gamma = get_mhd_gamma(G, S, i, j, k, CENT);
+    double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
     // Find gamma and remove it from state->Pitives
-    if (mhd_gamma_calc(G, S, i, j, k, CENT, &gamma)) {
-      fflush(stderr);
-      fprintf(stderr, "\ninflow_check(): gamma failure\n");
-      fflush(stderr);
-      fail(G, S, FAIL_GAMMA, i, j, k);
-    }
+    // TODO check failures in more vectorization-friendly way
+//    if (mhd_gamma_calc(G, S, i, j, k, CENT, &gamma)) {
+//      fflush(stderr);
+//      fprintf(stderr, "\ninflow_check(): gamma failure\n");
+//      fflush(stderr);
+//      fail(G, S, FAIL_GAMMA, i, j, k);
+//    }
     S->P[U1][k][j][i] /= gamma;
     S->P[U2][k][j][i] /= gamma;
     S->P[U3][k][j][i] /= gamma;
