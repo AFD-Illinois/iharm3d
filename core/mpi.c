@@ -128,7 +128,7 @@ void init_mpi()
 }
 
 // Share face data
-MPI_Status* sync_mpi_bound_X1(struct FluidState *S)
+int sync_mpi_bound_X1(struct FluidState *S)
 {
   MPI_Status *status = MPI_STATUS_IGNORE;
 
@@ -145,10 +145,10 @@ MPI_Status* sync_mpi_bound_X1(struct FluidState *S)
 	       &(pflag[NG][NG][N1+NG]), 1, pflag_face_type[2], neighbors[1][1][2], 7, comm, status);
 #endif
 
-  return status;
+  return status->MPI_ERROR;
 }
 
-MPI_Status* sync_mpi_bound_X2(struct FluidState *S)
+int sync_mpi_bound_X2(struct FluidState *S)
 {
   MPI_Status *status = MPI_STATUS_IGNORE;
 
@@ -165,10 +165,10 @@ MPI_Status* sync_mpi_bound_X2(struct FluidState *S)
 	       &(pflag[NG][N2+NG][0]), 1, pflag_face_type[1], neighbors[1][2][1], 9, comm, status);
 #endif
 
-  return status;
+  return status->MPI_ERROR;
 }
 
-MPI_Status* sync_mpi_bound_X3(struct FluidState *S)
+int sync_mpi_bound_X3(struct FluidState *S)
 {
   MPI_Status *status = MPI_STATUS_IGNORE;
 
@@ -184,7 +184,7 @@ MPI_Status* sync_mpi_bound_X3(struct FluidState *S)
 	       &(pflag[N3+NG][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 11, comm, status);
 #endif
 
-  return status;
+  return status->MPI_ERROR;
 }
 
 void mpi_barrier() {
