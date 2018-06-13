@@ -58,6 +58,7 @@ N2 = hdr['N2']
 N3 = hdr['N3']
 
 r = geom['r'][:,N2/2,0]
+th = geom['th'][0,:N2/2,0]
 
 # Calculate fluxes at r = 10
 # Except Phi at EH, zone 5
@@ -79,6 +80,7 @@ Ptot_r = np.zeros([ND, N1])
 betainv_r = np.zeros([ND, N1])
 uphi_r = np.zeros([ND, N1])
 rho_SADW = np.zeros([ND, N1])
+omega_th = np.zeros([ND, N2/2])
 
 Mdot = np.zeros(ND)
 Phi = np.zeros(ND)
@@ -90,6 +92,8 @@ Lum = np.zeros(ND)
 out = {}
 out['rho_SADW'] = rho_SADW
 out['r'] = r
+out['th'] = th
+out['omega_th'] = omega_th
 out['rho_r'] = rho_r
 out['Theta_r'] = Theta_r
 out['B_r'] = B_r
@@ -153,9 +157,11 @@ def avg_dump(n):
   uphi_r[n,:] /= vol
 
   # FLUXES
-  Mdot[n] = np.abs((dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum())
   #Phi_bcon[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
   Phi[n] = 0.5*(np.fabs(dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
+  omega_th[n,:] = (dump['omega'][iEH,:,:].sum(axis=-1) + dump['omega'][iEH,::-1,:].sum(axis=-1))[:N2/2]
+  
+  Mdot[n] = np.abs((dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum())
   Trphi = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,3]
   Trphi -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,3]
   Trt = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,0]
@@ -199,9 +205,9 @@ pool.join()
 # Sort
 order = np.argsort(out['t'])
 for key in out.keys():
-  if key in ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r']:
+  if key in ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'omega_th']:
     out[key] = out[key][order,:]
-  elif key in ['r']:
+  elif key in ['r', 'th']:
     pass
   else:
     out[key] = out[key][order]
@@ -214,7 +220,7 @@ for n in xrange(ND):
 
 print 'nmin = %i' % n
 
-for key in ['rho_SADW', 'rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r']:
+for key in ['rho_SADW', 'rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'omega_th']:
   out[key] = (out[key][n:,:]).mean(axis=0)
 
 # Names for compatibility with hdf5_to_dict
@@ -222,6 +228,7 @@ out['mdot'] = out['Mdot']
 out['phi'] = out['Phi']/np.sqrt(np.abs(out['Mdot']))
 
 # Variables that can be read once
+out['a'] = hdr['a']
 out['t_d'] = diag['t']
 out['Mdot_d'] = diag['mdot']
 out['Phi_d'] = diag['Phi']
