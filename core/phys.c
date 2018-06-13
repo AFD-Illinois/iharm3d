@@ -106,12 +106,10 @@ inline void bcon_calc(struct FluidState *S, int i, int j, int k)
 }
 
 // Find gamma-factor wrt normal observer
-inline int mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k, int loc, double *gamma)
+inline double mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, int j,
+  int k, int loc)
 {
-  double qsq;
-
-  qsq = G->gcov[loc][1][1][j][i]*S->P[U1][k][j][i]*S->P[U1][k][j][i]
+  double qsq = G->gcov[loc][1][1][j][i]*S->P[U1][k][j][i]*S->P[U1][k][j][i]
       + G->gcov[loc][2][2][j][i]*S->P[U2][k][j][i]*S->P[U2][k][j][i]
       + G->gcov[loc][3][3][j][i]*S->P[U3][k][j][i]*S->P[U3][k][j][i]
       + 2.*(G->gcov[loc][1][2][j][i]*S->P[U1][k][j][i]*S->P[U2][k][j][i]
@@ -134,9 +132,9 @@ inline int mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, int j
     }
   }*/
 
-  *gamma = sqrt(1. + qsq);
+  //*gamma = sqrt(1. + qsq);
 
-  return 0;
+  return sqrt(1. + qsq);
 
 }
 
@@ -144,11 +142,9 @@ inline int mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, int j
 inline void ucon_calc(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc)
 {
-  double alpha, gamma;
+  double gamma = mhd_gamma_calc(G, S, i, j, k, loc);
 
-  mhd_gamma_calc(G, S, i, j, k, loc, &gamma);
-
-  alpha = G->lapse[loc][j][i];
+  double alpha = G->lapse[loc][j][i];
   S->ucon[0][k][j][i] = gamma/alpha;
   for (int mu = 1; mu < NDIM; mu++) {
 	S->ucon[mu][k][j][i] = S->P[U1+mu-1][k][j][i] -
