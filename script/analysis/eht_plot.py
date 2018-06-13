@@ -76,6 +76,14 @@ ax.set_yscale('log')
 plt.savefig(fout + '_sadw.png')
 plt.close(fig)
 
+# Omega
+print avg['th'].shape, avg['omega_th'].shape
+fig = plt.figure(figsize=(FIGX, FIGY))
+ax = plt.subplot(1,1,1)
+ax.plot(avg['th'], avg['omega_th'], color='k')
+ax.axhline(avg['a']/8, linestyle='--', color='k')
+plt.savefig(fout + '_omega.png')
+plt.close(fig)
 
 fig = plt.figure(figsize=(FIGX, FIGY))
 
