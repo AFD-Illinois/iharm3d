@@ -324,7 +324,7 @@ def omega_calc(hdr, geom, dump):
 
     return Fcov01/Fcov13
 
-# Return mu, nu component of contravarient Maxwell tensor at grid zone i, j, k
+# Return mu, nu component of contravarient Maxwell tensor
 def Fcon_calc(hdr, geom, dump, mu, nu):
   N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3'];
   NDIM = hdr['n_dim']
@@ -335,10 +335,11 @@ def Fcon_calc(hdr, geom, dump, mu, nu):
   Fcon = np.zeros((N1,N2,N3))
   for kap in range(NDIM):
     for lam in range(NDIM):
-      Fcon[:,:,:] += (-1./geom['gdet'][:,:,None]) * \
-      antisym(mu,nu,kap,lam) * dump['ucov'][:,:,:,kap] * dump['bcov'][:,:,:,lam]
+      # Constants don't matter as we're taking the ratio
+      #Fcon[:,:,:] += (-1./geom['gdet'][:,:,None]) * \
+      Fcon += antisym(mu,nu,kap,lam) * dump['ucov'][:,:,:,kap] * dump['bcov'][:,:,:,lam]
 
-  return Fcon*geom['gdet'][:,:,None]
+  return Fcon #*geom['gdet'][:,:,None]
 
 # Completely antisymmetric 4D symbol
 def antisym(a, b, c, d):
