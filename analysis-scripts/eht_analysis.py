@@ -60,7 +60,7 @@ N3 = hdr['N3']
 r = geom['r'][:,N2/2,0]
 th = geom['th'][0,:N2/2,0]
 
-# Calculate fluxes at r = 10
+# Calculate fluxes at (just inside) r = 5
 # Except Phi at EH, zone 5
 iF = 0
 while r[iF] < 5:
@@ -158,7 +158,8 @@ def avg_dump(n):
 
   # FLUXES
   #Phi_bcon[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
-  Phi[n] = 0.5*(np.fabs(dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
+  # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) so we need to multiply that in here
+  Phi[n] = 0.5*(np.fabs(np.sqrt(4*np.pi)*dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
   omega_th[n,:] = (dump['omega'][iEH,:,:].sum(axis=-1) + dump['omega'][iEH,::-1,:].sum(axis=-1))[:N2/2]
   
   Mdot[n] = np.abs((dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum())

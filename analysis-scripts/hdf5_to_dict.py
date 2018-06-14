@@ -233,28 +233,10 @@ def load_dump(fname, geom, hdr, diag=None):
   #dump['bsq_py'] = (bcon*bcov).sum(axis=-1)
 
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
-  
+
+  # TODO move this calculation somewhere less disruptive (analysis.py?)
   dump['omega'] = omega_calc(hdr, geom, dump)
   
-  if diag is not None:
-    dump['mdot'] = log_time(diag, 'mdot', dump['t'])
-    dump['phi'] = log_time(diag, 'phi', dump['t'])
-
-    #dump['Phi_py'] = np.sum(np.abs(dump['B1'][5,:,:]*geom['gdet'][5,:,None]*hdr['dx2']*hdr['dx3']))
-    dump['Phi_py'] = 0.5*(np.abs(dump['B1'][5,:,:])*geom['gdet'][5,:,None]*hdr['dx2']*hdr['dx3']).sum()
-    dump['phi_py'] = dump['Phi_py']/(np.sqrt(dump['mdot'])) # No norm; see Narayan '12
-
-    # TODO this is not normalized or anything
-    dump['Phi_disk'] = np.sum(np.abs(dump['B2'][:,N2/2,:]*geom['gdet'][:,N2/2,None]*hdr['dx1']*hdr['dx3']))
-
-    err = (dump['phi'] - dump['phi_py'])/dump['phi']
-    if err > 1e-3:
-      print "Phi calculation is wrong! Error: %f" % err
-  
-    # Diagnostics
-    #print "From Log: t: %f mdot: %f Phi_BH: %f" % (dump['t'], dump['mdot'], dump['phi'])
-    #print "Calculated: phi_BH: %f Phi_disk: %f" % (dump['phi_py'], dump['Phi_disk'])
-
   dfile.close()
 
   dump['hdr'] = hdr
