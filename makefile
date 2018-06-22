@@ -9,6 +9,7 @@ MPI_DIR =
 # Top directory of GSL, or blank if installed to system
 GSL_DIR =
 # System /lib equivalent (can be /usr/lib, /lib64, /usr/lib64)
+# Can leave this blank if it's included automatically by GCC
 SYSTEM_LIBDIR = /lib64
 
 # Try pointing this to h5pcc on your machine, before hunting down libraries
@@ -62,7 +63,7 @@ HEAD_ARC := $(addprefix $(ARC_DIR)/, $(notdir $(HEAD)))
 OBJ := $(addprefix $(ARC_DIR)/, $(notdir $(SRC:%.c=%.o)))
 
 INC = -I$(ARC_DIR)
-LIBDIR = 
+LIBDIR =
 LIB = $(MATH_LIB) $(GSL_LIB)
 
 # Add HDF and MPI directories only if compiler doesn't
@@ -80,9 +81,10 @@ ifneq ($(strip $(GSL_DIR)),)
 	INC += -I$(GSL_DIR)/include/
 	LIBDIR += -L$(GSL_DIR)/lib/
 endif
-
-# Prefer user libraries (above) to system
-LIBDIR += -L$(SYSTEM_LIBDIR)
+ifneq ($(strip $(SYSTEM_LIBDIR)),)
+	# Prefer user libraries (above) to system
+	LIBDIR += -L$(SYSTEM_LIBDIR)
+endif
 
 ## TARGETS ##
 
@@ -93,10 +95,10 @@ default: build
 build: $(EXE)
 	@echo -e "Completed build of prob: $(PROB)"
 	@echo -e "CFLAGS: $(CFLAGS)"
-	
-debug: CFLAGS += -g
+
+debug: CFLAGS += -g -Wall -Werror #Can make this less strict to debug w/o compiler help
 debug: build
-	
+
 profile: CFLAGS += -g -pg
 profile: build
 
