@@ -26,7 +26,6 @@
 // Hopefully can eliminate this dependency at some point
 #include <hdf5.h>
 
-#include "constants.h"
 #include "parameters.h"
 
 #ifndef M_PI
