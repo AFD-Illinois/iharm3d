@@ -18,6 +18,8 @@ GridDouble *omega;
 #define OUT_TYPE float
 #define OUT_H5_TYPE H5T_NATIVE_FLOAT
 
+#define HDF_STR_LEN 20
+
 void init_io()
 {
   omega = calloc(1,sizeof(GridDouble));
@@ -33,10 +35,10 @@ void dump(struct GridGeom *G, struct FluidState *S)
   char fname[80];
 
   #if ELECTRONS
-  const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
+  const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
                             "KEL", "KTOT"};
   #else
-  const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"};
+  const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"}; //Reserve some extra
   #endif
 
   if(firstc) {
@@ -58,10 +60,10 @@ void dump(struct GridGeom *G, struct FluidState *S)
   }
 
   hid_t file_id = hdf5_open(fname);
-  hid_t string_type = hdf5_make_str_type(20);
+  hid_t string_type = hdf5_make_str_type(HDF_STR_LEN); //H5T_VARIABLE for any-length strings. But not compat with parallel IO
 
   // Write header
-  hdf5_make_directory(file_id, "header");
+  hdf5_make_directory("header", file_id);
   hdf5_set_directory("/header/");
 
   hdf5_write_single_val(VERSION, "version", file_id, string_type);
@@ -101,8 +103,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   // In case we do passive variables
   int n_prims_passive = 0;
   hdf5_write_single_val(&n_prims_passive, "n_prims_passive", file_id, H5T_NATIVE_INT);
-
-  hdf5_write_single_list(varNames, "prim_names", file_id, n_prims, string_type);
+  hdf5_write_str_list(varNames, "prim_names", file_id, HDF_STR_LEN, n_prims);
 
   hdf5_write_single_val(&gam, "gam", file_id, H5T_NATIVE_DOUBLE);
   #if ELECTRONS
@@ -111,10 +112,10 @@ void dump(struct GridGeom *G, struct FluidState *S)
   #endif
   hdf5_write_single_val(&cour, "cour", file_id, H5T_NATIVE_DOUBLE);
   hdf5_write_single_val(&tf, "tf", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_add_units(file_id, "tf", "code");
+  hdf5_add_units("tf", "code", file_id);
 
   //Geometry
-  hdf5_make_directory(file_id, "geom");
+  hdf5_make_directory("geom", file_id);
   hdf5_set_directory("/header/geom/");
 
   hdf5_write_single_val(&(startx[1]), "startx1", file_id, H5T_NATIVE_DOUBLE);
@@ -126,7 +127,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   int n_dim = NDIM;
   hdf5_write_single_val(&n_dim, "n_dim", file_id, H5T_NATIVE_INT);
   #if METRIC == MKS
-  hdf5_make_directory(file_id, "mks");
+  hdf5_make_directory("mks", file_id);
   hdf5_set_directory("/header/geom/mks/");
   hdf5_write_single_val(&Rin, "Rin", file_id, H5T_NATIVE_DOUBLE);
   hdf5_write_single_val(&Rout, "Rout", file_id, H5T_NATIVE_DOUBLE);
@@ -145,9 +146,9 @@ void dump(struct GridGeom *G, struct FluidState *S)
   int is_full_dump = 1; // TODO do full dumps
   hdf5_write_single_val(&is_full_dump, "is_full_dump", file_id, H5T_NATIVE_INT);
   hdf5_write_single_val(&t, "t", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_add_units(file_id, "t", "code");
+  hdf5_add_units("t", "code", file_id);
   hdf5_write_single_val(&dt, "dt", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_add_units(file_id, "dt", "code");
+  hdf5_add_units("dt", "code", file_id);
   hdf5_write_single_val(&nstep, "n_step", file_id, H5T_NATIVE_INT);
   hdf5_write_single_val(&dump_cnt, "n_dump", file_id, H5T_NATIVE_INT);
 
@@ -158,7 +159,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   // Write primitive variables
   pack_vector_float(S->P, data, NVAR);
   hdf5_write_vector(data, "prims", file_id, NVAR, OUT_H5_TYPE);
-  hdf5_add_units(file_id, "prims", "code");
+  hdf5_add_units("prims", "code", file_id);
 
   // Write jcon (not recoverable from prims)
   pack_vector_float(S->jcon, data, NDIM);
@@ -177,7 +178,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_write_scalar(idata, "fail", file_id, H5T_NATIVE_INT);
 
   // Write some extras
-  hdf5_make_directory(file_id, "extras");
+  hdf5_make_directory("extras", file_id);
   hdf5_set_directory("/extras/");
 
   ind = 0;
