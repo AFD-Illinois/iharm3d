@@ -9,6 +9,8 @@
 #include <hdf5.h>
 #include "decs.h"
 
+static char hdf5_cur_dir[STRLEN] = "/";
+
 hid_t hdf5_open(char *fname)
 {
   hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
@@ -24,7 +26,50 @@ void hdf5_close(hid_t file_id)
   H5Fclose(file_id);
 }
 
-// Low level function without pre-filled
+void hdf5_make_directory(hid_t file_id, const char *name)
+{
+  // Add current directory to group name
+  char path[STRLEN];
+  strncpy(path, hdf5_cur_dir, STRLEN);
+  strncat(path, name, STRLEN - strnlen(path, STRLEN));
+
+  hid_t group_id = H5Gcreate2(file_id, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Gclose(group_id);
+}
+
+void hdf5_set_directory(const char *path)
+{
+  strncpy(hdf5_cur_dir, path, STRLEN);
+}
+
+hid_t hdf5_make_str_type(int len)
+{
+  // Set our string type size.  None of our names are long so this should suffice
+  hid_t string_type = H5Tcopy(H5T_C_S1);
+  H5Tset_size(string_type, 20);
+  return string_type;
+}
+
+void hdf5_add_units(hid_t fid, const char *name, const char *unit)
+{
+  hid_t dtype_id = H5Tcopy(H5T_C_S1);
+  H5Tset_size(dtype_id, strlen(unit)+1);
+  H5Tset_strpad(dtype_id, H5T_STR_NULLTERM);
+  hid_t dataspace_id = H5Screate(H5S_SCALAR);
+
+  char path[STRLEN];
+  strncpy(path, hdf5_cur_dir, STRLEN);
+  strncat(path, name, STRLEN - strnlen(path, STRLEN));
+
+  hid_t attribute_id = H5Acreate_by_name(fid, path, "units", dtype_id, H5Screate(H5S_SCALAR), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  H5Awrite(attribute_id, dtype_id, unit);
+  H5Aclose(attribute_id);
+  H5Sclose(dataspace_id);
+  H5Tclose(dtype_id);
+}
+
+// Low level function for any array/tensor size
+// Use convenience functions below instead
 void hdf5_write_array(void *data, hid_t file_id, const char *name, hsize_t rank,
   hsize_t *fdims, hsize_t *fstart, hsize_t *mdims, hsize_t *mstart, hsize_t type)
 {
@@ -35,8 +80,12 @@ void hdf5_write_array(void *data, hid_t file_id, const char *name, hsize_t rank,
   H5Sselect_hyperslab(memspace, H5S_SELECT_SET, mstart, NULL, mdims,
 	NULL);
 
+  char path[STRLEN];
+  strncpy(path, hdf5_cur_dir, STRLEN);
+  strncat(path, name, STRLEN - strnlen(path, STRLEN));
+
   hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
-  hid_t dset_id = H5Dcreate(file_id, name, type, filespace, H5P_DEFAULT,
+  hid_t dset_id = H5Dcreate(file_id, path, type, filespace, H5P_DEFAULT,
     plist_id, H5P_DEFAULT);
   H5Pclose(plist_id);
 
@@ -51,7 +100,7 @@ void hdf5_write_array(void *data, hid_t file_id, const char *name, hsize_t rank,
 
 }
 
-// Writing is independent of type, so I define the following
+// Write a packed buffer of scalars to a file
 void hdf5_write_scalar(void *data, const char *name, hid_t file_id, hsize_t hdf5_type)
 {
   hsize_t fdims[] = {N1TOT, N2TOT, N3TOT};
@@ -85,12 +134,15 @@ void hdf5_write_tensor(void *data, const char *name, hid_t file_id, int n1, int 
     fdims, fstart, mdims, mstart, hdf5_type);
 }
 
-void hdf5_write_header_val(void *val, const char *name, hid_t file_id, hsize_t hdf5_type)
+void hdf5_write_single_val(void *val, const char *name, hid_t file_id, hsize_t hdf5_type)
 {
-  // TODO add to /header
+  char path[STRLEN];
+  strncpy(path, hdf5_cur_dir, STRLEN);
+  strncat(path, name, STRLEN - strnlen(path, STRLEN));
+
   hid_t scalarspace = H5Screate(H5S_SCALAR);
   hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
-  hid_t dset_id = H5Dcreate(file_id, name, hdf5_type, scalarspace, H5P_DEFAULT,
+  hid_t dset_id = H5Dcreate(file_id, path, hdf5_type, scalarspace, H5P_DEFAULT,
     plist_id, H5P_DEFAULT);
   H5Pclose(plist_id);
 
@@ -103,9 +155,16 @@ void hdf5_write_header_val(void *val, const char *name, hid_t file_id, hsize_t h
   H5Sclose(scalarspace);
 }
 
-void hdf5_write_attributes(void *val, const char *name, hid_t file_id, hsize_t hdf5_type)
+// Write a 1D list of values to a file
+void hdf5_write_single_list(void *data, const char *name, hid_t file_id, int len, hsize_t hdf5_type)
 {
+  hsize_t fdims[] = {len};
+  hsize_t fstart[] = {0};
+  hsize_t mdims[] = {len};
+  hsize_t mstart[] = {0};
 
+  hdf5_write_array(data, file_id, name, 1,
+                   fdims, fstart, mdims, mstart, hdf5_type);
 }
 
 void hdf5_read_header_val(void *val, const char *name, hid_t file_id, hsize_t hdf5_type)

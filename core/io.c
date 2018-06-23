@@ -36,7 +36,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
                             "KEL", "KTOT"};
   #else
-  //const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"};
+  const char *varNames[] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"};
   #endif
 
   if(firstc) {
@@ -58,68 +58,129 @@ void dump(struct GridGeom *G, struct FluidState *S)
   }
 
   hid_t file_id = hdf5_open(fname);
-
-  // Set our string type size.  None of our names are long so this should suffice
-  hid_t string_type = H5Tcopy(H5T_C_S1);
-  H5Tset_size(string_type, 20);
+  hid_t string_type = hdf5_make_str_type(20);
 
   // Write header
-  hdf5_write_header_val(VERSION, "version_string", file_id, string_type);
-  #if METRIC == MINKOWSKI
-  hdf5_write_header_val("MINKOWSKI", "metric_name", file_id, string_type);
-  #elif METRIC == MKS
-  hdf5_write_header_val("MKS", "metric_name", file_id, string_type);
-  #endif
-  int has_electrons = ELECTRONS;
-  hdf5_write_header_val(&has_electrons, "has_electrons", file_id, H5T_NATIVE_INT);
-  hdf5_write_header_val(&t, "t", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&tf, "tf", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&nstep, "n_step", file_id, H5T_NATIVE_INT);
-  int n1 = N1TOT, n2 = N2TOT, n3 = N3TOT;
-  hdf5_write_header_val(&n1, "n1", file_id, H5T_NATIVE_INT);
-  hdf5_write_header_val(&n2, "n2", file_id, H5T_NATIVE_INT);
-  hdf5_write_header_val(&n3, "n3", file_id, H5T_NATIVE_INT);
+  hdf5_make_directory(file_id, "header");
+  hdf5_set_directory("/header/");
 
-  hdf5_write_header_val(&gam, "gam", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(VERSION, "version", file_id, string_type);
+  int has_electrons = ELECTRONS;
+  hdf5_write_single_val(&has_electrons, "has_electrons", file_id, H5T_NATIVE_INT);
+
+#if METRIC == MINKOWSKI
+  hdf5_write_single_val("MINKOWSKI", "metric_name", file_id, string_type);
+#elif METRIC == MKS
+#if POLYTH // Morty Maxwell's Massively Modified Kerr-Schild Coordinates
+  hdf5_write_single_val("MMKS", "metric_name", file_id, string_type);
+#else
+  hdf5_write_single_val("MKS", "metric_name", file_id, string_type);
+#endif //POLYTH
+#endif //MKS
+  char *gridfile_name = "grid.h5"; // TODO follow grid below?
+  hdf5_write_single_val(&gridfile_name, "gridfile_name", file_id, string_type);
+
+  // TODO caps?
+#if RECONSTRUCTION == LINEAR
+  hdf5_write_single_val("LINEAR", "reconstruction_name", file_id, string_type);
+#elif RECONSTRUCTION == PPM
+  hdf5_write_single_val("PPM", "reconstruction_name", file_id, string_type);
+#elif RECONSTRUCTION == WENO
+  hdf5_write_single_val("WENO", "reconstruction_name", file_id, string_type);
+#elif RECONSTRUCTION == MP5
+  hdf5_write_single_val("MP5", "reconstruction_name", file_id, string_type);
+#endif
+
+  int n1 = N1TOT, n2 = N2TOT, n3 = N3TOT;
+  hdf5_write_single_val(&n1, "n1", file_id, H5T_NATIVE_INT);
+  hdf5_write_single_val(&n2, "n2", file_id, H5T_NATIVE_INT);
+  hdf5_write_single_val(&n3, "n3", file_id, H5T_NATIVE_INT);
+
+  int n_prims = NVAR;
+  hdf5_write_single_val(&n_prims, "n_prims", file_id, H5T_NATIVE_INT);
+  // In case we do passive variables
+  int n_prims_passive = 0;
+  hdf5_write_single_val(&n_prims_passive, "n_prims_passive", file_id, H5T_NATIVE_INT);
+
+  hdf5_write_single_list(varNames, "prim_names", file_id, n_prims, string_type);
+
+  hdf5_write_single_val(&gam, "gam", file_id, H5T_NATIVE_DOUBLE);
   #if ELECTRONS
-  hdf5_write_header_val(&game, "gam_e", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&gamp, "gam_p", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&game, "gam_e", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&gamp, "gam_p", file_id, H5T_NATIVE_DOUBLE);
   #endif
-  hdf5_write_header_val(&cour, "cour", file_id, H5T_NATIVE_DOUBLE);
-//  hdf5_write_header_val(&DTd, "DTd", file_id, H5T_NATIVE_DOUBLE);
-//  hdf5_write_header_val(&DTl, "DTl", file_id, H5T_NATIVE_DOUBLE);
-//  hdf5_write_header_val(&DTr, "DTr", file_id, H5T_NATIVE_INT);
-//  hdf5_write_header_val(&DTp, "DTp", file_id, H5T_NATIVE_INT);
-  hdf5_write_header_val(&dump_cnt, "dump_cnt", file_id, H5T_NATIVE_INT);
-  hdf5_write_header_val(&dt, "dt", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&failed, "failed", file_id, H5T_NATIVE_INT);
+  hdf5_write_single_val(&cour, "cour", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&tf, "tf", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_add_units(file_id, "tf", "code");
 
   //Geometry
-  hdf5_write_header_val(&(startx[1]), "startx1", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&(startx[2]), "startx2", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&(startx[3]), "startx3", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&(dx[1]), "dx1", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&(dx[2]), "dx2", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&(dx[3]), "dx3", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_make_directory(file_id, "geom");
+  hdf5_set_directory("/header/geom/");
+
+  hdf5_write_single_val(&(startx[1]), "startx1", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&(startx[2]), "startx2", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&(startx[3]), "startx3", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&(dx[1]), "dx1", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&(dx[2]), "dx2", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&(dx[3]), "dx3", file_id, H5T_NATIVE_DOUBLE);
+  int n_dim = NDIM;
+  hdf5_write_single_val(&n_dim, "n_dim", file_id, H5T_NATIVE_INT);
   #if METRIC == MKS
-  hdf5_write_header_val(&Rin, "Rin", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&Rout, "Rout", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&Rhor, "Reh", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&hslope, "hslope", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&a, "a", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_make_directory(file_id, "mks");
+  hdf5_set_directory("/header/geom/mks/");
+  hdf5_write_single_val(&Rin, "Rin", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&Rout, "Rout", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&Rhor, "Reh", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&hslope, "hslope", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&a, "a", file_id, H5T_NATIVE_DOUBLE);
   #if POLYTH
-  hdf5_write_header_val(&poly_xt, "poly_xt", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&poly_alpha, "poly_alpha", file_id, H5T_NATIVE_DOUBLE);
-  hdf5_write_header_val(&mks_smooth, "mks_smooth", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&poly_xt, "poly_xt", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&poly_alpha, "poly_alpha", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&mks_smooth, "mks_smooth", file_id, H5T_NATIVE_DOUBLE);
   #endif
   #endif
+
+  hdf5_set_directory("/");
+
+  int is_full_dump = 1; // TODO do full dumps
+  hdf5_write_single_val(&is_full_dump, "is_full_dump", file_id, H5T_NATIVE_INT);
+  hdf5_write_single_val(&t, "t", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_add_units(file_id, "t", "code");
+  hdf5_write_single_val(&dt, "dt", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_add_units(file_id, "dt", "code");
+  hdf5_write_single_val(&nstep, "n_step", file_id, H5T_NATIVE_INT);
+  hdf5_write_single_val(&dump_cnt, "n_dump", file_id, H5T_NATIVE_INT);
+
+  hdf5_write_single_val(&DTd, "dump_cadence", file_id, H5T_NATIVE_DOUBLE);
+  //hdf5_write_single_val(&DTf, "full_dump_cadence", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&failed, "failed", file_id, H5T_NATIVE_INT);
 
   // Write primitive variables
   pack_vector_float(S->P, data, NVAR);
   hdf5_write_vector(data, "prims", file_id, NVAR, OUT_H5_TYPE);
+  hdf5_add_units(file_id, "prims", "code");
 
-  // Write derived scalars from functions
+  // Write jcon (not recoverable from prims)
+  pack_vector_float(S->jcon, data, NDIM);
+  hdf5_write_vector(data, "jcon", file_id, NDIM, OUT_H5_TYPE);
+
+  // Write divB and fail diagnostics
   int ind = 0;
+  ZLOOP_OUT {
+    data[ind] = flux_ct_divb(G, S, i, j, k);
+    ind++;
+  }
+  hdf5_write_scalar(data, "divB", file_id, OUT_H5_TYPE);
+
+  pack_scalar_int(fail_save, idata);
+  ZLOOP fail_save[k][j][i] = 0;
+  hdf5_write_scalar(idata, "fail", file_id, H5T_NATIVE_INT);
+
+  // Write some extras
+  hdf5_make_directory(file_id, "extras");
+  hdf5_set_directory("/extras/");
+
+  ind = 0;
   ZLOOP_OUT {
     get_state(G, S, i, j, k, CENT);
     data[ind] = bsq_calc(S, i, j, k);
@@ -131,27 +192,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   pack_scalar_float(*omega, data);
   hdf5_write_scalar(data, "omega", file_id, OUT_H5_TYPE);
 
-  ind = 0;
-  ZLOOP_OUT {
-    data[ind] = mhd_gamma_calc(G, S, i, j, k, CENT);
-    ind++;
-  }
-  hdf5_write_scalar(data, "gamma", file_id, OUT_H5_TYPE);
-
-  // TODO be able to output divb in double separately?
-  // Cadence divb/fail differently from other vars?
-  ind = 0;
-  ZLOOP_OUT {
-    data[ind] = flux_ct_divb(G, S, i, j, k);
-    ind++;
-  }
-  hdf5_write_scalar(data, "divb", file_id, OUT_H5_TYPE);
-
-  pack_scalar_int(fail_save, idata);
-  ZLOOP_OUT fail_save[k][j][i] = 0;
-  hdf5_write_scalar(idata, "fail", file_id, H5T_NATIVE_INT);
-
-  // Write vector quantities
+  // These are far too much space to continue
   pack_vector_float(S->bcon, data, NDIM);
   hdf5_write_vector(data, "bcon", file_id, NDIM, OUT_H5_TYPE);
 
@@ -164,15 +205,11 @@ void dump(struct GridGeom *G, struct FluidState *S)
   pack_vector_float(S->ucov, data, NDIM);
   hdf5_write_vector(data, "ucov", file_id, NDIM, OUT_H5_TYPE);
 
-  pack_vector_float(S->jcon, data, NDIM);
-  hdf5_write_vector(data, "jcon", file_id, NDIM, OUT_H5_TYPE);
-
   hdf5_close(file_id);
 
   timer_stop(TIMER_IO);
 }
 
-// TODO delete this when possible
 #define NGRIDVARS 11
 void dump_grid(struct GridGeom *G)
 {
