@@ -51,7 +51,6 @@ int lim;
 double mdot, edot, ldot;
 double mdot_eh, edot_eh, ldot_eh;
 int icurr, jcurr, kcurr;
-double mass_added;
 
 int nthreads;
 

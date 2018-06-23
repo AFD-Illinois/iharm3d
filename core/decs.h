@@ -256,7 +256,6 @@ extern int lim;
 extern double mdot, edot, ldot;
 extern double mdot_eh, edot_eh, ldot_eh;
 extern int icurr, jcurr, kcurr;
-extern double mass_added;
 
 // Parallelism
 extern int nthreads;
@@ -404,9 +403,6 @@ void lower(double ucon[NDIM], double gcov[NDIM][NDIM], double ucov[NDIM]);
 void raise(double ucov[NDIM], double gcon[NDIM][NDIM], double ucon[NDIM]);
 double dot_grid(GridVector vcon, GridVector vcov, int i, int j, int k);
 double dot(double vcon[NDIM], double vcov[NDIM]);
-//double bl_gdet_func(double r, double th);
-//void bl_gcov_func(double r, double th, double gcov[][NDIM]);
-//void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 double MINOR(double m[16], int r0, int r1, int r2, int c0, int c1, int c2);
 void adjoint(double m[16], double adjOut[16]);
 double determinant(double m[16]);

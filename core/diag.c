@@ -47,8 +47,6 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
         exit(1);
       }
     }
-    // Initialize tracking of run-cumulative variables
-    mass_added = 0.0;
   }
 
   double pp = 0.;
@@ -148,7 +146,6 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
       fprintf(ener_file, "%15.8g %15.8g %15.8g ", Phi, phi, jet_EM_flux);
       fprintf(ener_file, "%15.8g ", divbmax);
       fprintf(ener_file, "%15.8g ", lum_eht);
-      fprintf(ener_file, "%15.8g ", mass_added);
       fprintf(ener_file, "%15.8g %15.8g %15.8g ", mdot_eh_all, edot_eh_all, ldot_eh_all);
       fprintf(ener_file, "\n");
       fflush(ener_file);
