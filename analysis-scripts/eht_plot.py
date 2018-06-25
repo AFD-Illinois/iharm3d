@@ -1,8 +1,12 @@
+################################################################################
+#                                                                              #
+#  PLOTS OF VARIABLES COMPUTED IN eht_analysis.py                              #
+#                                                                              #
+################################################################################
+
 import sys; sys.dont_write_bytecode=True
-sys.path.insert(0, '../')
 import numpy as np
-import matplotlib 
-matplotlib.use('agg')
+import matplotlib
 import matplotlib.pyplot as plt
 import util
 import pickle

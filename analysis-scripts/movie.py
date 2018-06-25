@@ -5,11 +5,9 @@
 ################################################################################
 
 import sys; sys.dont_write_bytecode = True
-sys.path.insert(0, '../')
 import numpy as np
 import hdf5_to_dict as io
 import matplotlib
-matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import util
 import glob
@@ -58,7 +56,7 @@ FRAMEDIR = 'FRAMES'
 util.make_dir(FRAMEDIR)
 
 hdr = io.load_hdr(files[0])
-geom = io.load_geom(hdr, gridfile)
+geom = io.load_geom(gridfile)
 
 # Load diagnostics from HARM itself
 #diag = io.load_log(hdr, os.path.join(path, "log.out"))

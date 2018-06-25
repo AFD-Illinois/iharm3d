@@ -35,7 +35,7 @@ tavg = float(sys.argv[2])
 dumps = io.get_dumps_reduced(path)
 
 hdr = io.load_hdr(dumps[0])
-geom = io.load_geom(hdr, os.path.join(path,'grid.h5'))
+geom = io.load_geom(os.path.join(path,'grid.h5'))
 
 # Calculate jmin, jmax
 ths = geom['th'][-1,:,0]
@@ -53,9 +53,9 @@ diag = io.load_diag(hdr, path)
 dx1 = hdr['dx1']
 dx2 = hdr['dx2']
 dx3 = hdr['dx3']
-N1 = hdr['N1']
-N2 = hdr['N2']
-N3 = hdr['N3']
+N1 = hdr['n1']
+N2 = hdr['n2']
+N3 = hdr['n3']
 
 r = geom['r'][:,N2/2,0]
 th = geom['th'][0,:N2/2,0]

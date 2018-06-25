@@ -6,7 +6,6 @@
 
 import numpy as np
 import matplotlib
-matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 from matplotlib.colors import LinearSegmentedColormap
@@ -55,21 +54,22 @@ parula = LinearSegmentedColormap.from_list('parula', cm_data)
 
 # GET XZ SLICE OF GRID DATA
 def flatten_xz(array, hdr, flip=False):
-    if flip:
-        sign = -1
-    else:
-        sign = 1
-    sign = 1.
-    flat = np.zeros([2*hdr['N1'],hdr['N2']])
-    for j in xrange(hdr['N2']):
-        for i in xrange(hdr['N1']):
-            flat[i,j] = sign*array[hdr['N1'] - 1 - i,j,hdr['N3']/2]
-        for i in xrange(hdr['N1']):
-            flat[i+hdr['N1'],j] = array[i,j,0]
-    if flip:
-        flat[:,0] = 0
-        flat[:,-1] = 0
-    return flat
+  N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
+  if flip:
+      sign = -1
+  else:
+      sign = 1
+  sign = 1.
+  flat = np.zeros([2*N1,N2])
+  for j in xrange(N2):
+      for i in xrange(N1):
+          flat[i,j] = sign*array[N1 - 1 - i,j,N3/2]
+      for i in xrange(N1):
+          flat[i+N1,j] = array[i,j,0]
+  if flip:
+      flat[:,0] = 0
+      flat[:,-1] = 0
+  return flat
 
 # GET XY SLICE OF GRID DATA
 def flatten_xy(array, hdr):
@@ -77,7 +77,7 @@ def flatten_xy(array, hdr):
 
 def plot_xz(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
             label=None, ticks=None, arrayspace=False):
-  hdr = dump['hdr']; N1 = hdr['N1']; N2 = hdr['N2']; N3 = hdr['N3']
+  hdr = dump['hdr']; N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
   if N3 > 1.:
     if (arrayspace):
       x = np.reshape(np.repeat(np.linspace(0,1,N2),N1),(N1,N2))
@@ -107,21 +107,21 @@ def plot_xz(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
-    if label:
-      plt.colorbar(mesh, cax=cax, ticks=ticks).set_label(label)
-    else:
-      plt.colorbar(mesh, cax=cax, ticks=ticks)
+    plt.colorbar(mesh, cax=cax, ticks=ticks)
   ax.set_aspect('equal')
   if (arrayspace):
     ax.set_xlabel('r (arbitrary)'); ax.set_ylabel('theta (arbitrary)')
   else:
     ax.set_xlabel('x/M'); ax.set_ylabel('z/M')
+  
+  if label:
+    ax.set_title(label)
   #ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
 
 def overlay_field(ax, geom, dump, NLEV):
   from scipy.integrate import trapz
   hdr = dump['hdr']
-  N1 = hdr['N1']; N2 = hdr['N2']
+  N1 = hdr['n1']; N2 = hdr['n2']
   x = flatten_xz(geom['x'], hdr).transpose()
   z = flatten_xz(geom['z'], hdr).transpose()
   A_phi = np.zeros([N2, 2*N1])
@@ -144,7 +144,7 @@ def overlay_field(ax, geom, dump, NLEV):
 
 def plot_xy(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
             label=None, ticks=None, arrayspace=False):
-  hdr = dump['hdr']; N1 = hdr['N1']; N2 = hdr['N2']; N3 = hdr['N3']+1
+  hdr = dump['hdr']; N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']+1
 
   if (arrayspace):
     x = np.reshape(np.repeat(np.linspace(0,1,N3),N1),(N1,N3))
@@ -169,10 +169,9 @@ def plot_xy(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(mesh, cax=cax, ticks=ticks)
     if label:
-      plt.colorbar(mesh, cax=cax, ticks=ticks).set_label(label)
-    else:
-      plt.colorbar(mesh, cax=cax, ticks=ticks)
+      ax.set_title(label)
   ax.set_aspect('equal')
   if (arrayspace):
     ax.set_xlabel('r (arbitrary)'); ax.set_ylabel('phi (arbitrary)')

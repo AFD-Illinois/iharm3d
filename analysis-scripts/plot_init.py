@@ -5,11 +5,9 @@
 ################################################################################
 
 import sys; sys.dont_write_bytecode = True
-sys.path.insert(0, '../')
 import numpy as np
 import hdf5_to_dict as io
 import matplotlib
-matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import util
 import glob
@@ -56,7 +54,7 @@ if len(files) == 0:
     sys.exit(1)
 
 hdr = io.load_hdr(files[0])
-geom = io.load_geom(hdr, gridfile)
+geom = io.load_geom(gridfile)
 dump = io.load_dump(files[0], geom, hdr)
 
 # Plot the first dump, specifically init as in Narayan '12
@@ -65,7 +63,7 @@ imname = 'initial_conditions.png'
 
 fig = plt.figure(figsize=(FIGX, FIGY))
 
-N1 = hdr['N1']; N2 = hdr['N2']; N3 = hdr['N3']
+N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
 
 # Density profile
 ax = plt.subplot(NPLOTSY,NPLOTSX,1)
