@@ -155,7 +155,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_write_single_val(&dump_cnt, "n_dump", file_id, H5T_NATIVE_INT);
 
   hdf5_write_single_val(&DTd, "dump_cadence", file_id, H5T_NATIVE_DOUBLE);
-  //hdf5_write_single_val(&DTf, "full_dump_cadence", file_id, H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&DTf, "full_dump_cadence", file_id, H5T_NATIVE_DOUBLE);
   hdf5_write_single_val(&failed, "failed", file_id, H5T_NATIVE_INT);
 
   // Write primitive variables
@@ -167,46 +167,48 @@ void dump(struct GridGeom *G, struct FluidState *S)
   pack_vector_float(S->jcon, data, NDIM);
   hdf5_write_vector(data, "jcon", file_id, NDIM, OUT_H5_TYPE);
 
-  // Write divB and fail diagnostics
-  int ind = 0;
-  ZLOOP_OUT {
-    data[ind] = flux_ct_divb(G, S, i, j, k);
-    ind++;
-  }
-  hdf5_write_scalar(data, "divB", file_id, OUT_H5_TYPE);
+  // Write divB and fail diagnostics only to full dumps
+  if (is_full_dump) {
+    int ind = 0;
+    ZLOOP_OUT {
+	  data[ind] = flux_ct_divb(G, S, i, j, k);
+	  ind++;
+    }
+    hdf5_write_scalar(data, "divB", file_id, OUT_H5_TYPE);
 
-  pack_scalar_int(fail_save, idata);
-  ZLOOP fail_save[k][j][i] = 0;
-  hdf5_write_scalar(idata, "fail", file_id, H5T_NATIVE_INT);
+    pack_scalar_int(fail_save, idata);
+    ZLOOP fail_save[k][j][i] = 0;
+    hdf5_write_scalar(idata, "fail", file_id, H5T_NATIVE_INT);
+  }
 
   // Write some extras
   hdf5_make_directory("extras", file_id);
   hdf5_set_directory("/extras/");
 
-  ind = 0;
-  ZLOOP_OUT {
-    get_state(G, S, i, j, k, CENT);
-    data[ind] = bsq_calc(S, i, j, k);
-    ind++;
-  }
-  hdf5_write_scalar(data, "bsq", file_id, OUT_H5_TYPE);
-
-  omega_calc(G, S, omega);
-  pack_scalar_float(*omega, data);
-  hdf5_write_scalar(data, "omega", file_id, OUT_H5_TYPE);
-
-  // These are far too much space to continue
-  pack_vector_float(S->bcon, data, NDIM);
-  hdf5_write_vector(data, "bcon", file_id, NDIM, OUT_H5_TYPE);
-
-  pack_vector_float(S->bcov, data, NDIM);
-  hdf5_write_vector(data, "bcov", file_id, NDIM, OUT_H5_TYPE);
-
-  pack_vector_float(S->ucon, data, NDIM);
-  hdf5_write_vector(data, "ucon", file_id, NDIM, OUT_H5_TYPE);
-
-  pack_vector_float(S->ucov, data, NDIM);
-  hdf5_write_vector(data, "ucov", file_id, NDIM, OUT_H5_TYPE);
+//  ind = 0;
+//  ZLOOP_OUT {
+//    get_state(G, S, i, j, k, CENT);
+//    data[ind] = bsq_calc(S, i, j, k);
+//    ind++;
+//  }
+//  hdf5_write_scalar(data, "bsq", file_id, OUT_H5_TYPE);
+//
+//  omega_calc(G, S, omega);
+//  pack_scalar_float(*omega, data);
+//  hdf5_write_scalar(data, "omega", file_id, OUT_H5_TYPE);
+//
+//  // These are far too much space to continue
+//  pack_vector_float(S->bcon, data, NDIM);
+//  hdf5_write_vector(data, "bcon", file_id, NDIM, OUT_H5_TYPE);
+//
+//  pack_vector_float(S->bcov, data, NDIM);
+//  hdf5_write_vector(data, "bcov", file_id, NDIM, OUT_H5_TYPE);
+//
+//  pack_vector_float(S->ucon, data, NDIM);
+//  hdf5_write_vector(data, "ucon", file_id, NDIM, OUT_H5_TYPE);
+//
+//  pack_vector_float(S->ucov, data, NDIM);
+//  hdf5_write_vector(data, "ucov", file_id, NDIM, OUT_H5_TYPE);
 
   hdf5_close(file_id);
 
