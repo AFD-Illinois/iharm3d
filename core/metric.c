@@ -77,7 +77,6 @@ void conn_func(struct GridGeom *G, int i, int j, int k)
     }
   }
 }
-#undef DELTA
 
 // Lower a contravariant rank-1 tensor to a covariant one
 inline void lower_grid(GridVector vcon, GridVector vcov, struct GridGeom *G, int i,
@@ -91,7 +90,6 @@ inline void lower_grid(GridVector vcon, GridVector vcov, struct GridGeom *G, int
   }
 }
 
-// Lower a contravariant rank-1 tensor to a covariant one
 void raise_grid(GridVector vcov, GridVector vcon, struct GridGeom *G, int i, 
   int j, int k, int loc)
 {
@@ -103,6 +101,8 @@ void raise_grid(GridVector vcov, GridVector vcon, struct GridGeom *G, int i,
   }
 }
 
+// TODO revise this out of the following: Fcon_calc, fixup1zone, get_state, Utoprim, Wp_func
+// And while you're at it revise out get_state
 void lower(double ucon[NDIM], double gcov[NDIM][NDIM], double ucov[NDIM])
 {
   for (int mu = 0; mu < NDIM; mu++) {
@@ -142,97 +142,7 @@ double dot(double vcon[NDIM], double vcov[NDIM])
   return dot;
 }
 
-/*
-// Boyer-Lindquist metric functions
-void blgset(int i, int j, struct of_geom *geom)
-{
-  double r, th, X[NDIM];
-
-  coord(i, j, 0, CENT, X);
-  bl_coord(X, &r, &th);
-
-  if (th < 0)
-    th *= -1.;
-  if (th > M_PI)
-    th = 2. * M_PI - th;
-
-  geom->g = bl_gdet_func(r, th);
-  bl_gcov_func(r, th, geom->gcov);
-  bl_gcon_func(r, th, geom->gcon);
-}
-
-double bl_gdet_func(double r, double th)
-{
-  double a2, r2;
-
-  a2 = a * a;
-  r2 = r * r;
-  return (r * r * fabs(sin(th)) *
-    (1. + 0.5 * (a2 / r2) * (1. + cos(2. * th))));
-}
-
-void bl_gcov_func(double r, double th, double gcov[][NDIM])
-{
-  double sth, cth, s2, a2, r2, DD, mu;
-
-  for (int mu = 0; mu < NDIM; mu++) {
-    for (int nu = 0; nu < NDIM; nu++) {
-      gcov[mu][nu] = 0.;
-    }
-  }
-
-  sth = fabs(sin(th));
-  s2 = sth*sth;
-  cth = cos(th);
-  a2 = a*a;
-  r2 = r*r;
-  DD = 1. - 2./r + a2/r2;
-  mu = 1. + a2*cth*cth/r2;
-
-  gcov[TT][TT] = -(1. - 2./(r*mu));
-  gcov[TT][3]  = -2.*a*s2/(r*mu);
-  gcov[3][TT]  = gcov[TT][3];
-  gcov[1][1]   = mu/DD;
-  gcov[2][2]   = r2*mu;
-  gcov[3][3]   = r2*sth*sth*(1. + a2/r2 + 2.*a2*s2/(r2*r*mu));
-
-}
-
-void bl_gcon_func(double r, double th, double gcon[][NDIM])
-{
-  double sth, cth, a2, r2, r3, DD, mu;
-  
-  for (int mu = 0; mu < NDIM; mu++) {
-    for (int nu = 0; nu < NDIM; nu++) {
-      gcon[mu][nu] = 0.;
-    }
-  }
-
-  sth = sin(th);
-  cth = cos(th);
-
-#if(COORDSINGFIX)
-  if (fabs(sth) < SINGSMALL) {
-    if (sth >= 0)
-      sth = SINGSMALL;
-    if (sth < 0)
-      sth = -SINGSMALL;
-  }
-#endif
-
-  a2 = a*a;
-  r2 = r*r;
-  r3 = r2*r;
-  DD = 1. - 2./r + a2/r2;
-  mu = 1. + a2*cth*cth/r2;
-
-  gcon[TT][TT] = -1. - 2.*(1. + a2/r2)/(r*DD*mu);
-  gcon[TT][3] = -2.*a/(r3*DD*mu);
-  gcon[3][TT] = gcon[TT][3];
-  gcon[1][1] = DD/mu;
-  gcon[2][2] = 1./(r2*mu);
-  gcon[3][3] = (1. - 2./(r*mu))/(r2*sth*sth*DD);
-}*/
+// TODO replace all the following w/GSL
 
 double MINOR(double m[16], int r0, int r1, int r2, int c0, int c1, int c2)
 {

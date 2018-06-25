@@ -8,22 +8,17 @@
 
 #include "decs.h"
 
-static int nfixed = 0, nfixed_b = 0, nfails = 0;
-static double mass_added_step = 0.0;
-
 void fixup1gamma(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
 
-
 // Apply floors to density, internal energy
-// TODO make this faster with masks
+// TODO can this be made faster w/more or less vectorization?
 void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
 
   get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
-#pragma omp parallel for collapse(3) reduction(+:mass_added_step) \
-		reduction(+:nfixed) reduction(+:nfixed_b) reduction(+:nfails)
+#pragma omp parallel for collapse(3)
   ZLOOP fixup1zone(G, S, i, j, k);
 
 #pragma omp parallel for collapse(3)
@@ -33,23 +28,6 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 
   timer_stop(TIMER_FIXUP);
 
-  mass_added_step = mpi_reduce(mass_added_step);
-  mass_added += mass_added_step;
-
-  if(mpi_io_proc()) {
-      printf("Added %.10e of mass (total %.10e)\n",mass_added_step, mass_added);
-      //printf("Total added now %f\% of mass\n", mass_added_total/mass*100);
-  }
-
-  mass_added_step = 0;
-
-  nfixed = mpi_reduce_int(nfixed);
-  nfixed_b = mpi_reduce_int(nfixed_b);
-  nfails = mpi_reduce_int(nfails);
-  //if(mpi_io_proc()) printf("Fixed %d zones, %d from new floor, %d failures in UtoP\n", nfixed, nfixed_b, nfails);
-  nfixed = 0;
-  nfixed_b = 0;
-  nfails = 0;
 }
 
 inline void ucon_to_utcon(struct GridGeom *G, int i, int j, double ucon[NDIM], double utcon[NDIM])
@@ -151,7 +129,6 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     double trans = 10.*bsq/MY_MIN(S->P[RHO][k][j][i], S->P[UU][k][j][i]) - 1.;
 
     if (trans > 0.) { // Strongly magnetized region; use drift frame floors
-      nfixed++; nfixed_b++;
 
       // Preserve pre-floor primitives
       double pv_prefloor[NVAR];
@@ -159,7 +136,6 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
       // Update according to floor
       S->P[RHO][k][j][i] = MY_MAX(S->P[RHO][k][j][i], rhoflr);
-      mass_added_step += ( MY_MAX(0., rhoflr - S->P[RHO][k][j][i]) )*dV; // TODO correct?
       S->P[UU][k][j][i] = MY_MAX(S->P[UU][k][j][i], uflr);
 
       trans = MY_MIN(trans, 1.);
@@ -218,12 +194,10 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 	    S->P[mu+UU][k][j][i] = utcon[mu]*trans + pv_prefloor[mu+UU]*(1. - trans);
       }
     } else { // Weakly magnetized region; use normal observer frame floors
-      nfixed++;
 
       double Padd[NVAR];
       PLOOP Padd[ip] = 0.;
       Padd[RHO] = MY_MAX(0., rhoflr - S->P[RHO][k][j][i]);
-      mass_added_step += Padd[RHO]*dV;
       Padd[UU] = MY_MAX(0., uflr - S->P[UU][k][j][i]);
 
       // Pull a /pretty bad/ hack to get 1-zone calculations
@@ -257,8 +231,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       }
 
       // TODO Record fails here?
-      if (U_to_P(G, S, i, j, k, CENT) != 0)
-	    nfails++;
+      U_to_P(G, S, i, j, k, CENT);
     }
   }
 
@@ -280,17 +253,14 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 inline void fixup1gamma(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
   // Limit gamma with respect to normal observer
+  // TODO check like mhd_gamma_calc could
   double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
-//    if (mhd_gamma_calc(G, S, i, j, k, CENT, &gamma)) {
-//      pflag[k][j][i] = -333;
-//    } else {
   if (gamma > GAMMAMAX) {
 	double f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
 	S->P[U1][k][j][i] *= f;
 	S->P[U2][k][j][i] *= f;
 	S->P[U3][k][j][i] *= f;
   }
-//  }
 }
 
 // Replace bad points with values interpolated from neighbors
