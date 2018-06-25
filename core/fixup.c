@@ -118,7 +118,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   uflr = MY_MAX(uflr, UUMINLIMIT);
 
   // Enhance floors in case of large magnetic energy density
-  //Got state already -- see above
+  // Got state already -- see above
   double bsq = bsq_calc(S, i, j, k);
   rhoflr = MY_MAX(rhoflr, bsq/BSQORHOMAX);
   uflr = MY_MAX(uflr, bsq/BSQOUMAX);
@@ -264,12 +264,11 @@ inline void fixup1gamma(struct GridGeom *G, struct FluidState *S, int i, int j, 
 }
 
 // Replace bad points with values interpolated from neighbors
+// Define loop for just fluid. TODO doesn't accomodate changing fluid order
 #define FLOOP for(int ip=0;ip<B1;ip++)
 void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
-  int bad;
-  double sum[B1], wsum;
 
   // Flip the logic of the pflag[] so that it now indicates which cells are good
 #pragma omp parallel for simd collapse(2)
@@ -295,14 +294,15 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   }
 
   // Fix the interior points first
-  // TODO parallelize
+  // TODO this is not strictly deterministic
+  int bad;
   do {
-    bad = 0;
+	bad = 0;
+#pragma omp parallel for collapse(3) reduction(+:bad)
     ZLOOP {
-      //if i == 6 && j == 4 
-      //printf("[%i %i %i] N1 N2 N3 = %i %i %i pflag = %i\n", i,j,k,N1,N2,N3,pflag[k][j][i]);
       if (pflag[k][j][i] == 0) {
-        wsum = 0.;
+        double wsum = 0.;
+        double sum[B1];
         FLOOP sum[ip] = 0.;
         for (int l = -1; l < 2; l++) {
           for (int m = -1; m < 2; m++) {

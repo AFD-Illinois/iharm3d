@@ -16,10 +16,10 @@ void diag_flux(struct FluidFlux *F)
   mdot_eh = edot_eh = ldot_eh = 0.;
   int iEH = NG + 5;
   if (global_start[0] == 0) {
-    #pragma omp parallel for \
-      reduction(+:mdot) reduction(+:edot) reduction(+:ldot) \
-      reduction(+:mdot_eh) reduction(+:edot_eh) reduction(+:ldot_eh) \
-      collapse(2)
+#pragma omp parallel for \
+  reduction(+:mdot) reduction(+:edot) reduction(+:ldot) \
+  reduction(+:mdot_eh) reduction(+:edot_eh) reduction(+:ldot_eh) \
+  collapse(2)
     JSLOOP(0, N2 - 1) {
       KSLOOP(0, N3 - 1) {
         mdot += -F->X1[RHO][k][j][NG]*dx[2]*dx[3];
@@ -60,7 +60,9 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     get_state_vec(G, S, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
     prim_to_flux_vec(G, S, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, S->U);
 
-    //TODO OpenMP this
+#pragma omp parallel for \
+  reduction(+:rmed) reduction(+:pp) reduction(+:e) \
+  reduction(max:divbmax) collapse(3)
     ZLOOP {
       rmed += S->U[RHO][k][j][i]*dV;
       pp += S->U[U3][k][j][i]*dV;
@@ -84,6 +86,10 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   double Phi_proc = 0.;
   double jet_EM_flux_proc = 0.;
   double lum_eht_proc = 0.;
+#pragma omp parallel for \
+  reduction(+:mass_proc) reduction(+:egas_proc) reduction(+:Phi_proc) \
+  reduction(+:jet_EM_flux_proc) reduction(+:lum_eht_proc) \
+  collapse(3)
   ZLOOP {
     mass_proc += S->U[RHO][k][j][i]*dV;
     egas_proc += S->U[UU][k][j][i]*dV;
@@ -190,8 +196,7 @@ void area_map(int i, int j, int k, GridPrim prim)
   fprintf(stderr, "****************\n");
 }
 
-double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k)
+double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
   #if N3 > 1
   if(i > 0 + NG && j > 0 + NG && k > 0 + NG &&
