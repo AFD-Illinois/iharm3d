@@ -44,7 +44,7 @@ void timer_stop(int timerCode)
 // Report a running average of performance data
 void report_performance()
 {
-  if (mpi_myrank() == 0) {
+  if (mpi_io_proc()) {
     int steps = nstep - nstep_start;
     fprintf(stdout, "\n********** PERFORMANCE **********\n");
     fprintf(stdout, "   RECON:    %8.4g s (%.4g %%)\n",
@@ -94,8 +94,10 @@ void report_performance()
     fprintf(stdout, "   ALL:      %8.4g s\n", times[TIMER_ALL]/steps);
     fprintf(stdout, "   ZONE CYCLES PER\n");
     fprintf(stdout, "     CORE-SECOND: %e\n",
-      N1TOT*N2TOT*N3TOT/(times[TIMER_ALL]*nthreads/steps));
+      N1TOT*N2TOT*N3TOT/(times[TIMER_ALL]*mpi_nprocs()*nthreads/steps));
     fprintf(stdout, "     NODE-SECOND: %e\n",
-      N1TOT*N2TOT*N3TOT/(times[TIMER_ALL]/steps));
+      N1TOT*N2TOT*N3TOT/(times[TIMER_ALL]*mpi_nprocs()/steps));
+    fprintf(stdout, "          SECOND: %e\n",
+          N1TOT*N2TOT*N3TOT/(times[TIMER_ALL]/steps));
   }
 }
