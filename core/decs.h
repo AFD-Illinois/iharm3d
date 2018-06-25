@@ -22,8 +22,6 @@
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf_bessel.h>
 
-// Hopefully can eliminate this dependency at some point
-#include <hdf5.h>
 
 #include "parameters.h"
 
@@ -41,7 +39,7 @@
       COMPILE-TIME PARAMETERS :
 *******************************************************************************/
 
-#define VERSION "iharm-alpha-3.2"
+#define VERSION "iharm-alpha-3.3"
 
 // Number of active zones on each MPI process
 #define N1       (N1TOT/N1CPU)
@@ -385,27 +383,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sl,
   struct FluidState *Sr, int dir, int loc, GridPrim *flux, GridDouble *ctop);
 void flux_ct(struct FluidFlux *F);
 
-// hdf5_utils.c
-hid_t hdf5_open(char *fname);
-void hdf5_close(hid_t file_id);
-hid_t hdf5_make_str_type(hsize_t len);
-void hdf5_write_scalar(const void *data, const char *name, hid_t file_id, hsize_t hdf5_type);
-void hdf5_write_vector(const void *data, const char *name, hid_t file_id, hsize_t len, hsize_t hdf5_type);
-void hdf5_write_tensor(const void *data, const char *name, hid_t file_id, hsize_t n1, hsize_t n2, hsize_t hdf5_type);
-void hdf5_write_single_val(const void *val, const char *name, hid_t file_id, hsize_t hdf5_type);
-void hdf5_write_str_list(const void *data, const char *name, hid_t file_id, hsize_t strlen, hsize_t len);
-void hdf5_add_units(const char *name, const char *unit, hid_t file_id);
-void hdf5_make_directory(const char *name, hid_t file_id);
-void hdf5_set_directory(const char *path);
-void pack_scalar_double(double in[N3+2*NG][N2+2*NG][N1+2*NG], double *out);
-void pack_scalar_float(double in[N3+2*NG][N2+2*NG][N1+2*NG], float *out);
-void pack_scalar_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], int *out);
-void pack_vector_double(double in[][N3+2*NG][N2+2*NG][N1+2*NG], double *out, int vector_len);
-void pack_vector_float(double in[][N3+2*NG][N2+2*NG][N1+2*NG], float *out, int vector_len);
-void pack_Gtensor_double(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], double *out);
-void pack_Gtensor_float(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], float *out);
-//void pack_tensor_double(double in[NDIM][NDIM][N3+2*NG][N2+2*NG][N1+2*NG], double *out);
-//void pack_tensor_float(double in[NDIM][NDIM][N3+2*NG][N2+2*NG][N1+2*NG], float *out);
+// hdf5_utils.c has its own header
 
 // io.c
 void init_io();
@@ -446,6 +424,17 @@ void mpi_reduce_vector(double *vec_send, double *vec_recv, int len);
 int mpi_io_proc();
 void mpi_int_broadcast(int *val);
 void mpi_dbl_broadcast(double *val);
+
+// pack.c
+void pack_scalar_double(double in[N3+2*NG][N2+2*NG][N1+2*NG], double *out);
+void pack_scalar_float(double in[N3+2*NG][N2+2*NG][N1+2*NG], float *out);
+void pack_scalar_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], int *out);
+void pack_vector_double(double in[][N3+2*NG][N2+2*NG][N1+2*NG], double *out, int vector_len);
+void pack_vector_float(double in[][N3+2*NG][N2+2*NG][N1+2*NG], float *out, int vector_len);
+void pack_Gtensor_double(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], double *out);
+void pack_Gtensor_float(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], float *out);
+//void pack_tensor_double(double in[NDIM][NDIM][N3+2*NG][N2+2*NG][N1+2*NG], double *out);
+//void pack_tensor_float(double in[NDIM][NDIM][N3+2*NG][N2+2*NG][N1+2*NG], float *out);
 
 // params.c
 void set_core_params();

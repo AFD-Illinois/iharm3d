@@ -7,7 +7,9 @@
  ******************************************************************************/
 
 #include "decs.h"
-#include <hdf5.h>
+
+#include "hdf5_utils.h"
+
 #include <sys/stat.h>
 #include <ctype.h>
 
@@ -79,10 +81,10 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_write_single_val("MKS", "metric_name", file_id, string_type);
 #endif //POLYTH
 #endif //MKS
-  char *gridfile_name = "grid.h5"; // TODO follow grid below?
+  char gridfile_name[HDF_STR_LEN] = "grid.h5"; // TODO match below instead of hard-coding
   hdf5_write_single_val(&gridfile_name, "gridfile_name", file_id, string_type);
 
-  // TODO caps?
+  // TODO Really caps here?
 #if RECONSTRUCTION == LINEAR
   hdf5_write_single_val("LINEAR", "reconstruction_name", file_id, string_type);
 #elif RECONSTRUCTION == PPM

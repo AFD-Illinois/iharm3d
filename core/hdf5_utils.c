@@ -6,8 +6,9 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <hdf5.h>
 #include "decs.h"
+
+#include <hdf5.h>
 
 static char hdf5_cur_dir[STRLEN] = "/";
 
@@ -31,7 +32,7 @@ void hdf5_make_directory(const char *name, hid_t file_id)
   // Add current directory to group name
   char path[STRLEN];
   strncpy(path, hdf5_cur_dir, STRLEN);
-  strncat(path, name, STRLEN - strnlen(path, STRLEN));
+  strncat(path, name, STRLEN - strlen(path));
 
   hid_t group_id = H5Gcreate2(file_id, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Gclose(group_id);
@@ -55,7 +56,7 @@ void hdf5_add_att(const void *att, const char *att_name, const char *data_name, 
 {
   char path[STRLEN];
   strncpy(path, hdf5_cur_dir, STRLEN);
-  strncat(path, data_name, STRLEN - strnlen(path, STRLEN));
+  strncat(path, data_name, STRLEN - strlen(path));
 
   hid_t attribute_id = H5Acreate_by_name(file_id, path, att_name, hdf5_type, H5Screate(H5S_SCALAR), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   H5Awrite(attribute_id, hdf5_type, att);
@@ -65,25 +66,25 @@ void hdf5_add_att(const void *att, const char *att_name, const char *data_name, 
 void hdf5_add_units(const char *name, const char *unit, hid_t file_id)
 {
   hid_t string_type = H5Tcopy(H5T_C_S1);
-  H5Tset_size(string_type, strnlen(unit,STRLEN)+1);
+  H5Tset_size(string_type, strlen(unit)+1);
   hdf5_add_att(unit, "units", name, file_id, string_type);
   H5Tclose(string_type);
 }
 
 // Write a 1D list of strings to a file (for labeling primitives array)
-// Must be a constant-length array, i.e. strs[len][strlen]
-void hdf5_write_str_list(const void *data, const char *name, hid_t file_id, hsize_t strlen, hsize_t len)
+// Must be a constant-length array, i.e. strs[len][str_len]
+void hdf5_write_str_list(const void *data, const char *name, hid_t file_id, hsize_t str_len, hsize_t len)
 {
   char path[STRLEN];
   strncpy(path, hdf5_cur_dir, STRLEN);
-  strncat(path, name, STRLEN - strnlen(path, STRLEN));
+  strncat(path, name, STRLEN - strlen(path));
 
   // Taken (stolen) from https://support.hdfgroup.org/ftp/HDF5/examples/C/
   hsize_t dims_of_char_array[] = {len};
   hsize_t dims_of_char_dataspace[] = {1};
 
   hid_t vlstr_h5t = H5Tcopy(H5T_C_S1);
-  H5Tset_size(vlstr_h5t, strlen);
+  H5Tset_size(vlstr_h5t, str_len);
 
   hid_t mem_h5t = H5Tarray_create(vlstr_h5t, 1, dims_of_char_array);
   hid_t dataspace = H5Screate_simple(1, dims_of_char_dataspace, NULL); // use same dims as int ds
@@ -110,7 +111,7 @@ void hdf5_write_array(const void *data, hid_t file_id, const char *name, hsize_t
 
   char path[STRLEN];
   strncpy(path, hdf5_cur_dir, STRLEN);
-  strncat(path, name, STRLEN - strnlen(path, STRLEN));
+  strncat(path, name, STRLEN - strlen(path));
 
   hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
   hid_t dset_id = H5Dcreate(file_id, path, type, filespace, H5P_DEFAULT,
@@ -166,7 +167,7 @@ void hdf5_write_single_val(const void *val, const char *name, hid_t file_id, hsi
 {
   char path[STRLEN];
   strncpy(path, hdf5_cur_dir, STRLEN);
-  strncat(path, name, STRLEN - strnlen(path, STRLEN));
+  strncat(path, name, STRLEN - strlen(path));
 
   hid_t scalarspace = H5Screate(H5S_SCALAR);
   hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
@@ -186,78 +187,4 @@ void hdf5_write_single_val(const void *val, const char *name, hid_t file_id, hsi
 void hdf5_read_single_val(const void *val, const char *name, hid_t file_id, hsize_t hdf5_type)
 {
 
-}
-
-// Following double/float defs differ only in signature. C is a bear.
-void pack_scalar_double(double in[N3+2*NG][N2+2*NG][N1+2*NG], double *out)
-{
-  int ind = 0;
-  ZLOOP_OUT {
-    out[ind] = in[k][j][i];
-    ind++;
-  }
-}
-
-void pack_scalar_float(double in[N3+2*NG][N2+2*NG][N1+2*NG], float *out)
-{
-  int ind = 0;
-  ZLOOP_OUT {
-    out[ind] = in[k][j][i];
-    ind++;
-  }
-}
-
-void pack_scalar_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], int *out)
-{
-  int ind = 0;
-  ZLOOP_OUT {
-    out[ind] = in[k][j][i];
-    ind++;
-  }
-}
-
-void pack_vector_double(double in[][N3+2*NG][N2+2*NG][N1+2*NG], double *out, int vector_len)
-{
-  int ind = 0;
-  for (int mu=0; mu < vector_len; mu++) {
-    ZLOOP_OUT {
-      out[ind] = in[mu][k][j][i];
-      ind++;
-    }
-  }
-}
-
-void pack_vector_float(double in[][N3+2*NG][N2+2*NG][N1+2*NG], float *out, int vector_len)
-{
-  int ind = 0;
-  ZLOOP_OUT {
-    for (int mu=0; mu < vector_len; mu++) {
-      out[ind] = in[mu][k][j][i];
-      ind++;
-    }
-  }
-}
-
-// TODO more functions if I want to output F or other tensors
-// Also: this wastes quite a bit of space writing all phi
-void pack_Gtensor_double(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], double *out)
-{
-  int ind = 0;
-  ZLOOP_OUT {
-    DLOOP2 {
-	  out[ind] = in[nu][mu][j][i];
-	  ind++;
-    }
-  }
-}
-
-void pack_Gtensor_float(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], float *out)
-{
-  int ind = 0;
-  ZLOOP_OUT {
-    DLOOP2 {
-	  out[ind] = in[nu][mu][j][i];
-	  ind++;
-    }
-  }
 }
