@@ -399,7 +399,7 @@ double determinant(double m[16]);
 double invert(double *m, double *invOut);
 
 // mpi.c
-void mpi_init(int argc, char *argv[]);
+void mpi_initialization(int argc, char *argv[]);
 void mpi_finalize();
 int sync_mpi_bound_X1(struct FluidState *S);
 int sync_mpi_bound_X2(struct FluidState *S);

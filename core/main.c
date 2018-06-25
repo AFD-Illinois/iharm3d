@@ -15,7 +15,7 @@
 int main(int argc, char *argv[])
 {
 
-  mpi_init(argc, argv);
+  mpi_initialization(argc, argv);
 
   if (mpi_io_proc()) {
     fprintf(stdout, "\n          ************************************************************\n");

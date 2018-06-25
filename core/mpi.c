@@ -17,7 +17,7 @@ static MPI_Datatype pflag_face_type[3];
 static int rank;
 static int numprocs;
 
-void init_mpi(int argc, char *argv[])
+void mpi_initialization(int argc, char *argv[])
 {
   numprocs = N3CPU*N2CPU*N1CPU;
 
@@ -132,6 +132,7 @@ void init_mpi(int argc, char *argv[])
   MPI_Type_commit(&pflag_face_type[2]);
 
   MPI_Barrier(comm);
+  if (mpi_io_proc()) fprintf(stderr, "MPI Initialized\n");
 }
 
 void mpi_finalize()
