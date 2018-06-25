@@ -75,6 +75,7 @@ void set_core_params() {
   #endif
 
   set_param("DTd", &DTd);
+  set_param("DTf", &DTf);
   set_param("DTl", &DTl);
   set_param("DTr", &DTr);
   set_param("DTp", &DTp);

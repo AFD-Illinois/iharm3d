@@ -8,6 +8,8 @@
 
 #include "decs.h"
 
+#include <mpi.h>
+
 static MPI_Comm comm;
 static int neighbors[3][3][3];
 static MPI_Datatype face_type[3];
@@ -15,9 +17,8 @@ static MPI_Datatype pflag_face_type[3];
 static int rank;
 static int numprocs;
 
-void init_mpi()
+void init_mpi(int argc, char *argv[])
 {
-  int coord[3];
   numprocs = N3CPU*N2CPU*N1CPU;
 
   int cpudims[3] = {N3CPU, N2CPU, N1CPU};
@@ -27,10 +28,19 @@ void init_mpi()
       X2L_BOUND == PERIODIC && X2R_BOUND == PERIODIC,
       X1L_BOUND == PERIODIC && X1R_BOUND == PERIODIC};
 
+  // Check for minimal required MPI thread support
+  int threadSafety;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &threadSafety);
+  if (threadSafety < MPI_THREAD_FUNNELED) {
+    fprintf(stderr, "Thread support < MPI_THREAD_FUNNELED. Unsafe.\n");
+    exit(1);
+  }
+
   // Set up communicator for Cartesian processor topology
   // Use X3,2,1 ordering
   MPI_Cart_create(MPI_COMM_WORLD, 3, cpudims, periodic, 1, &comm);
 
+  int coord[3];
   MPI_Comm_rank(comm, &rank);
   MPI_Cart_coords(comm, rank, 3, coord);
 
@@ -75,9 +85,6 @@ void init_mpi()
 
 
   // Make MPI datatypes
-  //int max_count = NVAR*N3*N2;
-  //int blocks[max_count];
-  //int indices[max_count];
   MPI_Datatype scalar_type = MPI_DOUBLE;
   MPI_Datatype flag_type = MPI_INT;
 
@@ -125,6 +132,11 @@ void init_mpi()
   MPI_Type_commit(&pflag_face_type[2]);
 
   MPI_Barrier(comm);
+}
+
+void mpi_finalize()
+{
+  MPI_Finalize();
 }
 
 // Share face data

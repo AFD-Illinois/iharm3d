@@ -8,22 +8,14 @@
 
 #include "decs.h"
 #include "defs.h"
+
 #include <time.h>
 #include <sys/stat.h>
 
 int main(int argc, char *argv[])
 {
-  //omp_set_num_threads(1);
 
-  // Check for minimal required MPI thread support
-  int threadSafety;
-  MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &threadSafety);
-  if (threadSafety < MPI_THREAD_FUNNELED) {
-    fprintf(stderr, "Thread support < MPI_THREAD_FUNNELED. Unsafe.\n");
-    exit(1);
-  }
-
-  init_mpi();
+  mpi_init(argc, argv);
 
   if (mpi_io_proc()) {
     fprintf(stdout, "\n          ************************************************************\n");
@@ -104,12 +96,11 @@ int main(int argc, char *argv[])
   // Initialize global variables and arrays
   init_io();
   nstep = 0;
-  // TODO centralize allocations
-  struct GridGeom *G = (struct GridGeom*)malloc(sizeof(struct GridGeom));
-  struct FluidState *S = (struct FluidState*)malloc(sizeof(struct FluidState));
+  // TODO centralize more allocations here
+  struct GridGeom *G = calloc(1,sizeof(struct GridGeom));
+  struct FluidState *S = calloc(1,sizeof(struct FluidState));
 
   // Perform initializations, either directly or via checkpoint
-  init_random(mpi_myrank()); //TODO more random?
   is_restart = restart_init(G, S);
   time_init();
   if (!is_restart) {
@@ -176,7 +167,7 @@ int main(int argc, char *argv[])
 *******************************************************************************/
   if (dumpThisStep == 0) diag(G, S, DIAG_FINAL);
 
-  MPI_Finalize();
+  mpi_finalize();
 
   return 0;
 }

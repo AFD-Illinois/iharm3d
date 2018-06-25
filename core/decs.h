@@ -8,20 +8,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdarg.h>
 #include <math.h>
-#include <omp.h>
 #include <string.h>
 #include <unistd.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
-#include <gsl/gsl_linalg.h>
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_eigen.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_integration.h>
-#include <gsl/gsl_sf_bessel.h>
+#include <errno.h> //Errors for syscalls
 
+#include <omp.h>
 
 #include "parameters.h"
 
@@ -51,7 +43,6 @@
 #define NMAX     (N12 > N3 ? N12 : N3)
 
 #define NDIM       (4)    // Number of total dimensions
-#define NPG        (5)    // Number of positions on grid for grid functions
 #define NG         (3)    // Number of ghost zones
 
 // Fixup parameters
@@ -106,11 +97,11 @@
 // Centering of grid functions (assumes axisymmetry in X3)
 #define FACE1 (0)
 #define FACE2 (1)
-//#define FACE3 (2)
 #define CORN  (2)
 #define CENT  (3)
 // For non-axisymmetric (Minkowski spacetimes etc)
 #define FACE3 (4)
+#define NPG   (5) // TODO define extra spot only for Minkowski space
 
 // Slope limiter
 #define MC   (0)
@@ -238,6 +229,7 @@ extern int is_restart;
 
 // Output parameters
 extern double DTd;
+extern double DTf;
 extern double DTl;
 extern int DTr;
 extern int DTp;
@@ -266,8 +258,6 @@ extern double fel0;
 #if POLYTH
 extern double poly_norm, poly_xt, poly_alpha, mks_smooth;
 #endif
-
-extern gsl_rng *r; // TODO single-letter practically unused variable
 
 
 // MPI-specific stuff
@@ -409,7 +399,8 @@ double determinant(double m[16]);
 double invert(double *m, double *invOut);
 
 // mpi.c
-void init_mpi();
+void mpi_init(int argc, char *argv[]);
+void mpi_finalize();
 int sync_mpi_bound_X1(struct FluidState *S);
 int sync_mpi_bound_X2(struct FluidState *S);
 int sync_mpi_bound_X3(struct FluidState *S);

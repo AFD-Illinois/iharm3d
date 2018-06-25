@@ -38,6 +38,7 @@ int nstep;
 int is_restart;
 
 double DTd;
+double DTf;
 double DTl;
 int DTr;
 int DTp;
@@ -58,8 +59,6 @@ int nthreads;
 double game, gamp;
 double fel0;
 #endif
-
-gsl_rng *r;
 
 int global_start[3];
 int global_stop[3];

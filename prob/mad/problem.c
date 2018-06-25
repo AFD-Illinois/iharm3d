@@ -8,7 +8,10 @@
 
 #include "decs.h"
 
+#include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+
+gsl_rng *rng;
 
 // Local declarations
 // TODO clean this not to use old of_geom style
@@ -47,6 +50,12 @@ void init(struct GridGeom *G, struct FluidState *S)
 {
   // Magnetic field
   double (*A)[N2 + 2*NG] = malloc(sizeof(*A) * (N1 + 2*NG));
+
+  // Initialize RNG
+  rng = gsl_rng_alloc(gsl_rng_mt19937);
+  // Could set this via time, some increasing int, whatever
+  // TODO include seed in dump? Likely relies on details of problem.c so not so useful
+  gsl_rng_set(rng, mpi_myrank());
 
   // Fishbone-Moncrief parameters
   double l = lfish_calc(rmax);
@@ -152,7 +161,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
       S->P[RHO][k][j][i] = rho;
       if (rho > rhomax) rhomax = rho;
-      u *= (1. + 4.e-2 * (get_random() - 0.5));
+      u *= (1. + 4.e-2 * (gsl_rng_uniform(rng) - 0.5));
       S->P[UU][k][j][i] = u;
       if (u > umax && r > rin) umax = u;
       S->P[U1][k][j][i] = 0.;
