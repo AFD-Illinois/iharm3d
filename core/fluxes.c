@@ -109,18 +109,18 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     } else if (dir == 2) {
 #pragma omp parallel for collapse(2)
       for (int k = (N3) + NG; k >= (-1) + NG; k--) {
-	    for (int i = (N1) + NG; i >= (-1) + NG; i--) {
-	      for (int j = (N2) + NG; j >= (-1) + NG; j--)
-	        Sl->P[ip][k][j][i] = Sl->P[ip][k][j-1][i];
-	    }
+	for (int i = (N1) + NG; i >= (-1) + NG; i--) {
+	  for (int j = (N2) + NG; j >= (-1) + NG; j--)
+	    Sl->P[ip][k][j][i] = Sl->P[ip][k][j-1][i];
+	}
       }
     } else if (dir == 3) {
 #pragma omp parallel for collapse(2)
       for (int j = (N2) + NG; j >= (-1) + NG; j--) {
-	    for (int i = (N1) + NG; i >= (-1) + NG; i--) {
-	      for (int k = (N3) + NG; k >= (-1) + NG; k--)
-	        Sl->P[ip][k][j][i] = Sl->P[ip][k-1][j][i];
-	    }
+	for (int i = (N1) + NG; i >= (-1) + NG; i--) {
+	  for (int k = (N3) + NG; k >= (-1) + NG; k--)
+	    Sl->P[ip][k][j][i] = Sl->P[ip][k-1][j][i];
+	}
       }
     }
   }
@@ -146,21 +146,19 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   // TODO vectorizing these loops fails for some reason
 #pragma omp parallel
   {
+#pragma omp for collapse(2) nowait
+    ZSLOOP(-1, N3, -1, N2, -1, N1){
+        mhd_vchar(G, Sl, i, j, k, loc, dir, *cmaxL, *cminL);
+    }
 #pragma omp for collapse(2)
-    ZSLOOP(-1, N3, -1, N2, -1, N1)
-      {
-				mhd_vchar (G, Sl, i, j, k, loc, dir, *cmaxL, *cminL);
-      }
-#pragma omp for collapse(2)
-    ZSLOOP(-1, N3, -1, N2, -1, N1)
-      {
-				mhd_vchar (G, Sr, i, j, k, loc, dir, *cmaxR, *cminR);
-      }
+    ZSLOOP(-1, N3, -1, N2, -1, N1) {
+        mhd_vchar(G, Sr, i, j, k, loc, dir, *cmaxR, *cminR);
+    }
   }
   timer_stop(TIMER_LR_VCHAR);
 
   timer_start(TIMER_LR_CMAX);
-  #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
   ZSLOOP(-1, N3, -1, N2, -1, N1) {
     (*cmax)[k][j][i] = fabs(MY_MAX(MY_MAX(0., (*cmaxL)[k][j][i]), (*cmaxR)[k][j][i]));
     (*cmin)[k][j][i] = fabs(MY_MAX(MY_MAX(0., -(*cminL)[k][j][i]), -(*cminR)[k][j][i]));
