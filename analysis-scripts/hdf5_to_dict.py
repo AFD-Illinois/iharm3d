@@ -76,7 +76,7 @@ def load_geom(fname):
 
   return geom
 
-def load_dump(fname, geom, hdr, diag=None):
+def load_dump(fname, geom, hdr):
   dfile = h5py.File(fname)
   
   dump = {}

@@ -167,9 +167,16 @@ void dump(struct GridGeom *G, struct FluidState *S)
   pack_vector_float(S->jcon, data, NDIM);
   hdf5_write_vector(data, "jcon", file_id, NDIM, OUT_H5_TYPE);
 
+  int ind = 0;
+  ZLOOP_OUT {
+	  data[ind] = mhd_gamma_calc(G, S, i, j, k, CENT);
+	  ind++;
+  }
+  hdf5_write_scalar(data, "gamma", file_id, OUT_H5_TYPE);
+
   // Write divB and fail diagnostics only to full dumps
   if (is_full_dump) {
-    int ind = 0;
+    ind = 0;
     ZLOOP_OUT {
 	  data[ind] = flux_ct_divb(G, S, i, j, k);
 	  ind++;
