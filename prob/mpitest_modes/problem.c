@@ -9,13 +9,12 @@
 #include "decs.h"
 #include <complex.h>
 
-static int nmode = NMODE;
+static int nmode;
 
-// TODO port over real params
-//void set_problem_params()
-//{
-//  set_param("nmode", &nmode);
-//}
+void set_problem_params()
+{
+  set_param("nmode", &nmode);
+}
 
 void init(struct GridGeom *G, struct FluidState *S)
 {
@@ -164,15 +163,6 @@ void init(struct GridGeom *G, struct FluidState *S)
   DTp = 10;   // Performance interval, in timesteps
 
   dt = 1.e-6;
-
-  // Changing these will cause failing restarts if enabled
-  // See io.c, restart_init()
-  x1Min = 0.;
-  x1Max = 1.;
-  x2Min = 0.;
-  x2Max = 1.;
-  x3Min = 0.;
-  x3Max = 1.;
 
   gam = 4./3;
   cour = 0.9;

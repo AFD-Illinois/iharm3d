@@ -6,12 +6,13 @@ OUT_DIR=test_restart
 rm -rf $OUT_DIR
 mkdir -p $OUT_DIR
 
+# Cleanup any previous invocation or convergence test
 sed -i -e "s/N1CPU 2/N1CPU 1/g" parameters.h
 sed -i -e "s/N2CPU 2/N2CPU 1/g" parameters.h
 sed -i -e "s/N3CPU 4/N3CPU 1/g" parameters.h
-export NMPI=1
 
-./run.sh $OUT_DIR > $OUT_DIR/out_firsttime.txt
+make -f ../../makefile -j10 PROB=mpitest_modes
+./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
 
 cd $OUT_DIR
 
@@ -27,13 +28,12 @@ ln -s restart_00000001.h5 restart.last
 
 cd ../..
 
-
 sed -i -e "s/N1CPU 1/N1CPU 2/g" parameters.h
 sed -i -e "s/N2CPU 1/N2CPU 2/g" parameters.h
 sed -i -e "s/N3CPU 1/N3CPU 4/g" parameters.h
-export NMPI=16
 
-./run.sh $OUT_DIR > $OUT_DIR/out_secondtime.txt
+make -f ../../makefile -j10 PROB=mpitest_modes
+OMP_NUM_THREADS=2 mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
 
 cd $OUT_DIR
 
@@ -45,3 +45,6 @@ grep restart out_firsttime.txt
 grep restart out_secondtime.txt
 
 h5diff --delta=1e-12 last_dump_gold.h5 dumps/dump_00000005.h5
+
+# Jcon is pretty random. Show it's not really different
+h5diff --delta=1e-3 last_dump_gold.h5 dumps/dump_00000005.h5
