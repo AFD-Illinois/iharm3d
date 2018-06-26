@@ -26,14 +26,10 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   // TODO Rewrite/clean this function to put prim index on the outside
 
-  //timer_start (TIMER_BOUND_COMMS);
-  //sync_mpi_bound_X1 (state);
-  //timer_stop (TIMER_BOUND_COMMS);
-
   if(global_start[0] == 0) {
-    #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3-1) {
-      JSLOOP(0, N2-1) {
+#pragma omp parallel for collapse(2)
+    KLOOP {
+      JLOOP {
         ISLOOP(-NG, -1) {
           #if N1 < NG
           int iactive = NG;
@@ -50,10 +46,6 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
             state->P[B1][k][j][i] *= rescale;
             state->P[B2][k][j][i] *= rescale;
             state->P[B3][k][j][i] *= rescale;
-            #elif 0 //X1L_BOUND == PERIODIC
-            int iz = N1 + i;
-            PLOOP state->P[ip][k][j][i] = state->P[ip][k][j][iz];
-            pflag[k][j][i] = pflag[k][j][iz];
             #elif X1L_BOUND == POLAR
             printf("X1L_BOUND choice POLAR not supported\n", X1L_BOUND);
             exit(-1);
@@ -73,9 +65,9 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   } // global_start[0] == 0
 
   if(global_stop[0] == N1TOT) {
-    #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3-1) {
-      JSLOOP(0, N2-1) {
+#pragma omp parallel for collapse(2)
+    KLOOP {
+      JLOOP {
         ISLOOP(N1, N1 - 1 + NG) {
           #if N1 < NG
           int iactive = N1 - 1 + NG;
@@ -113,8 +105,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   timer_stop (TIMER_BOUND_COMMS);
 
   if(global_start[1] == 0) {
-    #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3-1) {
+#pragma omp parallel for collapse(2)
+    KLOOP {
       ILOOPALL {
         JSLOOP(-NG, -1) {
           #if N2 < NG
@@ -149,8 +141,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   } // global_start[1] == 0
 
   if(global_stop[1] == N2TOT) {
-    #pragma omp parallel for collapse(2)
-    KSLOOP(0, N3-1) {
+#pragma omp parallel for collapse(2)
+    KLOOP {
       ILOOPALL {
         JSLOOP(N2, N2-1+NG) {
           #if N2 < NG
@@ -188,10 +180,10 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
   timer_stop (TIMER_BOUND_COMMS);
 
   if (global_start[2] == 0) {
-    #pragma omp parallel for collapse(2)
-    JSLOOP(-NG, N2-1+NG) {
-      ISLOOP(-NG, N1-1+NG) {
-	      KSLOOP(-NG, -1) {
+#pragma omp parallel for collapse(2)
+    JLOOPALL {
+      ILOOPALL {
+	KSLOOP(-NG, -1) {
           #if N3 < NG
           int kactive = NG;
           PLOOP state->P[ip][k][j][i] = state->P[ip][kactive][j][i];
@@ -221,8 +213,8 @@ void set_bounds(struct GridGeom *geom, struct FluidState *state)
 
   if(global_stop[2] == N3TOT) {
     #pragma omp parallel for collapse(2)
-    JSLOOP(-NG, N2-1+NG) {
-      ISLOOP(-NG, N1-1+NG) {
+    JLOOPALL {
+      ILOOPALL {
         KSLOOP(N3, N3-1+NG) {
           #if N3 < NG
           int kactive = NG;
@@ -296,15 +288,9 @@ void inflow_check(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   if (((S->ucon[1][k][j][i] > 0.) && (type == 0)) ||
       ((S->ucon[1][k][j][i] < 0.) && (type == 1)))
   {
-    double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
     // Find gamma and remove it from state->Pitives
     // TODO check failures in more vectorization-friendly way
-//    if (mhd_gamma_calc(G, S, i, j, k, CENT, &gamma)) {
-//      fflush(stderr);
-//      fprintf(stderr, "\ninflow_check(): gamma failure\n");
-//      fflush(stderr);
-//      fail(G, S, FAIL_GAMMA, i, j, k);
-//    }
+    double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
     S->P[U1][k][j][i] /= gamma;
     S->P[U2][k][j][i] /= gamma;
     S->P[U3][k][j][i] /= gamma;
@@ -336,7 +322,7 @@ void inflow_check(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
 void fix_flux(struct FluidFlux *F)
 {
   if (global_start[0] == 0 && X1L_INFLOW == 0) {
-    #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
     KLOOPALL {
       JLOOPALL {
         F->X1[RHO][k][j][0+NG] = MY_MIN(F->X1[RHO][k][j][0+NG], 0.);
@@ -345,7 +331,7 @@ void fix_flux(struct FluidFlux *F)
   }
 
   if (global_stop[0] == N1TOT  && X1R_INFLOW == 0) {
-    #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
     KLOOPALL {
       JLOOPALL {
         F->X1[RHO][k][j][N1+NG] = MY_MAX(F->X1[RHO][k][j][N1+NG], 0.);
@@ -354,7 +340,7 @@ void fix_flux(struct FluidFlux *F)
   }
 
   if (global_start[1] == 0) {
-    #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
     KLOOPALL {
       ILOOPALL {
         F->X1[B2][k][-1+NG][i] = -F->X1[B2][k][0+NG][i];
@@ -365,7 +351,7 @@ void fix_flux(struct FluidFlux *F)
   }
 
   if (global_stop[1] == N2TOT) {
-    #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
     KLOOPALL {
       ILOOPALL {
         F->X1[B2][k][N2+NG][i] = -F->X1[B2][k][N2-1+NG][i];
