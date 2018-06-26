@@ -81,12 +81,16 @@ betainv_r = np.zeros([ND, N1])
 uphi_r = np.zeros([ND, N1])
 rho_SADW = np.zeros([ND, N1])
 omega_th = np.zeros([ND, N2/2])
+omega_th_av = np.zeros([ND, N2/2])
+omega_th_5 = np.zeros([ND, N2/2])
+
 
 Mdot = np.zeros(ND)
 Phi = np.zeros(ND)
 Ldot = np.zeros(ND)
 Edot = np.zeros(ND)
 Lum = np.zeros(ND)
+sigma_max = np.zeros(ND)
 
 # Pointers are magical things
 out = {}
@@ -94,6 +98,8 @@ out['rho_SADW'] = rho_SADW
 out['r'] = r
 out['th'] = th
 out['omega_th'] = omega_th
+out['omega_th_av'] = omega_th_av
+out['omega_th_5'] = omega_th_5
 out['rho_r'] = rho_r
 out['Theta_r'] = Theta_r
 out['B_r'] = B_r
@@ -107,6 +113,10 @@ out['Phi'] = Phi
 out['Ldot'] = Ldot
 out['Edot'] = Edot
 out['Lum'] = Lum
+out['sigma_max'] = sigma_max
+
+avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'rho_SADW', 'omega_th', 'omega_th_av', 'omega_th_5']
+
 
 # EVALUATE DIAGNOSTICS
   
@@ -161,8 +171,14 @@ def avg_dump(n):
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) so we need to multiply that in here
   Phi[n] = 0.5*(np.fabs(np.sqrt(4*np.pi)*dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
   
-  omega_th[n,:] = dump['omega'][iEH,:N2/2,:].sum(axis=-1) + dump['omega'][iEH,:N2/2-1:-1,:].sum(axis=-1)
-  omega_th[n,:] /= 2*N3
+  omega_th[n,:] = dump['omega'][iEH,:N2/2,:].sum(axis=-1)# + dump['omega'][iEH,:N2/2-1:-1,:].sum(axis=-1)
+  omega_th[n,:] /= N3
+  omega_th_av[n,:] = dump['omega'][iEH:iEH+15,:N2/2,:].sum(axis=-1).sum(axis=0)# + dump['omega'][iEH:iEH+5,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
+  omega_th_av[n,:] /= N3*15
+  omega_th_5[n,:] = dump['omega'][iF:iF+15,:N2/2,:].sum(axis=-1).sum(axis=0)# + dump['omega'][iF:iF+3,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
+  omega_th_5[n,:] /= N3*15
+
+  sigma_max[n] = np.max(dump['bsq']/dump['RHO'])
   
   Mdot[n] = np.abs((dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum())
   Trphi = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,3]
@@ -196,8 +212,12 @@ try:
   out_list = pool.map(avg_dump, range(len(dumps)))  # This is /real big/ in memory
   for key in out.keys():
     for i in range(len(out_list)):
-      slc = np.where(out[key] == 0) # Avoid double-fill from threads that got 2+ indices
-      out[key][slc] += out_list[i][key][slc]
+      if key in avg_keys: 
+        slc = np.where(out[key][:,-1] == 0)
+        out[key][slc,:] = out_list[i][key][slc]
+      else:
+        slc = np.where(out[key] == 0) # Avoid double-fill from threads that got 2+ indices
+        out[key][slc] = out_list[i][key][slc]
   pool.close()
 except KeyboardInterrupt:
   pool.terminate()
@@ -208,7 +228,7 @@ pool.join()
 # Sort
 order = np.argsort(out['t'])
 for key in out.keys():
-  if key in ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'omega_th']:
+  if key in avg_keys:
     out[key] = out[key][order,:]
   elif key in ['r', 'th']:
     pass
@@ -223,7 +243,7 @@ for n in xrange(ND):
 
 print 'nmin = %i' % n
 
-for key in ['rho_SADW', 'rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'omega_th']:
+for key in avg_keys:
   out[key] = (out[key][n:,:]).mean(axis=0)
 
 # Names for compatibility with hdf5_to_dict
