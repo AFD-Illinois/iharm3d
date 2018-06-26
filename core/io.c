@@ -65,6 +65,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hid_t string_type = hdf5_make_str_type(HDF_STR_LEN); //H5T_VARIABLE for any-length strings. But not compat with parallel IO
 
   // Write header
+  hdf5_set_directory("/");
   hdf5_make_directory("header", file_id);
   hdf5_set_directory("/header/");
 
