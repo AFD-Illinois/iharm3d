@@ -26,7 +26,7 @@ USEARRSPACE = False
 LOG_MDOT = False
 MAX_MDOT = 80
 LOG_PHI = False
-MAX_PHI = 80
+MAX_PHI = 150
 
 # TODO this is a dirty hack
 args_bad = False
@@ -102,14 +102,19 @@ def plot(args):
   #var2_min = -0.025
   #var2_max = 0.025
 
+#  var2_str = 'magnetization'
+#  var2_data = dump['bsq']/dump['RHO']
+#  var2_min = 0
+#  var2_max = 1000
   var2_str = 'omega'
-  var2_data = dump['omega']
-  var2_min = -1
-  var2_max = 1
+  var2_data = np.log10(dump['omega']*4/hdr['a'])
+  var2_min = -2
+  var2_max = 2
+
 
   ax = plt.subplot(2,4,5)
-  bplt.plot_xz(ax, geom, var2_data, dump,
-               label=var2_str, cmap='RdBu_r', vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
+  bplt.plot_xz(ax, geom, var2_data, dump, #cmap='RdBu_r'
+               label=var2_str, vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
@@ -117,34 +122,29 @@ def plot(args):
     ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
   ax = plt.subplot(2,4,6)
-  bplt.plot_xy(ax, geom, var2_data, dump,
-               label=var2_str, cmap='RdBu_r', vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
+  bplt.plot_xy(ax, geom, var2_data, dump, #cmap='RdBu_r'
+               label=var2_str, vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
     ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
-  var3_str = 'sigma'
-  var3_data = np.log10(dump['bsq']/dump['RHO'])
-  var3_min = -2
-  var3_max = 2
+#  ax = plt.subplot(2,4,7)
+#  bplt.plot_xz(ax, geom, var3_data, dump,
+#               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
+#  if (USEARRSPACE):
+#    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+#  else:
+#    bplt.overlay_field(ax, geom, dump, NLINES)
+#    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
-  ax = plt.subplot(2,4,7)
-  bplt.plot_xz(ax, geom, var3_data, dump,
-               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
-  if (USEARRSPACE):
-    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-  else:
-    bplt.overlay_field(ax, geom, dump, NLINES)
-    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
-
-  ax = plt.subplot(2,4,8)
-  bplt.plot_xy(ax, geom, var3_data, dump,
-               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
-  if (USEARRSPACE):
-    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-  else:
-    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+#  ax = plt.subplot(2,4,8)
+#  bplt.plot_xy(ax, geom, var3_data, dump,
+#               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
+#  if (USEARRSPACE):
+#    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+#  else:
+#    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
@@ -156,8 +156,8 @@ def plot(args):
     ax = plt.subplot(4,2,4)
     bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', ylim=[10**(-1),MAX_PHI], logy=LOG_PHI)
     
-    #ax = plt.subplot(4,2,6)
-    #bplt.diag_plot(ax, diag, dump, 'mass', 'Total mass', ylim=None, logy=False)
+    ax = plt.subplot(4,2,6)
+    bplt.diag_plot(ax, diag, dump, 'sigma_max', 'Max magnetization', ylim=None, logy=False)
     
     #ax = plt.subplot(4,2,8)
     #bplt.diag_plot(ax, diag, dump, 'egas', 'Gas energy', ylim=None, logy=False)

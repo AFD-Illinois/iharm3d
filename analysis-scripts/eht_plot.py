@@ -83,9 +83,27 @@ plt.close(fig)
 # Omega
 print avg['th'].shape, avg['omega_th'].shape
 fig = plt.figure(figsize=(FIGX, FIGY))
-ax = plt.subplot(1,1,1)
-ax.plot(avg['th'], avg['omega_th'], color='k')
-ax.axhline(avg['a']/8, linestyle='--', color='k')
+ax = plt.subplot(2,2,1)
+ax.plot(avg['th'], avg['omega_th']*4/avg['a'], color='k')
+ax.set_ylim([-1,2])
+ax.set_ylabel("omega (EH, time/hemi only)")
+ax.set_xlabel("theta")
+ax.axhline(0.5, linestyle='--', color='k')
+
+ax = plt.subplot(2,2,2)
+ax.plot(avg['th'], avg['omega_th_av']*4/avg['a'], color='k')
+ax.set_ylim([-1,2])
+ax.set_ylabel("omega (EH, 5 zones)")
+ax.set_xlabel("theta")
+ax.axhline(0.5, linestyle='--', color='k')
+
+ax = plt.subplot(2,2,3)
+ax.plot(avg['th'], avg['omega_th_5']*4/avg['a'], color='k')
+ax.set_ylim([-1,2])
+ax.set_ylabel("omega (r=5, 3 zones)")
+ax.set_xlabel("theta")
+ax.axhline(0.5, linestyle='--', color='k')
+
 plt.savefig(fout + '_omega.png')
 plt.close(fig)
 
