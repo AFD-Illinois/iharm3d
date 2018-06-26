@@ -87,14 +87,14 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   static int firstc = 1;
 
   if (firstc) {
-	fluxL = calloc(1,sizeof(GridPrim));
-	fluxR = calloc(1,sizeof(GridPrim));
-	cmaxL = calloc(1,sizeof(GridDouble));
-	cmaxR = calloc(1,sizeof(GridDouble));
-	cminL = calloc(1,sizeof(GridDouble));
-	cminR = calloc(1,sizeof(GridDouble));
-	cmax = calloc(1,sizeof(GridDouble));
-	cmin = calloc(1,sizeof(GridDouble));
+    fluxL = calloc(1,sizeof(GridPrim));
+    fluxR = calloc(1,sizeof(GridPrim));
+    cmaxL = calloc(1,sizeof(GridDouble));
+    cmaxR = calloc(1,sizeof(GridDouble));
+    cminL = calloc(1,sizeof(GridDouble));
+    cminR = calloc(1,sizeof(GridDouble));
+    cmax = calloc(1,sizeof(GridDouble));
+    cmin = calloc(1,sizeof(GridDouble));
 
 	firstc = 0;
   }
@@ -105,22 +105,22 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     if (dir == 1) {
 #pragma omp parallel for collapse(2)
       ZSLOOP_REVERSE(-1, N3, -1, N2, -1, N1)
-        Sl->P[ip][k][j][i] = Sl->P[ip][k][j][i-1];
+        Sl->P[ip][k][j][i] = Sl->P[ip][k][j][i - 1];
     } else if (dir == 2) {
 #pragma omp parallel for collapse(2)
       for (int k = (N3) + NG; k >= (-1) + NG; k--) {
-	for (int i = (N1) + NG; i >= (-1) + NG; i--) {
-	  for (int j = (N2) + NG; j >= (-1) + NG; j--)
-	    Sl->P[ip][k][j][i] = Sl->P[ip][k][j-1][i];
-	}
+        for (int i = (N1) + NG; i >= (-1) + NG; i--) {
+          for (int j = (N2) + NG; j >= (-1) + NG; j--)
+            Sl->P[ip][k][j][i] = Sl->P[ip][k][j - 1][i];
+        }
       }
     } else if (dir == 3) {
 #pragma omp parallel for collapse(2)
       for (int j = (N2) + NG; j >= (-1) + NG; j--) {
-	for (int i = (N1) + NG; i >= (-1) + NG; i--) {
-	  for (int k = (N3) + NG; k >= (-1) + NG; k--)
-	    Sl->P[ip][k][j][i] = Sl->P[ip][k-1][j][i];
-	}
+        for (int i = (N1) + NG; i >= (-1) + NG; i--) {
+          for (int k = (N3) + NG; k >= (-1) + NG; k--)
+            Sl->P[ip][k][j][i] = Sl->P[ip][k - 1][j][i];
+        }
       }
     }
   }
