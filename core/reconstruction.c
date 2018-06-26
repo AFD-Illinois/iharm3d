@@ -9,7 +9,7 @@
 #include "decs.h"
 
 // Performs the slope-limiting for the numerical flux calculation
-double slope_lim(double y1, double y2, double y3)
+inline double slope_lim(double y1, double y2, double y3)
 {
   double Dqm, Dqp, Dqc, s;
 
@@ -61,7 +61,7 @@ double slope_lim(double y1, double y2, double y3)
   return (0.);
 }
 
-void linear_mc(double x1, double x2, double x3, double *lout, double *rout)
+inline void linear_mc(double x1, double x2, double x3, double *lout, double *rout)
 {
   double Dqm,Dqp,Dqc,s;
 
@@ -89,7 +89,7 @@ void linear_mc(double x1, double x2, double x3, double *lout, double *rout)
 
 // Parabolic interpolation (see Colella & Woodward 1984; CW)
 // Implemented by Xiaoyue Guan
-void para(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout)
+inline void para(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout)
 {
   double y[5], dq[5];
   double Dqm, Dqc, Dqp, aDqm,aDqp,aDqc,s,l,r,qa, qd, qe;
@@ -143,7 +143,7 @@ void para(double x1, double x2, double x3, double x4, double x5, double *lout, d
 
 // WENO interpolation. See Tchekhovskoy et al. 2007 (T07), Shu 2011 (S11)
 // Implemented by Monika Moscibrodzka
-void weno(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout)
+inline void weno(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout)
 {
   // S11 1, 2, 3
   double vr[3], vl[3];
@@ -191,24 +191,25 @@ void weno(double x1, double x2, double x3, double x4, double x5, double *lout, d
 // MP5 reconstruction from PLUTO
 // Imported by Mani Chandra
 #define MINMOD(a, b) ((a)*(b) > 0.0 ? (fabs(a) < fabs(b) ? (a):(b)):0.0)
-double median(double a, double b, double c)
+inline double median(double a, double b, double c)
 {
   return (a + MINMOD(b - a, c - a));
 }
-double mp5_subcalc(double Fjm2, double Fjm1, double Fj, double Fjp1, double Fjp2)
+#define ALPHA (4.0)
+#define EPSM (1.e-12)
+inline double mp5_subcalc(double Fjm2, double Fjm1, double Fj, double Fjp1, double Fjp2)
 {
   double f, d2, d2p, d2m;
   double dMMm, dMMp;
   double scrh1,scrh2, Fmin, Fmax;
   double fAV, fMD, fLC, fUL, fMP;
-  static double alpha = 4.0, epsm = 1.e-12;
 
   f  = 2.0*Fjm2 - 13.0*Fjm1 + 47.0*Fj + 27.0*Fjp1 - 3.0*Fjp2;
   f /= 60.0;
 
-  fMP = Fj + MINMOD(Fjp1 - Fj, alpha*(Fj - Fjm1));
+  fMP = Fj + MINMOD(Fjp1 - Fj, ALPHA*(Fj - Fjm1));
 
-  if ((f - Fj)*(f - fMP) <= epsm)
+  if ((f - Fj)*(f - fMP) <= EPSM)
     return f;
 
   d2m = Fjm2 + Fj   - 2.0*Fjm1;              // Eqn. 2.19
@@ -223,7 +224,7 @@ double mp5_subcalc(double Fjm2, double Fjm1, double Fj, double Fjp1, double Fjp2
   scrh2 = MINMOD(d2, d2m);
   dMMm  = MINMOD(scrh1,scrh2);               // Eqn. 2.27
 
-  fUL = Fj + alpha*(Fj - Fjm1);              // Eqn. 2.8
+  fUL = Fj + ALPHA*(Fj - Fjm1);              // Eqn. 2.8
   fAV = 0.5*(Fj + Fjp1);                     // Eqn. 2.16
   fMD = fAV - 0.5*dMMp;                      // Eqn. 2.28
   fLC = 0.5*(3.0*Fj - Fjm1) + 4.0/3.0*dMMm;  // Eqn. 2.29
@@ -240,7 +241,7 @@ double mp5_subcalc(double Fjm2, double Fjm1, double Fj, double Fjp1, double Fjp2
   return f;
 }
 
-void mp5(double x1, double x2, double x3, double x4, double x5, double *lout,
+inline void mp5(double x1, double x2, double x3, double x4, double x5, double *lout,
   double *rout)
 {
   *rout = mp5_subcalc(x1, x2, x3, x4, x5);
@@ -250,46 +251,53 @@ void mp5(double x1, double x2, double x3, double x4, double x5, double *lout,
 
 void reconstruct_lr_lin(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
-  PLOOP {
-	if (dir == 1) {
-	  #pragma omp parallel for simd collapse(2)
-	  KSLOOP(-1, N3) {
-		JSLOOP(-1, N2) {
-		  ISLOOP(-1, N1) {
-			linear_mc(S->P[ip][k][j][i-1], S->P[ip][k][j][i], S->P[ip][k][j][i+1],
-					  &(Pl[ip][k][j][i]), &(Pr[ip][k][j][i]));
-		  }
-		}
-	  }
-	} else if (dir == 2) {
-	  #pragma omp parallel for simd collapse(2)
-	  KSLOOP(-1, N3) {
-		JSLOOP(-1, N2) {
-		  ISLOOP(-1, N1) {
-			linear_mc(S->P[ip][k][j-1][i], S->P[ip][k][j][i], S->P[ip][k][j+1][i],
-					  &(Pl[ip][k][j][i]), &(Pr[ip][k][j][i]));
-		  }
-		}
-	  }
-	} else if (dir == 3) {
-	  #pragma omp parallel for simd collapse(2)
-	  KSLOOP(-1, N3) {
-		JSLOOP(-1, N2) {
-		  ISLOOP(-1, N1) {
-			linear_mc(S->P[ip][k-1][j][i], S->P[ip][k][j][i], S->P[ip][k+1][j][i],
-					  &(Pl[ip][k][j][i]), &(Pr[ip][k][j][i]));
-		  }
-		}
+  if (dir == 1) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
+      KSLOOP(-1, N3) {
+	JSLOOP(-1, N2) {
+	  ISLOOP(-1, N1) {
+	    linear_mc (S->P[ip][k][j][i - 1], S->P[ip][k][j][i],
+		       S->P[ip][k][j][i + 1], &(Pl[ip][k][j][i]),
+		       &(Pr[ip][k][j][i]));
 	  }
 	}
-  } // PLOOP
+      }
+    }
+  } else if (dir == 2) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
+      KSLOOP(-1, N3) {
+	JSLOOP(-1, N2) {
+	  ISLOOP(-1, N1) {
+	    linear_mc (S->P[ip][k][j - 1][i], S->P[ip][k][j][i],
+		       S->P[ip][k][j + 1][i], &(Pl[ip][k][j][i]),
+		       &(Pr[ip][k][j][i]));
+	  }
+	}
+      }
+    }
+  } else if (dir == 3) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
+      KSLOOP(-1, N3) {
+	JSLOOP(-1, N2) {
+	  ISLOOP(-1, N1) {
+	    linear_mc (S->P[ip][k - 1][j][i], S->P[ip][k][j][i],
+		       S->P[ip][k + 1][j][i], &(Pl[ip][k][j][i]),
+		       &(Pr[ip][k][j][i]));
+	  }
+	}
+      }
+    }
+  }
 }
 
 void reconstruct_lr_par(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
-  PLOOP {
-    if (dir == 1) {
-      #pragma omp parallel for simd collapse(2)
+  if (dir == 1) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
           ISLOOP(-1, N1) {
@@ -299,8 +307,10 @@ void reconstruct_lr_par(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
           }
         }
       }
-    } else if (dir == 2) {
-      #pragma omp parallel for simd collapse(2)
+    }
+  } else if (dir == 2) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
           ISLOOP(-1, N1) {
@@ -310,8 +320,10 @@ void reconstruct_lr_par(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
           }
         }
       }
-    } else if (dir == 3) {
-      #pragma omp parallel for simd collapse(2)
+    }
+  } else if (dir == 3) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
           ISLOOP(-1, N1) {
@@ -322,14 +334,14 @@ void reconstruct_lr_par(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
         }
       }
     }
-  } // PLOOP
+  }
 }
 
 void reconstruct_lr_weno(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
-  PLOOP {
-    if (dir == 1) {
-      #pragma omp parallel for simd collapse(2)
+  if (dir == 1) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
           ISLOOP(-1, N1) {
@@ -339,8 +351,10 @@ void reconstruct_lr_weno(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir
           }
         }
       }
-    } else if (dir == 2) {
-      #pragma omp parallel for simd collapse(2)
+    }
+  } else if (dir == 2) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
           ISLOOP(-1, N1) {
@@ -350,8 +364,10 @@ void reconstruct_lr_weno(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir
           }
         }
       }
-    } else if (dir == 3) {
-      #pragma omp parallel for simd collapse(2)
+    }
+  } else if (dir == 3) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
           ISLOOP(-1, N1) {
@@ -367,9 +383,9 @@ void reconstruct_lr_weno(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir
 
 void reconstruct_lr_mp5(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
-  PLOOP {
-    if (dir == 1) {
-      #pragma omp parallel for simd collapse(2)
+  if (dir == 1) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
           ISLOOP(-1, N1) {
@@ -379,8 +395,10 @@ void reconstruct_lr_mp5(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
           }
         }
       }
-    } else if (dir == 2) {
-      #pragma omp parallel for simd collapse(2)
+    }
+  } else if (dir == 2) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
           ISLOOP(-1, N1) {
@@ -390,8 +408,10 @@ void reconstruct_lr_mp5(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
           }
         }
       }
-    } else if (dir == 3) {
-      #pragma omp parallel for simd collapse(2)
+    }
+  } else if (dir == 3) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
           ISLOOP(-1, N1) {
@@ -402,17 +422,16 @@ void reconstruct_lr_mp5(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
         }
       }
     }
-  } // PLOOP
+  }
 }
 
+// TODO since dispatched once, make RECONSTRUCTION a runtime variable
 void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
   timer_start(TIMER_RECON);
   #if RECONSTRUCTION == LINEAR
-    //reconstruct_lr_lin(Ptmp, N, P_l, P_r);
     reconstruct_lr_lin(S, Pl, Pr, dir);
   #elif RECONSTRUCTION == PPM
-    //reconstruct_lr_par(Ptmp, N, P_l, P_r);
     reconstruct_lr_par(S, Pl, Pr, dir);
   #elif RECONSTRUCTION == WENO
     reconstruct_lr_weno(S, Pl, Pr, dir);
