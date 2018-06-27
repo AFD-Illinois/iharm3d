@@ -15,6 +15,9 @@
 
 #include <omp.h>
 
+// Required globally for pack.c function signatures
+#include <hdf5.h>
+
 #include "parameters.h"
 
 #ifndef M_PI
@@ -417,15 +420,12 @@ void mpi_int_broadcast(int *val);
 void mpi_dbl_broadcast(double *val);
 
 // pack.c
-void pack_scalar_double(double in[N3+2*NG][N2+2*NG][N1+2*NG], double *out);
-void pack_scalar_float(double in[N3+2*NG][N2+2*NG][N1+2*NG], float *out);
-void pack_scalar_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], int *out);
-void pack_vector_double(double in[][N3+2*NG][N2+2*NG][N1+2*NG], double *out, int vector_len);
-void pack_vector_float(double in[][N3+2*NG][N2+2*NG][N1+2*NG], float *out, int vector_len);
-void pack_Gtensor_double(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], double *out);
-void pack_Gtensor_float(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], float *out);
-//void pack_tensor_double(double in[NDIM][NDIM][N3+2*NG][N2+2*NG][N1+2*NG], double *out);
-//void pack_tensor_float(double in[NDIM][NDIM][N3+2*NG][N2+2*NG][N1+2*NG], float *out);
+void pack_write_scalar(double in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, hid_t file_id, hsize_t hdf5_type);
+void pack_write_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, hid_t file_id);
+void pack_write_vector(double in[][N3+2*NG][N2+2*NG][N1+2*NG], int len, const char* name, hid_t file_id, hsize_t hdf5_type);
+
+void pack_write_axiscalar(double in[N2+2*NG][N1+2*NG], const char* name, hid_t file_id, hsize_t hdf5_type);
+void pack_write_Gtensor(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], const char* name, hid_t file_id, hsize_t hdf5_type);
 
 // params.c
 void set_core_params();

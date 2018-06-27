@@ -22,6 +22,7 @@ GridDouble *omega;
 
 #define HDF_STR_LEN 20
 
+// TODO could make some HDF5 spaces here to save time
 void init_io()
 {
   omega = calloc(1,sizeof(GridDouble));
@@ -31,9 +32,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_IO);
 
-  static int firstc = 1;
-  static OUT_TYPE *data;
-  static int *idata;
+  static GridDouble *data;
   char fname[80];
 
   #if ELECTRONS
@@ -43,26 +42,21 @@ void dump(struct GridGeom *G, struct FluidState *S)
   const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"}; //Reserve some extra
   #endif
 
+  static int firstc = 1;
   if(firstc) {
-    data = calloc(N1*N2*N3*NVAR,sizeof(OUT_TYPE));
-    idata = calloc(N1*N2*N3,sizeof(int));
-    if(data == NULL) {
-      fprintf(stderr,"failed to allocate data in dump\n");
-      exit(8);
-    }
+    data = calloc(1,sizeof(GridDouble)); // TODO safe calloc for fails
     firstc = 0;
   }
 
-  //Don't re-dump the grid on restart
+  //Don't re-dump the grid after a restart
   if (dump_cnt == 0) dump_grid(G);
 
   sprintf(fname, "dumps/dump_%08d.h5", dump_cnt);
-  if(mpi_io_proc()) {
-    fprintf(stdout, "DUMP %s\n", fname);
-  }
+  if(mpi_io_proc()) fprintf(stdout, "DUMP %s\n", fname);
 
   hid_t file_id = hdf5_create(fname);
-  hid_t string_type = hdf5_make_str_type(HDF_STR_LEN); //H5T_VARIABLE for any-length strings. But not compat with parallel IO
+  //Can use H5T_VARIABLE for any-length strings. But not compatible with parallel IO
+  hid_t string_type = hdf5_make_str_type(HDF_STR_LEN);
 
   // Write header
   hdf5_set_directory("/");
@@ -160,51 +154,35 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_write_single_val(&failed, "failed", file_id, H5T_NATIVE_INT);
 
   // Write primitive variables
-  pack_vector_float(S->P, data, NVAR);
-  hdf5_write_vector(data, "prims", file_id, NVAR, OUT_H5_TYPE);
+  pack_write_vector(S->P, NVAR, "prims", file_id, OUT_H5_TYPE);
   hdf5_add_units("prims", "code", file_id);
 
   // Write jcon (not recoverable from prims)
-  pack_vector_float(S->jcon, data, NDIM);
-  hdf5_write_vector(data, "jcon", file_id, NDIM, OUT_H5_TYPE);
+  pack_write_vector(S->jcon, NDIM, "jcon", file_id, OUT_H5_TYPE);
   hdf5_add_units("jcon", "code", file_id);
 
-  int ind = 0;
-  ZLOOP_OUT {
-	  data[ind] = mhd_gamma_calc(G, S, i, j, k, CENT);
-	  ind++;
-  }
-  hdf5_write_scalar(data, "gamma", file_id, OUT_H5_TYPE);
+  ZLOOP (*data)[k][j][i] = mhd_gamma_calc(G, S, i, j, k, CENT);
+  pack_write_scalar((*data), "gamma", file_id, OUT_H5_TYPE);
 
   // Write divB and fail diagnostics only to full dumps
   if (is_full_dump) {
-    ind = 0;
-    ZLOOP_OUT {
-	  data[ind] = flux_ct_divb(G, S, i, j, k);
-	  ind++;
-    }
-    hdf5_write_scalar(data, "divB", file_id, OUT_H5_TYPE);
+    ZLOOP (*data)[k][j][i] = flux_ct_divb(G, S, i, j, k);
+    pack_write_scalar((*data), "divB", file_id, OUT_H5_TYPE);
 
-    pack_scalar_int(fail_save, idata);
+    pack_write_int(fail_save, "fail", file_id);
     ZLOOP fail_save[k][j][i] = 0;
-    hdf5_write_scalar(idata, "fail", file_id, H5T_NATIVE_INT);
   }
 
   // Space for any extra items
   hdf5_make_directory("extras", file_id);
   hdf5_set_directory("/extras/");
 
-//  ind = 0;
-//  ZLOOP_OUT {
-//    get_state(G, S, i, j, k, CENT);
-//    data[ind] = bsq_calc(S, i, j, k);
-//    ind++;
-//  }
-//  hdf5_write_scalar(data, "bsq", file_id, OUT_H5_TYPE);
+//  ZLOOP (*data)[k][j][i] = bsq_calc(G, S, i, j, k);
+//  pack_write_scalar((*data), "bsq", file_id, OUT_H5_TYPE);
 
-//  // Writing a bunch of vectors takes too much space so these are recalculated in analysis
-//  pack_vector_float(S->bcon, data, NDIM);
-//  hdf5_write_vector(data, "bcon", file_id, NDIM, OUT_H5_TYPE);
+  // Could write extra vectors here, but they take up too much space
+//  pack_write_vector(S->bcon, NDIM, "bcon", file_id, OUT_H5_TYPE);
+//  hdf5_add_units("bcon", "code", file_id);
 
 
   hdf5_close(file_id);
@@ -212,61 +190,56 @@ void dump(struct GridGeom *G, struct FluidState *S)
   timer_stop(TIMER_IO);
 }
 
-#define NGRIDVARS 11
+#define NGRIDVARS 9
 void dump_grid(struct GridGeom *G)
 {
-  OUT_TYPE *x[NGRIDVARS];
-  for (int d = 0; d < NGRIDVARS; d++) x[d] = calloc(N1*N2*N3,sizeof(OUT_TYPE));
-  const char *coordNames[] = {"X", "Y", "Z", "r", "th", "phi", "X1", "X2", "X3", "gdet", "lapse"};
+  GridDouble *x[NGRIDVARS];
+  for (int d = 0; d < NGRIDVARS; d++) x[d] = calloc(1,sizeof(GridDouble));
+  const char *coordNames[] = {"X", "Y", "Z", "r", "th", "phi", "X1", "X2", "X3"};
 
-  OUT_TYPE *g = calloc(N1*N2*N3*NDIM*NDIM,sizeof(OUT_TYPE));
+  char *fname = "dumps/grid.h5";
+  if(mpi_io_proc()) fprintf(stdout, "GRID %s\n", fname);
 
-  hid_t file_id = hdf5_create("dumps/grid.h5");
+  hid_t file_id = hdf5_create(fname);
 
   hdf5_set_directory("/");
 
   // Batch fill grid var buffers since lots of them are the same
-  int ind = 0;
-  ZLOOP_OUT { //Change if reinstating full grid out
+  ZLOOP {
 	double xp[4];
     coord(i, j, k, CENT, xp);
     #if METRIC == MINKOWSKI
-    x[0][ind] = xp[1];
-    x[1][ind] = xp[2];
-    x[2][ind] = xp[3];
-    x[3][ind] = 0;
-    x[4][ind] = 0;
-    x[5][ind] = 0;
+    (*x[0])[k][j][i] = xp[1];
+    (*x[1])[k][j][i] = xp[2];
+    (*x[2])[k][j][i] = xp[3];
+    (*x[3])[k][j][i] = 0;
+    (*x[4])[k][j][i] = 0;
+    (*x[5])[k][j][i] = 0;
     #elif METRIC == MKS
     double r, th;
     bl_coord(xp, &r, &th);
-    x[0][ind] = r*cos(xp[3])*sin(th);
-    x[1][ind] = r*sin(xp[3])*sin(th);
-    x[2][ind] = r*cos(th);
-    x[3][ind] = r;
-    x[4][ind] = th;
-    x[5][ind] = xp[3];
+    (*x[0])[k][j][i] = r*cos(xp[3])*sin(th);
+    (*x[1])[k][j][i] = r*sin(xp[3])*sin(th);
+    (*x[2])[k][j][i] = r*cos(th);
+    (*x[3])[k][j][i] = r;
+    (*x[4])[k][j][i] = th;
+    (*x[5])[k][j][i] = xp[3];
     #endif
 
-    x[6][ind] = xp[1];
-    x[7][ind] = xp[2];
-    x[8][ind] = xp[3];
-
-    x[9][ind] = G->gdet[CENT][j][i];
-    x[10][ind] = G->lapse[CENT][j][i];
-
-    ind++;
+    (*x[6])[k][j][i] = xp[1];
+    (*x[7])[k][j][i] = xp[2];
+    (*x[8])[k][j][i] = xp[3];
   }
 
   for (int d = 0; d < NGRIDVARS; d++){
-    hdf5_write_scalar(x[d], coordNames[d], file_id, OUT_H5_TYPE);
+    pack_write_scalar((*x[d]), coordNames[d], file_id, OUT_H5_TYPE);
   }
 
-  pack_Gtensor_float(G->gcon[CENT], g);
-  hdf5_write_tensor(g, "gcon", file_id, NDIM, NDIM, OUT_H5_TYPE);
+  pack_write_axiscalar(G->gdet[CENT], "gdet", file_id, OUT_H5_TYPE);
+  pack_write_axiscalar(G->lapse[CENT], "lapse", file_id, OUT_H5_TYPE);
 
-  pack_Gtensor_float(G->gcov[CENT], g);
-  hdf5_write_tensor(g, "gcov", file_id, NDIM, NDIM, OUT_H5_TYPE);
+  pack_write_Gtensor(G->gcon[CENT], "gcon", file_id, OUT_H5_TYPE);
+  pack_write_Gtensor(G->gcov[CENT], "gcov", file_id, OUT_H5_TYPE);
 
   for (int d = 0; d < NGRIDVARS; d++) free(x[d]);
 

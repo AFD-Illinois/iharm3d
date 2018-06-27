@@ -10,11 +10,16 @@
 
 #include "hdf5_utils.h"
 
-#include <hdf5.h>
 #include <sys/stat.h>
 #include <ctype.h>
 
 static int restart_id = 0;
+
+// Declare known sizes for outputting primitives
+static hsize_t fdims[] = {NVAR, N3TOT, N2TOT, N1TOT};
+static hsize_t fcount[] = {NVAR, N3, N2, N1};
+static hsize_t mdims[] = {NVAR, N3+2*NG, N2+2*NG, N1+2*NG};
+static hsize_t mstart[] = {0, NG, NG, NG};
 
 void restart_write(struct FluidState *S)
 {
@@ -74,7 +79,8 @@ void restart_write(struct FluidState *S)
 
   // Write data
   // As this is not packed, the read_restart_prims fn is different per-code
-  hdf5_write_restart_prims(&(S->P[0][0][0][0]), "p", file_id);
+  hsize_t fstart[] = {0, global_start[2], global_start[1], global_start[0]};
+  hdf5_write_array(S->P, file_id, "p", 4, fdims, fstart, fcount, mdims, mstart, H5T_NATIVE_DOUBLE);
 
   hdf5_close(file_id);
 
@@ -104,10 +110,6 @@ void restart_write(struct FluidState *S)
 
 void restart_read(char *fname, struct FluidState *S)
 {
-  if(mpi_io_proc()) {
-    fprintf(stderr, "Restarting from %s\n\n", fname);
-  }
-
   hid_t file_id = hdf5_open(fname);
 
   // Read everything from root
@@ -116,7 +118,10 @@ void restart_read(char *fname, struct FluidState *S)
   hid_t string_type = hdf5_make_str_type(20);
   char version[20];
   hdf5_read_single_val(version, "version", file_id, string_type);
-  // Can special-case based on version here.
+  if(mpi_io_proc()) {
+    fprintf(stderr, "Restarting from %s, file version %s\n\n", fname, version);
+  }
+
   hdf5_read_single_val(&t, "t", file_id, H5T_NATIVE_DOUBLE);
   hdf5_read_single_val(&nstep, "nstep", file_id, H5T_NATIVE_INT);
   hdf5_read_single_val(&tf, "tf", file_id, H5T_NATIVE_DOUBLE);
@@ -157,7 +162,8 @@ void restart_read(char *fname, struct FluidState *S)
   hdf5_read_single_val(&tlog, "tlog", file_id, H5T_NATIVE_DOUBLE);
 
   // Read data
-  hdf5_read_restart_prims(&(S->P[0][0][0][0]), "p", file_id);
+  hsize_t fstart[] = {0, global_start[2], global_start[1], global_start[0]};
+  hdf5_read_array(S->P, file_id, "p", 4, fdims, fstart, fcount, mdims, mstart, H5T_NATIVE_DOUBLE);
 
   hdf5_close(file_id);
 
@@ -172,7 +178,7 @@ int restart_init(struct GridGeom *G, struct FluidState *S)
   FILE *fp = fopen(fname,"rb");
   if (fp == NULL) {
     if (mpi_io_proc())
-      fprintf(stdout, "No restart file: %d\n\n", errno);
+      fprintf(stdout, "No restart file: error %d\n\n", errno);
     return 0;
   }
   fclose(fp);
