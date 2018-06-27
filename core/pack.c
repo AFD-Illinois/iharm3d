@@ -69,15 +69,15 @@ void pack_write_vector(double in[][N3+2*NG][N2+2*NG][N1+2*NG], int len, const ch
 
   int ind = 0;
   if (hdf5_type == H5T_NATIVE_DOUBLE) {
-    for (int mu=0; mu < len; mu++) {
-      ZLOOP_OUT {
+    ZLOOP_OUT {
+      for (int mu=0; mu < len; mu++) {
         ((double*) out)[ind] = in[mu][k][j][i];
         ind++;
       }
     }
   } else if (hdf5_type == H5T_NATIVE_FLOAT) {
-    for (int mu=0; mu < len; mu++) {
-      ZLOOP_OUT {
+    ZLOOP_OUT {
+      for (int mu=0; mu < len; mu++) {
         ((float*) out)[ind] = (float) in[mu][k][j][i];
         ind++;
       }
@@ -135,15 +135,15 @@ void pack_write_Gtensor(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], const char* nam
 
   int ind = 0;
   if (hdf5_type == H5T_NATIVE_DOUBLE) {
-    DLOOP2 {
-      ZLOOP_OUT {
+    ZLOOP_OUT {
+      DLOOP2 {
         ((double*) out)[ind] = in[mu][nu][j][i];
         ind++;
       }
     }
   } else if (hdf5_type == H5T_NATIVE_FLOAT) {
-    DLOOP2 {
-      ZLOOP_OUT {
+    ZLOOP_OUT {
+      DLOOP2 {
         ((float*) out)[ind] = (float) in[mu][nu][j][i];
         ind++;
       }
