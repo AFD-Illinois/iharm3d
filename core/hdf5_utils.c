@@ -84,7 +84,7 @@ hid_t hdf5_make_str_type(size_t len)
 }
 
 // Add the named attribute to the named variable
-void hdf5_add_att(const void *att, const char *att_name, const char *data_name, hid_t file_id, hsize_t hdf5_type)
+void hdf5_add_attr(const void *att, const char *att_name, const char *data_name, hid_t file_id, hsize_t hdf5_type)
 {
   char path[STRLEN];
   strncpy(path, hdf5_cur_dir, STRLEN);
@@ -102,7 +102,7 @@ void hdf5_add_units(const char *name, const char *unit, hid_t file_id)
 {
   hid_t string_type = H5Tcopy(H5T_C_S1);
   H5Tset_size(string_type, strlen(unit)+1);
-  hdf5_add_att(unit, "units", name, file_id, string_type);
+  hdf5_add_attr(unit, "units", name, file_id, string_type);
   H5Tclose(string_type);
 }
 
