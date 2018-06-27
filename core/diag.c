@@ -101,7 +101,8 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     double j_eht = pow(rho,3.)*pow(Pg,-2.)*exp(-C_eht*pow(rho*rho/(Bmag*Pg*Pg),1./3.));
     lum_eht_proc += j_eht*dV*G->gdet[CENT][j][i];
     if (global_start[0] + i == 5+NG) {
-      Phi_proc += 0.5*fabs(S->P[B1][k][j][i])*dx[2]*dx[3]*G->gdet[CENT][j][i];
+      // This is as close as I can figure to Narayan '12, after accounting for HARM B_unit
+      Phi_proc += 0.5*fabs(sqrt(4*M_PI)*S->P[B1][k][j][i])*dx[2]*dx[3]*G->gdet[CENT][j][i];
 
       // TODO port properly.  Needs speculative get_state
 //      double P_EM[NVAR];

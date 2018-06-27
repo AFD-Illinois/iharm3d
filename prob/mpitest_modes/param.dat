@@ -16,10 +16,10 @@
 
 # OUTPUT
 [dbl] DTd = 5.000000e-01
+[dbl] DTf = 1.000000e+01
 [dbl] DTl = 5.000000e-01
 [int] DTr = 10000
 [int] DTp = 10
-[str] outputdir = ./
 
 # PROBLEM
 [int] nmode = 1

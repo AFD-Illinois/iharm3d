@@ -61,7 +61,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
     fprintf(stdout, "DUMP %s\n", fname);
   }
 
-  hid_t file_id = hdf5_open(fname);
+  hid_t file_id = hdf5_create(fname);
   hid_t string_type = hdf5_make_str_type(HDF_STR_LEN); //H5T_VARIABLE for any-length strings. But not compat with parallel IO
 
   // Write header
@@ -146,7 +146,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
 
   hdf5_set_directory("/");
 
-  int is_full_dump = 1; // TODO do full dumps
+  int is_full_dump = 1; // TODO do partial/full dumps
   hdf5_write_single_val(&is_full_dump, "is_full_dump", file_id, H5T_NATIVE_INT);
   hdf5_write_single_val(&t, "t", file_id, H5T_NATIVE_DOUBLE);
   hdf5_add_units("t", "code", file_id);
@@ -167,6 +167,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   // Write jcon (not recoverable from prims)
   pack_vector_float(S->jcon, data, NDIM);
   hdf5_write_vector(data, "jcon", file_id, NDIM, OUT_H5_TYPE);
+  hdf5_add_units("jcon", "code", file_id);
 
   int ind = 0;
   ZLOOP_OUT {
@@ -189,7 +190,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
     hdf5_write_scalar(idata, "fail", file_id, H5T_NATIVE_INT);
   }
 
-  // Write some extras
+  // Space for any extra items
   hdf5_make_directory("extras", file_id);
   hdf5_set_directory("/extras/");
 
@@ -200,23 +201,11 @@ void dump(struct GridGeom *G, struct FluidState *S)
 //    ind++;
 //  }
 //  hdf5_write_scalar(data, "bsq", file_id, OUT_H5_TYPE);
-//
-//  omega_calc(G, S, omega);
-//  pack_scalar_float(*omega, data);
-//  hdf5_write_scalar(data, "omega", file_id, OUT_H5_TYPE);
-//
-//  // These are far too much space to continue
+
+//  // Writing a bunch of vectors takes too much space so these are recalculated in analysis
 //  pack_vector_float(S->bcon, data, NDIM);
 //  hdf5_write_vector(data, "bcon", file_id, NDIM, OUT_H5_TYPE);
-//
-//  pack_vector_float(S->bcov, data, NDIM);
-//  hdf5_write_vector(data, "bcov", file_id, NDIM, OUT_H5_TYPE);
-//
-//  pack_vector_float(S->ucon, data, NDIM);
-//  hdf5_write_vector(data, "ucon", file_id, NDIM, OUT_H5_TYPE);
-//
-//  pack_vector_float(S->ucov, data, NDIM);
-//  hdf5_write_vector(data, "ucov", file_id, NDIM, OUT_H5_TYPE);
+
 
   hdf5_close(file_id);
 
@@ -232,7 +221,9 @@ void dump_grid(struct GridGeom *G)
 
   OUT_TYPE *g = calloc(N1*N2*N3*NDIM*NDIM,sizeof(OUT_TYPE));
 
-  hid_t file_id = hdf5_open("dumps/grid.h5");
+  hid_t file_id = hdf5_create("dumps/grid.h5");
+
+  hdf5_set_directory("/");
 
   // Batch fill grid var buffers since lots of them are the same
   int ind = 0;

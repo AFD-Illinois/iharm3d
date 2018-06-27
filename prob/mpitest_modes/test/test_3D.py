@@ -16,11 +16,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pylab as pl
 
-sys.path.insert(0, '../../../script/')
-sys.path.insert(0, '../../../script/analysis/')
-sys.path.insert(0, '../../../../script/')
-sys.path.insert(0, '../../../../script/analysis/')
-
+sys.path.insert(0, '../../../../analysis-scripts/')
 
 import util
 import hdf5_to_dict as io
@@ -94,12 +90,12 @@ for n in xrange(len(MODES)):
     dfile = np.sort(glob.glob('dump*.h5'))[-1]
 
     hdr = io.load_hdr(dfile)
-    geom = io.load_geom(hdr, dfile)
-    dump = io.load_dump(hdr, geom, dfile)
+    geom = io.load_geom("grid.h5")
+    dump = io.load_dump(dfile, geom, hdr)
 
-    X1 = dump['x']
-    X2 = dump['y']
-    X3 = dump['z']
+    X1 = geom['x']
+    X2 = geom['y']
+    X3 = geom['z']
 
     dvar_code = []
     dvar_code.append(dump['RHO'] - var0[0])

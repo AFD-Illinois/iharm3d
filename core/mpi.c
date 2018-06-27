@@ -132,7 +132,6 @@ void mpi_initialization(int argc, char *argv[])
   MPI_Type_commit(&pflag_face_type[2]);
 
   MPI_Barrier(comm);
-  if (mpi_io_proc()) fprintf(stderr, "MPI Initialized\n");
 }
 
 void mpi_finalize()
@@ -240,7 +239,8 @@ int mpi_reduce_int(int f) {
   return local;
 }
 
-void mpi_reduce_vector(double *vec_send, double *vec_recv, int len) {
+void mpi_reduce_vector(double *vec_send, double *vec_recv, int len)
+{
   MPI_Allreduce(vec_send, vec_recv, len, MPI_DOUBLE, MPI_SUM, comm);
 }
 
