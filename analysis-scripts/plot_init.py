@@ -4,10 +4,12 @@
 #                                                                              #
 ################################################################################
 
+import matplotlib
+matplotlib.use('Agg')
+
 import sys; sys.dont_write_bytecode = True
 import numpy as np
 import hdf5_to_dict as io
-import matplotlib
 import matplotlib.pyplot as plt
 import util
 import glob
