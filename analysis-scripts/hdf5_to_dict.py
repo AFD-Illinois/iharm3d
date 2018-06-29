@@ -164,10 +164,8 @@ def omega_calc(dump, geom):
   
   for mu in range(NDIM):
     for nu in range(NDIM):
-      #Fcov01 += F[:,:,:,mu,nu]*geom['gcov'][:,:,None,mu,0]*geom['gcov'][:,:,None,nu,1]
-      Fcov02 += F[:,:,:,mu,nu]*geom['gcov'][:,:,None,mu,0]*geom['gcov'][:,:,None,nu,2]
-      #Fcov13 += F[:,:,:,mu,nu]*geom['gcov'][:,:,None,mu,1]*geom['gcov'][:,:,None,nu,3]
-      Fcov23 += F[:,:,:,mu,nu]*geom['gcov'][:,:,None,mu,2]*geom['gcov'][:,:,None,nu,3]
+      Fcov01 += F[:,:,:,mu,nu]*geom['gcov'][:,:,None,mu,0]*geom['gcov'][:,:,None,nu,1]
+      Fcov13 += F[:,:,:,mu,nu]*geom['gcov'][:,:,None,mu,1]*geom['gcov'][:,:,None,nu,3]
 
   return Fcov01/Fcov13
 
