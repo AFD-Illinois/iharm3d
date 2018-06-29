@@ -60,60 +60,21 @@ N3 = hdr['n3']
 r = geom['r'][:,N2/2,0]
 th = geom['th'][0,:N2/2,0]
 
-# Calculate fluxes at (just inside) r = 5
-# Except Phi at EH, zone 5
+# Option to calculate fluxes at (just inside) r = 5
+# This reduces interference from floors
+flux_out = False
 iF = 0
-while r[iF] < 5:
-  iF += 1
-iF -= 1
+if flux_out:
+  while r[iF] < 5:
+    iF += 1
+  iF -= 1
+else:
+  iF = 5
 
-iEH = 5  
+# Some variables (Phi) should only be computed at EH
+iEH = 5
 
 ND = len(dumps)
-
-t = np.zeros(ND)
-rho_r = np.zeros([ND, N1])
-Theta_r = np.zeros([ND, N1])
-B_r = np.zeros([ND, N1])
-Pg_r = np.zeros([ND, N1])
-Ptot_r = np.zeros([ND, N1])
-betainv_r = np.zeros([ND, N1])
-uphi_r = np.zeros([ND, N1])
-rho_SADW = np.zeros([ND, N1])
-omega_th = np.zeros([ND, N2/2])
-omega_th_av = np.zeros([ND, N2/2])
-omega_th_5 = np.zeros([ND, N2/2])
-
-
-Mdot = np.zeros(ND)
-Phi = np.zeros(ND)
-Ldot = np.zeros(ND)
-Edot = np.zeros(ND)
-Lum = np.zeros(ND)
-sigma_max = np.zeros(ND)
-
-# Pointers are magical things
-out = {}
-out['rho_SADW'] = rho_SADW
-out['r'] = r
-out['th'] = th
-out['omega_th'] = omega_th
-out['omega_th_av'] = omega_th_av
-out['omega_th_5'] = omega_th_5
-out['rho_r'] = rho_r
-out['Theta_r'] = Theta_r
-out['B_r'] = B_r
-out['Pg_r'] = Pg_r
-out['Ptot_r'] = Ptot_r
-out['betainv_r'] = betainv_r
-out['uphi_r'] = uphi_r
-out['t'] = t
-out['Mdot'] = Mdot
-out['Phi'] = Phi
-out['Ldot'] = Ldot
-out['Edot'] = Edot
-out['Lum'] = Lum
-out['sigma_max'] = sigma_max
 
 avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'rho_SADW', 'omega_th', 'omega_th_av', 'omega_th_5']
 
@@ -129,73 +90,79 @@ def WAVG(var, w):
   return INT(w*var)/INT(w)
 
 def avg_dump(n):
+  out = {}
+
   print '%08d / ' % (n+1) + '%08d' % len(dumps) 
   dump = io.load_dump(dumps[n], geom, hdr)
-  t[n] = dump['t']
+  out['t'] = dump['t']
   print dump['t']
 
-  rho_SADW[n,:] = WAVG(dump['RHO'], dump['RHO'])
+  out['rho_SADW'] = WAVG(dump['RHO'], dump['RHO'])
 
   # SHELL AVERAGES
   #vol = (dx2*dx3*geom['gdet'][:,:]).sum(axis=-1)
-  rho_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*dump['RHO'][:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['rho_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*dump['RHO'][:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
   
   Theta = (hdr['gam']-1.)*dump['UU'][:,:,:]/dump['RHO'][:,:,:]
-  Theta_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Theta[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['Theta_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Theta[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
   
   B = np.sqrt(dump['bsq'][:,:,:])
-  B_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*B[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['B_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*B[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
 
   Pg = (hdr['gam']-1.)*dump['UU'][:,:,:]
-  Pg_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Pg[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['Pg_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Pg[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
 
   Ptot = Pg + dump['bsq'][:,:,:]/2
-  Ptot_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Ptot[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['Ptot_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Ptot[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
 
   betainv = (dump['bsq'][:,:,:]/2)/Pg
-  betainv_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*betainv[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['betainv_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*betainv[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
 
   uphi = (dump['ucon'][:,:,:,3])
-  uphi_r[n,:] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*uphi[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) 
+  out['uphi_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*uphi[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) 
 
-  rho_r[n,:] /= vol
-  Theta_r[n,:] /= vol
-  B_r[n,:] /= vol
-  Pg_r[n,:] /= vol
-  Ptot_r[n,:] /= vol
-  betainv_r[n,:] /= vol
-  uphi_r[n,:] /= vol
+  out['rho_r'] /= vol
+  out['Theta_r'] /= vol
+  out['B_r'] /= vol
+  out['Pg_r'] /= vol
+  out['Ptot_r'] /= vol
+  out['betainv_r'] /= vol
+  out['uphi_r'] /= vol
 
   # FLUXES
   #Phi_bcon[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
-  # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) so we need to multiply that in here
-  Phi[n] = 0.5*(np.fabs(np.sqrt(4*np.pi)*dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
+  # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
+  #norm = np.sqrt(4*np.pi) # This is what I believe matches Narayan '12 in CGS
+  norm = 1 # This is what BR used for EHT comparison + what fits that
+  out['Phi'] = 0.5*(np.fabs(norm*dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
   
-  omega_th[n,:] = dump['omega'][iEH,:N2/2,:].sum(axis=-1)# + dump['omega'][iEH,:N2/2-1:-1,:].sum(axis=-1)
-  omega_th[n,:] /= N3
-  omega_th_av[n,:] = dump['omega'][iEH:iEH+15,:N2/2,:].sum(axis=-1).sum(axis=0)# + dump['omega'][iEH:iEH+5,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
-  omega_th_av[n,:] /= N3*15
-  omega_th_5[n,:] = dump['omega'][iF:iF+15,:N2/2,:].sum(axis=-1).sum(axis=0)# + dump['omega'][iF:iF+3,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
-  omega_th_5[n,:] /= N3*15
+  out['omega_th'] = dump['omega'][iEH,:N2/2,:].mean(axis=-1) + dump['omega'][iEH,:N2/2-1:-1,:].mean(axis=-1)
+  out['omega_th'] /= N3*2
+  out['omega_th_av'] = dump['omega'][iEH:iEH+5,:N2/2,:].mean(axis=-1).mean(axis=0)# + dump['omega'][iEH:iEH+5,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
+  #out['omega_th_av'] /= N3*2*5
+  out['omega_th_5'] = dump['omega'][:10,:N2/2,:].mean(axis=-1).mean(axis=0)# + dump['omega'][:10,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
+  #out['omega_th_5'] /= N3*2*10
 
-  sigma_max[n] = np.max(dump['bsq']/dump['RHO'])
+  out['sigma_max'] = np.max(dump['bsq']/dump['RHO'])
   
-  Mdot[n] = np.abs((dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum())
+  out['Mdot'] = np.abs((dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum())
   Trphi = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,3]
   Trphi -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,3]
   Trt = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,0]
   Trt -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,0]
-  Ldot[n] = (Trphi[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
-  Edot[n] = -(Trt[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  out['Ldot'] = (Trphi[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  out['Edot'] = -(Trt[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
 
   rho = dump['RHO']
   P = (hdr['gam']-1.)*dump['UU']
   B = np.sqrt(dump['bsq'])
   C = 0.2
   j = rho**3*P**(-2)*np.exp(-C*(rho**2/(B*P**2))**(1./3.))
-  Lum[n] = (j*geom['gdet'][:,:,None]*dx1*dx2*dx3).sum()
+  out['Lum'] = (j*geom['gdet'][:,:,None]*dx1*dx2*dx3).sum()
   
   return out
+
+out_full = {}
 
 # SERIAL
 #for n in xrange(len(dumps)):
@@ -210,14 +177,15 @@ pool = multiprocessing.Pool(NTHREADS)
 signal.signal(signal.SIGINT, original_sigint_handler)
 try:
   out_list = pool.map(avg_dump, range(len(dumps)))  # This is /real big/ in memory
-  for key in out.keys():
-    for i in range(len(out_list)):
-      if key in avg_keys: 
-        slc = np.where(out[key][:,-1] == 0)
-        out[key][slc,:] = out_list[i][key][slc]
-      else:
-        slc = np.where(out[key] == 0) # Avoid double-fill from threads that got 2+ indices
-        out[key][slc] = out_list[i][key][slc]
+  for key in out_list[0].keys():
+    if key in avg_keys:
+      out_full[key] = np.zeros((ND,out_list[0][key].size))
+      for n in range(len(out_list)):
+        out_full[key][n,:] = out_list[n][key]
+    else:
+      out_full[key] = np.zeros(ND)
+      for n in range(len(out_list)):
+        out_full[key][n] = out_list[n][key]
   pool.close()
 except KeyboardInterrupt:
   pool.terminate()
@@ -225,41 +193,35 @@ else:
   pool.close()
 pool.join()
 
-# Sort
-order = np.argsort(out['t'])
-for key in out.keys():
-  if key in avg_keys:
-    out[key] = out[key][order,:]
-  elif key in ['r', 'th']:
-    pass
-  else:
-    out[key] = out[key][order]
+# Toss in the common geom lists
+out_full['r'] = r
+out_full['th'] = th
 
 # Time average
 n = 0
 for n in xrange(ND):
-  if t[n] >= tavg:
+  if out_full['t'][n] >= tavg:
     break
 
 print 'nmin = %i' % n
 
 for key in avg_keys:
-  out[key] = (out[key][n:,:]).mean(axis=0)
+  out_full[key] = (out_full[key][n:,:]).mean(axis=0)
 
 # Names for compatibility with hdf5_to_dict
-out['mdot'] = out['Mdot']
-out['phi'] = out['Phi']/np.sqrt(np.abs(out['Mdot']))
+out_full['mdot'] = out_full['Mdot']
+out_full['phi'] = out_full['Phi']/np.sqrt(np.abs(out_full['Mdot']))
 
 # Variables that can be read once
-out['a'] = hdr['a']
-out['t_d'] = diag['t']
-out['Mdot_d'] = diag['mdot']
-out['Phi_d'] = diag['Phi']
-out['Ldot_d'] = diag['ldot']
-out['Edot_d'] = -diag['edot']
-out['Lum_d'] = diag['lum_eht']
+out_full['a'] = hdr['a']
+out_full['t_d'] = diag['t']
+out_full['Mdot_d'] = diag['mdot']
+out_full['Phi_d'] = diag['Phi']
+out_full['Ldot_d'] = diag['ldot']
+out_full['Edot_d'] = -diag['edot']
+out_full['Lum_d'] = diag['lum_eht']
 
 # OUTPUT
 import pickle
 
-pickle.dump(out, open('eht_out.p', 'w'))
+pickle.dump(out_full, open('eht_out.p', 'w'))

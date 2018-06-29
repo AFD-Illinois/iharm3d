@@ -112,7 +112,7 @@ plt.close(fig)
 fig = plt.figure(figsize=(FIGX, FIGY))
 
 # Use diagnostic output fluxes
-diags = True
+diags = False
 
 ax = plt.subplot(5,1,1)
 ax.plot(avg['t'], np.fabs(avg['Mdot']), color='k')

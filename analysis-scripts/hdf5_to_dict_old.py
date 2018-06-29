@@ -1,3 +1,5 @@
+# Import OLD HARM dump files.
+
 import sys; sys.dont_write_bytecode = True
 import numpy as np
 import h5py
@@ -9,15 +11,8 @@ units = units.get_dict()
 def get_dumps_reduced(path):
   return np.sort(glob.glob(os.path.join(path, "dump*.h5")))
 
-def get_dumps_full(folder):
-  alldumps = np.sort(glob.glob(folder+'dump_*.h5'))
-  fulldumps = []
-
-  for fname in alldumps:
-    dfile = h5py.File(fname, 'r')
-    if dfile['FULL_DUMP'][0]:
-      fulldumps.append(fname)
-  return np.sort(fulldumps)
+def get_dumps_full(path):
+  return get_dumps_reduced(path)
 
 def load_hdr(fname):
   dfile = h5py.File(fname, 'r')
@@ -47,7 +42,7 @@ def load_hdr(fname):
     keys = ['metric_name', 'has_electrons', #'has_radiation', 'is_full', 'n_dim'
             'n1', 'n2', 'n3',
             'startx1', 'startx2', 'startx3', 'dx1', 'dx2', 'dx3',
-            'gam', 'cour', 'tf']      
+            'gam', 'cour', 'tf']
     for key in keys:
       hdr[key] = dfile[key][()]
     # Fill things not output
@@ -83,15 +78,6 @@ def load_hdr(fname):
       
   # Set secondary keys based on properties
   keys = []
-  if hdr['has_electrons']:
-    keys += ['gam_e', 'gam_p']
-
-  if hdr['has_radiation']:
-    keys += ['tp_over_te']
-    keys += ['L_unit', 'T_unit', 'M_unit', 'RHO_unit', 'Ne_unit', 'B_unit',
-             'U_unit', 'Thetae_unit']
-    keys += ['MAXNSCATT', 'NUBINS', 'numin', 'numax']
-
   if hdr['metric_name'] == 'MKS':
     keys += ['Rin', 'Rout', 'Reh', 'hslope', 'a'] # 'Risco',
     if False: # TODO output POLYTH
@@ -109,11 +95,6 @@ def load_hdr(fname):
     for key in keys:
       hdr[key] = dfile[key][0]
 
-  if hdr['has_radiation']:
-    hdr['LEdd'] = 4.*np.pi*units['GNEWT']*hdr['Mbh']*units['MP']*units['CL']/units['THOMSON']
-    hdr['nomEff'] = 0.1
-    hdr['MdotEdd'] = hdr['LEdd']/(hdr['nomEff']*units['CL']**2)
-
   dfile.close()
 
   print "Size:", hdr['n1'], hdr['n2'], hdr['n3']
@@ -121,16 +102,12 @@ def load_hdr(fname):
 
   return hdr
 
-def load_geom(hdr, fname):
+def load_geom(fname):
   gfile = h5py.File(fname, 'r')
 
-  keys = ['X1','X2','X3','X','Y','Z', 'gdet']
-
-  if hdr['version_number'] > 0.05:
-    keys += ['gcon', 'gcov']
-
-  if hdr['metric_name'] == 'MKS':
-    keys += ['r','th','phi']
+  keys = ['X1','X2','X3','X','Y','Z', 'gdet', 'lapse']
+  keys += ['gcon', 'gcov']
+  keys += ['r','th','phi']
 
   geom = {}
   for key in keys:
@@ -145,17 +122,18 @@ def load_geom(hdr, fname):
   geom['gdet_full'] = geom['gdet']
   geom['gdet'] = geom['gdet'][:,:,0]
   
-  if hdr['version_number'] > 0.05:
-    geom['gcon_full'] = geom['gcon']
-    geom['gcon'] = geom['gcon'][:,:,0,:,:]
-    geom['gcov_full'] = geom['gcov']
-    geom['gcov'] = geom['gcov'][:,:,0,:,:]
+  geom['gcon_full'] = geom['gcon']
+  geom['gcon'] = geom['gcon'][:,:,0,:,:]
+  geom['gcov_full'] = geom['gcov']
+  geom['gcov'] = geom['gcov'][:,:,0,:,:]
 
   return geom
 
 def load_dump(fname, geom, hdr, diag=None):
   dfile = h5py.File(fname)
   dump = {}
+
+  dump['hdr'] = hdr
   
   # "Header" variables that change per dump
   # Be accomodating about these as we rarely need them
@@ -173,8 +151,6 @@ def load_dump(fname, geom, hdr, diag=None):
 
   # Usual primitive variable names
   varnames = ['RHO', 'UU', 'U1', 'U2', 'U3', 'B1', 'B2', 'B3']
-  if hdr['has_electrons']:
-    varnames += ['KTOT', 'KEL']
   
   if hdr['version_number'] > 3.0:
     keys = ['prims']
@@ -182,15 +158,6 @@ def load_dump(fname, geom, hdr, diag=None):
     keys = varnames
   
   keys += ['bsq', 'divb', 'gamma', 'fail']
-
-  if hdr['is_full']:
-    if hdr['has_electrons']:
-      keys += ['Qvisc']
-      if hdr['has_radiation']:
-        keys += ['Qcoul']
-
-    if hdr['has_radiation']:
-      keys += ['Rmunu', 'Nsph', 'nph', 'nuLnu']
 
   for key in keys:
     if hdr['reverse']:
@@ -204,7 +171,7 @@ def load_dump(fname, geom, hdr, diag=None):
 
   # Not all VHARM/bhlight output all variables
   # These are the optional ones so we don't mind
-  ext_keys = ['bcon', 'bcov', 'ucon', 'ucov', 'jcon']
+  ext_keys = ['jcon']
 
   for key in ext_keys:
     try:
@@ -212,25 +179,13 @@ def load_dump(fname, geom, hdr, diag=None):
     except KeyError, e:
       pass
 
-  if hdr['has_radiation']:
-    dump['ur'] = -dfile['erad'][0]
-
-  if hdr['has_electrons']:
-    dump['Thetae'] = units['MP']/units['ME']*dump['KEL']*dump['RHO']**(hdr['game']-1.)
-    dump['ue'] = dump['KEL']*dump['RHO']**(hdr['game'])/(hdr['game']-1.)
-    dump['up'] = dump['UU'] - dump['ue']
-    dump['TpTe'] = (hdr['gamp']-1.)*dump['up']/((hdr['game']-1.)*dump['ue'])
-  elif hdr['has_radiation']:
-    dump['Thetae'] = (hdr['gam']-1.)*units['MP']/units['ME']*(
-                     1./(1. + hdr['tp_over_te'])*dump['UU']/dump['RHO'])
-
   N1 = hdr['n1']
   N2 = hdr['n2']
   N3 = hdr['n3']
 
   # This recalculates bsq
-  #ucon, ucov, bcon, bcov = get_state(dump, geom)
-  #dump['bsq_py'] = (bcon*bcov).sum(axis=-1)
+  dump['ucon'], dump['ucov'], dump['bcon'], dump['bcov'] = get_state(dump, geom)
+  dump['bsq_py'] = (dump['bcon']*dump['bcov']).sum(axis=-1)
 
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
 
@@ -238,8 +193,6 @@ def load_dump(fname, geom, hdr, diag=None):
   dump['omega'] = omega_calc(hdr, geom, dump)
   
   dfile.close()
-
-  dump['hdr'] = hdr
 
   return dump
 
@@ -380,8 +333,9 @@ def pp(P):
   else:
     return -1
 
-# TODO store gcon/gcov so this can be used
-def get_state(hdr, geom, dump):
+def get_state(dump, geom):
+  import numpy as np
+  hdr = dump['hdr']
   N1 = hdr['N1']
   N2 = hdr['N2']
   N3 = hdr['N3']
@@ -395,25 +349,17 @@ def get_state(hdr, geom, dump):
   gcon = geom['gcon']
 
   U1 = dump['U1']
-  U2 = dump['U2'] 
+  U2 = dump['U2']
   U3 = dump['U3']
   B1 = dump['B1']
   B2 = dump['B2']
   B3 = dump['B3']
 
-# TODO vectorize this
-  alpha = np.zeros([N1,N2,N3])
-  for i in xrange(N1):
-    for j in xrange(N2):
-      alpha[i,j,:] = 1./np.sqrt(-gcon[i,j,0,0])
-  qsq = np.zeros([N1,N2,N3])
-  for i in xrange(N1):
-    for j in xrange(N2):
-      for k in xrange(N3):
-        qsq[i,j,k] = (gcov[i,j,1,1]*U1[i,j,k]**2 + gcov[i,j,2,2]*U2[i,j,k]**2 +
-                      gcov[i,j,3,3]*U3[i,j,k]**2 + 2.*(gcov[i,j,1,2]*U1[i,j,k]*U2[i,j,k] +
-                                                gcov[i,j,1,3]*U1[i,j,k]*U3[i,j,k] + 
-                                                gcov[i,j,2,3]*U2[i,j,k]*U3[i,j,k]))
+  alpha = geom['lapse']
+  qsq = (gcov[:,:,None,1,1]*U1**2 + gcov[:,:,None,2,2]*U2**2 +
+         gcov[:,:,None,3,3]*U3**2 + 2.*(gcov[:,:,None,1,2]*U1*U2 +
+                                        gcov[:,:,None,1,3]*U1*U3 +
+                                        gcov[:,:,None,2,3]*U2*U3))
   gamma = np.sqrt(1. + qsq)
 
   ucon[:,:,:,0] = gamma/alpha
@@ -421,17 +367,15 @@ def get_state(hdr, geom, dump):
   ucon[:,:,:,2] = U2 - gamma*alpha*gcon[:,:,None,0,2]
   ucon[:,:,:,3] = U3 - gamma*alpha*gcon[:,:,None,0,3]
 
-  for mu in xrange(4):
+  for mu in range(4):
     ucov[:,:,:,mu] = (ucon[:,:,:,:]*gcov[:,:,None,mu,:]).sum(axis=-1)
 
   bcon[:,:,:,0] = B1*ucov[:,:,:,1] + B2*ucov[:,:,:,2] + B3*ucov[:,:,:,3]
-  bcon[:,:,:,1] = B1 + bcon[:,:,:,0]*ucon[:,:,:,1]/ucon[:,:,:,0]
-  bcon[:,:,:,2] = B2 + bcon[:,:,:,0]*ucon[:,:,:,2]/ucon[:,:,:,0]
-  bcon[:,:,:,3] = B3 + bcon[:,:,:,0]*ucon[:,:,:,3]/ucon[:,:,:,0]
+  bcon[:,:,:,1] = (B1 + bcon[:,:,:,0]*ucon[:,:,:,1])/ucon[:,:,:,0]
+  bcon[:,:,:,2] = (B2 + bcon[:,:,:,0]*ucon[:,:,:,2])/ucon[:,:,:,0]
+  bcon[:,:,:,3] = (B3 + bcon[:,:,:,0]*ucon[:,:,:,3])/ucon[:,:,:,0]
 
-  for mu in xrange(4):
+  for mu in range(4):
     bcov[:,:,:,mu] = (bcon[:,:,:,:]*gcov[:,:,None,mu,:]).sum(axis=-1)
-
-  bcon[:,:,:,0] = dump['B1'][:,:,:]*ucov[:,:,:,1]
 
   return ucon, ucov, bcon, bcov

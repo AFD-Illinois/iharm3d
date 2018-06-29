@@ -20,15 +20,15 @@ import pickle
 FIGX = 20
 FIGY = 10
 SIZE = 40
-NLINES = 20
+NLINES = 10
 
 # For plotting debug, "array-space" plots
 USEARRSPACE = False
 
 LOG_MDOT = False
-MAX_MDOT = 80
+MAX_MDOT = 1
 LOG_PHI = False
-MAX_PHI = 150
+MAX_PHI = 5
 
 # TODO this is a dirty hack
 args_bad = False
@@ -101,17 +101,19 @@ def plot(args):
   # I change this a lot
   #var2_str = 'ucon_r'
   #var2_data = dump['RHO'][:,:,:]*dump['ucon'][:,:,:,1]*dump['gdet'][:,:,None]*hdr['dx2']*hdr['dx3']
-  #var2_min = -0.025
-  #var2_max = 0.025
+  var2_str = 'beta'
+  var2_data = np.log10(dump[var2_str])
+  var2_min = -2
+  var2_max = 2
 
 #  var2_str = 'magnetization'
 #  var2_data = dump['bsq']/dump['RHO']
 #  var2_min = 0
 #  var2_max = 1000
-  var2_str = 'omega'
-  var2_data = np.log10(dump['omega']*4/hdr['a'])
-  var2_min = -2
-  var2_max = 2
+#  var2_str = 'omega'
+#  var2_data = np.log10(dump['omega']*4/hdr['a'])
+#  var2_min = -2
+#  var2_max = 2
 
 
   ax = plt.subplot(2,4,5)
@@ -158,8 +160,8 @@ def plot(args):
     ax = plt.subplot(4,2,4)
     bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', ylim=[10**(-1),MAX_PHI], logy=LOG_PHI)
     
-    ax = plt.subplot(4,2,6)
-    bplt.diag_plot(ax, diag, dump, 'sigma_max', 'Max magnetization', ylim=None, logy=False)
+    #ax = plt.subplot(4,2,6)
+    #bplt.diag_plot(ax, diag, dump, 'sigma_max', 'Max magnetization', ylim=None, logy=False)
     
     #ax = plt.subplot(4,2,8)
     #bplt.diag_plot(ax, diag, dump, 'egas', 'Gas energy', ylim=None, logy=False)
