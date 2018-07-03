@@ -8,60 +8,19 @@
 
 #include "decs.h"
 
-// Performs the slope-limiting for the numerical flux calculation
-inline double slope_lim(double y1, double y2, double y3)
-{
-  double Dqm, Dqp, Dqc, s;
+#if RECONSTRUCTION == LINEAR
+#define RECON_ALGO linear_mc
+#elif RECONSTRUCTION == PPM
+#error "PPM currently broken!"
+#elif RECONSTRUCTION == WENO
+#define RECON_ALGO weno
+#elif RECONSTRUCTION == MP5
+#define RECON_ALGO mp5
+#else
+#error "Reconstruction not specified!"
+#endif
 
-  // Woodward, or monotonized central, slope limiter
-  if (lim == MC) {
-    Dqm = 2. * (y2 - y1);
-    Dqp = 2. * (y3 - y2);
-    Dqc = 0.5 * (y3 - y1);
-    s = Dqm * Dqp;
-    if (s <= 0.)
-      return 0.;
-    else {
-      if (fabs(Dqm) < fabs(Dqp) && fabs(Dqm) < fabs(Dqc))
-        return (Dqm);
-      else if (fabs(Dqp) < fabs(Dqc))
-        return (Dqp);
-      else
-        return (Dqc);
-    }
-  }
-
-  // van Leer slope limiter
-  else if (lim == VANL) {
-    Dqm = (y2 - y1);
-    Dqp = (y3 - y2);
-    s = Dqm * Dqp;
-    if (s <= 0.)
-      return 0.;
-    else
-      return (2. * s / (Dqm + Dqp));
-  }
-
-  // Minmod slope limiter (crude but robust)
-  else if (lim == MINM) {
-    Dqm = (y2 - y1);
-    Dqp = (y3 - y2);
-    s = Dqm * Dqp;
-    if (s <= 0.)
-      return 0.;
-    else if (fabs(Dqm) < fabs(Dqp))
-      return Dqm;
-    else
-      return Dqp;
-  }
-
-  fprintf(stderr, "unknown slope limiter\n");
-  exit(10);
-
-  return (0.);
-}
-
-inline void linear_mc(double x1, double x2, double x3, double *lout, double *rout)
+inline void linear_mc(double unused1, double x1, double x2, double x3, double unused2, double *lout, double *rout)
 {
   double Dqm,Dqp,Dqc,s;
 
@@ -249,198 +208,50 @@ inline void mp5(double x1, double x2, double x3, double x4, double x5, double *l
 }
 #undef MINMOD
 
-void reconstruct_lr_lin(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
-{
-  if (dir == 1) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-	JSLOOP(-1, N2) {
-	  ISLOOP(-1, N1) {
-	    linear_mc (S->P[ip][k][j][i - 1], S->P[ip][k][j][i],
-		       S->P[ip][k][j][i + 1], &(Pl[ip][k][j][i]),
-		       &(Pr[ip][k][j][i]));
-	  }
-	}
-      }
-    }
-  } else if (dir == 2) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-	JSLOOP(-1, N2) {
-	  ISLOOP(-1, N1) {
-	    linear_mc (S->P[ip][k][j - 1][i], S->P[ip][k][j][i],
-		       S->P[ip][k][j + 1][i], &(Pl[ip][k][j][i]),
-		       &(Pr[ip][k][j][i]));
-	  }
-	}
-      }
-    }
-  } else if (dir == 3) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-	JSLOOP(-1, N2) {
-	  ISLOOP(-1, N1) {
-	    linear_mc (S->P[ip][k - 1][j][i], S->P[ip][k][j][i],
-		       S->P[ip][k + 1][j][i], &(Pl[ip][k][j][i]),
-		       &(Pr[ip][k][j][i]));
-	  }
-	}
-      }
-    }
-  }
-}
-
-void reconstruct_lr_par(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
-{
-  if (dir == 1) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(-1, N2) {
-          ISLOOP(-1, N1) {
-            para(S->P[ip][k][j][i-2], S->P[ip][k][j][i-1], S->P[ip][k][j][i],
-                 S->P[ip][k][j][i+1], S->P[ip][k][j][i+2], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
-          }
-        }
-      }
-    }
-  } else if (dir == 2) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(-1, N2) {
-          ISLOOP(-1, N1) {
-            para(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
-                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
-          }
-        }
-      }
-    }
-  } else if (dir == 3) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(-1, N2) {
-          ISLOOP(-1, N1) {
-            para(S->P[ip][k-2][j][i], S->P[ip][k-1][j][i], S->P[ip][k][j][i],
-                 S->P[ip][k+1][j][i], S->P[ip][k+2][j][i], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
-          }
-        }
-      }
-    }
-  }
-}
-
-void reconstruct_lr_weno(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
-{
-  if (dir == 1) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(-1, N2) {
-          ISLOOP(-1, N1) {
-            weno(S->P[ip][k][j][i-2], S->P[ip][k][j][i-1], S->P[ip][k][j][i],
-                 S->P[ip][k][j][i+1], S->P[ip][k][j][i+2], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
-          }
-        }
-      }
-    }
-  } else if (dir == 2) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(-1, N2) {
-          ISLOOP(-1, N1) {
-            weno(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
-                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
-          }
-        }
-      }
-    }
-  } else if (dir == 3) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(-1, N2) {
-          ISLOOP(-1, N1) {
-            weno(S->P[ip][k-2][j][i], S->P[ip][k-1][j][i], S->P[ip][k][j][i],
-                 S->P[ip][k+1][j][i], S->P[ip][k+2][j][i], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
-          }
-        }
-      }
-    }
-  } // PLOOP
-}
-
-void reconstruct_lr_mp5(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
-{
-  if (dir == 1) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(-1, N2) {
-          ISLOOP(-1, N1) {
-            mp5(S->P[ip][k][j][i-2], S->P[ip][k][j][i-1], S->P[ip][k][j][i],
-                 S->P[ip][k][j][i+1], S->P[ip][k][j][i+2], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
-          }
-        }
-      }
-    }
-  } else if (dir == 2) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(-1, N2) {
-          ISLOOP(-1, N1) {
-            mp5(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
-                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
-          }
-        }
-      }
-    }
-  } else if (dir == 3) {
-#pragma omp parallel for simd collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(-1, N2) {
-          ISLOOP(-1, N1) {
-            mp5(S->P[ip][k-2][j][i], S->P[ip][k-1][j][i], S->P[ip][k][j][i],
-                 S->P[ip][k+1][j][i], S->P[ip][k+2][j][i], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
-          }
-        }
-      }
-    }
-  }
-}
-
-// TODO since dispatched once, make RECONSTRUCTION a runtime variable
+// Use the pre-processor for poor man's multiple dispatch
 void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
   timer_start(TIMER_RECON);
-  #if RECONSTRUCTION == LINEAR
-    reconstruct_lr_lin(S, Pl, Pr, dir);
-  #elif RECONSTRUCTION == PPM
-    reconstruct_lr_par(S, Pl, Pr, dir);
-  #elif RECONSTRUCTION == WENO
-    reconstruct_lr_weno(S, Pl, Pr, dir);
-  #elif RECONSTRUCTION == MP5
-    reconstruct_lr_mp5(S, Pl, Pr, dir);
-  #else
-    fprintf(stderr, "Reconstruction algorithm not specified!\n");
-    exit(-1);
-  #endif
+  if (dir == 1) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
+      KSLOOP(-1, N3) {
+        JSLOOP(-1, N2) {
+          ISLOOP(-1, N1) {
+            RECON_ALGO(S->P[ip][k][j][i-2], S->P[ip][k][j][i-1], S->P[ip][k][j][i],
+                 S->P[ip][k][j][i+1], S->P[ip][k][j][i+2], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
+    }
+  } else if (dir == 2) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
+      KSLOOP(-1, N3) {
+        JSLOOP(-1, N2) {
+          ISLOOP(-1, N1) {
+            RECON_ALGO(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
+    }
+  } else if (dir == 3) {
+#pragma omp parallel for simd collapse(3)
+    PLOOP {
+      KSLOOP(-1, N3) {
+        JSLOOP(-1, N2) {
+          ISLOOP(-1, N1) {
+            RECON_ALGO(S->P[ip][k-2][j][i], S->P[ip][k-1][j][i], S->P[ip][k][j][i],
+                 S->P[ip][k+1][j][i], S->P[ip][k+2][j][i], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
+    }
+  }
   timer_stop(TIMER_RECON);
 }
 
