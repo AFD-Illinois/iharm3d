@@ -8,26 +8,16 @@
 
 #include "decs.h"
 
-void fixup1gamma(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
-
 // Apply floors to density, internal energy
-// TODO can this be made faster w/more or less vectorization?
+// TODO make this faster with masks
 void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
 
-  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
-
 #pragma omp parallel for collapse(3)
   ZLOOP fixup1zone(G, S, i, j, k);
 
-#pragma omp parallel for collapse(3)
-  ZLOOP fixup1gamma(G, S, i, j, k);
-
-  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
-
   timer_stop(TIMER_FIXUP);
-
 }
 
 inline void ucon_to_utcon(struct GridGeom *G, int i, int j, double ucon[NDIM], double utcon[NDIM])
@@ -74,51 +64,36 @@ inline double ut_calc_3vel(struct GridGeom *G, int i, int j, double vcon[NDIM])
 #define UORHOMAX (50.)
 inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
-  double rhoflr, uflr;
+  double rhoflr, uflr, f;
   double rhoscal, uscal;
 
-  #if METRIC == MKS
+#if METRIC == MKS
   double r, th, X[NDIM];
   coord(i, j, k, CENT, X);
   bl_coord(X, &r, &th);
 
   // ORIGINAL FLOORS
-  /*rhoscal = pow(r,-1.5);
-  uscal = rhoscal/r;
-  rhoflr = RHOMIN*rhoscal;
-  uflr = UUMIN*uscal;
-  if (rhoflr < RHOMINLIMIT) rhoflr = RHOMINLIMIT;
-  if (uflr < UUMINLIMIT) uflr = UUMINLIMIT;
-  pv[RHO] = MY_MAX(rhoflr, pv[RHO]);
-  pv[UU] = MY_MAX(uflr, pv[UU]);
-  if (mhd_gamma_calc(pv, geom, &gamma)) {
-    pflag[k][j][i] = -333;
-  } else {
-    if (gamma > GAMMAMAX) {
-      f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
-      pv[U1] *= f;
-      pv[U2] *= f;
-      pv[U3] *= f;
-    }
-  }
-  return;*/
+  //rhoscal = pow(r,-1.5);
+  //uscal = rhoscal/r;
+  //pv[RHO] = MY_MAX(rhoflr, pv[RHO]);
+  //pv[UU] = MY_MAX(uflr, pv[UU]);
 
   // Classic harm floors
   rhoscal = pow(r, -2.);
   uscal = pow(rhoscal, gam);
   rhoflr = RHOMIN*rhoscal;
   uflr = UUMIN*uscal;
-  #elif METRIC == MINKOWSKI
+#elif METRIC == MINKOWSKI
   rhoscal = 1.e-2;
   uscal = 1.e-2;
   rhoflr = RHOMIN*rhoscal;
   uflr = UUMIN*uscal;
-  #endif
+#endif
   rhoflr = MY_MAX(rhoflr, RHOMINLIMIT);
   uflr = MY_MAX(uflr, UUMINLIMIT);
 
-  // Enhance floors in case of large magnetic energy density
-  // Got state already -- see above
+  // Higher floors for large field
+  get_state(G, S, i, j, k, CENT);
   double bsq = bsq_calc(S, i, j, k);
   rhoflr = MY_MAX(rhoflr, bsq/BSQORHOMAX);
   uflr = MY_MAX(uflr, bsq/BSQOUMAX);
@@ -129,7 +104,6 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     double trans = 10.*bsq/MY_MIN(S->P[RHO][k][j][i], S->P[UU][k][j][i]) - 1.;
 
     if (trans > 0.) { // Strongly magnetized region; use drift frame floors
-
       // Preserve pre-floor primitives
       double pv_prefloor[NVAR];
       PLOOP pv_prefloor[ip] = S->P[ip][k][j][i];
@@ -149,14 +123,14 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
       double ucon[NDIM], ucon_dr[NDIM]; // TODO ucon name is reused for ut*vcon below
       DLOOP1 {
-		ucon[mu] = S->ucon[mu][k][j][i];
-		ucon_dr[mu] = gamma
-			* (S->ucon[mu][k][j][i] + betapar * S->bcon[mu][k][j][i]);
+	ucon[mu] = S->ucon[mu][k][j][i];
+	ucon_dr[mu] = gamma
+	    * (S->ucon[mu][k][j][i] + betapar * S->bcon[mu][k][j][i]);
       }
 
       double bcon_local[NDIM], bcov_local[NDIM];
       DLOOP1 {
-    	bcon_local[mu] = (mu == 0) ? 0 : S->P[B1 - 1 + mu][k][j][i];
+	bcon_local[mu] = (mu == 0) ? 0 : S->P[B1 - 1 + mu][k][j][i];
       }
 
       double gcov_local[NDIM][NDIM];
@@ -191,7 +165,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
       // Convert 3-velocity to relative 4-velocity and store in primitives
       for (int mu = 1; mu < NDIM; mu++) {
-	    S->P[mu+UU][k][j][i] = utcon[mu]*trans + pv_prefloor[mu+UU]*(1. - trans);
+	  S->P[mu+UU][k][j][i] = utcon[mu]*trans + pv_prefloor[mu+UU]*(1. - trans);
       }
     } else { // Weakly magnetized region; use normal observer frame floors
 
@@ -204,11 +178,11 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       // TODO come back to this and re-think larger architecture
       double P_bkp[NVAR], U_bkp[NVAR];
       PLOOP {
-		P_bkp[ip] = S->P[ip][k][j][i];
-		U_bkp[ip] = S->U[ip][k][j][i];
+	P_bkp[ip] = S->P[ip][k][j][i];
+	U_bkp[ip] = S->U[ip][k][j][i];
 
-		S->P[ip][k][j][i] = Padd[ip];
-		S->U[ip][k][j][i] = 0;
+	S->P[ip][k][j][i] = Padd[ip];
+	S->U[ip][k][j][i] = 0;
       }
 
       double Uadd[NVAR];
@@ -216,26 +190,25 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
 
       PLOOP {
-		Uadd[ip] = S->U[ip][k][j][i];
+	Uadd[ip] = S->U[ip][k][j][i];
 
-		S->P[ip][k][j][i] = P_bkp[ip];
-		S->U[ip][k][j][i] = U_bkp[ip];
+	S->P[ip][k][j][i] = P_bkp[ip];
+	S->U[ip][k][j][i] = U_bkp[ip];
       }
 
       get_state(G, S, i, j, k, CENT);
       prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
 
       PLOOP {
-		S->U[ip][k][j][i] += Uadd[ip];
-		S->P[ip][k][j][i] += Padd[ip];
+	S->U[ip][k][j][i] += Uadd[ip];
+	S->P[ip][k][j][i] += Padd[ip];
       }
 
-      // TODO Record fails here?
       U_to_P(G, S, i, j, k, CENT);
     }
   }
 
-  #if ELECTRONS
+#if ELECTRONS
   // Reset entropy after floors
   pv[KTOT] = (gam - 1.)*pv[UU]/pow(pv[RHO],gam);
 
@@ -246,25 +219,22 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     pv[UU] = KTOTMAX*pow(pv[RHO],gam)/(gam-1.);
     pv[KTOT] = KTOTMAX;
   }
-  #endif // ELECTRONS
+#endif // ELECTRONS
 
-}
-
-inline void fixup1gamma(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
-{
   // Limit gamma with respect to normal observer
-  // TODO check like mhd_gamma_calc could
   double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
-  if (gamma > GAMMAMAX) {
-	double f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
-	S->P[U1][k][j][i] *= f;
-	S->P[U2][k][j][i] *= f;
-	S->P[U3][k][j][i] *= f;
-  }
+    if (gamma > GAMMAMAX) {
+      f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
+      S->P[U1][k][j][i] *= f;
+      S->P[U2][k][j][i] *= f;
+      S->P[U3][k][j][i] *= f;
+    }
+
+  // For good measure, in case we expect P/u/b to be consistent
+  get_state(G, S, i, j, k, CENT);
 }
 
 // Replace bad points with values interpolated from neighbors
-// Define loop for just fluid. TODO doesn't accomodate changing fluid order
 #define FLOOP for(int ip=0;ip<B1;ip++)
 void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
 {
@@ -277,7 +247,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   }
 
   // Make sure we are not using ill defined corner regions
-#pragma omp parallel for collapse(3)
+  // I don't think 27 iterations is worth OpenMP
   for (int k = 0; k < NG; k++) {
     for (int j = 0; j < NG; j++) {
       for (int i = 0; i < NG; i++) {
@@ -294,11 +264,11 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   }
 
   // Fix the interior points first
-  // TODO this is not strictly deterministic
-  int bad;
+  int bad = 0;
   do {
-	bad = 0;
-#pragma omp parallel for collapse(3) reduction(+:bad)
+    bad = 0;
+    // TODO is this okay? Not /quite/ deterministic...
+//#pragma omp parallel for simd collapse(2) reduction(+:bad)
     ZLOOP {
       if (pflag[k][j][i] == 0) {
         double wsum = 0.;
@@ -330,4 +300,3 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   timer_stop(TIMER_FIXUP);
 }
 #undef FLOOP
-
