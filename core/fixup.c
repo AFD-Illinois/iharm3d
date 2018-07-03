@@ -9,7 +9,7 @@
 #include "decs.h"
 
 // Apply floors to density, internal energy
-// TODO make this faster with masks
+// TODO can this be made faster?
 void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
@@ -72,15 +72,12 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   coord(i, j, k, CENT, X);
   bl_coord(X, &r, &th);
 
-  // ORIGINAL FLOORS
-  //rhoscal = pow(r,-1.5);
-  //uscal = rhoscal/r;
-  //pv[RHO] = MY_MAX(rhoflr, pv[RHO]);
-  //pv[UU] = MY_MAX(uflr, pv[UU]);
-
   // Classic harm floors
   rhoscal = pow(r, -2.);
   uscal = pow(rhoscal, gam);
+  // Very classic floors
+  //rhoscal = pow(r,-1.5);
+  //uscal = rhoscal/r;
   rhoflr = RHOMIN*rhoscal;
   uflr = UUMIN*uscal;
 #elif METRIC == MINKOWSKI
@@ -93,6 +90,13 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   uflr = MY_MAX(uflr, UUMINLIMIT);
 
   // Higher floors for large field
+
+#define OLDFLOORS 0
+#if OLDFLOORS
+  // FLUID FRAME FLOORS
+  S->P[RHO][k][j][i] = MY_MAX(rhoflr, S->P[RHO][k][j][i]);
+  S->P[UU][k][j][i] = MY_MAX(uflr, S->P[UU][k][j][i]);
+#else
   get_state(G, S, i, j, k, CENT);
   double bsq = bsq_calc(S, i, j, k);
   rhoflr = MY_MAX(rhoflr, bsq/BSQORHOMAX);
@@ -178,11 +182,11 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       // TODO come back to this and re-think larger architecture
       double P_bkp[NVAR], U_bkp[NVAR];
       PLOOP {
-	P_bkp[ip] = S->P[ip][k][j][i];
-	U_bkp[ip] = S->U[ip][k][j][i];
+        P_bkp[ip] = S->P[ip][k][j][i];
+        U_bkp[ip] = S->U[ip][k][j][i];
 
-	S->P[ip][k][j][i] = Padd[ip];
-	S->U[ip][k][j][i] = 0;
+        S->P[ip][k][j][i] = Padd[ip];
+        S->U[ip][k][j][i] = 0;
       }
 
       double Uadd[NVAR];
@@ -190,10 +194,10 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
 
       PLOOP {
-	Uadd[ip] = S->U[ip][k][j][i];
+        Uadd[ip] = S->U[ip][k][j][i];
 
-	S->P[ip][k][j][i] = P_bkp[ip];
-	S->U[ip][k][j][i] = U_bkp[ip];
+        S->P[ip][k][j][i] = P_bkp[ip];
+        S->U[ip][k][j][i] = U_bkp[ip];
       }
 
       get_state(G, S, i, j, k, CENT);
@@ -207,6 +211,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       U_to_P(G, S, i, j, k, CENT);
     }
   }
+#endif
 
 #if ELECTRONS
   // Reset entropy after floors
@@ -223,15 +228,17 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
   // Limit gamma with respect to normal observer
   double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
-    if (gamma > GAMMAMAX) {
-      f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
-      S->P[U1][k][j][i] *= f;
-      S->P[U2][k][j][i] *= f;
-      S->P[U3][k][j][i] *= f;
-    }
 
-  // For good measure, in case we expect P/u/b to be consistent
+  if (gamma > GAMMAMAX) {
+    double f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
+    S->P[U1][k][j][i] *= f;
+    S->P[U2][k][j][i] *= f;
+    S->P[U3][k][j][i] *= f;
+  }
+
+  // Get state to have consistent P,u/b
   get_state(G, S, i, j, k, CENT);
+
 }
 
 // Replace bad points with values interpolated from neighbors
@@ -258,7 +265,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
         pflag[k][j+N2+NG][i+N1+NG] = 0;
         pflag[k+N3+NG][j][i+N1+NG] = 0;
         pflag[k+N3+NG][j+N2+NG][i] = 0;
-        pflag[k+N3-1+NG][j+N2+NG][i+N1+NG] = 0;
+        pflag[k+N3+NG][j+N2+NG][i+N1+NG] = 0;
       }
     }
   }
