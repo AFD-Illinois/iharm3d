@@ -23,6 +23,16 @@ double bl_gdet_func(double r, double th);
 void bl_gcov_func(double r, double th, double gcov[][NDIM]);
 void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 
+static double beta;
+static double rin, rmax;
+void set_problem_params()
+{
+  set_param("rin", &rin);
+  set_param("rmax", &rmax);
+
+  set_param("beta", &beta);
+}
+
 void init(struct GridGeom *G, struct FluidState *S)
 {
   double r, th, sth, cth;
@@ -30,71 +40,41 @@ void init(struct GridGeom *G, struct FluidState *S)
   double X[NDIM];
 
   // Disk interior
-  double l, rin, lnh, expm2chi, up1;
+  double l, lnh, expm2chi, up1;
   double DD, AA, SS, thin, sthin, cthin, DDin, AAin, SSin;
   double kappa, hm1;
 
   // Magnetic field
   static double A[N1 + 2*NG][N2 + 2*NG];
-  double rho_av, rhomax, umax, beta, bsq_ij, bsq_max, norm, q,
+  double rho_av, rhomax, umax, bsq_ij, bsq_max, norm, q,
       beta_act;
-  double rmax ;
 
   // Adiabatic index
-  //gam = 13./9.;
-  gam = 4./3;
-  #if ELECTRONS
-  game = 4./3.;
-  gamp = 5./3.;
-  fel0 = 1.;
-  #else
+#if !ELECTRONS
   tp_over_te = 3.;
-  #endif
+#endif
 
   // Fishbone-Moncrief parameters
-  a = 0.9375;
-  rin = 6.;
-  rmax = 12.;
   l = lfish_calc(rmax);
   kappa = 1.e-3;
-
-  // Plasma beta for initial magnetic field
-  beta = 1.e2;
 
   // Numerical parameters
   lim = MC;
   failed = 0;
-  cour = 0.4;
-  dt = 1.e-8;
+
   R0 = 0.0;
   Rhor = (1. + sqrt(1. - a*a));
   double z1 = 1 + pow(1 - a*a,1./3.)*(pow(1+a,1./3.) + pow(1-a,1./3.));
   double z2 = sqrt(3*a*a + z1*z1);
   Risco = 3 + z2 - sqrt((3-z1)*(3 + z1 + 2*z2));
-  Rout = 50.;
-  #if RADIATION
-  Rout_rad = 40.;
-  numin = 1.e8;
-  numax = 1.e20;
-  tune_emiss = 1.e5;
-  tune_scatt = 1.;
-  #endif
-  tf = 10.0;
-  hslope = 0.3;
 
   zero_arrays();
   set_grid(G);
 
-  printf("grid set\n");
-  t = 0.;
-
-  // Output choices
-  DTd = 2.0;   // Dump interval
-  DTl = 0.5;  // Log interval
-  DTr = 200;  // Restart interval, in timesteps
-  DTp = 50;   // Performance interval, in timesteps
+  if (mpi_io_proc()) printf("grid set\n");
 
   // Diagnostic counters
+  t = 0.;
   dump_cnt = 0;
   rdump_cnt = 0;
 
@@ -191,7 +171,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
       S->P[RHO][k][j][i] = rho;
       if (rho > rhomax) rhomax = rho;
-      S->P[UU][k][j][i] = u * (1. + 0.0 * (get_random() - 0.5)); //4.0e-2
+      S->P[UU][k][j][i] = u;
       if (u > umax && r > rin) umax = u;
       S->P[U1][k][j][i] = ur;
       S->P[U2][k][j][i] = uh;
@@ -216,13 +196,11 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
   umax /= rhomax;
   rhomax = 1.;
-
-  //?
   fixup(G, S);
   set_bounds(G, S);
 
   // first find corner-centered vector potential
-  ZSLOOP(0, 0, 0, N2, 0, N1) A[i][j] = 0.;
+  ZSLOOP(0, 0, -NG, N2+NG-1, -NG, N1+NG-1) A[i][j] = 0.;
   ZSLOOP(0, 0, 0, N2, 0, N1) {
     /* vertical field version */
     /*
@@ -235,8 +213,7 @@ void init(struct GridGeom *G, struct FluidState *S)
     /* field-in-disk version */
     /* flux_ct */
     rho_av = 0.25*(S->P[RHO][NG][j][i] + S->P[RHO][NG][j][i-1] +
-                   S->P[RHO][NG][j-1][i] + S->P[RHO][NG][j-1][i-1])
-      *(1. + 0.0*(get_random() - 0.5));
+                   S->P[RHO][NG][j-1][i] + S->P[RHO][NG][j-1][i-1]);
 
     q = rho_av/rhomax - 0.2;
     if (q > 0.) A[i][j] = q;
@@ -281,9 +258,9 @@ void init(struct GridGeom *G, struct FluidState *S)
   bsq_max = mpi_max(bsq_max);
   beta_act = (gam - 1.)*umax/(0.5*bsq_max);
 
-  #if ELECTRONS
+#if ELECTRONS
   init_electrons();
-  #endif
+#endif
 
   // Enforce boundary conditions
   fixup(G, S);
@@ -345,7 +322,7 @@ void coord_transform(struct GridGeom *G, struct FluidState *S, int i, int j,
   for (int mu = 0; mu < NDIM; mu++) {
     ucon[mu] = tmp[mu];
   }
-
+	
   // This is ucon in KS coords
 
   // Transform to KS' coords
@@ -474,3 +451,4 @@ void bl_gcon_func(double r, double th, double gcon[NDIM][NDIM])
   gcon[2][2] = 1./(r2*mu);
   gcon[3][3] = (1. - 2./(r*mu))/(r2*sth*sth*DD);
 }
+
