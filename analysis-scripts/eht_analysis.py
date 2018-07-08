@@ -20,8 +20,6 @@ import psutil
 FIGX = 14
 FIGY = 10
 #SIZE = 40
-NTHREADS = psutil.cpu_count(logical=False)
-#NTHREADS = 1
 THMIN = np.pi/3.
 THMAX = 2.*np.pi/3.
 
@@ -36,6 +34,13 @@ dumps = io.get_dumps_reduced(path)
 
 hdr = io.load_hdr(dumps[0])
 geom = io.load_geom(os.path.join(path,'grid.h5'))
+
+# Limit threads for 256^3 problem due to memory
+# TODO guess NTHREADS better (96e9/N^3*8?)
+if hdr['n1'] >= 256:
+  NTHREADS = 12
+else:
+  NTHREADS = psutil.cpu_count(logical=False)
 
 # Calculate jmin, jmax
 ths = geom['th'][-1,:,0]
@@ -166,7 +171,8 @@ out_full = {}
 
 # SERIAL
 #for n in xrange(len(dumps)):
-#  avg_dump(n)
+#  out = avg_dump(n)
+
 
 # PARALLEL
 import multiprocessing
