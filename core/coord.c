@@ -254,7 +254,7 @@ void set_grid_loc(struct GridGeom *G, int i, int j, int k, int loc)
 
 void zero_arrays()
 {
-  ZSLOOP(-NG, N3-1 + NG, -NG, N2-1 + NG, -NG, N1-1 + NG) {
+  ZLOOPALL {
     pflag[k][j][i] = 0;
     fail_save[k][j][i] = 0;
   }

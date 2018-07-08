@@ -70,7 +70,7 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
       Qcon[mu] += G->gcon[CENT][mu][nu][j][i]*Qcov[nu];
     }
   }
-  
+
   //Bsq = 0.; for (int mu = 0; mu < NDIM; mu++) Bsq += Bcon[mu]*Bcov[mu];
   //raise_grid(Qcov, Qcon, G, i, j, k, loc);
   //QdB = 0.; for (int i = 0; i < NDIM; i++) QdB += Qcov[i]*Bcon[i];
@@ -106,8 +106,7 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   // Numerical rootfinding
   // Take guesses from primitives.
   Wp = Wp_func(G, S, i, j, k, loc, &eflag);
-  //Wp = Wp_func(prim, geom, &eflag);
-  if (eflag) 
+  if (eflag)
     return(eflag);
 
   double dedW, dedW2, f, errp, errm, Wpm, Wpp, h;
@@ -143,14 +142,14 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
     // times the current value
     Wp += MY_MAX( MY_MIN(dW, 2.0*Wp), -0.5*Wp);
 
-    if (fabs(dW/Wp) < ERRTOL) 
+    if (fabs(dW/Wp) < ERRTOL)
       break;
 
     err = err_eqn(Bsq, D, Ep, QdB, Qtsq, Wp, &eflag);
   }
 
   // Failure to converge; do not set primitives other than B
-  if(iter == ITERMAX) 
+  if(iter == ITERMAX)
     return(1);
 
   // Find utsq, gamma, rho0 from Wp

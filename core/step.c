@@ -38,33 +38,31 @@ void step(struct GridGeom *G, struct FluidState *S)
   // Predictor setup
   advance_fluid(G, S, S, Stmp, 0.5*dt);
 
-  #if ELECTRONS
+#if ELECTRONS
   heat_electrons(P, Ph, 0.5*dt);
-  #endif
+#endif
 
+  // Fixup routines: smooth over outlier zones
   fixup(G, Stmp);
-
   fixup_utoprim(G, Stmp);
-
-  #if ELECTRONS
+#if ELECTRONS
   fixup_electrons(Ph);
-  #endif
+#endif
 
   set_bounds(G, Stmp);
 
   // Corrector step
   double ndt = advance_fluid(G, S, Stmp, S, dt);
 
-  #if ELECTRONS
+#if ELECTRONS
   heat_electrons(Ph, P, dt);
-  #endif
+#endif
 
   fixup(G, S);
   fixup_utoprim(G, S);
-
-  #if ELECTRONS
+#if ELECTRONS
   fixup_electrons(P);
-  #endif
+#endif
 
   set_bounds(G, S);
 
@@ -88,11 +86,7 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 {
   static GridPrim dU;
 
-  // TODO this crashes ICC. Why.
-//  #pragma omp parallel for collapse(3)
-//  PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
-
-  // In the meantime...
+  // Work around ICC 18.0.2 bug in assigning to pointers to structs
   memcpy(&(Sf->P),&(Si->P),sizeof(GridPrim));
 
 
@@ -110,23 +104,18 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);
-  #pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
   ZLOOP {
     get_fluid_source(G, Ss, i, j, k, dU);
   }
 
-  // Can remove this later after appropriate initialization
-//  #pragma omp parallel for collapse(3)
-//  ZLOOP {
-//    get_state(G, Si, i, j, k, CENT);
-//  }
-
+  // Can this be removed?
   get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
 
   prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);
 
+#pragma omp parallel for collapse(4)
   PLOOP {
-    #pragma omp parallel for collapse(3)
     ZLOOP {
       Sf->U[ip][k][j][i] = Si->U[ip][k][j][i] +
         Dt*((F->X1[ip][k][j][i] - F->X1[ip][k][j][i+1])/dx[1] +
@@ -138,21 +127,17 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   timer_stop(TIMER_UPDATE_U);
 
   timer_start(TIMER_U_TO_P);
-  #pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
   ZLOOP {
     pflag[k][j][i] = U_to_P(G, Sf, i, j, k, CENT);
   }
   timer_stop(TIMER_U_TO_P);
 
   // Not complete without setting four-vectors
-//  #pragma omp parallel for collapse(3)
-//  ZLOOP {
-//    get_state(G, Sf, i, j, k, CENT);
-//  }
   get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
 
-  #pragma omp parallel for collapse(3)
-  ZLOOP {
+#pragma omp parallel for simd collapse(2)
+  ZLOOPALL {
     fail_save[k][j][i] = pflag[k][j][i];
   }
   //timer_stop(TIMER_UPDATE);
