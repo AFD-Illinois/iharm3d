@@ -142,7 +142,6 @@ def avg_dump(n):
   out['Phi'] = 0.5*(np.fabs(norm*dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
   
   out['omega_th'] = dump['omega'][iEH,:N2/2,:].mean(axis=-1) + dump['omega'][iEH,:N2/2-1:-1,:].mean(axis=-1)
-  out['omega_th'] /= N3*2
   out['omega_th_av'] = dump['omega'][iEH:iEH+5,:N2/2,:].mean(axis=-1).mean(axis=0)# + dump['omega'][iEH:iEH+5,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
   #out['omega_th_av'] /= N3*2*5
   out['omega_th_5'] = dump['omega'][:10,:N2/2,:].mean(axis=-1).mean(axis=0)# + dump['omega'][:10,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
@@ -183,6 +182,7 @@ pool = multiprocessing.Pool(NTHREADS)
 signal.signal(signal.SIGINT, original_sigint_handler)
 try:
   out_list = pool.map(avg_dump, range(len(dumps)))  # This is /real big/ in memory
+  print out_list[0].keys()
   for key in out_list[0].keys():
     if key in avg_keys:
       out_full[key] = np.zeros((ND,out_list[0][key].size))
