@@ -449,7 +449,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir,
 void bcon_calc(struct FluidState *S, int i, int j, int k);
 void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double *mhd);
 void get_fluid_source(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k, GridPrim dU);
+  int k, GridPrim *dU);
 double bsq_calc(struct FluidState *S, int i, int j, int k);
 void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc);
