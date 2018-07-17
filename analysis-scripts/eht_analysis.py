@@ -20,8 +20,6 @@ import psutil
 FIGX = 14
 FIGY = 10
 #SIZE = 40
-NTHREADS = psutil.cpu_count(logical=False)
-#NTHREADS = 1
 THMIN = np.pi/3.
 THMAX = 2.*np.pi/3.
 
@@ -36,6 +34,13 @@ dumps = io.get_dumps_reduced(path)
 
 hdr = io.load_hdr(dumps[0])
 geom = io.load_geom(os.path.join(path,'grid.h5'))
+
+# Limit threads for 256^3 problem due to memory
+# TODO guess NTHREADS better (96e9/N^3*8?)
+if hdr['n1'] >= 256:
+  NTHREADS = 12
+else:
+  NTHREADS = psutil.cpu_count(logical=False)
 
 # Calculate jmin, jmax
 ths = geom['th'][-1,:,0]
@@ -137,7 +142,6 @@ def avg_dump(n):
   out['Phi'] = 0.5*(np.fabs(norm*dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
   
   out['omega_th'] = dump['omega'][iEH,:N2/2,:].mean(axis=-1) + dump['omega'][iEH,:N2/2-1:-1,:].mean(axis=-1)
-  out['omega_th'] /= N3*2
   out['omega_th_av'] = dump['omega'][iEH:iEH+5,:N2/2,:].mean(axis=-1).mean(axis=0)# + dump['omega'][iEH:iEH+5,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
   #out['omega_th_av'] /= N3*2*5
   out['omega_th_5'] = dump['omega'][:10,:N2/2,:].mean(axis=-1).mean(axis=0)# + dump['omega'][:10,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
@@ -166,7 +170,8 @@ out_full = {}
 
 # SERIAL
 #for n in xrange(len(dumps)):
-#  avg_dump(n)
+#  out = avg_dump(n)
+
 
 # PARALLEL
 import multiprocessing
@@ -177,6 +182,7 @@ pool = multiprocessing.Pool(NTHREADS)
 signal.signal(signal.SIGINT, original_sigint_handler)
 try:
   out_list = pool.map(avg_dump, range(len(dumps)))  # This is /real big/ in memory
+  print out_list[0].keys()
   for key in out_list[0].keys():
     if key in avg_keys:
       out_full[key] = np.zeros((ND,out_list[0][key].size))

@@ -17,6 +17,10 @@ import os
 import plot as bplt
 import pickle
 
+import multiprocessing
+import signal
+import psutil
+
 FIGX = 20
 FIGY = 10
 SIZE = 40
@@ -25,10 +29,20 @@ NLINES = 10
 # For plotting debug, "array-space" plots
 USEARRSPACE = False
 
-LOG_MDOT = False
-MAX_MDOT = 1
-LOG_PHI = False
-MAX_PHI = 5
+MAD = False
+if MAD:
+  LOG_MDOT = False
+  MAX_MDOT = 80
+  LOG_PHI = False
+  MAX_PHI = 100
+else:
+  # SANE
+  LOG_MDOT = False
+  MAX_MDOT = 1
+  LOG_PHI = False
+  MAX_PHI = 5
+  
+
 
 # TODO this is a dirty hack
 args_bad = False
@@ -60,11 +74,19 @@ util.make_dir(FRAMEDIR)
 hdr = io.load_hdr(files[0])
 geom = io.load_geom(gridfile)
 
+if hdr['n1'] >= 256:
+  nthreads = 12
+else:
+  nthreads = psutil.cpu_count(logical=False)
+
+print 'Number of threads: %i' % nthreads
+
+
 # Load diagnostics from HARM itself
 #diag = io.load_log(hdr, os.path.join(path, "log.out"))
 
 # Or from  Python post-analysis
-# TODO better loading here and above
+# TODO make this an option
 diag = pickle.load(open("eht_out.p", 'rb'))
 
 def plot(args):
@@ -182,14 +204,6 @@ if debug:
     plot(0)
     plot(100)
     exit(0)
-
-import multiprocessing
-import signal
-import psutil
-
-#nthreads = 40
-nthreads = psutil.cpu_count(logical=False)
-print 'Number of threads: %i' % nthreads
 
 original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
 pool = multiprocessing.Pool(nthreads)
