@@ -9,13 +9,16 @@
 /*******************************************************************************
     GLOBAL VARIABLES
 *******************************************************************************/
-// TODO encapsulate better maybe
 
 char dumpdir[2048], restartdir[2048];
+#pragma once
 
+// Zone flags.  TODO move these to the heap
 GridInt pflag;
 GridInt fail_save;
 
+// Parameters
+// physical
 double a;
 double gam;
 double M_unit;
@@ -23,6 +26,7 @@ double Rhor;
 double Risco;
 double tp_over_te;
 
+// geometry
 double Rin, Rout, hslope, R0;
 #if POLYTH
 double poly_norm, poly_xt, poly_alpha, mks_smooth;
@@ -37,6 +41,7 @@ int istart, istop, jstart, jstop;
 int nstep;
 int is_restart;
 
+// fluid dumps
 double DTd;
 double DTf;
 double DTl;
@@ -49,6 +54,7 @@ double tdump, tlog;
 int failed;
 int lim;
 
+// derived logged output
 double mdot, edot, ldot;
 double mdot_eh, edot_eh, ldot_eh;
 int icurr, jcurr, kcurr;

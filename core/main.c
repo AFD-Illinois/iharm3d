@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
   // Read command line arguments
 
-  char pfname[STRLEN];
+  char pfname[STRLEN] = "param.dat";
   char outputdir[STRLEN] = ".";
   for (int n = 0; n < argc; n++) {
     // Check for argv[n] of the form '-*'
@@ -50,13 +50,9 @@ int main(int argc, char *argv[])
         strcpy(outputdir, argv[++n]);
       }
       if (*(argv[n]+1) == 'p') { // Set parameter file path
-	strcpy(pfname, argv[++n]);
+        strcpy(pfname, argv[++n]);
       }
     }
-  }
-  // Default parameter file
-  if (strlen(pfname) == 1) {
-      strcpy(pfname, "param.dat");
   }
 
   // Read parameter file before we move away from invocation dir
@@ -90,8 +86,8 @@ int main(int argc, char *argv[])
     #pragma omp master
     {
       nthreads = omp_get_num_threads();
-    } // omp master
-  } // omp parallel
+    }
+  }
 
   // Initialize global variables and arrays
   init_io();
@@ -102,7 +98,6 @@ int main(int argc, char *argv[])
 
   // Perform initializations, either directly or via checkpoint
   is_restart = restart_init(G, S);
-  time_init();
   if (!is_restart) {
     init(G, S);
     tdump = DTd;
@@ -123,6 +118,8 @@ int main(int argc, char *argv[])
 *******************************************************************************/
   if (mpi_io_proc())
     fprintf(stdout, "\nEntering main loop\n");
+
+  time_init();
   int dumpThisStep = 0;
   while (t < tf) {
     dumpThisStep = 0;
