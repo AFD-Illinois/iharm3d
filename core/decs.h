@@ -71,6 +71,14 @@
 #define COORDSINGFIX 1
 #define SINGSMALL (1.E-20)
 
+// Flags. Can be set in compile with e.g. -DDEBUG=1
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+#ifndef TIMERS
+#define TIMERS 0
+#endif
+
 // I/O format strings
 #define FMT_DBL_OUT "%28.18e"
 #define FMT_INT_OUT "%10d"
@@ -211,8 +219,6 @@ extern GridInt fail_save;
 /*******************************************************************************
     GLOBAL VARIABLES SECTION
 *******************************************************************************/
-// Command line arguments
-extern char dumpdir[2048], restartdir[2048];
 
 // Physics parameters
 extern double a;
@@ -358,6 +364,7 @@ void area_map(int i, int j, int k, GridPrim prim);
 void diag_flux(struct FluidFlux *F);
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k);
+void check_nan(struct FluidState *S, const char* flag);
 
 // electrons.c
 #if ELECTRONS
@@ -422,12 +429,12 @@ void mpi_int_broadcast(int *val);
 void mpi_dbl_broadcast(double *val);
 
 // pack.c
-void pack_write_scalar(double in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, hid_t file_id, hsize_t hdf5_type);
-void pack_write_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, hid_t file_id);
-void pack_write_vector(double in[][N3+2*NG][N2+2*NG][N1+2*NG], int len, const char* name, hid_t file_id, hsize_t hdf5_type);
+void pack_write_scalar(double in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, hsize_t hdf5_type);
+void pack_write_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name);
+void pack_write_vector(double in[][N3+2*NG][N2+2*NG][N1+2*NG], int len, const char* name, hsize_t hdf5_type);
 
-void pack_write_axiscalar(double in[N2+2*NG][N1+2*NG], const char* name, hid_t file_id, hsize_t hdf5_type);
-void pack_write_Gtensor(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], const char* name, hid_t file_id, hsize_t hdf5_type);
+void pack_write_axiscalar(double in[N2+2*NG][N1+2*NG], const char* name, hsize_t hdf5_type);
+void pack_write_Gtensor(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], const char* name, hsize_t hdf5_type);
 
 // params.c
 void set_core_params();
@@ -442,7 +449,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir,
 void bcon_calc(struct FluidState *S, int i, int j, int k);
 void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double *mhd);
 void get_fluid_source(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k, GridPrim dU);
+  int k, GridPrim *dU);
 double bsq_calc(struct FluidState *S, int i, int j, int k);
 void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc);

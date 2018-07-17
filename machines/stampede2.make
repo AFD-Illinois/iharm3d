@@ -1,9 +1,14 @@
 S2TARGET = knl
 
-ifneq (,$(findstring icc,$(shell h5pcc --version)))
+CC = h5cc
 
-	#GSL_DIR = /opt/apps/intel18/gsl/2.3
-	GSL_DIR = /opt/apps/intel17/gsl/2.3
+ifneq (,$(findstring icc,$(shell $(CC) --version)))
+
+	ifneq (,$(findstring 18.0,$(shell $(CC) --version)))
+		GSL_DIR = /opt/apps/intel18/gsl/2.3
+	else
+		GSL_DIR = /opt/apps/intel17/gsl/2.3
+	endif
 
 	ifeq ($(S2TARGET),skx)
 		CFLAGS = -xCORE-AVX512
@@ -16,7 +21,7 @@ ifneq (,$(findstring icc,$(shell h5pcc --version)))
 	MATH_LIB =
 endif
 
-ifneq (,$(findstring gcc,$(shell h5pcc --version)))
+ifneq (,$(findstring gcc,$(shell $(CC) --version)))
 
 	GSL_DIR = /opt/apps/gcc7_1/gsl/2.3/
 

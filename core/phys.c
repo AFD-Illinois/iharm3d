@@ -311,28 +311,22 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
 
 // Source terms for equations of motion
 inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k, GridPrim dU)
+  int k, GridPrim *dU)
 {
   double mhd[NDIM][NDIM];
 
-  mhd_calc(S, i, j, k, 0, mhd[0]);
-  mhd_calc(S, i, j, k, 1, mhd[1]);
-  mhd_calc(S, i, j, k, 2, mhd[2]);
-  mhd_calc(S, i, j, k, 3, mhd[3]);
+  DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]);
 
   // Contract mhd stress tensor with connection
-  PLOOP dU[ip][k][j][i] = 0.;
+  PLOOP (*dU)[ip][k][j][i] = 0.;
 
-  for (int mu = 0; mu < NDIM; mu++) {
-    for (int nu = 0; nu < NDIM; nu++) {
-      dU[UU][k][j][i] += mhd[mu][nu]*G->conn[nu][0][mu][j][i];
-      dU[U1][k][j][i] += mhd[mu][nu]*G->conn[nu][1][mu][j][i];
-      dU[U2][k][j][i] += mhd[mu][nu]*G->conn[nu][2][mu][j][i];
-      dU[U3][k][j][i] += mhd[mu][nu]*G->conn[nu][3][mu][j][i];
-    }
+  // TODO this is some pretty scattered memory access...
+  DLOOP2 {
+    for (int gam = 0; gam < NDIM; gam++)
+      (*dU)[UU+gam][k][j][i] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
   }
 
-  PLOOP dU[ip][k][j][i] *= G->gdet[CENT][j][i];
+  PLOOP (*dU)[ip][k][j][i] *= G->gdet[CENT][j][i];
 }
 
 // Returns b.b (twice magnetic pressure)

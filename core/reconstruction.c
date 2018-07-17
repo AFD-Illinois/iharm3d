@@ -8,6 +8,7 @@
 
 #include "decs.h"
 
+// Play some pre-processor games
 #if RECONSTRUCTION == LINEAR
 #define RECON_ALGO linear_mc
 #elif RECONSTRUCTION == PPM

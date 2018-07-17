@@ -148,9 +148,13 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
     err = err_eqn(Bsq, D, Ep, QdB, Qtsq, Wp, &eflag);
   }
 
+  // TODO TODO WHY DOES I17 FAIL THIS
+
   // Failure to converge; do not set primitives other than B
-  if(iter == ITERMAX)
+  if(iter == ITERMAX) {
+    //if (DEBUG) fprintf(stderr, "ITER_MAX reached\n");
     return(1);
+  }
 
   // Find utsq, gamma, rho0 from Wp
   gamma = gamma_func(Bsq, D, QdB, Qtsq, Wp, &eflag);

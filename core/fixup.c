@@ -8,14 +8,25 @@
 
 #include "decs.h"
 
+#define OLD_FLOORS 0
+#define DRIFT_FLOORS 0
+
 // Apply floors to density, internal energy
-// TODO can this be made faster?
+// TODO can this be made faster?  I may be calling get_state too much
 void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
 
+#if !OLD_FLOORS
+  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
+#endif
+
 #pragma omp parallel for collapse(3)
   ZLOOP fixup1zone(G, S, i, j, k);
+
+#if !OLD_FLOORS
+  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
+#endif
 
   timer_stop(TIMER_FIXUP);
 }
@@ -67,37 +78,40 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   double rhoflr, uflr, f;
   double rhoscal, uscal;
 
-#if METRIC == MKS
-  double r, th, X[NDIM];
-  coord(i, j, k, CENT, X);
-  bl_coord(X, &r, &th);
+  if(METRIC == MKS) {
+    double r, th, X[NDIM];
+    coord(i, j, k, CENT, X);
+    bl_coord(X, &r, &th);
 
-  // Classic harm floors
-  rhoscal = pow(r, -2.);
-  uscal = pow(rhoscal, gam);
-  // Very classic floors
-  //rhoscal = pow(r,-1.5);
-  //uscal = rhoscal/r;
-  rhoflr = RHOMIN*rhoscal;
-  uflr = UUMIN*uscal;
-#elif METRIC == MINKOWSKI
-  rhoscal = 1.e-2;
-  uscal = 1.e-2;
-  rhoflr = RHOMIN*rhoscal;
-  uflr = UUMIN*uscal;
-#endif
+    // Classic harm floors
+    rhoscal = pow(r, -2.);
+    uscal = pow(rhoscal, gam);
+    // Very classic floors
+//    rhoscal = pow(r,-1.5);
+//    uscal = rhoscal/r;
+    rhoflr = RHOMIN*rhoscal;
+    uflr = UUMIN*uscal;
+  } else if (METRIC == MINKOWSKI) {
+    rhoscal = 1.e-2;
+    uscal = 1.e-2;
+    rhoflr = RHOMIN*rhoscal;
+    uflr = UUMIN*uscal;
+  }
+
   rhoflr = MY_MAX(rhoflr, RHOMINLIMIT);
   uflr = MY_MAX(uflr, UUMINLIMIT);
 
-  // Higher floors for large field
-
-#define OLDFLOORS 0
-#if OLDFLOORS
-  // FLUID FRAME FLOORS
-  S->P[RHO][k][j][i] = MY_MAX(rhoflr, S->P[RHO][k][j][i]);
-  S->P[UU][k][j][i] = MY_MAX(uflr, S->P[UU][k][j][i]);
+#if OLD_FLOORS
+  // Fluid frame floors: don't conserve momentum
+  if (S->P[RHO][k][j][i] < rhoflr) {
+    S->P[RHO][k][j][i] = rhoflr;
+  }
+  if (S->P[UU][k][j][i] < uflr) {
+    S->P[UU][k][j][i] = uflr;
+  }
 #else
-  get_state(G, S, i, j, k, CENT);
+  // Do this call if get_state_vec not called above
+  //get_state(G, S, i, j, k, CENT);
   double bsq = bsq_calc(S, i, j, k);
   rhoflr = MY_MAX(rhoflr, bsq/BSQORHOMAX);
   uflr = MY_MAX(uflr, bsq/BSQOUMAX);
@@ -107,7 +121,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
     double trans = 10.*bsq/MY_MIN(S->P[RHO][k][j][i], S->P[UU][k][j][i]) - 1.;
 
-    if (trans > 0.) { // Strongly magnetized region; use drift frame floors
+    if (trans > 0. && DRIFT_FLOORS == 1) { // Strongly magnetized region; use drift frame floors
       // Preserve pre-floor primitives
       double pv_prefloor[NVAR];
       PLOOP pv_prefloor[ip] = S->P[ip][k][j][i];
@@ -127,14 +141,14 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
       double ucon[NDIM], ucon_dr[NDIM]; // TODO ucon name is reused for ut*vcon below
       DLOOP1 {
-	ucon[mu] = S->ucon[mu][k][j][i];
-	ucon_dr[mu] = gamma
-	    * (S->ucon[mu][k][j][i] + betapar * S->bcon[mu][k][j][i]);
+        ucon[mu] = S->ucon[mu][k][j][i];
+        ucon_dr[mu] = gamma
+            * (S->ucon[mu][k][j][i] + betapar * S->bcon[mu][k][j][i]);
       }
 
       double bcon_local[NDIM], bcov_local[NDIM];
       DLOOP1 {
-	bcon_local[mu] = (mu == 0) ? 0 : S->P[B1 - 1 + mu][k][j][i];
+        bcon_local[mu] = (mu == 0) ? 0 : S->P[B1 - 1 + mu][k][j][i];
       }
 
       double gcov_local[NDIM][NDIM];
@@ -169,7 +183,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
       // Convert 3-velocity to relative 4-velocity and store in primitives
       for (int mu = 1; mu < NDIM; mu++) {
-	  S->P[mu+UU][k][j][i] = utcon[mu]*trans + pv_prefloor[mu+UU]*(1. - trans);
+        S->P[mu+UU][k][j][i] = utcon[mu]*trans + pv_prefloor[mu+UU]*(1. - trans);
       }
     } else { // Weakly magnetized region; use normal observer frame floors
 
@@ -204,8 +218,8 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
 
       PLOOP {
-	S->U[ip][k][j][i] += Uadd[ip];
-	S->P[ip][k][j][i] += Padd[ip];
+        S->U[ip][k][j][i] += Uadd[ip];
+        S->P[ip][k][j][i] += Padd[ip];
       }
 
       U_to_P(G, S, i, j, k, CENT);
@@ -215,14 +229,14 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
 #if ELECTRONS
   // Reset entropy after floors
-  pv[KTOT] = (gam - 1.)*pv[UU]/pow(pv[RHO],gam);
+  S->P[KTOT][k][j][i] = (gam - 1.)*S->P[UU][k][j][i]/pow(S-P[RHO][k][j][i],gam);
 
   // Set KTOTMAX to 3 by controlling u, to avoid anomalous cooling from funnel
   // wall
   double KTOTMAX = 3.;
-  if (pv[KTOT] > KTOTMAX) {
-    pv[UU] = KTOTMAX*pow(pv[RHO],gam)/(gam-1.);
-    pv[KTOT] = KTOTMAX;
+  if (S->P[KTOT][k][j][i] > KTOTMAX) {
+    S->P[UU][k][j][i] = KTOTMAX*pow(S-P[RHO][k][j][i],gam)/(gam-1.);
+    S->P[KTOT][k][j][i] = KTOTMAX;
   }
 #endif // ELECTRONS
 
@@ -237,7 +251,8 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   }
 
   // Get state to have consistent P,u/b
-  get_state(G, S, i, j, k, CENT);
+  // Do this call if not get_state_vec above
+  //get_state(G, S, i, j, k, CENT);
 
 }
 
@@ -251,6 +266,13 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
     pflag[k][j][i] = !pflag[k][j][i];
+  }
+
+  int nfixed_utop = 0;
+#pragma omp parallel for simd collapse(2) reduction (+:nfixed_utop)
+  ZLOOP {
+    // Count the 0 = bad cells
+    nfixed_utop += !pflag[k][j][i];
   }
 
   // Make sure we are not using ill defined corner regions
@@ -275,7 +297,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   do {
     bad = 0;
     // TODO is this okay? Not /quite/ deterministic...
-//#pragma omp parallel for simd collapse(2) reduction(+:bad)
+//#pragma omp parallel for collapse(3) reduction(+:bad)
     ZLOOP {
       if (pflag[k][j][i] == 0) {
         double wsum = 0.;
@@ -300,10 +322,25 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
         // Cell is fixed, can now use for other interpolations
         pflag[k][j][i] = 1;
 
+#if !OLD_FLOORS
+        get_state(G, S, i, j, k, CENT);
+#endif
         fixup1zone(G, S, i, j, k);
+#if !OLD_FLOORS
+        get_state(G, S, i, j, k, CENT);
+#endif
       }
     }
   } while (bad > 0);
+
+  fprintf(stderr, "Fixed %d cells\n", nfixed_utop);
+
+  // Flip back pflag
+#pragma omp parallel for simd collapse(2)
+  ZLOOPALL {
+    pflag[k][j][i] = !pflag[k][j][i];
+  }
+
   timer_stop(TIMER_FIXUP);
 }
 #undef FLOOP

@@ -96,7 +96,8 @@ build: $(EXE)
 	@echo -e "Completed build of prob: $(PROB)"
 	@echo -e "CFLAGS: $(CFLAGS)"
 
-debug: CFLAGS += -g -Wall -Werror #Can make this less strict to debug w/o compiler help
+debug: CFLAGS += -g -Wall -Werror
+debug: CFLAGS += -DDEBUG=1
 debug: build
 
 profile: CFLAGS += -g -pg

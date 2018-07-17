@@ -1,7 +1,7 @@
 ### RUNTIME PARAMETERS ###
 
 # COORDINATES
-[dbl] tf = 1.000000e+04
+[dbl] tf = 5.000000e+01
 [dbl] dt = 1.000000e-06
 [dbl] Rout = 5.000000e+01
 
@@ -10,11 +10,11 @@
 [dbl] cour = 9.000000e-01
 
 # OUTPUT
-[dbl] DTd = 5.000000e+00
+[dbl] DTd = 1.000000e-01
 [dbl] DTf = 1.000000e+01
-[dbl] DTl = 5.000000e-01
-[int] DTr = 10000
-[int] DTp = 100
+[dbl] DTl = 5.000000e-02
+[int] DTr = 1000000
+[int] DTp = 50
 
 # PROBLEM
 [dbl] rin = 6.000000e+00

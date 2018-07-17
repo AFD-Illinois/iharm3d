@@ -11,21 +11,18 @@
 // Declarations
 double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   struct FluidState *Ss, struct FluidState *Sf, double Dt);
-static struct FluidState *Stmp;
-static struct FluidState *Ssave;
-static struct FluidFlux *F;
 
 void step(struct GridGeom *G, struct FluidState *S)
 {
+  static struct FluidState *Stmp;
+  static struct FluidState *Ssave;
+
   static int first_call = 1;
   if (first_call) {
     Stmp = calloc(1,sizeof(struct FluidState));
     Ssave = calloc(1,sizeof(struct FluidState));
-    F = calloc(1,sizeof(struct FluidFlux));
     first_call = 0;
   }
-
-  double dtsave = dt;
 
   // Need both P_n and P_n+1 to calculate current
 #pragma omp parallel for simd collapse(3)
@@ -35,21 +32,36 @@ void step(struct GridGeom *G, struct FluidState *S)
     }
   }
 
+
+  // Using if vs #if is no slower and helps w/maintenance
+  if(DEBUG) check_nan(S,"step,1");
+
   // Predictor setup
   advance_fluid(G, S, S, Stmp, 0.5*dt);
 
+
+  if (DEBUG) {
+    check_nan(S,"step,2");
+    check_nan(Stmp,"step,3");
+  }
+
 #if ELECTRONS
-  heat_electrons(P, Ph, 0.5*dt);
+  heat_electrons(S->P, Stmp->P, 0.5*dt);
 #endif
 
   // Fixup routines: smooth over outlier zones
   fixup(G, Stmp);
   fixup_utoprim(G, Stmp);
 #if ELECTRONS
-  fixup_electrons(Ph);
+  fixup_electrons(Stmp->P);
 #endif
 
+  if (DEBUG) check_nan(Stmp,"step,4");
+
   set_bounds(G, Stmp);
+
+
+  if (DEBUG) check_nan(Stmp,"step,5");
 
   // Corrector step
   double ndt = advance_fluid(G, S, Stmp, S, dt);
@@ -58,20 +70,26 @@ void step(struct GridGeom *G, struct FluidState *S)
   heat_electrons(Ph, P, dt);
 #endif
 
+  if (DEBUG) check_nan(S,"step,6");
+
   fixup(G, S);
   fixup_utoprim(G, S);
 #if ELECTRONS
   fixup_electrons(P);
 #endif
 
+  if (DEBUG) check_nan(S,"step,7");
+
   set_bounds(G, S);
+
+  if (DEBUG) check_nan(S,"step,8");
 
   // Increment time
   t += dt;
 
   // If we're dumping this step, update the current
   if (t > tdump) {
-    current_calc(G, S, Ssave, dtsave);
+    current_calc(G, S, Ssave, dt);
   }
 
   // Set next timestep
@@ -84,7 +102,14 @@ void step(struct GridGeom *G, struct FluidState *S)
 double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   struct FluidState *Ss, struct FluidState *Sf, double Dt)
 {
-  static GridPrim dU;
+  static GridPrim *dU;
+  static struct FluidFlux *F;
+
+  static int firstc = 1;
+  if (firstc) {
+    dU = calloc(1,sizeof(GridPrim));
+    F = calloc(1,sizeof(struct FluidFlux));
+  }
 
   // Work around ICC 18.0.2 bug in assigning to pointers to structs
   memcpy(&(Sf->P),&(Si->P),sizeof(GridPrim));
@@ -121,7 +146,7 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
         Dt*((F->X1[ip][k][j][i] - F->X1[ip][k][j][i+1])/dx[1] +
             (F->X2[ip][k][j][i] - F->X2[ip][k][j+1][i])/dx[2] +
             (F->X3[ip][k][j][i] - F->X3[ip][k+1][j][i])/dx[3] +
-            dU[ip][k][j][i]);
+            (*dU)[ip][k][j][i]);
     }
   }
   timer_stop(TIMER_UPDATE_U);
@@ -130,6 +155,7 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 #pragma omp parallel for collapse(3)
   ZLOOP {
     pflag[k][j][i] = U_to_P(G, Sf, i, j, k, CENT);
+    //if (DEBUG) if (pflag[k][j][i] != 0) fprintf(stderr, "Pflag is %d\n", pflag[k][j][i]);
   }
   timer_stop(TIMER_U_TO_P);
 
@@ -140,7 +166,6 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   ZLOOPALL {
     fail_save[k][j][i] = pflag[k][j][i];
   }
-  //timer_stop(TIMER_UPDATE);
 
   return ndt;
 }

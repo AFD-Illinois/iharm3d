@@ -82,7 +82,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   timer_start(TIMER_LR_TO_F);
 
   static GridPrim *fluxL, *fluxR;
-  static GridDouble *cmaxL, *cmaxR, *cminL, *cminR, *cmax, *cmin;//, ctop;
+  static GridDouble *cmaxL, *cmaxR, *cminL, *cminR, *cmax, *cmin;
 
   static int firstc = 1;
 
@@ -132,6 +132,11 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
 
   timer_stop(TIMER_LR_STATE);
 
+  if (DEBUG) {
+    check_nan(Sl, "lr_to_flux,1");
+    check_nan(Sr, "lr_to_flux,2");
+  }
+
   timer_start(TIMER_LR_PTOF);
 
   prim_to_flux_vec(G, Sl, 0,   loc, -1, N3, -1, N2, -1, N1, Sl->U);
@@ -141,6 +146,11 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   prim_to_flux_vec(G, Sr, dir, loc, -1, N3, -1, N2, -1, N1, *fluxR);
 
   timer_stop(TIMER_LR_PTOF);
+
+  if (DEBUG) {
+    check_nan(Sl, "lr_to_flux,3");
+    check_nan(Sr, "lr_to_flux,4");
+  }
 
   timer_start(TIMER_LR_VCHAR);
   // TODO vectorizing these loops fails for some reason
@@ -157,13 +167,29 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   }
   timer_stop(TIMER_LR_VCHAR);
 
+  if (DEBUG) {
+    check_nan(Sl, "lr_to_flux,5");
+    check_nan(Sr, "lr_to_flux,6");
+  }
+
   timer_start(TIMER_LR_CMAX);
 #pragma omp parallel for collapse(2)
   ZSLOOP(-1, N3, -1, N2, -1, N1) {
     (*cmax)[k][j][i] = fabs(MY_MAX(MY_MAX(0., (*cmaxL)[k][j][i]), (*cmaxR)[k][j][i]));
     (*cmin)[k][j][i] = fabs(MY_MAX(MY_MAX(0., -(*cminL)[k][j][i]), -(*cminR)[k][j][i]));
     (*ctop)[k][j][i] = MY_MAX((*cmax)[k][j][i], (*cmin)[k][j][i]);
-    if (isnan(1./(*ctop)[k][j][i])) {printf("ctop is 0 or NaN at: %i %i %i (%i)\nExiting.\n", k,j,i,dir); exit(-1);}
+    if (isnan(1./(*ctop)[k][j][i])) {
+      printf("ctop is 0 or NaN at zone: %i %i %i (%i) ", i,j,k,dir);
+#if METRIC == MKS
+      double X[NDIM];
+      double r, th;
+      coord(i, j, k, CENT, X);
+      bl_coord(X, &r, &th);
+      printf("(r,th,phi = %f %f %f)\n", r, th, X[3]);
+#endif
+      printf("\n");
+      exit(-1);
+    }
   }
   timer_stop(TIMER_LR_CMAX);
 

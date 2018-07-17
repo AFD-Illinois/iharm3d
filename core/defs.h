@@ -12,10 +12,7 @@
 
 #pragma once
 
-// TODO these are largely superseded by cd call in main. Eliminate.
-char dumpdir[2048], restartdir[2048];
-
-// Zone flags
+// Zone flags.  TODO move these to the heap
 GridInt pflag;
 GridInt fail_save;
 
