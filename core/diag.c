@@ -197,6 +197,26 @@ void area_map(int i, int j, int k, GridPrim prim)
   fprintf(stderr, "****************\n");
 }
 
+// Check the whole fluid state for NaN values
+void check_nan(struct FluidState *S, const char* flag)
+{
+#pragma omp parallel for collapse(4)
+  PLOOP ZLOOPALL {
+    if (isnan(S->P[ip][k][j][i])) {
+      fprintf(stderr, "NaN in prims[%d]: %d, %d, %d as of position %s\n",ip,i,j,k,flag);
+      exit(-1);
+    }
+  }
+
+#pragma omp parallel for collapse(4)
+  DLOOP1 ZLOOPALL {
+    if (isnan(S->ucon[mu][k][j][i]) || isnan(S->ucov[mu][k][j][i]) || isnan(S->bcon[mu][k][j][i]) || isnan(S->bcov[mu][k][j][i])){
+      fprintf(stderr, "NaN in derived: %d, %d, %d at %s\n",i,j,k,flag);
+      exit(-1);
+    }
+  }
+}
+
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
   #if N3 > 1

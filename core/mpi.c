@@ -64,12 +64,13 @@ void mpi_initialization(int argc, char *argv[])
   }
 
   // Diagnostic for processor topology
-  // TODO add flag to enable this?
-//  int me = mpi_myrank();
-//  fprintf(stderr,"Process %d topology:\n", me);
-//  fprintf(stderr,"%d in X:[%d]\t[%d]\t[%d]\n", me, neighbors[1][1][0], neighbors[1][1][1], neighbors[1][1][2]);
-//  fprintf(stderr,"%d in Y:[%d]\t[%d]\t[%d]\n", me, neighbors[1][0][1], neighbors[1][1][1], neighbors[1][2][1]);
-//  fprintf(stderr,"%d in Z:[%d]\t[%d]\t[%d]\n", me, neighbors[0][1][1], neighbors[1][1][1], neighbors[2][1][1]);
+  if (DEBUG) {
+    int me = mpi_myrank();
+    fprintf(stderr,"Process %d topology:\n", me);
+    fprintf(stderr,"%d in X:[%d]\t[%d]\t[%d]\n", me, neighbors[1][1][0], neighbors[1][1][1], neighbors[1][1][2]);
+    fprintf(stderr,"%d in Y:[%d]\t[%d]\t[%d]\n", me, neighbors[1][0][1], neighbors[1][1][1], neighbors[1][2][1]);
+    fprintf(stderr,"%d in Z:[%d]\t[%d]\t[%d]\n", me, neighbors[0][1][1], neighbors[1][1][1], neighbors[2][1][1]);
+  }
 
   // Start and stop in global index space
   // These are in the usual X1,2,3 order, or things would get /very confusing/
@@ -78,11 +79,13 @@ void mpi_initialization(int argc, char *argv[])
     global_start[2-d] = coord[d] * sdims[d]/cpudims[d];
     global_stop[2-d] = (coord[d]+1) * sdims[d]/cpudims[d];
   }
-//  printf("Process %d has X,Y,Z space [%d-%d, %d-%d, %d-%d]\n", rank,
-//         global_start[0], global_stop[0],
-//         global_start[1], global_stop[1],
-//         global_start[2], global_stop[2]);
 
+  if (DEBUG) {
+    printf("Process %d has X,Y,Z space [%d-%d, %d-%d, %d-%d]\n", rank,
+           global_start[0], global_stop[0],
+           global_start[1], global_stop[1],
+           global_start[2], global_stop[2]);
+  }
 
   // Make MPI datatypes
   MPI_Datatype scalar_type = MPI_DOUBLE;

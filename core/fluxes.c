@@ -132,6 +132,11 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
 
   timer_stop(TIMER_LR_STATE);
 
+  if (DEBUG) {
+    check_nan(Sl, "lr_to_flux,1");
+    check_nan(Sr, "lr_to_flux,2");
+  }
+
   timer_start(TIMER_LR_PTOF);
 
   prim_to_flux_vec(G, Sl, 0,   loc, -1, N3, -1, N2, -1, N1, Sl->U);
@@ -141,6 +146,11 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   prim_to_flux_vec(G, Sr, dir, loc, -1, N3, -1, N2, -1, N1, *fluxR);
 
   timer_stop(TIMER_LR_PTOF);
+
+  if (DEBUG) {
+    check_nan(Sl, "lr_to_flux,3");
+    check_nan(Sr, "lr_to_flux,4");
+  }
 
   timer_start(TIMER_LR_VCHAR);
   // TODO vectorizing these loops fails for some reason
@@ -156,6 +166,11 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     }
   }
   timer_stop(TIMER_LR_VCHAR);
+
+  if (DEBUG) {
+    check_nan(Sl, "lr_to_flux,5");
+    check_nan(Sr, "lr_to_flux,6");
+  }
 
   timer_start(TIMER_LR_CMAX);
 #pragma omp parallel for collapse(2)
