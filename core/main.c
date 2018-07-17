@@ -66,11 +66,12 @@ int main(int argc, char *argv[])
     exit(2);
   }
 
-  strcpy(dumpdir, "dumps/");
-  strcpy(restartdir, "restarts/");
   if (mpi_io_proc()) {
-    mkdir(dumpdir, 0777);
-    mkdir(restartdir, 0777);
+    int is_error = mkdir("dumps/", 0777) || mkdir("restarts/", 0777);
+    if (is_error == -1 && errno != EEXIST){
+      fprintf(stderr, "Could not make dumps/restarts directory.  Is output dir writeable?\n");
+      exit(1);
+    }
   }
 
   // Sanity checks

@@ -209,8 +209,6 @@ extern GridInt fail_save;
 /*******************************************************************************
     GLOBAL VARIABLES SECTION
 *******************************************************************************/
-// Command line arguments
-extern char dumpdir[2048], restartdir[2048];
 
 // Physics parameters
 extern double a;

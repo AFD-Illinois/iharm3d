@@ -10,7 +10,6 @@
     GLOBAL VARIABLES
 *******************************************************************************/
 
-char dumpdir[2048], restartdir[2048];
 #pragma once
 
 // Zone flags.  TODO move these to the heap
