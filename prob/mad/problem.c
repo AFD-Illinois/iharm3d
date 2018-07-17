@@ -292,9 +292,8 @@ void init(struct GridGeom *G, struct FluidState *S)
     if (q > 0.) {
       if (MAD == 7) { // Narayan limit for MAD
         double lam_B = 25;
-        double pre_norm = 1;
         double flux_correction = sin( 1/lam_B * (pow(r,2./3) + 15./8*pow(r,-2./5) - pow(rBstart,2./3) - 15./8*pow(rBstart,-2./5)));
-        double q_mod = q*pre_norm*flux_correction;
+        double q_mod = q*flux_correction;
         //printf("Correction is %.10e\n", flux_correction);
         A[i][j] = q_mod;
       } else {
@@ -323,7 +322,7 @@ void init(struct GridGeom *G, struct FluidState *S)
     S->P[B3][k][j][i] = 0.;
 
     get_state(G, S, i, j, k, CENT);
-    if (r > rBstart && r < rBend) {
+    if ((r > rBstart && r < rBend) || MAD != 7) {
       double bsq_ij = bsq_calc(S, i, j, k);
       if (bsq_ij > bsq_max) bsq_max = bsq_ij;
       double beta_ij = (gam - 1.)*(S->P[UU][k][j][i])/(0.5*(bsq_ij+SMALL)) ;
@@ -339,7 +338,7 @@ void init(struct GridGeom *G, struct FluidState *S)
       coord(i,NG,NG,CORN,X);
       double r, th;
       bl_coord(X,&r,&th);
-      if (r > rBstart && r < rBend) {
+      if ((r > rBstart && r < rBend) || MAD != 7) {
 	if (uu_plane[i] > umax_plane) umax_plane = uu_plane[i];
       }
   }
