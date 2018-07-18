@@ -71,7 +71,7 @@ inline double ut_calc_3vel(struct GridGeom *G, int i, int j, double vcon[NDIM])
 #define UORHOMAX (50.)
 inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
-  double rhoflr, uflr, f;
+  double rhoflr, uflr;
   double rhoscal, uscal;
 
   if(METRIC == MKS) {
