@@ -159,7 +159,7 @@ for n in xrange(len(MODES)):
     if abs(dvar[k]) != 0.:
       powerfits[n,k] = np.polyfit(np.log(RES), np.log(L1[n,:,k]), 1)[0]
 
-  os.chdir('../test')
+  os.chdir('../plots')
 
   if not AUTO:
     # MAKE PLOTS

@@ -7,9 +7,9 @@
  ******************************************************************************/
 
 /* GLOBAL RESOLUTION */
-#define N1TOT 16
-#define N2TOT 16
-#define N3TOT 16
+#define N1TOT 64
+#define N2TOT 64
+#define N3TOT 64
 
 /* MPI DECOMPOSITION */
 /* DECOMPOSE IN N3 FIRST! Small leading array sizes for linear access */
@@ -21,8 +21,6 @@
  *   MINKOWSKI, MKS
  */
 #define METRIC MINKOWSKI
-
-#define NMODE 2
 
 #define ELECTRONS 0
 
@@ -42,3 +40,4 @@
 #define X2R_BOUND PERIODIC
 #define X3L_BOUND PERIODIC
 #define X3R_BOUND PERIODIC
+
