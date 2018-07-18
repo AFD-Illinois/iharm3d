@@ -8,6 +8,7 @@
 
 #include "hdf5_utils.h"
 
+#include <stdlib.h>
 #include <string.h>
 #include <hdf5.h>
 
@@ -18,6 +19,60 @@ static char hdf5_cur_dir[STRLEN] = "/";
 
 // Keep the file pointer globally.  This means ONE FILE AT A TIME!
 hid_t file_id;
+
+// Create a new HDF5 file in memory and group specified by name to
+// the root of the new HDF5 file and return pointer to blob. 
+// Returns NULL on failure.
+hdf5_blob hdf5_get_blob(const char *name)
+{
+  herr_t status;
+
+  // Open HDF5 file in memory by using CORE file driver
+  hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
+  status = H5Pset_fapl_core(plist_id, (size_t)1024, (hbool_t)0);
+  if ( status < 0 ) {
+    H5Pclose(plist_id);
+    return status;
+  }
+
+  hid_t file_image_id = H5Fcreate("blob", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id); 
+  H5Pclose(plist_id);
+  if ( file_image_id < 0 ) return file_image_id;
+
+  char path[STRLEN];
+  strncpy(path, hdf5_cur_dir, STRLEN);
+  strncat(path, name, STRLEN - strlen(path));
+
+  // Copy according to default settings (don't assume nice behavior with links)
+  status = H5Ocopy(file_id, path, file_image_id, "blob", H5P_DEFAULT, H5P_DEFAULT);
+  if ( status < 0 ) return status;
+
+  return file_image_id;
+}
+
+// Write the passed HDF5 blob wrapper to the opened HDF5 file under
+// the group with passed name. 
+// Returns 0 on success.
+int hdf5_write_blob(hdf5_blob blob, const char *name)
+{
+  if ( blob < 0 ) return blob;
+
+  char path[STRLEN];
+  strncpy(path, hdf5_cur_dir, STRLEN);
+  strncat(path, name, STRLEN - strlen(path));
+
+  herr_t status = H5Ocopy(blob, "blob", file_id, path, H5P_DEFAULT, H5P_DEFAULT);
+  
+  return (status < 0) ? status : 0;
+}
+
+// Closes the HDF5 blob wrapper passed as argument
+// Returns 0 on success.
+int hdf5_close_blob(hdf5_blob blob)
+{
+  herr_t status = H5Fclose(blob);
+  return (status < 0) ? status : 0;
+}
 
 // Create a new HDF file (or overwrite whatever file exists)
 int hdf5_create(char *fname)
@@ -285,3 +340,4 @@ int hdf5_read_array(void *data, const char *name, size_t rank,
 
   return 0;
 }
+
