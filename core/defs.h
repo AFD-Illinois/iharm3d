@@ -20,9 +20,7 @@ GridInt fail_save;
 // physical
 double a;
 double gam;
-double M_unit;
 double Rhor;
-double Risco;
 double tp_over_te;
 
 // geometry
@@ -47,11 +45,7 @@ double DTl;
 int DTr;
 int DTp;
 int dump_cnt;
-int rdump_cnt;
 double tdump, tlog;
-
-int failed;
-int lim;
 
 // derived logged output
 double mdot, edot, ldot;

@@ -76,12 +76,10 @@
 #define DEBUG 0
 #endif
 #ifndef TIMERS
-#define TIMERS 0
+#define TIMERS 1
 #endif
 
-// I/O format strings
-#define FMT_DBL_OUT "%28.18e"
-#define FMT_INT_OUT "%10d"
+// Default string length
 #define STRLEN (2048)
 
 // Reconstruction algorithms
@@ -107,19 +105,14 @@
 #define NVAR (8)
 #endif
 
-// Centering of grid functions (assumes axisymmetry in X3)
+// Centering of grid functions
 #define FACE1 (0)
 #define FACE2 (1)
 #define CORN  (2)
 #define CENT  (3)
-// For non-axisymmetric (Minkowski spacetimes etc)
+// TODO add option to force FACE3 axisymmetric?
 #define FACE3 (4)
-#define NPG   (5) // TODO define extra spot only for Minkowski space
-
-// Slope limiter
-#define MC   (0)
-#define VANL (1)
-#define MINM (2)
+#define NPG   (5)
 
 // Boundaries
 #define OUTFLOW  (0)
@@ -130,6 +123,7 @@
 // Metric
 #define MINKOWSKI (0)
 #define MKS       (1)
+// TODO make POLYTH a new metric "MMKS"?
 
 // Diagnostic calls
 #define DIAG_INIT  (0)
@@ -154,17 +148,17 @@
 #define TIMER_U_TO_P   (6)
 #define TIMER_FIXUP    (7)
 #define TIMER_BOUND    (8)
-#define TIMER_BOUND_COMMS (9)
-#define TIMER_DIAG     (10)
-#define TIMER_LR_STATE      (11)
-#define TIMER_LR_PTOF      (12)
-#define TIMER_LR_VCHAR      (13)
-#define TIMER_LR_CMAX      (14)
-#define TIMER_LR_FLUX      (15)
-#define TIMER_IO 	(16)
-#define TIMER_RESTART 	(17)
-#define TIMER_CURRENT   (18)
-#define TIMER_ALL      (19)
+#define TIMER_BOUND_COMMS (9) // TODO remove comms timer
+#define TIMER_DIAG        (10)
+#define TIMER_LR_STATE    (11)
+#define TIMER_LR_PTOF     (12)
+#define TIMER_LR_VCHAR    (13)
+#define TIMER_LR_CMAX     (14)
+#define TIMER_LR_FLUX     (15)
+#define TIMER_IO          (16)
+#define TIMER_RESTART     (17)
+#define TIMER_CURRENT     (18)
+#define TIMER_ALL         (19)
 #if ELECTRONS
 #define TIMER_ELECTRON_FIXUP (21)
 #define TIMER_ELECTRON_HEAT  (22)
@@ -174,7 +168,7 @@
 #endif
 
 /*******************************************************************************
-    GLOBAL ARRAYS
+    GLOBAL TYPES
 *******************************************************************************/
 typedef int    GridInt[N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridDouble[N3+2*NG][N2+2*NG][N1+2*NG];
@@ -223,13 +217,11 @@ extern GridInt fail_save;
 // Physics parameters
 extern double a;
 extern double gam;
-extern double M_unit;
 extern double Rhor;
-extern double Risco;
 extern double tp_over_te;
 
 // Numerical parameters
-extern double Rin, Rout, hslope, R0;
+extern double Rin, Rout, hslope, R0;  // TODO user or ditch R0
 extern double cour;
 extern double dV, dx[NDIM], startx[NDIM];
 extern double x1Min, x1Max, x2Min, x2Max, x3Min, x3Max;
@@ -245,12 +237,7 @@ extern double DTl;
 extern int DTr;
 extern int DTp;
 extern int dump_cnt;
-extern int rdump_cnt;
 extern double tdump, tlog;
-
-// Global flags
-extern int failed;
-extern int lim;
 
 // Diagnostics
 extern double mdot, edot, ldot;
@@ -331,11 +318,17 @@ extern int global_stop[3];
 
 #define delta(i,j) ((i == j) ? 1. : 0.)
 
+#define LOG(msg) if(DEBUG && mpi_io_proc()) {fprintf(stderr,msg); fprintf(stderr,"\n");}
+#define LOGN(fmt,x) if(DEBUG && mpi_io_proc()) {fprintf(stderr,fmt,x); fprintf(stderr,"\n");}
+
 /*******************************************************************************
     FUNCTION DECLARATIONS
 *******************************************************************************/
+// bl_coord.c
+void bl_coord(const double X[NDIM], double *r, double *th);
+
 // bounds.c
-void set_bounds(struct GridGeom *geom, struct FluidState *state);
+void set_bounds(struct GridGeom *G, struct FluidState *S);
 void fix_flux(struct FluidFlux *F);
 
 // coord.c
@@ -344,8 +337,6 @@ double r_of_x(double x);
 double dr_dx(double x);
 double th_of_x(double x);
 double dth_dx(double x);
-void bl_coord(const double *X, double *r, double *th);
-void cart_coord(const double X[NDIM], double Xcart[NDIM]);
 void gcov_func(double *X, double gcov[NDIM][NDIM]);
 void set_points();
 void set_grid(struct GridGeom *G);
@@ -405,10 +396,7 @@ void lower(double ucon[NDIM], double gcov[NDIM][NDIM], double ucov[NDIM]);
 void raise(double ucov[NDIM], double gcon[NDIM][NDIM], double ucon[NDIM]);
 double dot_grid(GridVector vcon, GridVector vcov, int i, int j, int k);
 double dot(double vcon[NDIM], double vcov[NDIM]);
-double MINOR(double m[16], int r0, int r1, int r2, int c0, int c1, int c2);
-void adjoint(double m[16], double adjOut[16]);
-double determinant(double m[16]);
-double invert(double *m, double *invOut);
+double invert(double *m, double *inv);
 
 // mpi.c
 void mpi_initialization(int argc, char *argv[]);
@@ -481,7 +469,7 @@ void restart_read(char *fname, struct FluidState *S);
 int restart_init(struct GridGeom *G, struct FluidState *S);
 
 // step.c
-void step(struct GridGeom *G, struct FluidState *state);
+void step(struct GridGeom *G, struct FluidState *S);
 
 // timing.c
 void time_init();

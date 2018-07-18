@@ -8,7 +8,7 @@
 
 #include "decs.h"
 
-/*      ASSUMING X3 SYMMETRY IN COORDINATES AND SPACETIME
+/*
  *      -- given the indices i,j and location in the cell, return with
  *         the values of X1,X2 there;
  *      -- the locations are defined by :
@@ -22,7 +22,7 @@
  *
  */
 
-void coord(int i, int j, int k, int loc, double *X)
+inline void coord(int i, int j, int k, int loc, double *X)
 {
   i += global_start[0];
   j += global_start[1];
@@ -49,23 +49,27 @@ void coord(int i, int j, int k, int loc, double *X)
     X[1] = startx[1] + (i - NG) * dx[1];
     X[2] = startx[2] + (j - NG) * dx[2];
     X[3] = startx[3] + (k - NG) * dx[3];
-  } else {
+  }
+#if DEBUG
+  else {
     fprintf(stderr, "Invalid coordinate location!\n");
     exit(-1);
   }
+#endif
 }
 
-double r_of_x(double x)
+// These are MKS specific
+inline double r_of_x(double x)
 {
-  return exp(x); //TODO R0?
+  return exp(x); // TODO R0?
 }
 
-double dr_dx(double x)
+inline double dr_dx(double x)
 {
   return r_of_x(x);
 }
 
-double th_of_x(double x)
+inline double th_of_x(double x)
 {
 #if POLYTH
   double y = 2*x - 1.;
@@ -76,7 +80,7 @@ double th_of_x(double x)
 #endif
 }
 
-double dth_dx(double x)
+inline double dth_dx(double x)
 {
 #if POLYTH
   double y = 2*x - 1.;
@@ -86,55 +90,8 @@ double dth_dx(double x)
 #endif
 }
 
-// Boyer-Lindquist coordinate of point X
-void bl_coord(const double X[NDIM], double *r, double *th)
-{
-  *r = r_of_x(X[1]);
-  *th = th_of_x(X[2]);
-
-  // Avoid singularity at polar axis
-#if(COORDSINGFIX)
-  if (fabs(*th) < SINGSMALL) {
-    if ((*th) >= 0)
-      *th = SINGSMALL;
-    if ((*th) < 0)
-      *th = -SINGSMALL;
-  }
-  if (fabs(M_PI - (*th)) < SINGSMALL) {
-    if ((*th) >= M_PI)
-      *th = M_PI + SINGSMALL;
-    if ((*th) < M_PI)
-      *th = M_PI - SINGSMALL;
-  }
-#endif
-
-  return;
-}
-
-// Cartesian coordinate Xcart = {t,x,y,z} of point X
-void cart_coord(const double X[NDIM], double Xcart[NDIM])
-{
-  Xcart[0] = X[0]; // t
-  #if METRIC == MKS
-  {
-    double r,th,ph;
-    bl_coord(X,&r,&th);
-    ph = X[3];
-    Xcart[1] = r*sin(th)*cos(ph); // r
-    Xcart[2] = r*sin(th)*sin(ph); // th
-    Xcart[3] = r*cos(th);         // ph
-  }
-  #else
-  {
-    Xcart[1] = X[1];
-    Xcart[2] = X[2];
-    Xcart[3] = X[3];
-  }
-  #endif // METRIC == MKS
-}
-
 // Insert metric here
-void gcov_func(double *X, double gcov[NDIM][NDIM])
+inline void gcov_func(double *X, double gcov[NDIM][NDIM])
 {
   memset(gcov, 0, NDIM*NDIM*sizeof(double));
 
@@ -202,8 +159,6 @@ void set_points()
   dx[3] = 2.*M_PI/N3TOT;
 
   #if POLYTH
-  poly_alpha = 8.;
-  poly_xt = 0.75;
   poly_norm = 0.5*M_PI*1./(1. + 1./(poly_alpha + 1.)*
                            1./pow(poly_xt, poly_alpha));
   #endif
@@ -212,22 +167,19 @@ void set_points()
 
 void set_grid(struct GridGeom *G)
 {
-  //double X[NDIM];
 
   // Set up boundaries, steps in coordinate grid
   set_points();
   dV = dx[1]*dx[2]*dx[3];
 
-  //for (int mu = 0; mu < NDIM; mu++) X[mu] = 0.;
-
-  #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
   JSLOOP(-NG, N2 - 1 + NG) {
     ISLOOP(-NG, N1 - 1 + NG) {
       set_grid_loc(G, i, j, 0, CENT);
       set_grid_loc(G, i, j, 0, CORN);
       set_grid_loc(G, i, j, 0, FACE1);
       set_grid_loc(G, i, j, 0, FACE2);
-      set_grid_loc(G, i, j, 0, FACE3); // TODO if Minkowski...
+      set_grid_loc(G, i, j, 0, FACE3);
 
       // Connection only needed at zone center
       conn_func(G, i, j, 0);
@@ -235,7 +187,7 @@ void set_grid(struct GridGeom *G)
   }
 }
 
-void set_grid_loc(struct GridGeom *G, int i, int j, int k, int loc)
+inline void set_grid_loc(struct GridGeom *G, int i, int j, int k, int loc)
 {
   double X[NDIM];
   double gcov[NDIM][NDIM], gcon[NDIM][NDIM];

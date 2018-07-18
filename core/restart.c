@@ -62,8 +62,6 @@ void restart_write(struct FluidState *S)
   hdf5_write_single_val(&restart_id, "restart_id", H5T_NATIVE_INT);
   hdf5_write_single_val(&dump_cnt, "dump_cnt", H5T_NATIVE_INT);
   hdf5_write_single_val(&dt, "dt", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&lim, "lim", H5T_NATIVE_INT);
-  hdf5_write_single_val(&failed, "failed", H5T_NATIVE_INT);
 #if METRIC == MKS
   hdf5_write_single_val(&Rin, "Rin", H5T_NATIVE_DOUBLE);
   hdf5_write_single_val(&Rout, "Rout", H5T_NATIVE_DOUBLE);
@@ -71,7 +69,6 @@ void restart_write(struct FluidState *S)
   hdf5_write_single_val(&hslope, "hslope", H5T_NATIVE_DOUBLE);
   hdf5_write_single_val(&R0, "R0", H5T_NATIVE_DOUBLE);
   hdf5_write_single_val(&Rhor, "Rhor", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&Risco, "Risco", H5T_NATIVE_DOUBLE);
 #else
   hdf5_write_single_val(&x1Min, "x1Min", H5T_NATIVE_DOUBLE);
   hdf5_write_single_val(&x1Max, "x1Max", H5T_NATIVE_DOUBLE);
@@ -147,7 +144,7 @@ void restart_read(char *fname, struct FluidState *S)
   #endif
   // I want to be able to change tf/cadences/courant mid-run
   // Hence we just pick these up from param.dat again
-//  hdf5_read_single_val(&tf, "tf", H5T_NATIVE_DOUBLE);
+  hdf5_read_single_val(&tf, "tf", H5T_NATIVE_DOUBLE); // TODO currently necessary for tests
 //  hdf5_read_single_val(&cour, "cour", H5T_NATIVE_DOUBLE);
 //  hdf5_read_single_val(&DTd, "DTd", H5T_NATIVE_DOUBLE);
 //  hdf5_read_single_val(&DTf, "DTf", H5T_NATIVE_DOUBLE);
@@ -157,8 +154,6 @@ void restart_read(char *fname, struct FluidState *S)
   hdf5_read_single_val(&restart_id, "restart_id", H5T_NATIVE_INT);
   hdf5_read_single_val(&dump_cnt, "dump_cnt", H5T_NATIVE_INT);
   hdf5_read_single_val(&dt, "dt", H5T_NATIVE_DOUBLE);
-  hdf5_read_single_val(&lim, "lim", H5T_NATIVE_INT);
-  hdf5_read_single_val(&failed, "failed", H5T_NATIVE_INT);
 #if METRIC == MKS
   hdf5_read_single_val(&Rin, "Rin", H5T_NATIVE_DOUBLE);
   hdf5_read_single_val(&Rout, "Rout", H5T_NATIVE_DOUBLE);
@@ -166,7 +161,6 @@ void restart_read(char *fname, struct FluidState *S)
   hdf5_read_single_val(&hslope, "hslope", H5T_NATIVE_DOUBLE);
   hdf5_read_single_val(&R0, "R0", H5T_NATIVE_DOUBLE);
   hdf5_read_single_val(&Rhor, "Rhor", H5T_NATIVE_DOUBLE);
-  hdf5_read_single_val(&Risco, "Risco", H5T_NATIVE_DOUBLE);
 #else
   hdf5_read_single_val(&x1Min, "x1Min", H5T_NATIVE_DOUBLE);
   hdf5_read_single_val(&x1Max, "x1Max", H5T_NATIVE_DOUBLE);

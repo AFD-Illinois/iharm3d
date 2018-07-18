@@ -151,7 +151,6 @@ void dump(struct GridGeom *G, struct FluidState *S)
 
   hdf5_write_single_val(&DTd, "dump_cadence", H5T_NATIVE_DOUBLE);
   hdf5_write_single_val(&DTf, "full_dump_cadence", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&failed, "failed", H5T_NATIVE_INT);
 
   // Write primitive variables
   pack_write_vector(S->P, NVAR, "prims", OUT_H5_TYPE);

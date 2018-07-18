@@ -23,23 +23,21 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
 
   timer_start(TIMER_CURRENT);
 
-  if (nstep == 0) {
+  static int first_run = 1;
+  if (first_run) {
 #pragma omp parallel for simd collapse(2)
     ZLOOP {
       for (int mu = 0; mu < NDIM; mu++) S->jcon[mu][k][j][i] = 0.;
     }
-    return;
-  }
 
-  static int first_run = 1;
-  if (first_run) {
-      //We only need the primitives, but this is fast
-      Sa = calloc(1,sizeof(struct FluidState));
-      first_run = 0;
+    //We only need the primitives, but this is fast
+    Sa = calloc(1,sizeof(struct FluidState));
+    first_run = 0;
   }
 
   // Calculate time-centered P
-#pragma omp parallel for simd collapse(3)
+  // TODO Intel 18 prevents this. Work around that...
+//#pragma omp parallel for simd collapse(3)
   PLOOP {
     ZLOOPALL {
       Sa->P[ip][k][j][i] = 0.5*(S->P[ip][k][j][i] + Ssave->P[ip][k][j][i]);
