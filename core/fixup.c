@@ -24,10 +24,6 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 #pragma omp parallel for collapse(3)
   ZLOOP fixup1zone(G, S, i, j, k);
 
-#if !OLD_FLOORS
-  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
-#endif
-
   timer_stop(TIMER_FIXUP);
 }
 
@@ -111,6 +107,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   }
 #else
   // Do this call if get_state_vec not called above
+  // TODO thinner bsq calculation w/o full call
   //get_state(G, S, i, j, k, CENT);
   double bsq = bsq_calc(S, i, j, k);
   rhoflr = MY_MAX(rhoflr, bsq/BSQORHOMAX);
@@ -223,6 +220,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       }
 
       U_to_P(G, S, i, j, k, CENT);
+      get_state(G, S, i, j, k, CENT);
     }
   }
 #endif
@@ -248,11 +246,9 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     S->P[U1][k][j][i] *= f;
     S->P[U2][k][j][i] *= f;
     S->P[U3][k][j][i] *= f;
+    // Get state since we changed primitives
+    get_state(G, S, i, j, k, CENT);
   }
-
-  // Get state to have consistent P,u/b
-  // Do this call if not get_state_vec above
-  //get_state(G, S, i, j, k, CENT);
 
 }
 
@@ -326,14 +322,11 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
         get_state(G, S, i, j, k, CENT);
 #endif
         fixup1zone(G, S, i, j, k);
-#if !OLD_FLOORS
-        get_state(G, S, i, j, k, CENT);
-#endif
       }
     }
   } while (bad > 0);
 
-  fprintf(stderr, "Fixed %d cells\n", nfixed_utop);
+  LOGN("Fixed %d cells", nfixed_utop);
 
   // Flip back pflag
 #pragma omp parallel for simd collapse(2)

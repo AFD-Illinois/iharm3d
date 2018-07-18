@@ -10,6 +10,7 @@
 
 // Play some pre-processor games
 #if RECONSTRUCTION == LINEAR
+// MC is the only limiter used
 #define RECON_ALGO linear_mc
 #elif RECONSTRUCTION == PPM
 #error "PPM currently broken!"
@@ -19,6 +20,11 @@
 #define RECON_ALGO mp5
 #else
 #error "Reconstruction not specified!"
+#endif
+
+  // Sanity checks
+#if (RECONSTRUCTION == PPM || RECONSTRUCTION == WENO || RECONSTRUCTION == MP5) && NG < 3
+#error "not enough ghost zones! PPM/WENO/MP5 + NG < 3\n"
 #endif
 
 inline void linear_mc(double unused1, double x1, double x2, double x3, double unused2, double *lout, double *rout)

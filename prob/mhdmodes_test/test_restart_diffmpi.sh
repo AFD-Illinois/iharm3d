@@ -11,7 +11,7 @@ sed -i -e "s/N1CPU 2/N1CPU 1/g" parameters.h
 sed -i -e "s/N2CPU 2/N2CPU 1/g" parameters.h
 sed -i -e "s/N3CPU 4/N3CPU 1/g" parameters.h
 
-make -f ../../makefile -j10 PROB=mpitest_modes
+make -f ../../makefile -j4 PROB=test_modes
 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
 
 cd $OUT_DIR
@@ -32,7 +32,7 @@ sed -i -e "s/N1CPU 1/N1CPU 2/g" parameters.h
 sed -i -e "s/N2CPU 1/N2CPU 2/g" parameters.h
 sed -i -e "s/N3CPU 1/N3CPU 4/g" parameters.h
 
-make -f ../../makefile -j10 PROB=mpitest_modes
+make -f ../../makefile -j4 PROB=test_modes
 OMP_NUM_THREADS=2 mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
 
 cd $OUT_DIR

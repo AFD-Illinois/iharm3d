@@ -25,25 +25,15 @@ void step(struct GridGeom *G, struct FluidState *S)
   }
 
   // Need both P_n and P_n+1 to calculate current
-#pragma omp parallel for simd collapse(3)
-  PLOOP {
-    ZLOOPALL {
-      Ssave->P[ip][k][j][i] = S->P[ip][k][j][i];
-    }
-  }
+  // Work around ICC 18.0.2 bug in assigning to pointers to structs
+  memcpy(&(Ssave->P),&(S->P),sizeof(GridPrim));
 
-
-  // Using if vs #if is no slower and helps w/maintenance
-  if(DEBUG) check_nan(S,"step,1");
+  LOG("Start step");
 
   // Predictor setup
   advance_fluid(G, S, S, Stmp, 0.5*dt);
 
-
-  if (DEBUG) {
-    check_nan(S,"step,2");
-    check_nan(Stmp,"step,3");
-  }
+  LOG("Substep");
 
 #if ELECTRONS
   heat_electrons(S->P, Stmp->P, 0.5*dt);
@@ -56,21 +46,20 @@ void step(struct GridGeom *G, struct FluidState *S)
   fixup_electrons(Stmp->P);
 #endif
 
-  if (DEBUG) check_nan(Stmp,"step,4");
+  LOG("Fixup");
 
   set_bounds(G, Stmp);
 
-
-  if (DEBUG) check_nan(Stmp,"step,5");
+  LOG("Bounds");
 
   // Corrector step
   double ndt = advance_fluid(G, S, Stmp, S, dt);
 
+  LOG("Fullstep");
+
 #if ELECTRONS
   heat_electrons(Ph, P, dt);
 #endif
-
-  if (DEBUG) check_nan(S,"step,6");
 
   fixup(G, S);
   fixup_utoprim(G, S);
@@ -78,11 +67,11 @@ void step(struct GridGeom *G, struct FluidState *S)
   fixup_electrons(P);
 #endif
 
-  if (DEBUG) check_nan(S,"step,7");
+  LOG("Fixup");
 
   set_bounds(G, S);
 
-  if (DEBUG) check_nan(S,"step,8");
+  LOG("Bounds");
 
   // Increment time
   t += dt;
@@ -99,7 +88,7 @@ void step(struct GridGeom *G, struct FluidState *S)
   dt = mpi_min(ndt);
 }
 
-double advance_fluid(struct GridGeom *G, struct FluidState *Si,
+inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   struct FluidState *Ss, struct FluidState *Sf, double Dt)
 {
   static GridPrim *dU;
@@ -109,11 +98,11 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   if (firstc) {
     dU = calloc(1,sizeof(GridPrim));
     F = calloc(1,sizeof(struct FluidFlux));
+    firstc = 0;
   }
 
   // Work around ICC 18.0.2 bug in assigning to pointers to structs
   memcpy(&(Sf->P),&(Si->P),sizeof(GridPrim));
-
 
   double ndt = get_flux(G, Ss, F);
 
@@ -155,7 +144,8 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 #pragma omp parallel for collapse(3)
   ZLOOP {
     pflag[k][j][i] = U_to_P(G, Sf, i, j, k, CENT);
-    //if (DEBUG) if (pflag[k][j][i] != 0) fprintf(stderr, "Pflag is %d\n", pflag[k][j][i]);
+    // This is too annoying even for debug
+    //if (pflag[k][j][i] != 0) LOGN("Pflag is %d\n", pflag[k][j][i]);
   }
   timer_stop(TIMER_U_TO_P);
 

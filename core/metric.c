@@ -8,7 +8,9 @@
 
 #include "decs.h"
 
-double gcon_func(double gcov[NDIM][NDIM], double gcon[NDIM][NDIM])
+#include <gsl/gsl_linalg.h>
+
+inline double gcon_func(double gcov[NDIM][NDIM], double gcon[NDIM][NDIM])
 {
   double gdet = invert(&gcov[0][0],&gcon[0][0]);
   return sqrt(fabs(gdet));
@@ -24,7 +26,7 @@ inline void get_gcon(struct GridGeom *G, int i, int j, int loc, double gcon[NDIM
 }
 
 // Calculate connection coefficient \Gamma^{i}_{j,k} = conn[..][i][j][k]
-void conn_func(struct GridGeom *G, int i, int j, int k)
+inline void conn_func(struct GridGeom *G, int i, int j, int k)
 {
   double tmp[NDIM][NDIM][NDIM];
   double X[NDIM], Xh[NDIM], Xl[NDIM];
@@ -90,7 +92,7 @@ inline void lower_grid(GridVector vcon, GridVector vcov, struct GridGeom *G, int
   }
 }
 
-void raise_grid(GridVector vcov, GridVector vcon, struct GridGeom *G, int i, 
+inline void raise_grid(GridVector vcov, GridVector vcon, struct GridGeom *G, int i,
   int j, int k, int loc)
 {
   for (int mu = 0; mu < NDIM; mu++) {
@@ -103,7 +105,7 @@ void raise_grid(GridVector vcov, GridVector vcon, struct GridGeom *G, int i,
 
 // TODO revise this out of the following: Fcon_calc, fixup1zone, get_state, Utoprim, Wp_func
 // And while you're at it revise out get_state
-void lower(double ucon[NDIM], double gcov[NDIM][NDIM], double ucov[NDIM])
+inline void lower(double ucon[NDIM], double gcov[NDIM][NDIM], double ucov[NDIM])
 {
   for (int mu = 0; mu < NDIM; mu++) {
     ucov[mu] = 0.;
@@ -114,7 +116,7 @@ void lower(double ucon[NDIM], double gcov[NDIM][NDIM], double ucov[NDIM])
 }
 
 // Raise a covariant rank-1 tensor to a contravariant one
-void raise(double ucov[NDIM], double gcon[NDIM][NDIM], double ucon[NDIM])
+inline void raise(double ucov[NDIM], double gcon[NDIM][NDIM], double ucon[NDIM])
 {
   for (int mu = 0; mu < NDIM; mu++) {
     ucon[mu] = 0.;
@@ -124,7 +126,7 @@ void raise(double ucov[NDIM], double gcon[NDIM][NDIM], double ucon[NDIM])
   }
 }
 
-double dot_grid(GridVector vcon, GridVector vcov, int i, int j, int k)
+inline double dot_grid(GridVector vcon, GridVector vcov, int i, int j, int k)
 {
   double dot = 0.;
   for (int mu = 0; mu < NDIM; mu++) {
@@ -133,7 +135,7 @@ double dot_grid(GridVector vcon, GridVector vcov, int i, int j, int k)
   return dot;
 }
 
-double dot(double vcon[NDIM], double vcov[NDIM])
+inline double dot(double vcon[NDIM], double vcov[NDIM])
 {
   double dot = 0.;
   for (int mu = 0; mu < NDIM; mu++) {
@@ -142,16 +144,28 @@ double dot(double vcon[NDIM], double vcov[NDIM])
   return dot;
 }
 
-// TODO replace all the following w/GSL
+// TODO debug this GSL version to save lines?
+//double invert(double *m, double *inv) {
+//  gsl_matrix_view mat = gsl_matrix_view_array(m, 4, 4);
+//  gsl_matrix_view inv_mat = gsl_matrix_view_array(inv, 4, 4);
+//  gsl_permutation * p = gsl_permutation_alloc(4);
+//  int s;
+//
+//  gsl_linalg_LU_decomp(&mat.matrix, p, &s);
+//  gsl_linalg_LU_invert(&mat.matrix, p, &inv_mat.matrix);
+//
+//  gsl_permutation_free(p);
+//  return gsl_linalg_LU_det(&mat.matrix, s);
+//}
 
-double MINOR(double m[16], int r0, int r1, int r2, int c0, int c1, int c2)
+inline double MINOR(double m[16], int r0, int r1, int r2, int c0, int c1, int c2)
 {
   return m[4*r0+c0]*(m[4*r1+c1]*m[4*r2+c2] - m[4*r2+c1]*m[4*r1+c2]) -
          m[4*r0+c1]*(m[4*r1+c0]*m[4*r2+c2] - m[4*r2+c0]*m[4*r1+c2]) +
          m[4*r0+c2]*(m[4*r1+c0]*m[4*r2+c1] - m[4*r2+c0]*m[4*r1+c1]);
 }
 
-void adjoint(double m[16], double adjOut[16])
+inline void adjoint(double m[16], double adjOut[16])
 {
   adjOut[ 0] =  MINOR(m,1,2,3,1,2,3);
   adjOut[ 1] = -MINOR(m,0,2,3,1,2,3);
@@ -174,7 +188,7 @@ void adjoint(double m[16], double adjOut[16])
   adjOut[15] =  MINOR(m,0,1,2,0,1,2);
 }
 
-double determinant(double m[16])
+inline double determinant(double m[16])
 {
   return m[0]*MINOR(m,1,2,3,1,2,3) -
          m[1]*MINOR(m,1,2,3,0,2,3) +
@@ -182,7 +196,7 @@ double determinant(double m[16])
          m[3]*MINOR(m,1,2,3,0,1,2);
 }
 
-double invert(double *m, double *invOut)
+inline double invert(double *m, double *invOut)
 {
   adjoint(m, invOut);
 
