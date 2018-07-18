@@ -74,14 +74,6 @@ int main(int argc, char *argv[])
     }
   }
 
-  // Sanity checks
-  if ((RECONSTRUCTION == PPM || RECONSTRUCTION == WENO || RECONSTRUCTION == MP5)
-      && NG < 3) {
-    fprintf(stderr, "not enough ghost zones!\n") ;
-    fprintf(stderr, "PPM/WENO/MP5 + NG < 3\n") ;
-    exit(1);
-  }
-
   #pragma omp parallel
   {
     #pragma omp master
@@ -92,7 +84,6 @@ int main(int argc, char *argv[])
 
   // Initialize global variables and arrays
   init_io();
-  nstep = 0;
   // TODO centralize more allocations here
   struct GridGeom *G = calloc(1,sizeof(struct GridGeom));
   struct FluidState *S = calloc(1,sizeof(struct FluidState));
@@ -101,8 +92,14 @@ int main(int argc, char *argv[])
   is_restart = restart_init(G, S);
   if (!is_restart) {
     init(G, S);
+    // Set globals
+    nstep = 0;
+    t = 0;
     tdump = DTd;
     tlog  = DTl;
+    dump_cnt = 0;
+    // Zero the pflag array
+    zero_arrays();
     if (mpi_io_proc())
       fprintf(stdout, "Initial conditions generated\n\n");
   }
