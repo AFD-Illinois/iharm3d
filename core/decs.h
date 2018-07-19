@@ -320,6 +320,7 @@ extern int global_stop[3];
 
 #define LOG(msg) if(DEBUG && mpi_io_proc()) {fprintf(stderr,msg); fprintf(stderr,"\n");}
 #define LOGN(fmt,x) if(DEBUG && mpi_io_proc()) {fprintf(stderr,fmt,x); fprintf(stderr,"\n");}
+#define ERROR(msg) {if (mpi_io_proc()) {fprintf(stderr, msg); fprintf(stderr,"\n");} exit(-1);}
 
 /*******************************************************************************
     FUNCTION DECLARATIONS
