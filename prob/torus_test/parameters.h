@@ -27,33 +27,9 @@
  *   BETA_HEAT         - (0,1) BETA-DEPENDENT HEATING
  *   TPTEMIN           - MINIMUM TP/TE
  */
-#define ELECTRONS           0
+#define ELECTRONS           1
 #define SUPPRESS_HIGHB_HEAT 1
 #define BETA_HEAT           1
-#define TPTEMIN             0.001
-#define TPTEMAX             1000.
-
-/* RADIATION AND OPTIONS
- *   EMISSION   - (0,1)
- *   ABSORPTION - (0,1)
- *   SCATTERING - (0,1)
- *   NU_BINS    - NUMBER OF SAMPLES IN LOG(NU)
- *   THETAE_MAX - MAXIMUM ELECTRON TEMPERATURE SEEN BY RADIATION SECTOR
- *   SIGMA_MAX  - MAXIMUM B.B/RHO ABOVE WHICH FLOW DOES NOT RADIATE
- *   GRAYABSORPTION - (0,1)
- *   BREMSSTRAHLUNG - (0,1)
- *   SYNCHROTRON    - (0,1)
- */
-#define RADIATION           0
-#define EMISSION            1
-#define ABSORPTION          1
-#define SCATTERING          1
-#define NU_BINS             100
-#define THETAE_MAX          1000.
-#define SIGMA_MAX           1.
-#define GRAYABSORPTION      0
-#define BREMSSTRAHLUNG      0
-#define SYNCHROTRON         1
 
 /* RECONSTRUCTION ALGORITHM
  *   LINEAR, PPM, WENO, MP5
