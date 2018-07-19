@@ -185,22 +185,19 @@ int hdf5_write_str_list(const void *data, const char *name, size_t str_len, size
 
   if(DEBUG) printf("Adding str list %s\n", path);
 
-  // Taken (stolen) from https://support.hdfgroup.org/ftp/HDF5/examples/C/
-  hsize_t dims_of_char_array[] = {len};
-  hsize_t dims_of_char_dataspace[] = {1};
+  // Adapted (stolen) from https://support.hdfgroup.org/ftp/HDF5/examples/C/
+  hsize_t dims_of_char_dataspace[] = {len};
 
   hid_t vlstr_h5t = H5Tcopy(H5T_C_S1);
   H5Tset_size(vlstr_h5t, str_len);
 
-  hid_t mem_h5t = H5Tarray_create(vlstr_h5t, 1, dims_of_char_array);
-  hid_t dataspace = H5Screate_simple(1, dims_of_char_dataspace, NULL); // use same dims as int ds
-  hid_t dataset = H5Dcreate(file_id, path, mem_h5t, dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  int err = H5Dwrite(dataset, mem_h5t, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+  hid_t dataspace = H5Screate_simple(1, dims_of_char_dataspace, NULL);
+  hid_t dataset = H5Dcreate(file_id, path, vlstr_h5t, dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  int err = H5Dwrite(dataset, vlstr_h5t, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
   if (err < 0) return err; // If anything above fails, the write should too
 
   H5Dclose(dataset);
   H5Sclose(dataspace);
-  H5Tclose(mem_h5t);
   H5Tclose(vlstr_h5t);
 
   return 0;

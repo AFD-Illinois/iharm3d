@@ -1,6 +1,6 @@
 S2TARGET = knl
 
-CC = h5cc
+CC = h5pcc
 
 ifneq (,$(findstring icc,$(shell $(CC) --version)))
 
