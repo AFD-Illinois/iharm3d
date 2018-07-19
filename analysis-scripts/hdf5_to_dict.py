@@ -43,7 +43,7 @@ def load_hdr(fname):
 
   # Turn the prim_names ndarray of chars into a python list
   names = []
-  for name in hdr['prim_names'][0]:
+  for name in hdr['prim_names']:
     names.append( name )
   hdr['prim_names'] = names
 

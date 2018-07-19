@@ -198,10 +198,10 @@ void area_map(int i, int j, int k, GridPrim prim)
 
 // TODO this function is useful but slow: it doesn't parllelize under intel 18.0.2
 // Check the whole fluid state for NaN values
-void check_nan(struct FluidState *S, const char* flag)
+inline void check_nan(struct FluidState *S, const char* flag)
 {
 #if DEBUG
-//#pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
   PLOOP ZLOOPALL {
     if (isnan(S->P[ip][k][j][i])) {
       fprintf(stderr, "NaN in prims[%d]: %d, %d, %d as of position %s\n",ip,i,j,k,flag);
@@ -209,7 +209,7 @@ void check_nan(struct FluidState *S, const char* flag)
     }
   }
 
-//#pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
   DLOOP1 ZLOOPALL {
     if (isnan(S->ucon[mu][k][j][i]) || isnan(S->ucov[mu][k][j][i]) || isnan(S->bcon[mu][k][j][i]) || isnan(S->bcov[mu][k][j][i])){
       fprintf(stderr, "NaN in derived: %d, %d, %d at %s\n",i,j,k,flag);
