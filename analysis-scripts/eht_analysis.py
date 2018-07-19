@@ -137,8 +137,8 @@ def avg_dump(n):
   # FLUXES
   #Phi_bcon[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
-  #norm = np.sqrt(4*np.pi) # This is what I believe matches Narayan '12 in CGS
-  norm = 1 # This is what BR used for EHT comparison + what fits that
+  norm = np.sqrt(4*np.pi) # This is what I believe matches Narayan '12 in CGS
+  #norm = 1 # This is what BR used for EHT comparison + what fits that
   out['Phi'] = 0.5*(np.fabs(norm*dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
   
   out['omega_th'] = dump['omega'][iEH,:N2/2,:].mean(axis=-1) + dump['omega'][iEH,:N2/2-1:-1,:].mean(axis=-1)
@@ -170,7 +170,7 @@ out_full = {}
 
 # SERIAL
 #for n in xrange(len(dumps)):
-#  out = avg_dump(n)
+#  out_full.append(avg_dump(n))
 
 
 # PARALLEL

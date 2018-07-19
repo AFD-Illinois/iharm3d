@@ -41,11 +41,16 @@ def load_hdr(fname):
 
   dfile.close()
 
-  # Turn the prim_names ndarray of chars into a python list
-  names = []
-  for name in hdr['prim_names']:
-    names.append( name )
-  hdr['prim_names'] = names
+  # Turn the version string into components
+  hdr['codename'], hdr['codestatus'], hdr['vnum'] = hdr['version'].split("-")
+  hdr['vnum'] = [int(x) for x in hdr['vnum'].split(".")]
+
+  # Work around naming bug in old versions of iharm
+  if hdr['vnum'][0] <= 3 and hdr['vnum'][1] <= 3:
+    names = []
+    for name in hdr['prim_names'][0]:
+      names.append( name )
+    hdr['prim_names'] = names
 
   print "Loading from version ", hdr['version']
   print "Size:", hdr['n1'], hdr['n2'], hdr['n3']
