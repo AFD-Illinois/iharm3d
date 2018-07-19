@@ -96,7 +96,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     cmax = calloc(1,sizeof(GridDouble));
     cmin = calloc(1,sizeof(GridDouble));
 
-	firstc = 0;
+    firstc = 0;
   }
 
   // Properly offset left face
@@ -183,7 +183,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   PLOOP {
     ZSLOOP(-1, N3, -1, N2, -1, N1) {
       (*flux)[ip][k][j][i] = 0.5*((*fluxL)[ip][k][j][i] + (*fluxR)[ip][k][j][i] -
-    		  (*ctop)[k][j][i]*(Sr->U[ip][k][j][i] - Sl->U[ip][k][j][i]));
+               (*ctop)[k][j][i]*(Sr->U[ip][k][j][i] - Sl->U[ip][k][j][i]));
     }
   }
   timer_stop(TIMER_LR_FLUX);
@@ -215,6 +215,7 @@ void flux_ct(struct FluidFlux *F)
     }
 
     // Rewrite EMFs as fluxes, after Toth
+    // These are /not/ ZLOOPS
 #pragma omp for simd collapse(2) nowait
     ZSLOOP(0, N3 - 1, 0, N2 - 1, 0, N1) {
       F->X1[B1][k][j][i] =  0.;

@@ -8,7 +8,9 @@
 
 #include "decs.h"
 
-#define OLD_FLOORS 0
+#ifndef FLUID_FLOORS
+#define FLUID_FLOORS 0
+#endif
 #define DRIFT_FLOORS 0
 
 // Apply floors to density, internal energy
@@ -97,7 +99,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   rhoflr = MY_MAX(rhoflr, RHOMINLIMIT);
   uflr = MY_MAX(uflr, UUMINLIMIT);
 
-#if OLD_FLOORS
+#if FLUID_FLOORS
   // Fluid frame floors: don't conserve momentum
   if (S->P[RHO][k][j][i] < rhoflr) {
     S->P[RHO][k][j][i] = rhoflr;
@@ -107,7 +109,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   }
 #else
   // Do this call if get_state_vec not called above
-  // TODO thinner bsq calculation w/o full call
+  // TODO thinner bsq calculation w/o full call -- also check whether obs frame floors should be this high
   //get_state(G, S, i, j, k, CENT);
   double bsq = bsq_calc(S, i, j, k);
   rhoflr = MY_MAX(rhoflr, bsq/BSQORHOMAX);
@@ -116,9 +118,9 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
   if (rhoflr > S->P[RHO][k][j][i] || uflr > S->P[UU][k][j][i]) { // Apply floors
 
+#if DRIFT_FLOORS
     double trans = 10.*bsq/MY_MIN(S->P[RHO][k][j][i], S->P[UU][k][j][i]) - 1.;
-
-    if (trans > 0. && DRIFT_FLOORS == 1) { // Strongly magnetized region; use drift frame floors
+    if (trans > 0.) { // Strongly magnetized region; use drift frame floors
       // Preserve pre-floor primitives
       double pv_prefloor[NVAR];
       PLOOP pv_prefloor[ip] = S->P[ip][k][j][i];
@@ -183,6 +185,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
         S->P[mu+UU][k][j][i] = utcon[mu]*trans + pv_prefloor[mu+UU]*(1. - trans);
       }
     } else { // Weakly magnetized region; use normal observer frame floors
+#endif
 
       double Padd[NVAR];
       PLOOP Padd[ip] = 0.;
@@ -220,8 +223,10 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       }
 
       U_to_P(G, S, i, j, k, CENT);
-      get_state(G, S, i, j, k, CENT);
-    }
+      //get_state(G, S, i, j, k, CENT);
+#if DRIFT_FLOORS
+    } // if (trans > 0)
+#endif
   }
 #endif
 
@@ -239,6 +244,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 #endif // ELECTRONS
 
   // Limit gamma with respect to normal observer
+  // TODO check for fail here
   double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
 
   if (gamma > GAMMAMAX) {
@@ -246,8 +252,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     S->P[U1][k][j][i] *= f;
     S->P[U2][k][j][i] *= f;
     S->P[U3][k][j][i] *= f;
-    // Get state since we changed primitives
-    get_state(G, S, i, j, k, CENT);
+    //get_state(G, S, i, j, k, CENT);
   }
 
 }
@@ -293,7 +298,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   do {
     bad = 0;
     // TODO is this okay? Not /quite/ deterministic...
-//#pragma omp parallel for collapse(3) reduction(+:bad)
+#pragma omp parallel for collapse(3) reduction(+:bad)
     ZLOOP {
       if (pflag[k][j][i] == 0) {
         double wsum = 0.;
