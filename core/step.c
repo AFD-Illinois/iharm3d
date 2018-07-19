@@ -26,6 +26,7 @@ void step(struct GridGeom *G, struct FluidState *S)
 
   // Need both P_n and P_n+1 to calculate current
   // Work around ICC 18.0.2 bug in assigning to pointers to structs
+  // TODO use pointer tricks to avoid deep copy
   memcpy(&(Ssave->P),&(S->P),sizeof(GridPrim));
 
   LOG("Start step");
@@ -36,14 +37,14 @@ void step(struct GridGeom *G, struct FluidState *S)
   LOG("Substep");
 
 #if ELECTRONS
-  heat_electrons(S->P, Stmp->P, 0.5*dt);
+  heat_electrons(G, S, Stmp);
 #endif
 
   // Fixup routines: smooth over outlier zones
   fixup(G, Stmp);
   fixup_utoprim(G, Stmp);
 #if ELECTRONS
-  fixup_electrons(Stmp->P);
+  fixup_electrons(Stmp);
 #endif
 
   LOG("Fixup");
@@ -58,13 +59,13 @@ void step(struct GridGeom *G, struct FluidState *S)
   LOG("Fullstep");
 
 #if ELECTRONS
-  heat_electrons(Ph, P, dt);
+  heat_electrons(G, Stmp, S);
 #endif
 
   fixup(G, S);
   fixup_utoprim(G, S);
 #if ELECTRONS
-  fixup_electrons(P);
+  fixup_electrons(S);
 #endif
 
   LOG("Fixup");

@@ -249,8 +249,13 @@ extern int nthreads;
 
 // Electrons
 #if ELECTRONS
+// TODO put these in parameters.h? Define MP/ME direct?
+#define KTOTMAX (3.)
+#define ME (9.1093826e-28  ) // Electron mass
+#define MP (1.67262171e-24 ) // Proton mass
 extern double game, gamp;
 extern double fel0;
+extern double tptemin, tptemax;
 #endif
 
 #if POLYTH
@@ -359,10 +364,9 @@ void check_nan(struct FluidState *S, const char* flag);
 
 // electrons.c
 #if ELECTRONS
-void init_electrons();
-void heat_electrons(grid_prim_type ph, grid_prim_type p, double Dt);
-double get_fel(int i, int j, int k, double p[NVAR]);
-void fixup_electrons(grid_prim_type p);
+void init_electrons(struct FluidState *S);
+void heat_electrons(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S);
+void fixup_electrons(struct FluidState *S);
 #endif
 
 // fixup.c

@@ -57,6 +57,7 @@ int nthreads;
 #if ELECTRONS
 double game, gamp;
 double fel0;
+double tptemin, tptemax;
 #endif
 
 int global_start[3];

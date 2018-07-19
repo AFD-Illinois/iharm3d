@@ -66,13 +66,13 @@ void set_core_params() {
   set_param("cour", &cour);
   set_param("gam", &gam);
 
-  #if ELECTRONS
+#if ELECTRONS
   set_param("game", &game);
   set_param("gamp", &gamp);
   set_param("fel0", &fel0);
   set_param("tptemin", &tptemin);
   set_param("tptemax", &tptemax);
-  #endif
+#endif
 
   set_param("DTd", &DTd);
   set_param("DTf", &DTf);
