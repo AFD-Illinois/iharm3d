@@ -21,5 +21,12 @@
 [int] DTr = 100
 [int] DTp = 10
 
+# Electrons
+[dbl] game = 1.333333
+[dbl] gamp = 1.666667
+[dbl] fel0 = 0.01
+[dbl] tptemin = 0.001
+[dbl] tptemax = 1000.0
+
 # PROBLEM
 [int] nmode = 3

@@ -1,18 +1,18 @@
 ### RUNTIME PARAMETERS ###
 
 # COORDINATES
-[dbl] tf = 1.000000e+04
-[dbl] dt = 1.000000e-06
-[dbl] Rout = 1.000000e+04
+[dbl] tf = 10000.0
+[dbl] dt = 1.0e-06
+[dbl] Rout = 1000.0
 
 # FLUID
-[dbl] gam = 1.444444e+00
-[dbl] cour = 9.000000e-01
+[dbl] gam = 1.444444
+[dbl] cour = 0.9
 
 # OUTPUT
-[dbl] DTd = 5.000000e+00
-[dbl] DTf = 1.000000e+01
-[dbl] DTl = 5.000000e-01
+[dbl] DTd = 5.0
+[dbl] DTf = 10.0
+[dbl] DTl = 0.5
 [int] DTr = 10000
 [int] DTp = 100
 
@@ -24,17 +24,17 @@
 [dbl] tptemax = 1000.0
 
 # PROBLEM
-[dbl] rin = 1.000000e+01
-[dbl] rmax = 2.200000e+01
-[dbl] rBstart = 2.500000e+01
-[dbl] rBend = 8.100000e+02
+[dbl] rin = 20.0
+[dbl] rmax = 41.0
+[dbl] rBstart = 25.0
+[dbl] rBend = 810.0
 
-[int] MAD = 7
-[dbl] beta = 1.000000e+02
-[dbl] BHflux = 0.000000e+00
+[int] MAD = 1
+[dbl] beta = 100.0
+[dbl] BHflux = 0.0
 
-[dbl] a = 9.375000e-01
-[dbl] hslope = 3.000000e-01
-[dbl] mks_smooth = 5.000000e-01
-[dbl] poly_xt = 8.200000e-01
-[dbl] poly_alpha = 1.400000e+01
+[dbl] a = 0.9375
+[dbl] hslope = 0.3
+[dbl] mks_smooth = 0.5
+[dbl] poly_xt = 0.82
+[dbl] poly_alpha = 14.0

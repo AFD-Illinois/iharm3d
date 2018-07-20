@@ -7,14 +7,14 @@
  ******************************************************************************/
 
 /* GLOBAL RESOLUTION */
-#define N1TOT 64
-#define N2TOT 64
+#define N1TOT 128
+#define N2TOT 128
 #define N3TOT 1
 
 /* MPI DECOMPOSITION */
 /* Careful NXCPU < NXTOT!! */
 #define N1CPU 2
-#define N2CPU 4
+#define N2CPU 2
 #define N3CPU 1
 
 /* METRIC
@@ -24,9 +24,13 @@
 
 #define POLYTH 0
 
-#define ELECTRONS           0
-
-#define RADIATION           0
+/* ELECTRONS AND OPTIONS
+ *   SUPPRESS_MAG_HEAT - (0,1) NO ELECTRON HEATING WHEN SIGMA > 1
+ *   BETA_HEAT         - (0,1) BETA-DEPENDENT HEATING
+ */
+#define ELECTRONS           1
+#define SUPPRESS_HIGHB_HEAT 1
+#define BETA_HEAT           1
 
 /* RECONSTRUCTION ALGORITHM
  *   LINEAR, PPM, WENO, MP5

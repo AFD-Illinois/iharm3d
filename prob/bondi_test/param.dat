@@ -5,9 +5,13 @@
 [dbl] dt = 1.0e-06
 [dbl] Rout = 20.0
 
+[dbl] mks_smooth = 5.000000e-01
+[dbl] poly_xt = 8.200000e-01
+[dbl] poly_alpha = 1.400000e+01
+
 # FLUID
 [dbl] gam = 1.666667
-[dbl] cour = 0.3
+[dbl] cour = 0.4
 
 # OUTPUT
 [dbl] DTd = 5.
@@ -15,6 +19,13 @@
 [dbl] DTl = 0.5
 [int] DTr = 10000
 [int] DTp = 100
+
+# Electrons
+[dbl] game = 1.333333
+[dbl] gamp = 1.666667
+[dbl] fel0 = 0.01
+[dbl] tptemin = 0.001
+[dbl] tptemax = 1000.0
 
 # PROBLEM
 [dbl] a = 0.0

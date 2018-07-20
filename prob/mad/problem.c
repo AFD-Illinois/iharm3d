@@ -17,7 +17,6 @@ gsl_rng *rng;
 // Local declarations
 double lfish_calc(double rmax);
 
-
 static int MAD, NORM_WITH_MAXR = 0; //TODO clean up these parameters
 static double BHflux, beta;
 static double rin, rmax;
@@ -41,8 +40,6 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   // Initialize RNG
   rng = gsl_rng_alloc(gsl_rng_mt19937);
-  // Could set this via time, some increasing int, whatever
-  // TODO include seed in dump? Likely relies on details of problem.c so not so useful
   gsl_rng_set(rng, mpi_myrank());
 
   // Fishbone-Moncrief parameters
@@ -57,7 +54,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   //Risco = 3 + z2 - sqrt((3-z1)*(3 + z1 + 2*z2));
 
   set_grid(G);
-  if (mpi_io_proc()) printf("grid set\n");
+  LOG("Grid set");
 
   double rhomax = 0.;
   double umax = 0.;
@@ -174,7 +171,7 @@ void init(struct GridGeom *G, struct FluidState *S)
     }
     iend--;
     iend_global = global_start[0] + iend - NG; //Translate to coordinates for uu_mid below
-    printf("[MPI %d] Furthest torus zone is %d (locally %d), at r = %f\n", mpi_myrank(), iend_global, iend, r_iend);
+    if(DEBUG) printf("[MPI %d] Furthest torus zone is %d (locally %d), at r = %f\n", mpi_myrank(), iend_global, iend, r_iend);
   }
   iend_global = mpi_reduce_int(iend_global); //TODO This should be a broadcast I know.
 
@@ -231,30 +228,28 @@ void init(struct GridGeom *G, struct FluidState *S)
     double uu_plane_av = uu_plane[i_global];
     double uu_end = uu_plane[iend_global];
 
-    double b_buffer = 0.0; //Minimum rho at which there will be B field
+    double b_buffer = 0.2; //Minimum rho at which there will be B field
     if (N3 > 1) {
-      if (MAD == 1) { // Classic
+      if (MAD == 0) { // SANE
         q = rho_av/rhomax;
-      } else if (MAD == 2) { // Vertical threaded
+      } else if (MAD == 1) { // BR's smoothed poloidal in-torus
         q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax;
-      } else if (MAD == 3) { // Additional r^3 term
+
+      } else if (MAD == 2) { // Just the r^3 term
         q = pow(r/rin,3.)*rho_av/rhomax;
-//      } else if (MAD == 4) { // T,N,M (2011) uses phi = r^5 rho^2
-//        q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
-//        OLD_MAD = 1; //Consult git history if this is of interest
-      } else if (MAD == 5) { // T,N,M (2011) without renormalization step
-        q = pow(r/rin,5.)*pow(rho_av/rhomax, 2);
-        NORM_WITH_MAXR = 1;
-      } else if (MAD == 6) { // Gaussian-strength vertical threaded field
+
+      } else if (MAD == 3) { // Gaussian-strength vertical threaded field
         double wid = 2; //Radius of half-maximum. Units of rin
         q = gsl_ran_gaussian_pdf((r/rin)*sin(th), wid/sqrt(2*log(2)));
-      } else if (MAD == 7) {
-        // Narayan '12, Penna '12 conditions
+
+      } else if (MAD == 4) { // Narayan '12, Penna '12 conditions
         // Former uses rstart=25, rend=810, lam_B=25
         double uc = uu_av - uu_end;
         double ucm = uu_plane_av - uu_end;
-        q = pow(sin(th),3)*(uc/(ucm+SMALL) - 0.2) / 0.8; // Note builtin buffer of 0.2
-        if ( r > rBend || r < rBstart || fabs(q) > 1.e2 ) q = 0; //Exclude q outside torus and large q resulting from division by SMALL
+        b_buffer = 0; // Note builtin buffer below
+        q = pow(sin(th),3)*(uc/(ucm+SMALL) - 0.2) / 0.8;
+        //Exclude q outside torus and large q resulting from division by SMALL
+        if ( r > rBend || r < rBstart || fabs(q) > 1.e2 ) q = 0;
         NORM_WITH_MAXR = 0; //?
 
         //if (q != 0 && th > M_PI/2-0.1 && th < M_PI/2+0.1) printf("q_mid is %.10e\n", q);
@@ -275,7 +270,6 @@ void init(struct GridGeom *G, struct FluidState *S)
         double lam_B = 25;
         double flux_correction = sin( 1/lam_B * (pow(r,2./3) + 15./8*pow(r,-2./5) - pow(rBstart,2./3) - 15./8*pow(rBstart,-2./5)));
         double q_mod = q*flux_correction;
-        //printf("Correction is %.10e\n", flux_correction);
         A[i][j] = q_mod;
       } else {
         A[i][j] = q;
@@ -328,17 +322,20 @@ void init(struct GridGeom *G, struct FluidState *S)
   if (!NORM_WITH_MAXR) {
     // Ratio of max UU, beta
     double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
+    // In plane only
     //double beta_act = (gam - 1.) * umax_plane / (0.5 * bsq_max);
-    if (mpi_io_proc()) printf("Umax is %.10e, bsq_max is %.10e, beta is %.10e\n", umax, bsq_max, beta_act);
+    LOGN("Umax is %.10e", umax);
+    LOGN("bsq_max is %.10e", bsq_max);
+    LOGN("beta is %.10e", beta_act);
     norm = sqrt(beta_act / beta);
   } else {
     // Beta_min = 100 normalization
-    if (mpi_io_proc()) printf("Min beta in torus is %f\n", beta_min);
+    LOGN("Min beta in torus is %f", beta_min);
     norm = sqrt(beta_min / beta) ;
   }
 
   // Apply normalization
-  if (mpi_io_proc()) printf("Normalization is %f\n", norm);
+  LOGN("Normalization is %f\n", norm);
   ZLOOP {
     S->P[B1][k][j][i] *= norm ;
     S->P[B2][k][j][i] *= norm ;
@@ -373,17 +370,17 @@ void init(struct GridGeom *G, struct FluidState *S)
       int jglobal = j - NG + global_start[1];
       //int j = N2/2+NG;
       int k = NG;
-      if (jglobal == N2TOT/2) {
-	double X[NDIM];
-	coord(i, j, k, CENT, X);
-	double r,th;
-	bl_coord(X, &r, &th);
+      if (jglobal == N2TOT / 2) {
+        double X[NDIM];
+        coord(i, j, k, CENT, X);
+        double r, th;
+        bl_coord(X, &r, &th);
 
-	if (r < rin) {
-	  double B2net =  (A[i][j] + A[i][j+1] - A[i+1][j] - A[i+1][j+1]);
-	    // / (2.*dx[1]*G->gdet[CENT][j][i]);
-	  Phi_proc += fabs(B2net)*M_PI/N3CPU; // * 2.*dx[1]*G->gdet[CENT][j][i]
-	}
+        if (r < rin) {
+          double B2net = (A[i][j] + A[i][j + 1] - A[i + 1][j] - A[i + 1][j + 1]);
+          // / (2.*dx[1]*G->gdet[CENT][j][i]);
+          Phi_proc += fabs(B2net) * M_PI / N3CPU; // * 2.*dx[1]*G->gdet[CENT][j][i]
+        }
       }
     }
   }
@@ -403,23 +400,23 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   ZLOOP {
     // Flux-ct
-    S->P[B1][k][j][i] += -norm*(A[i][j] - A[i][j + 1]
-				+ A[i + 1][j] - A[i + 1][j + 1]) /
-      (2. * dx[2] * G->gdet[CENT][j][i]);
-    S->P[B2][k][j][i] += norm*(A[i][j] + A[i][j + 1]
-			       - A[i + 1][j] - A[i + 1][j + 1]) /
-      (2. * dx[1] * G->gdet[CENT][j][i]);
+    S->P[B1][k][j][i] += -norm
+        * (A[i][j] - A[i][j + 1] + A[i + 1][j] - A[i + 1][j + 1])
+        / (2. * dx[2] * G->gdet[CENT][j][i]);
+    S->P[B2][k][j][i] += norm
+        * (A[i][j] + A[i][j + 1] - A[i + 1][j] - A[i + 1][j + 1])
+        / (2. * dx[1] * G->gdet[CENT][j][i]);
   }
 
 #if ELECTRONS
-  init_electrons();
+  init_electrons(S);
 #endif
 
   // Enforce boundary conditions
   fixup(G, S);
   set_bounds(G, S);
 
-  if(mpi_io_proc()) fprintf(stderr, "Finished init()\n");
+  LOG("Finished init()");
 
 }
 

@@ -26,13 +26,10 @@
 /* ELECTRONS AND OPTIONS
  *   SUPPRESS_MAG_HEAT - (0,1) NO ELECTRON HEATING WHEN SIGMA > 1
  *   BETA_HEAT         - (0,1) BETA-DEPENDENT HEATING
- *   TPTEMIN           - MINIMUM TP/TE
  */
-#define ELECTRONS           0
+#define ELECTRONS           1
 #define SUPPRESS_HIGHB_HEAT 1
 #define BETA_HEAT           1
-#define TPTEMIN             0.001
-#define TPTEMAX             1000.
 
 /* RECONSTRUCTION ALGORITHM
  *   LINEAR, PPM, WENO, MP5
