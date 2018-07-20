@@ -61,6 +61,11 @@
 // Set the spatial discretization in numerical derivatives
 #define DELTA 1.e-5
 
+// Floors in terms of bsq
+#define BSQORHOMAX (500.)
+#define BSQOUMAX (250000.)
+#define UORHOMAX (500.)
+
 // Maximum value of gamma, the Lorentz factor
 #define GAMMAMAX (50.)
 
@@ -221,7 +226,7 @@ extern double Rhor;
 extern double tp_over_te;
 
 // Numerical parameters
-extern double Rin, Rout, hslope, R0;  // TODO user or ditch R0
+extern double Rin, Rout, hslope, R0;  // TODO use or ditch R0
 extern double cour;
 extern double dV, dx[NDIM], startx[NDIM];
 extern double x1Min, x1Max, x2Min, x2Max, x3Min, x3Max;

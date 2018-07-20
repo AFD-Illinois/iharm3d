@@ -8,10 +8,15 @@
 
 #include "decs.h"
 
+// Allow to specify old fluid-frame floors for stable problems
 #ifndef FLUID_FLOORS
 #define FLUID_FLOORS 0
 #endif
 #define DRIFT_FLOORS 0
+
+#if DEBUG
+int nfixed = 0, nfixed_b = 0;
+#endif
 
 // Apply floors to density, internal energy
 // TODO can this be made faster?  I may be calling get_state too much
@@ -23,8 +28,24 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 #endif
 
+#if DEBUG
+#pragma omp parallel for collapse(3) reduction(+:nfixed) reduction(+nfixed_b)
+#else
 #pragma omp parallel for collapse(3)
+#endif
   ZLOOP fixup1zone(G, S, i, j, k);
+
+#if DEBUG
+  nfixed = mpi_reduce_int(nfixed);
+  nfixed_b = mpi_reduce_int(nfixed_b);
+
+  LOGN("Fixed: %d", nfixed);
+  LOGN("From field: %d", nfixed_b);
+  LOGN("Proportion: %f", ((double) nfixed_b) / nfixed);
+
+  nfixed = 0;
+  nfixed_b = 0;
+#endif
 
   timer_stop(TIMER_FIXUP);
 }
@@ -68,9 +89,6 @@ inline double ut_calc_3vel(struct GridGeom *G, int i, int j, double vcon[NDIM])
   return sqrt(DD);
 }
 
-#define BSQORHOMAX (50.)
-#define BSQOUMAX (2500.)
-#define UORHOMAX (50.)
 inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
   double rhoflr, uflr;
@@ -112,11 +130,18 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   // TODO thinner bsq calculation w/o full call -- also check whether obs frame floors should be this high
   //get_state(G, S, i, j, k, CENT);
   double bsq = bsq_calc(S, i, j, k);
-  rhoflr = MY_MAX(rhoflr, bsq/BSQORHOMAX);
-  uflr = MY_MAX(uflr, bsq/BSQOUMAX);
+  double rhoflr_b = bsq/BSQORHOMAX;
+  double uflr_b = bsq/BSQOUMAX;
   rhoflr = MY_MAX(rhoflr, S->P[UU][k][j][i]/UORHOMAX);
 
-  if (rhoflr > S->P[RHO][k][j][i] || uflr > S->P[UU][k][j][i]) { // Apply floors
+  if (rhoflr > S->P[RHO][k][j][i] || uflr > S->P[UU][k][j][i] ||
+      rhoflr_b > S->P[RHO][k][j][i] || uflr_b > S->P[UU][k][j][i]) { // Apply floors
+#if DEBUG
+    nfixed++;
+    // If we would not have hit the floors w/o magnetic floors...
+    if(S->P[RHO][k][j][i] > rhoflr && S->P[UU][k][j][i] > uflr)
+      nfixed_b++;
+#endif
 
 #if DRIFT_FLOORS
     double trans = 10.*bsq/MY_MIN(S->P[RHO][k][j][i], S->P[UU][k][j][i]) - 1.;
