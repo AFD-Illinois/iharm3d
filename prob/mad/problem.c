@@ -308,7 +308,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   beta_min = mpi_min(beta_min);
 
   double umax_plane = 0;
-  for (int i; i < N1TOT; i++) {
+  for (int i = 0; i < N1TOT; i++) {
       double X[NDIM];
       coord(i,NG,NG,CORN,X);
       double r, th;
