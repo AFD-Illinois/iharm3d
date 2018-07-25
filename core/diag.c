@@ -54,8 +54,8 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   double rmed = 0.;
   double e = 0.;
   // Calculate conserved quantities
-  if ((call_code == DIAG_INIT || call_code == DIAG_LOG ||
-       call_code == DIAG_FINAL) && !failed) {
+  if (call_code == DIAG_INIT || call_code == DIAG_LOG ||
+       call_code == DIAG_FINAL) {
 
     get_state_vec(G, S, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
     prim_to_flux_vec(G, S, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, S->U);
@@ -163,7 +163,6 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
 // Diagnostic routines
 void fail(struct GridGeom *G, struct FluidState *S, int fail_type, int i, int j, int k)
 {
-  failed = 1;
 
   fprintf(stderr, "\n\n[%d %d %d] FAIL: %d\n", i, j, k, fail_type);
 
@@ -171,7 +170,7 @@ void fail(struct GridGeom *G, struct FluidState *S, int fail_type, int i, int j,
 
   diag(G, S, DIAG_FINAL);
 
-  exit(0);
+  exit(-1);
 }
 
 // Map out region around failure point
@@ -195,6 +194,29 @@ void area_map(int i, int j, int k, GridPrim prim)
   }
 
   fprintf(stderr, "****************\n");
+}
+
+// TODO this function is useful but slow: it doesn't parllelize under intel 18.0.2
+// Check the whole fluid state for NaN values
+inline void check_nan(struct FluidState *S, const char* flag)
+{
+#if DEBUG
+#pragma omp parallel for collapse(3)
+  PLOOP ZLOOPALL {
+    if (isnan(S->P[ip][k][j][i])) {
+      fprintf(stderr, "NaN in prims[%d]: %d, %d, %d as of position %s\n",ip,i,j,k,flag);
+      exit(-1);
+    }
+  }
+
+#pragma omp parallel for collapse(3)
+  DLOOP1 ZLOOPALL {
+    if (isnan(S->ucon[mu][k][j][i]) || isnan(S->ucov[mu][k][j][i]) || isnan(S->bcon[mu][k][j][i]) || isnan(S->bcov[mu][k][j][i])){
+      fprintf(stderr, "NaN in derived: %d, %d, %d at %s\n",i,j,k,flag);
+      exit(-1);
+    }
+  }
+#endif
 }
 
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j, int k)

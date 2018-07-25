@@ -82,7 +82,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   timer_start(TIMER_LR_TO_F);
 
   static GridPrim *fluxL, *fluxR;
-  static GridDouble *cmaxL, *cmaxR, *cminL, *cminR, *cmax, *cmin;//, ctop;
+  static GridDouble *cmaxL, *cmaxR, *cminL, *cminR, *cmax, *cmin;
 
   static int firstc = 1;
 
@@ -96,7 +96,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     cmax = calloc(1,sizeof(GridDouble));
     cmin = calloc(1,sizeof(GridDouble));
 
-	firstc = 0;
+    firstc = 0;
   }
 
   // Properly offset left face
@@ -163,7 +163,18 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     (*cmax)[k][j][i] = fabs(MY_MAX(MY_MAX(0., (*cmaxL)[k][j][i]), (*cmaxR)[k][j][i]));
     (*cmin)[k][j][i] = fabs(MY_MAX(MY_MAX(0., -(*cminL)[k][j][i]), -(*cminR)[k][j][i]));
     (*ctop)[k][j][i] = MY_MAX((*cmax)[k][j][i], (*cmin)[k][j][i]);
-    if (isnan(1./(*ctop)[k][j][i])) {printf("ctop is 0 or NaN at: %i %i %i (%i)\nExiting.\n", k,j,i,dir); exit(-1);}
+    if (isnan(1./(*ctop)[k][j][i])) {
+      printf("ctop is 0 or NaN at zone: %i %i %i (%i) ", i,j,k,dir);
+#if METRIC == MKS
+      double X[NDIM];
+      double r, th;
+      coord(i, j, k, CENT, X);
+      bl_coord(X, &r, &th);
+      printf("(r,th,phi = %f %f %f)\n", r, th, X[3]);
+#endif
+      printf("\n");
+      exit(-1);
+    }
   }
   timer_stop(TIMER_LR_CMAX);
 
@@ -172,7 +183,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   PLOOP {
     ZSLOOP(-1, N3, -1, N2, -1, N1) {
       (*flux)[ip][k][j][i] = 0.5*((*fluxL)[ip][k][j][i] + (*fluxR)[ip][k][j][i] -
-    		  (*ctop)[k][j][i]*(Sr->U[ip][k][j][i] - Sl->U[ip][k][j][i]));
+               (*ctop)[k][j][i]*(Sr->U[ip][k][j][i] - Sl->U[ip][k][j][i]));
     }
   }
   timer_stop(TIMER_LR_FLUX);
@@ -204,6 +215,7 @@ void flux_ct(struct FluidFlux *F)
     }
 
     // Rewrite EMFs as fluxes, after Toth
+    // These are /not/ ZLOOPS
 #pragma omp for simd collapse(2) nowait
     ZSLOOP(0, N3 - 1, 0, N2 - 1, 0, N1) {
       F->X1[B1][k][j][i] =  0.;

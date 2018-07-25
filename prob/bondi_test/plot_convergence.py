@@ -16,8 +16,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pylab as pl
 
-sys.path.insert(0, '../../../script/')
-sys.path.insert(0, '../../../script/analysis/')
+sys.path.insert(0, '../../../../analysis-scripts/')
 import util
 import hdf5_to_dict as io
 
@@ -26,9 +25,8 @@ for arg in sys.argv:
   if arg == '-auto':
     AUTO = True
 
-RES = [32, 64, 128] #, 256]
+RES = [16, 32, 64, 128] #, 256]
 
-# LOOP OVER EIGENMODES
 NVAR = 8
 
 L1 = np.zeros(len(RES))
@@ -39,11 +37,11 @@ for m in xrange(len(RES)):
 
   dfiles = np.sort(glob.glob('dump*.h5'))
   hdr = io.load_hdr(dfiles[0])
-  geom = io.load_geom(hdr, dfiles[0])
-  dump0 = io.load_dump(hdr, geom, dfiles[0])
-  dump1 = io.load_dump(hdr, geom, dfiles[-1])
+  geom = io.load_geom("grid.h5")
+  dump0 = io.load_dump(dfiles[0], geom, hdr)
+  dump1 = io.load_dump(dfiles[-1], geom, hdr)
   
-  r = dump0['r'][:,0,0]
+  r = geom['r'][:,hdr['n2']/2,0]
   
 #   print "Reh is ", str(hdr['Reh'])
 
@@ -61,16 +59,16 @@ for m in xrange(len(RES)):
   ax = fig.add_subplot(1,1,1)
   ax.plot(r[imin:], rho0, marker='s', label='Initial')
   ax.plot(r[imin:], rho1, marker='s', label='Final')
-  #plt.xscale('log', basex=2); plt.yscale('log')
   plt.xlabel('r (M)'); plt.ylabel('RHO')
   plt.title("Radial profile")
   plt.legend(loc=1)
-  plt.savefig('../test/bondi_comp_' + str(RES[m]) + '.png', bbox_inches='tight')
+  plt.savefig('../plots/bondi_comp_' + str(RES[m]) + '.png', bbox_inches='tight')
 
 # MEASURE CONVERGENCE
 powerfit = np.polyfit(np.log(RES), np.log(L1), 1)[0]
+print "Powerfit: ", powerfit, "L1: ", L1
 
-os.chdir('../test/')
+os.chdir('../plots/')
 
 if not AUTO:
   # MAKE PLOTS

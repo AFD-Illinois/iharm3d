@@ -9,7 +9,7 @@
 #include "decs.h"
 
 // Reverse and write a backwards-index N{3,2,1}-size array of doubles (GridDouble) to a file
-void pack_write_scalar(double in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, hid_t file_id, hsize_t hdf5_type)
+void pack_write_scalar(double in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, hsize_t hdf5_type)
 {
   void *out = calloc(N1*N2*N3, sizeof(hdf5_type));
 
@@ -36,13 +36,13 @@ void pack_write_scalar(double in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, h
   hsize_t fcount[] = {N1, N2, N3}; // = mdims since this was packed above
   hsize_t mstart[] = {0, 0, 0};
 
-  hdf5_write_array(out, file_id, name, 3, fdims, fstart, fcount, fcount, mstart, hdf5_type);
+  hdf5_write_array(out, name, 3, fdims, fstart, fcount, fcount, mstart, hdf5_type);
 
   free(out);
 }
 
 // Reverse and write a backwards-index N{3,2,1}-size array of ints (GridInt) to a file
-void pack_write_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, hid_t file_id)
+void pack_write_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name)
 {
   int *out = calloc(N1*N2*N3, sizeof(int));
 
@@ -57,13 +57,13 @@ void pack_write_int(int in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, hid_t f
   hsize_t fcount[] = {N1, N2, N3}; // = mdims since this was packed above
   hsize_t mstart[] = {0, 0, 0};
 
-  hdf5_write_array(out, file_id, name, 3, fdims, fstart, fcount, fcount, mstart, H5T_NATIVE_INT);
+  hdf5_write_array(out, name, 3, fdims, fstart, fcount, fcount, mstart, H5T_NATIVE_INT);
 
   free(out);
 }
 
 // Reverse and write a backwards-index len,N{3,2,1}-size array of ints (GridVector or GridPrim) to a file
-void pack_write_vector(double in[][N3+2*NG][N2+2*NG][N1+2*NG], int len, const char* name, hid_t file_id, hsize_t hdf5_type)
+void pack_write_vector(double in[][N3+2*NG][N2+2*NG][N1+2*NG], int len, const char* name, hsize_t hdf5_type)
 {
   void *out = calloc(N1*N2*N3*len, sizeof(hdf5_type));
 
@@ -92,13 +92,13 @@ void pack_write_vector(double in[][N3+2*NG][N2+2*NG][N1+2*NG], int len, const ch
   hsize_t fcount[] = {N1, N2, N3, len};
   hsize_t mstart[] = {0, 0, 0, 0};
 
-  hdf5_write_array(out, file_id, name, 4, fdims, fstart, fcount, fcount, mstart, hdf5_type);
+  hdf5_write_array(out, name, 4, fdims, fstart, fcount, fcount, mstart, hdf5_type);
 
   free(out);
 }
 
 // Reverse and write a backwards-index N{2,1}-size axisymmetric scalar (i.e. gdet or similar)
-void pack_write_axiscalar(double in[N2+2*NG][N1+2*NG], const char* name, hid_t file_id, hsize_t hdf5_type)
+void pack_write_axiscalar(double in[N2+2*NG][N1+2*NG], const char* name, hsize_t hdf5_type)
 {
   void *out = calloc(N1*N2*N3, sizeof(hdf5_type)); // Still write full phi for compatibility
 
@@ -123,13 +123,13 @@ void pack_write_axiscalar(double in[N2+2*NG][N1+2*NG], const char* name, hid_t f
   hsize_t fcount[] = {N1, N2, N3}; // = mdims since this was packed above
   hsize_t mstart[] = {0, 0, 0};
 
-  hdf5_write_array(out, file_id, name, 3, fdims, fstart, fcount, fcount, mstart, hdf5_type);
+  hdf5_write_array(out, name, 3, fdims, fstart, fcount, fcount, mstart, hdf5_type);
 
   free(out);
 }
 
 // Reverse and write an axisymmetric NDIMxNDIM tensor (i.e. Gcov/con)
-void pack_write_Gtensor(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], const char* name, hid_t file_id, hsize_t hdf5_type)
+void pack_write_Gtensor(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], const char* name, hsize_t hdf5_type)
 {
   void *out = calloc(N1*N2*N3*NDIM*NDIM, sizeof(hdf5_type));
 
@@ -158,7 +158,7 @@ void pack_write_Gtensor(double in[NDIM][NDIM][N2+2*NG][N1+2*NG], const char* nam
   hsize_t fcount[] = {N1, N2, N3, NDIM, NDIM}; // = mdims since this was packed above
   hsize_t mstart[] = {0, 0, 0, 0, 0};
 
-  hdf5_write_array(out, file_id, name, 5, fdims, fstart, fcount, fcount, mstart, hdf5_type);
+  hdf5_write_array(out, name, 5, fdims, fstart, fcount, fcount, mstart, hdf5_type);
 
   free(out);
 }

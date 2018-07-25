@@ -155,22 +155,14 @@ void init(struct GridGeom *G, struct FluidState *S)
     }
   }
 
-  t = 0.;
+  // Override tf and the dump and log intervals
   tf = 2.*M_PI/fabs(cimag(omega));
-  DTd = tf/5.;
-  DTl = tf/5.;
-  DTr = 100;  // Turn off restarts
-  DTp = 10;   // Performance interval, in timesteps
+  //DTd = tf/5.; // These are set from param.dat
+  //DTl = tf/5.;
 
-  dt = 1.e-6;
-
-  gam = 4./3;
-  cour = 0.9;
-
-  zero_arrays();
   set_grid(G);
 
-  printf("grid set\n");
+  LOG("Set grid");
 
   ZLOOP {
     coord(i, j, k, CENT, X);
@@ -199,9 +191,4 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   //Enforce boundary conditions
   set_bounds(G, S);
-  ZLOOPALL {
-    if(S->P[RHO][k][j][i] == 0) printf("%d %d %d\n", k,j,i);
-  }
-  //fixup(G, S);
-  mpi_barrier();
 }

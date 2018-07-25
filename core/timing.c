@@ -21,23 +21,23 @@ void time_init()
   nstep_start = nstep;
 }
 
-void timer_start(int timerCode)
+inline void timer_start(int timerCode)
 {
-  #pragma omp barrier
-
-  #pragma omp single
-  {
-    timers[timerCode] = omp_get_wtime();
+  if (TIMERS || timerCode == TIMER_ALL) {
+#pragma omp master
+    {
+      timers[timerCode] = omp_get_wtime();
+    }
   }
 }
 
-void timer_stop(int timerCode)
+inline void timer_stop(int timerCode)
 {
-  #pragma omp barrier
-
-  #pragma omp single
-  {
-    times[timerCode] += (omp_get_wtime() - timers[timerCode]);
+  if (TIMERS || timerCode == TIMER_ALL) {
+#pragma omp master
+    {
+      times[timerCode] += (omp_get_wtime() - timers[timerCode]);
+    }
   }
 }
 
@@ -46,6 +46,7 @@ void report_performance()
 {
   if (mpi_io_proc()) {
     int steps = nstep - nstep_start;
+#if TIMERS
     fprintf(stdout, "\n********** PERFORMANCE **********\n");
     fprintf(stdout, "   RECON:    %8.4g s (%.4g %%)\n",
       times[TIMER_RECON]/steps, 100.*times[TIMER_RECON]/times[TIMER_ALL]);
@@ -83,14 +84,16 @@ void report_performance()
       times[TIMER_LR_CMAX]/steps, 100.*times[TIMER_LR_CMAX]/times[TIMER_ALL]);
     fprintf(stdout, "   LR_FLUX:     %8.4g s (%.4g %%)\n",
       times[TIMER_LR_FLUX]/steps, 100.*times[TIMER_LR_FLUX]/times[TIMER_ALL]);
-    #if ELECTRONS
+#if ELECTRONS
     fprintf(stdout, "   E_HEAT:   %8.4g s (%.4g %%)\n",
       times[TIMER_ELECTRON_HEAT]/steps,
       100.*times[TIMER_ELECTRON_HEAT]/times[TIMER_ALL]);
     fprintf(stdout, "   E_FIXUP:  %8.4g s (%.4g %%)\n",
       times[TIMER_ELECTRON_FIXUP]/steps,
       100.*times[TIMER_ELECTRON_FIXUP]/times[TIMER_ALL]);
-    #endif
+#endif
+#endif
+
     fprintf(stdout, "   ALL:      %8.4g s\n", times[TIMER_ALL]/steps);
     fprintf(stdout, "   ZONE CYCLES PER\n");
     fprintf(stdout, "     CORE-SECOND: %e\n",

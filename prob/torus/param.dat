@@ -16,6 +16,13 @@
 [int] DTr = 10000
 [int] DTp = 100
 
+# Electrons
+[dbl] game = 1.333333
+[dbl] gamp = 1.666667
+[dbl] fel0 = 0.01
+[dbl] tptemin = 0.001
+[dbl] tptemax = 1000.0
+
 # PROBLEM
 [dbl] rin = 6.000000e+00
 [dbl] rmax = 1.200000e+01

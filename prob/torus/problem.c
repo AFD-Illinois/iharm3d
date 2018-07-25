@@ -6,6 +6,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#include "bl_coord.h"
 #include "decs.h"
 
 #include <gsl/gsl_rng.h>
@@ -14,19 +15,7 @@
 gsl_rng *rng;
 
 // Local declarations
-struct of_geom {
-	double gcon[NDIM][NDIM];
-	double gcov[NDIM][NDIM];
-	double g;
-	double alpha;
-};
-void coord_transform(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k);
 double lfish_calc(double rmax);
-void blgset(int i, int j, struct of_geom *geom);
-double bl_gdet_func(double r, double th);
-void bl_gcov_func(double r, double th, double gcov[][NDIM]);
-void bl_gcon_func(double r, double th, double gcon[][NDIM]);
 
 static double beta;
 static double rin, rmax;

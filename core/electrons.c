@@ -10,135 +10,125 @@
 
 #if ELECTRONS
 
-void heat_electrons_zone(int i, int j, int k, double Ph[NVAR], double P[NVAR],  
-  double Dt);
-void fixup_electrons_1zone(double P[NVAR]);
+void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k);
+void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S, int i, int j, int k);
+double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
 
-void init_electrons()
+void init_electrons(struct FluidState *S)
 {
-  double uel;
-  
-  ZSLOOP(-NG, N1 + NG - 1, -NG, NG + N2 - 1, -NG, NG + N3 - 1) {
+  ZLOOPALL {
     // Set electron internal energy to constant fraction of internal energy
-    uel = fel0*P[i][j][k][UU];
+    double uel = fel0*S->P[UU][k][j][i];
 
     // Initialize entropies
-    P[i][j][k][KTOT] =  (gam-1.)*P[i][j][k][UU]*pow(P[i][j][k][RHO],-gam);
-    P[i][j][k][KEL] = (game-1.)*uel*pow(P[i][j][k][RHO],-game);
+    S->P[KTOT][k][j][i] =  (gam-1.)*S->P[UU][k][j][i]*pow(S->P[RHO][k][j][i],-gam);
+    S->P[KEL][k][j][i] = (game-1.)*uel*pow(S->P[RHO][k][j][i],-game);
   }
 
-  bound_prim(P);
+  // Necessary?  Usually called right afterward
+  //set_bounds(S);
 }
 
-void heat_electrons(grid_prim_type Ph, grid_prim_type P, double Dt)
+void heat_electrons(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S)
 {
   timer_start(TIMER_ELECTRON_HEAT);
-  #pragma omp parallel for collapse(3)
+
+#pragma omp parallel for collapse(3)
   ZLOOP {
-    heat_electrons_zone(i, j, k, Ph[i][j][k], P[i][j][k], Dt);
+    heat_electrons_1zone(G, Sh, S, i, j, k);
   }
+
   timer_stop(TIMER_ELECTRON_HEAT);
 }
 
-void heat_electrons_zone(int i, int j, int k, double Ph[NVAR], double P[NVAR],
-  double Dt)
+inline void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S, int i, int j, int k)
 {
-	double kHarm, ugHat, ugHarm, uel, fel;
-
   // Actual entropy at final time
-  kHarm = (gam-1.)*P[UU]/pow(P[RHO],gam);
+  double kHarm = (gam-1.)*S->P[UU][k][j][i]/pow(S->P[RHO][k][j][i],gam);
 
-  uel = 1./(game-1.)*P[KEL]*pow(P[RHO],game);
+  double uel = 1./(game-1.)*S->P[KEL][k][j][i]*pow(S->P[RHO][k][j][i],game);
 
-  #if BETA_HEAT
-  fel = get_fel(i, j, k, Ph);
-  #else
-  fel = fel0;
-  #endif
+#if BETA_HEAT
+  double fel = get_fel(G, S, i, j, k);
+#else
+  double fel = fel0;
+#endif
 
-  ugHat = P[KTOT]*pow(P[RHO],gam)/(gam-1.);
-  ugHarm = P[UU];
+  double ugHat = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
+  double ugHarm = S->P[UU][k][j][i];
 
   // Update electron internal energy
-  uel += fel*(ugHarm - ugHat)*pow(Ph[RHO]/P[RHO],gam-game);
+  uel += fel*(ugHarm - ugHat)*pow(Sh->P[RHO][k][j][i]/S->P[RHO][k][j][i],gam-game);
 
   // Convert back to electron entropy
-  P[KEL] = uel*(game-1.)*pow(P[RHO],-game);
+  S->P[KEL][k][j][i] = uel*(game-1.)*pow(S->P[RHO][k][j][i],-game);
 
   // Reset total entropy
-  P[KTOT] = kHarm;
+  S->P[KTOT][k][j][i] = kHarm;
 }
 
-double get_fel(int i, int j, int k, double P[NVAR])
+inline double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
-  struct of_geom geom;
-  double beta, fel, c1, Trat, Tpr, mbeta, qrat;
-  double pres, bsq;
-  double c2, c3, c22, c32;
+  double c1 = 0.92;
 
-  c1 = 0.92;
+  double Tpr = (gam-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
+  double uel = 1./(game-1.)*S->P[KEL][k][j][i]*pow(S->P[RHO][k][j][i],game);
+  double Tel = (game-1.)*uel/S->P[RHO][k][j][i];
+  Tel = (Tel <= 0.) ? Tel : SMALL;
+  Tpr = (Tpr <= 0.) ? Tpr : SMALL;
 
-  Tpr = (gam-1.)*P[UU]/P[RHO];
-  double uel = 1./(game-1.)*P[KEL]*pow(P[RHO],game);
-  double Tel = (game-1.)*uel/P[RHO];
-  if (Tel <= 0.) Tel = SMALL;
-  if (Tpr <= 0.) Tpr = SMALL;
-  Trat = fabs(Tpr/Tel);
+  double Trat = fabs(Tpr/Tel);
 
-  pres = P[RHO]*Tpr; // Proton pressure
+  double pres = S->P[RHO][k][j][i]*Tpr; // Proton pressure
 
-  //get_geometry(i, j, CENT, &geom);
-  geom = *get_geometry(i, j, k);
-  bsq = bsq_calc(P, &geom);
+  //TODO can I prevent this call?
+  get_state(G, S, i, j, k, CENT);
+  double bsq = bsq_calc(S, i, j, k);
 
-  beta = pres/bsq*2.;
-  if (beta > 1.e20) beta = 1.e20;
-  mbeta = 2. - 0.2*log10(Trat);
+  double beta = MY_MIN(pres/bsq*2,1.e20);
 
-  if (Trat <= 1.) {
-    c2 = 1.6/Trat;
-    c3 = 18. + 5.*log10(Trat);
-  } else {
-    c2 = 1.2/Trat;
-    c3 = 18.;
-  }
-  c22 = pow(c2, 2.);
-  c32 = pow(c3, 2.);
+  double mbeta = 2. - 0.2*log10(Trat);
 
-  qrat = c1*(c22+pow(beta,mbeta))/(c32 + pow(beta,mbeta))*exp(-1./beta)*
-         pow(MP/ME*Trat,.5);
-  fel = 1./(1. + qrat);
+  double c2 = (Trat <= 1.) ? 1.6/Trat : 1.2/Trat;
+  double c3 = (Trat <= 1.) ? 18. + 5.*log10(Trat) : 18.;
+  double c22 = pow(c2, 2.);
+  double c32 = pow(c3, 2.);
 
-  #if SUPPRESS_HIGHB_HEAT
-  if (bsq/P[RHO] > 1.) fel = 0.;
-  #endif
+  double qrat = c1*(c22+pow(beta,mbeta))/(c32 + pow(beta,mbeta))*exp(-1./beta)*pow(MP/ME*Trat,.5);
+  double fel = 1./(1. + qrat);
+
+#if SUPPRESS_HIGHB_HEAT
+  fel = (bsq/S->P[RHO][k][j][i] > 1.) ? fel : 0.;
+#endif
 
   return fel;
 }
 
-void fixup_electrons(grid_prim_type P)
+void fixup_electrons(struct FluidState *S)
 {
   timer_start(TIMER_ELECTRON_FIXUP);
-  #pragma omp parallel for collapse(3)
+
+#pragma omp parallel for collapse(3)
   ZLOOP {
-    fixup_electrons_1zone(P[i][j][k]);
+    fixup_electrons_1zone(S, i, j, k);
   }
+
   timer_stop(TIMER_ELECTRON_FIXUP);
 }
 
-void fixup_electrons_1zone(double P[NVAR])
+inline void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k)
 {
-  double kelmax = P[KTOT]*pow(P[RHO],gam-game)/(TPTEMIN + (gam-1.)/(game-1.));
-  double kelmin = P[KTOT]*pow(P[RHO],gam-game)/(TPTEMAX + (gam-1.)/(game-1.));
+  double kelmax = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam-game)/(tptemin + (gam-1.)/(game-1.));
+  double kelmin = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam-game)/(tptemax + (gam-1.)/(game-1.));
 
   // Replace NANs with cold electrons
-  if (isnan(P[KEL])) P[KEL] = kelmin;
+  if (isnan(S->P[KEL][k][j][i])) S->P[KEL][k][j][i] = kelmin;
 
   // Enforce maximum Tp/Te
-  P[KEL] = MY_MAX(P[KEL], kelmin);
+  S->P[KEL][k][j][i] = MY_MAX(S->P[KEL][k][j][i], kelmin);
 
   // Enforce minimum Tp/Te
-  P[KEL] = MY_MIN(P[KEL], kelmax);
+  S->P[KEL][k][j][i] = MY_MIN(S->P[KEL][k][j][i], kelmax);
 }
 #endif // ELECTRONS
 

@@ -23,22 +23,15 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
 
   timer_start(TIMER_CURRENT);
 
-  if (nstep == 0) {
-#pragma omp parallel for simd collapse(2)
-    ZLOOP {
-      for (int mu = 0; mu < NDIM; mu++) S->jcon[mu][k][j][i] = 0.;
-    }
-    return;
-  }
-
   static int first_run = 1;
   if (first_run) {
-      //We only need the primitives, but this is fast
-      Sa = calloc(1,sizeof(struct FluidState));
-      first_run = 0;
+    //We only need the primitives, but this is fast
+    Sa = calloc(1,sizeof(struct FluidState));
+    first_run = 0;
   }
 
   // Calculate time-centered P
+  // TODO Intel 18 prevents this. Work around that...
 #pragma omp parallel for simd collapse(3)
   PLOOP {
     ZLOOPALL {
@@ -47,8 +40,7 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
   }
 
 #pragma omp parallel for simd collapse(3)
-  for (int mu = 0; mu < NDIM; mu++)
-	  ZLOOP S->jcon[mu][k][j][i] = 0.;
+  DLOOP1 ZLOOPALL S->jcon[mu][k][j][i] = 0.;
 
   // Calculate j^{\mu} using centered differences for active zones
   // TODO rewrite this vector-style
@@ -57,31 +49,31 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
     // Get sqrt{-g}*F^{mu nu} at neighboring points
 
     // X0
-    for (int mu = 0; mu < NDIM; mu++) {
+    DLOOP1 {
       gF0p[mu] = Fcon_calc(G, S,  0, mu, i, j, k);
       gF0m[mu] = Fcon_calc(G, Ssave, 0, mu, i, j, k);
     }
 
     // X1
-    for (int mu = 0; mu < NDIM; mu++) {
+    DLOOP1 {
       gF1p[mu] = Fcon_calc(G, Sa,  1, mu, i+1, j, k);
       gF1m[mu] = Fcon_calc(G, Sa, 1, mu, i-1, j, k);
     }
 
     // X2
-    for (int mu = 0; mu < NDIM; mu++) {
+    DLOOP1 {
       gF2p[mu] = Fcon_calc(G, Sa,  2, mu, i, j+1, k);
       gF2m[mu] = Fcon_calc(G, Sa, 2, mu, i, j-1, k);
     }
 
     // X3
-    for (int mu = 0; mu < NDIM; mu++) {
+    DLOOP1 {
       gF3p[mu] = Fcon_calc(G, Sa,  3, mu, i, j, k+1);
       gF3m[mu] = Fcon_calc(G, Sa, 3, mu, i, j, k-1);
     }
 
     // Difference: D_mu F^{mu nu} = 4 \pi j^nu
-    for (int mu = 0; mu < NDIM; mu++) {
+    DLOOP1 {
       // Extra factor of sqrt(4*PI)*J given HARM's B_unit
       S->jcon[mu][k][j][i] = (1./(sqrt(4.*M_PI)*G->gdet[CENT][j][i]))*(
                            (gF0p[mu] - gF0m[mu])/dtsave +
@@ -94,16 +86,16 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
   timer_stop(TIMER_CURRENT);
 }
 
-GridDouble *Fcov01, *Fcov13;
-
 // Calculate field rotation rate
 void omega_calc(struct GridGeom *G, struct FluidState *S, GridDouble *omega)
 {
+  static GridDouble *Fcov01, *Fcov13;
+
   static int firstc = 1;
   if (firstc) {
-	  Fcov01 = calloc(1,sizeof(GridDouble));
-	  Fcov13 = calloc(1,sizeof(GridDouble));
-	  firstc = 0;
+    Fcov01 = calloc (1, sizeof(GridDouble));
+    Fcov13 = calloc (1, sizeof(GridDouble));
+    firstc = 0;
   }
 
   //TODO test inverting these loops, esp if allows writing to omega sooner
