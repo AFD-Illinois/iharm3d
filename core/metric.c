@@ -10,6 +10,10 @@
 
 #include <gsl/gsl_linalg.h>
 
+double MINOR(double m[16], int r0, int r1, int r2, int c0, int c1, int c2);
+void adjoint(double m[16], double adjOut[16]);
+double determinant(double m[16]);
+
 inline double gcon_func(double gcov[NDIM][NDIM], double gcon[NDIM][NDIM])
 {
   double gdet = invert(&gcov[0][0],&gcon[0][0]);
