@@ -23,6 +23,8 @@ FIGY = 10
 THMIN = np.pi/3.
 THMAX = 2.*np.pi/3.
 
+floor_workaround_flux = False
+
 if len(sys.argv) != 3:
   util.warn('Format: python eht_analysis.py [dump path] [tavg]')
   sys.exit()
@@ -67,14 +69,11 @@ th = geom['th'][0,:N2/2,0]
 
 # Option to calculate fluxes at (just inside) r = 5
 # This reduces interference from floors
-flux_out = False
-iF = 0
-if flux_out:
-  while r[iF] < 5:
+iF = 5 # Zone 5 = rEH
+if floor_workaround_flux:
+  while r[iF] < 5: # r=5
     iF += 1
   iF -= 1
-else:
-  iF = 5
 
 # Some variables (Phi) should only be computed at EH
 iEH = 5

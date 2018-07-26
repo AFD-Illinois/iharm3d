@@ -29,7 +29,7 @@ NLINES = 10
 # For plotting debug, "array-space" plots
 USEARRSPACE = False
 
-MAD = False
+MAD = True
 if MAD:
   LOG_MDOT = False
   MAX_MDOT = 80
