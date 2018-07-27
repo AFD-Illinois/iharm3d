@@ -103,6 +103,11 @@ debug: build
 profile: CFLAGS += -g -pg
 profile: build
 
+vtune: CFLAGS += -g -Wall -Werror
+vtune: CFLAGS += -debug inline-debug-info -shared-intel
+vtune: build
+
+
 clean:
 	@echo "Cleaning build files..."
 	@rm -f $(EXE) $(OBJ)
