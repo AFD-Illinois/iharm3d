@@ -23,7 +23,12 @@ FIGY = 10
 THMIN = np.pi/3.
 THMAX = 2.*np.pi/3.
 
+# Option to calculate fluxes at (just inside) r = 5
+# This reduces interference from floors
 floor_workaround_flux = False
+# Option to ignore accretion at high magnetization (funnel)
+# This also reduces interference from floors
+floor_workaround_funnel = False
 
 if len(sys.argv) != 3:
   util.warn('Format: python eht_analysis.py [dump path] [tavg]')
@@ -67,8 +72,6 @@ N3 = hdr['n3']
 r = geom['r'][:,N2/2,0]
 th = geom['th'][0,:N2/2,0]
 
-# Option to calculate fluxes at (just inside) r = 5
-# This reduces interference from floors
 iF = 5 # Zone 5 = rEH
 if floor_workaround_flux:
   while r[iF] < 5: # r=5
@@ -147,8 +150,16 @@ def avg_dump(n):
   #out['omega_th_5'] /= N3*2*10
 
   out['sigma_max'] = np.max(dump['bsq']/dump['RHO'])
-  
-  out['Mdot'] = np.abs((dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum())
+
+  if floor_workaround_funnel:
+    mdot_full = dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3  
+    sigma_shaped = dump['bsq'][iF,:,:]/dump['RHO'][iF,:,:]
+    out['Mdot'] = (mdot_full[np.where(sigma_shaped < 10)]).sum()
+  else:
+    out['Mdot'] = (dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  # Define Mdot positive
+  out['Mdot'] = np.abs(out['Mdot'])
+
   Trphi = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,3]
   Trphi -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,3]
   Trt = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,0]
