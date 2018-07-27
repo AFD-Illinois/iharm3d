@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
   if (mpi_io_proc()) {
     fprintf(stdout, "\n          ************************************************************\n");
     fprintf(stdout, "          *                                                          *\n");
-    fprintf(stdout, "          *                          BHLIGHT                         *\n");
+    fprintf(stdout, "          *                          IHARM3D                         *\n");
     fprintf(stdout, "          *                                                          *\n");
     fprintf(stdout, "          *          Ryan, Dolence & Gammie ApJ 807:31, 2015         *\n");
     fprintf(stdout, "          *                                                          *\n");
