@@ -51,7 +51,7 @@ hdf5_blob hdf5_get_blob(const char *name)
 }
 
 // Write the passed HDF5 blob wrapper to the opened HDF5 file under
-// the group with passed name. 
+// the group with passed name.
 // Returns 0 on success.
 int hdf5_write_blob(hdf5_blob blob, const char *name)
 {
@@ -62,7 +62,7 @@ int hdf5_write_blob(hdf5_blob blob, const char *name)
   strncat(path, name, STRLEN - strlen(path));
 
   herr_t status = H5Ocopy(blob, "blob", file_id, path, H5P_DEFAULT, H5P_DEFAULT);
-  
+
   return (status < 0) ? status : 0;
 }
 
@@ -75,7 +75,7 @@ int hdf5_close_blob(hdf5_blob blob)
 }
 
 // Create a new HDF file (or overwrite whatever file exists)
-int hdf5_create(char *fname)
+int hdf5_create(const char *fname)
 {
   hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
 #ifdef MPI_COMM_WORLD
@@ -91,7 +91,7 @@ int hdf5_create(char *fname)
 }
 
 // Open an existing file for reading
-int hdf5_open(char *fname)
+int hdf5_open(const char *fname)
 {
   hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
 #ifdef MPI_COMM_WORLD

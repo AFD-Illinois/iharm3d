@@ -18,8 +18,8 @@ int hdf5_write_blob(hdf5_blob blob, const char *name);
 int hdf5_close_blob(hdf5_blob blob);
 
 // File
-int hdf5_create(char *fname);
-int hdf5_open(char *fname);
+int hdf5_create(const char *fname);
+int hdf5_open(const char *fname);
 int hdf5_close();
 
 // Directory
