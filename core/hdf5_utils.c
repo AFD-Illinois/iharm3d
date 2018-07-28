@@ -12,6 +12,23 @@
 #include <string.h>
 #include <hdf5.h>
 
+// This lib uses a global debug flag if one exists
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+
+// Use global MPI switch
+#ifndef USE_MPI
+// Or set it intelligently here
+#ifdef MPI_COMM_WORLD
+#define USE_MPI 1
+#else
+#define USE_MPI 0
+#endif
+
+#endif
+
+
 // The library remembers a "current directory" for convenience
 // This is stateful, so be careful to reset it
 #define STRLEN 2048

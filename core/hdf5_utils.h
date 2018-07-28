@@ -6,21 +6,11 @@
 
 #include <hdf5.h>
 
-// This lib uses a global debug flag if one exists
-#ifndef DEBUG
-#define DEBUG 0
-#endif
+// Define a debug flag to print each read/write
+//#define DEBUG 1
 
-// Use global MPI switch
-#ifndef USE_MPI
-// Or set it intelligently here
-#ifdef MPI_COMM_WORLD
-#define USE_MPI 1
-#else
-#define USE_MPI 0
-#endif
-
-#endif
+// Force MPI on or off
+//#define USE_MPI 0
 
 // Blob "copy" utility
 typedef hid_t hdf5_blob;
