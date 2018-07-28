@@ -11,6 +11,17 @@
 #define DEBUG 0
 #endif
 
+// Use global MPI switch
+#ifndef USE_MPI
+// Or set it intelligently here
+#ifdef MPI_COMM_WORLD
+#define USE_MPI 1
+#else
+#define USE_MPI 0
+#endif
+
+#endif
+
 // Blob "copy" utility
 typedef hid_t hdf5_blob;
 hdf5_blob hdf5_get_blob(const char *name);

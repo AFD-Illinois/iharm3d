@@ -78,7 +78,7 @@ int hdf5_close_blob(hdf5_blob blob)
 int hdf5_create(const char *fname)
 {
   hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
-#ifdef MPI_COMM_WORLD
+#if USE_MPI
   H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL); // TODO tune HDF with an MPI info object
 #endif
   file_id = H5Fcreate(fname, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
@@ -94,7 +94,7 @@ int hdf5_create(const char *fname)
 int hdf5_open(const char *fname)
 {
   hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
-#ifdef MPI_COMM_WORLD
+#if USE_MPI
   H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, MPI_INFO_NULL);
 #endif
   file_id = H5Fopen(fname, H5F_ACC_RDONLY, plist_id);
@@ -231,7 +231,7 @@ int hdf5_write_array(const void *data, const char *name, size_t rank,
 
   // Conduct the transfer
   plist_id = H5Pcreate(H5P_DATASET_XFER);
-#ifdef MPI_COMM_WORLD
+#if USE_MPI
   H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 #endif
   int err = H5Dwrite(dset_id, hdf5_type, memspace, filespace, plist_id, data);
@@ -265,7 +265,7 @@ int hdf5_write_single_val(const void *val, const char *name, hsize_t hdf5_type)
 
   // Conduct transfer
   plist_id = H5Pcreate(H5P_DATASET_XFER);
-#ifdef MPI_COMM_WORLD
+#if USE_MPI
   H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 #endif
   int err = H5Dwrite(dset_id, hdf5_type, scalarspace, scalarspace, plist_id, val);
@@ -292,7 +292,7 @@ int hdf5_read_single_val(void *val, const char *name, hsize_t hdf5_type)
   hid_t dset_id = H5Dopen(file_id, path, H5P_DEFAULT);
 
   hid_t plist_id = H5Pcreate(H5P_DATASET_XFER);
-#ifdef MPI_COMM_WORLD
+#if USE_MPI
   H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 #endif
   int err = H5Dread(dset_id, hdf5_type, scalarspace, scalarspace, plist_id, val);
@@ -324,7 +324,7 @@ int hdf5_read_array(void *data, const char *name, size_t rank,
   hid_t dset_id = H5Dopen(file_id, path, H5P_DEFAULT);
 
   hid_t plist_id = H5Pcreate(H5P_DATASET_XFER);
-#ifdef MPI_COMM_WORLD
+#if USE_MPI
   H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 #endif
   int err = H5Dread(dset_id, hdf5_type, memspace, filespace, plist_id, data);
