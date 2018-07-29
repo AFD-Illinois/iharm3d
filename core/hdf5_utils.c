@@ -38,7 +38,7 @@ static char hdf5_cur_dir[STRLEN] = "/";
 hid_t file_id;
 
 // Create a new HDF5 file in memory and group specified by name to
-// the root of the new HDF5 file and return pointer to blob. 
+// the root of the new HDF5 file and return pointer to blob.
 // Returns NULL on failure.
 hdf5_blob hdf5_get_blob(const char *name)
 {
@@ -52,7 +52,7 @@ hdf5_blob hdf5_get_blob(const char *name)
     return status;
   }
 
-  hid_t file_image_id = H5Fcreate("blob", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id); 
+  hid_t file_image_id = H5Fcreate("blob", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
   H5Pclose(plist_id);
   if ( file_image_id < 0 ) return file_image_id;
 
@@ -354,4 +354,3 @@ int hdf5_read_array(void *data, const char *name, size_t rank,
 
   return 0;
 }
-
