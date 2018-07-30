@@ -17,7 +17,7 @@ ifneq (,$(findstring icc,$(shell $(CC) --version)))
 		CFLAGS = -xMIC-AVX512
 	endif
 
-	CFLAGS += -std=gnu11 -O3 -funroll-loops -ipo -qopenmp -mcmodel=large
+	CFLAGS += -std=gnu11 -O3 -funroll-loops -ipo -qopenmp -qopt-prefetch=5
 	MATH_LIB =
 endif
 
@@ -34,7 +34,7 @@ ifneq (,$(findstring gcc,$(shell $(CC) --version)))
 		CFLAGS = -march=skylake-avx512 -mtune=skylake-avx512
 	endif
 
-	CFLAGS += -std=gnu11 -O3 -flto -fopenmp -funroll-loops -mcmodel=large
+	CFLAGS += -std=gnu11 -O3 -flto -fopenmp -funroll-loops
 endif
 
 # Notes on the above:

@@ -9,9 +9,11 @@
 #include "decs.h"
 
 // Allow to specify old fluid-frame floors for stable problems
+// These impose no floor on magnetization
 #ifndef FLUID_FLOORS
 #define FLUID_FLOORS 0
 #endif
+// Use drift-frame to stabilize high magnetization
 #define DRIFT_FLOORS 0
 
 #if DEBUG
@@ -24,12 +26,10 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
 
-#if !OLD_FLOORS
-  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
-#endif
+  if (!FLUID_FLOORS) get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
 #if DEBUG
-#pragma omp parallel for collapse(3) reduction(+:nfixed) reduction(+nfixed_b)
+#pragma omp parallel for collapse(3) reduction(+:nfixed) reduction(+:nfixed_b)
 #else
 #pragma omp parallel for collapse(3)
 #endif
@@ -46,6 +46,8 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   nfixed = 0;
   nfixed_b = 0;
 #endif
+
+  LOG("End fixup");
 
   timer_stop(TIMER_FIXUP);
 }
@@ -293,11 +295,13 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   }
 
   int nfixed_utop = 0;
+#if DEBUG
 #pragma omp parallel for simd collapse(2) reduction (+:nfixed_utop)
   ZLOOP {
     // Count the 0 = bad cells
     nfixed_utop += !pflag[k][j][i];
   }
+#endif
 
   // Make sure we are not using ill defined corner regions
   // I don't think 27 iterations is worth OpenMP
@@ -346,21 +350,17 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
         // Cell is fixed, can now use for other interpolations
         pflag[k][j][i] = 1;
 
-#if !OLD_FLOORS
-        get_state(G, S, i, j, k, CENT);
-#endif
+        if (!FLUID_FLOORS) get_state(G, S, i, j, k, CENT);
+
         fixup1zone(G, S, i, j, k);
+
+        if(!FLUID_FLOORS) get_state(G, S, i, j, k, CENT);
+
       }
     }
   } while (bad > 0);
 
   LOGN("Fixed %d cells", nfixed_utop);
-
-  // Flip back pflag
-#pragma omp parallel for simd collapse(2)
-  ZLOOPALL {
-    pflag[k][j][i] = !pflag[k][j][i];
-  }
 
   timer_stop(TIMER_FIXUP);
 }

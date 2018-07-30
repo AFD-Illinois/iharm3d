@@ -150,17 +150,19 @@ int sync_mpi_bound_X1(struct FluidState *S)
 #if N1 > 1
   // First send right/receive left
   MPI_Sendrecv(&(S->P[0][NG][NG][N1]), 1, face_type[2], neighbors[1][1][2], 0,
-	       &(S->P[0][NG][NG][0]), 1, face_type[2], neighbors[1][1][0], 0, comm, status); // TODO check the status
+           &(S->P[0][NG][NG][0]), 1, face_type[2], neighbors[1][1][0], 0, comm, status); // TODO check the status
   MPI_Sendrecv(&(pflag[NG][NG][N1]), 1, pflag_face_type[2], neighbors[1][1][2], 6,
-	       &(pflag[NG][NG][0]), 1, pflag_face_type[2], neighbors[1][1][0], 6, comm, status);
+           &(pflag[NG][NG][0]), 1, pflag_face_type[2], neighbors[1][1][0], 6, comm, status);
   // And back
   MPI_Sendrecv(&(S->P[0][NG][NG][NG]), 1, face_type[2], neighbors[1][1][0], 1,
-	       &(S->P[0][NG][NG][N1+NG]), 1, face_type[2], neighbors[1][1][2], 1, comm, status);
+           &(S->P[0][NG][NG][N1+NG]), 1, face_type[2], neighbors[1][1][2], 1, comm, status);
   MPI_Sendrecv(&(pflag[NG][NG][NG]), 1, pflag_face_type[2], neighbors[1][1][0], 7,
-	       &(pflag[NG][NG][N1+NG]), 1, pflag_face_type[2], neighbors[1][1][2], 7, comm, status);
+           &(pflag[NG][NG][N1+NG]), 1, pflag_face_type[2], neighbors[1][1][2], 7, comm, status);
 #endif
 
-  return status->MPI_ERROR;
+  //For some reason IMPI '18 hates this
+  //return status->MPI_ERROR;
+  return 0;
 }
 
 int sync_mpi_bound_X2(struct FluidState *S)
@@ -180,7 +182,8 @@ int sync_mpi_bound_X2(struct FluidState *S)
 	       &(pflag[NG][N2+NG][0]), 1, pflag_face_type[1], neighbors[1][2][1], 9, comm, status);
 #endif
 
-  return status->MPI_ERROR;
+  //return status->MPI_ERROR;
+  return 0;
 }
 
 int sync_mpi_bound_X3(struct FluidState *S)
@@ -199,7 +202,8 @@ int sync_mpi_bound_X3(struct FluidState *S)
 	       &(pflag[N3+NG][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 11, comm, status);
 #endif
 
-  return status->MPI_ERROR;
+  //return status->MPI_ERROR;
+  return 0;
 }
 
 void mpi_barrier() {
