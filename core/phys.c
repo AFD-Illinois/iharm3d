@@ -181,6 +181,7 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       lower_grid(S->ucon, S->ucov, G, i, j, k, loc);
     }
+    //lower_grid_vec(S->ucon, S->ucov, G, kstart, kstop, jstart, jstop, istart, istop, loc);
 
 #pragma omp for simd collapse(2)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
@@ -193,6 +194,8 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
       lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
     }
   }
+
+    //lower_grid_vec(S->bcon, S->bcov, G, kstart, kstop, jstart, jstop, istart, istop, loc);
 }
 
 // TODO reintroduce this? Just fails the fluid on certain conditions
