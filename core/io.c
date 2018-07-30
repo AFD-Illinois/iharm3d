@@ -18,7 +18,7 @@ GridDouble *omega;
 
 // TODO also need to change which packing routines are called
 #define OUT_TYPE float
-#define OUT_H5_TYPE H5T_NATIVE_FLOAT
+#define OUT_H5_TYPE H5T_IEEE_F32LE
 
 #define HDF_STR_LEN 20
 
@@ -65,7 +65,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
 
   hdf5_write_single_val(VERSION, "version", string_type);
   int has_electrons = ELECTRONS;
-  hdf5_write_single_val(&has_electrons, "has_electrons", H5T_NATIVE_INT);
+  hdf5_write_single_val(&has_electrons, "has_electrons", H5T_STD_I32LE);
 
 #if METRIC == MINKOWSKI
   hdf5_write_single_val("MINKOWSKI", "metric_name", string_type);
@@ -91,66 +91,66 @@ void dump(struct GridGeom *G, struct FluidState *S)
 #endif
 
   int n1 = N1TOT, n2 = N2TOT, n3 = N3TOT;
-  hdf5_write_single_val(&n1, "n1", H5T_NATIVE_INT);
-  hdf5_write_single_val(&n2, "n2", H5T_NATIVE_INT);
-  hdf5_write_single_val(&n3, "n3", H5T_NATIVE_INT);
+  hdf5_write_single_val(&n1, "n1", H5T_STD_I32LE);
+  hdf5_write_single_val(&n2, "n2", H5T_STD_I32LE);
+  hdf5_write_single_val(&n3, "n3", H5T_STD_I32LE);
 
   int n_prims = NVAR;
-  hdf5_write_single_val(&n_prims, "n_prims", H5T_NATIVE_INT);
+  hdf5_write_single_val(&n_prims, "n_prims", H5T_STD_I32LE);
   // In case we do passive variables
   int n_prims_passive = 0;
-  hdf5_write_single_val(&n_prims_passive, "n_prims_passive", H5T_NATIVE_INT);
+  hdf5_write_single_val(&n_prims_passive, "n_prims_passive", H5T_STD_I32LE);
   hdf5_write_str_list(varNames, "prim_names", HDF_STR_LEN, n_prims);
 
-  hdf5_write_single_val(&gam, "gam", H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&gam, "gam", H5T_IEEE_F64LE);
   #if ELECTRONS
-  hdf5_write_single_val(&game, "gam_e", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&gamp, "gam_p", H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&game, "gam_e", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&gamp, "gam_p", H5T_IEEE_F64LE);
   #endif
-  hdf5_write_single_val(&cour, "cour", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&tf, "tf", H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&cour, "cour", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&tf, "tf", H5T_IEEE_F64LE);
   hdf5_add_units("tf", "code");
 
   //Geometry
   hdf5_make_directory("geom");
   hdf5_set_directory("/header/geom/");
 
-  hdf5_write_single_val(&(startx[1]), "startx1", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&(startx[2]), "startx2", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&(startx[3]), "startx3", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&(dx[1]), "dx1", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&(dx[2]), "dx2", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&(dx[3]), "dx3", H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&(startx[1]), "startx1", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&(startx[2]), "startx2", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&(startx[3]), "startx3", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&(dx[1]), "dx1", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&(dx[2]), "dx2", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&(dx[3]), "dx3", H5T_IEEE_F64LE);
   int n_dim = NDIM;
-  hdf5_write_single_val(&n_dim, "n_dim", H5T_NATIVE_INT);
+  hdf5_write_single_val(&n_dim, "n_dim", H5T_STD_I32LE);
   #if METRIC == MKS
   hdf5_make_directory("mks");
   hdf5_set_directory("/header/geom/mks/");
-  hdf5_write_single_val(&Rin, "Rin", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&Rout, "Rout", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&Rhor, "Reh", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&hslope, "hslope", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&a, "a", H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&Rin, "Rin", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&Rout, "Rout", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&Rhor, "Reh", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&hslope, "hslope", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&a, "a", H5T_IEEE_F64LE);
   #if POLYTH
-  hdf5_write_single_val(&poly_xt, "poly_xt", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&poly_alpha, "poly_alpha", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&mks_smooth, "mks_smooth", H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&poly_xt, "poly_xt", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&poly_alpha, "poly_alpha", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&mks_smooth, "mks_smooth", H5T_IEEE_F64LE);
   #endif
   #endif
 
   hdf5_set_directory("/");
 
   int is_full_dump = 1; // TODO do partial/full dumps
-  hdf5_write_single_val(&is_full_dump, "is_full_dump", H5T_NATIVE_INT);
-  hdf5_write_single_val(&t, "t", H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&is_full_dump, "is_full_dump", H5T_STD_I32LE);
+  hdf5_write_single_val(&t, "t", H5T_IEEE_F64LE);
   hdf5_add_units("t", "code");
-  hdf5_write_single_val(&dt, "dt", H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&dt, "dt", H5T_IEEE_F64LE);
   hdf5_add_units("dt", "code");
-  hdf5_write_single_val(&nstep, "n_step", H5T_NATIVE_INT);
-  hdf5_write_single_val(&dump_cnt, "n_dump", H5T_NATIVE_INT);
+  hdf5_write_single_val(&nstep, "n_step", H5T_STD_I32LE);
+  hdf5_write_single_val(&dump_cnt, "n_dump", H5T_STD_I32LE);
 
-  hdf5_write_single_val(&DTd, "dump_cadence", H5T_NATIVE_DOUBLE);
-  hdf5_write_single_val(&DTf, "full_dump_cadence", H5T_NATIVE_DOUBLE);
+  hdf5_write_single_val(&DTd, "dump_cadence", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&DTf, "full_dump_cadence", H5T_IEEE_F64LE);
 
   // Write primitive variables
   pack_write_vector(S->P, NVAR, "prims", OUT_H5_TYPE);
