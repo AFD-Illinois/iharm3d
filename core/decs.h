@@ -84,6 +84,20 @@
 #define TIMERS 1
 #endif
 
+// The Intel compiler is a pain
+// Intel 18.0.0 aka 20170811 works
+// Intel 18.0.2,3 aka 20180315 and 20180516 crash in places
+// So we #if off the crashes with this flag
+#ifndef INTEL_WORKAROUND
+
+#if __INTEL_COMPILER_BUILD_DATE > 20180101
+#define INTEL_WORKAROUND 1
+#else
+#define INTEL_WORKAROUND 0
+#endif
+
+#endif
+
 // Default string length
 #define STRLEN (2048)
 

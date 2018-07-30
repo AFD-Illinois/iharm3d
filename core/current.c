@@ -31,16 +31,19 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
   }
 
   // Calculate time-centered P
-  // TODO Intel 18 prevents this. Work around that...
-//#pragma omp parallel for simd collapse(3)
+  // TODO Intel 18.0.2 crashes at these parallel directives
+#if !INTEL_WORKAROUND
+#pragma omp parallel for simd collapse(3)
+#endif
   PLOOP {
     ZLOOPALL {
       Sa->P[ip][k][j][i] = 0.5*(S->P[ip][k][j][i] + Ssave->P[ip][k][j][i]);
     }
   }
 
-  // TODO Intel 18 crasher
-//#pragma omp parallel for simd collapse(3)
+#if !INTEL_WORKAROUND
+#pragma omp parallel for simd collapse(3)
+#endif
   DLOOP1 ZLOOPALL S->jcon[mu][k][j][i] = 0.;
 
   // Calculate j^{\mu} using centered differences for active zones

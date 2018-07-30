@@ -26,9 +26,13 @@ void step(struct GridGeom *G, struct FluidState *S)
 
   // Need both P_n and P_n+1 to calculate current
   // Work around ICC 18.0.2 bug in assigning to pointers to structs
-  // TODO use pointer tricks to avoid deep copy
+  // TODO use pointer tricks to avoid deep copy on both compilers
+#if INTEL_WORKAROUND
   memcpy(&(Ssave->P),&(S->P),sizeof(GridPrim));
-
+#else
+#pragma omp parallel for simd collapse(3)
+  PLOOP ZLOOPALL Ssave->P[ip][k][j][i] = S->P[ip][k][j][i];
+#endif
   LOG("Start step");
 
   // Predictor setup
@@ -103,7 +107,12 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   }
 
   // Work around ICC 18.0.2 bug in assigning to pointers to structs
+#if INTEL_WORKAROUND
   memcpy(&(Sf->P),&(Si->P),sizeof(GridPrim));
+#else
+#pragma omp parallel for simd collapse(3)
+  PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
+#endif
 
   double ndt = get_flux(G, Ss, F);
 
