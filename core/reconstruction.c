@@ -27,6 +27,14 @@
 #error "not enough ghost zones! PPM/WENO/MP5 + NG < 3\n"
 #endif
 
+void linear_mc(double unused1, double x1, double x2, double x3, double unused2, double *lout, double *rout);
+void para(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout);
+void weno(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout);
+
+double median(double a, double b, double c);
+double mp5_subcalc(double Fjm2, double Fjm1, double Fj, double Fjp1, double Fjp2);
+void mp5(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout);
+
 inline void linear_mc(double unused1, double x1, double x2, double x3, double unused2, double *lout, double *rout)
 {
   double Dqm,Dqp,Dqc,s;
