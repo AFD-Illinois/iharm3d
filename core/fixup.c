@@ -9,9 +9,11 @@
 #include "decs.h"
 
 // Allow to specify old fluid-frame floors for stable problems
+// These impose no floor on magnetization
 #ifndef FLUID_FLOORS
 #define FLUID_FLOORS 0
 #endif
+// Use drift-frame to stabilize high magnetization
 #define DRIFT_FLOORS 0
 
 #if DEBUG
@@ -24,9 +26,7 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
 
-#if !FLUID_FLOORS
-  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
-#endif
+  if (!FLUID_FLOORS) get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
 #if DEBUG
 #pragma omp parallel for collapse(3) reduction(+:nfixed) reduction(+:nfixed_b)
@@ -350,10 +350,12 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
         // Cell is fixed, can now use for other interpolations
         pflag[k][j][i] = 1;
 
-#if !OLD_FLOORS
-        get_state(G, S, i, j, k, CENT);
-#endif
+        if (!FLUID_FLOORS) get_state(G, S, i, j, k, CENT);
+
         fixup1zone(G, S, i, j, k);
+
+        if(!FLUID_FLOORS) get_state(G, S, i, j, k, CENT);
+
       }
     }
   } while (bad > 0);
