@@ -98,7 +98,7 @@ inline double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, in
   double fel = 1./(1. + qrat);
 
 #if SUPPRESS_HIGHB_HEAT
-  fel = (bsq/S->P[RHO][k][j][i] > 1.) ? fel : 0.;
+  fel = (bsq/S->P[RHO][k][j][i] > 1.) ? 0. : fel;
 #endif
 
   return fel;
