@@ -64,7 +64,7 @@ hdf5_blob hdf5_get_blob(const char *name)
 
   hid_t file_image_id = H5Fcreate("blob", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
   H5Pclose(plist_id);
-  if ( file_image_id < 0 ) FAIL(file_image_id, "hdf5_get_blob", name);
+  if ( file_image_id < 0 ) FAIL((int) file_image_id, "hdf5_get_blob", name);
 
   char path[STRLEN];
   strncpy(path, hdf5_cur_dir, STRLEN);
@@ -119,7 +119,7 @@ int hdf5_create(const char *fname)
   // Quiet HDF5's own errors, so we can control them
   H5Eset_auto2(H5E_DEFAULT, NULL, NULL);
 
-  if(file_id < 0) FAIL(file_id, "hdf5_create", fname);
+  if(file_id < 0) FAIL((int) file_id, "hdf5_create", fname);
   return 0;
 }
 
@@ -139,7 +139,7 @@ int hdf5_open(const char *fname)
   // Quiet HDF5's own errors, so we can control them
   H5Eset_auto2(H5E_DEFAULT, NULL, NULL);
 
-  if(file_id < 0) FAIL(file_id, "hdf5_open", fname);
+  if(file_id < 0) FAIL((int) file_id, "hdf5_open", fname);
   return 0;
 }
 
@@ -147,7 +147,7 @@ int hdf5_open(const char *fname)
 int hdf5_close()
 {
   H5Fflush(file_id,H5F_SCOPE_GLOBAL);
-  int err = H5Fclose(file_id);
+  herr_t err = H5Fclose(file_id);
 
   if(err < 0) FAIL(err, "hdf5_close", "none");
   return 0;
@@ -165,7 +165,7 @@ int hdf5_make_directory(const char *name)
   if(DEBUG) printf("Adding dir %s\n", path);
 
   hid_t group_id = H5Gcreate2(file_id, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  if (group_id < 0) FAIL(group_id, "hdf5_make_directory", path);
+  if (group_id < 0) FAIL((int) group_id, "hdf5_make_directory", path);
   H5Gclose(group_id);
 
   return 0;
@@ -185,7 +185,7 @@ int hdf5_exists(const char *name) {
   strncat(path, name, STRLEN - strlen(path));
 
   hid_t link_plist = H5Pcreate(H5P_LINK_ACCESS);
-  int exists = H5Lexists(file_id, path, link_plist);
+  herr_t exists = H5Lexists(file_id, path, link_plist);
   H5Pclose(link_plist);
 
   if(DEBUG) printf("Checking existence of %s: %d\n", path, exists);
@@ -212,7 +212,7 @@ int hdf5_add_attr(const void *att, const char *att_name, const char *data_name, 
   if(DEBUG) printf("Adding att %s\n", path);
 
   hid_t attribute_id = H5Acreate_by_name(file_id, path, att_name, hdf5_type, H5Screate(H5S_SCALAR), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  if (attribute_id < 0) FAIL(attribute_id, "hdf5_add_attr", path);
+  if (attribute_id < 0) FAIL((int) attribute_id, "hdf5_add_attr", path);
   H5Awrite(attribute_id, hdf5_type, att);
   H5Aclose(attribute_id);
 
@@ -224,7 +224,7 @@ int hdf5_add_units(const char *name, const char *unit)
 {
   hid_t string_type = H5Tcopy(H5T_C_S1);
   H5Tset_size(string_type, strlen(unit)+1);
-  int err = hdf5_add_attr(unit, "units", name, string_type);
+  herr_t err = hdf5_add_attr(unit, "units", name, string_type);
   if (err < 0) FAIL(err, "hdf5_add_units", name);
   H5Tclose(string_type);
   return 0;
@@ -248,7 +248,7 @@ int hdf5_write_str_list(const void *data, const char *name, size_t str_len, size
 
   hid_t dataspace = H5Screate_simple(1, dims_of_char_dataspace, NULL);
   hid_t dataset = H5Dcreate(file_id, path, vlstr_h5t, dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  int err = H5Dwrite(dataset, vlstr_h5t, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+  herr_t err = H5Dwrite(dataset, vlstr_h5t, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
   if (err < 0) FAIL(err, "hdf5_write_str_list", path); // If anything above fails, the write should too
 
   H5Dclose(dataset);
@@ -289,7 +289,7 @@ int hdf5_write_array(const void *data, const char *name, size_t rank,
 #if USE_MPI
   H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 #endif
-  int err = H5Dwrite(dset_id, hdf5_type, memspace, filespace, plist_id, data);
+  herr_t err = H5Dwrite(dset_id, hdf5_type, memspace, filespace, plist_id, data);
   if (err < 0) FAIL(err, "hdf5_write_array", path);
 
   // Close spaces (TODO could keep open for speed writing arrays of same size?)
@@ -323,7 +323,7 @@ int hdf5_write_single_val(const void *val, const char *name, hsize_t hdf5_type)
 #if USE_MPI
   H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 #endif
-  int err = H5Dwrite(dset_id, hdf5_type, scalarspace, scalarspace, plist_id, val);
+  herr_t err = H5Dwrite(dset_id, hdf5_type, scalarspace, scalarspace, plist_id, val);
   if (err < 0) FAIL(err, "hdf5_write_single_val", path);
 
   // Close spaces (TODO could definitely keep these open instead of re-declaring)
@@ -350,7 +350,7 @@ int hdf5_read_single_val(void *val, const char *name, hsize_t hdf5_type)
 #if USE_MPI
   H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 #endif
-  int err = H5Dread(dset_id, hdf5_type, scalarspace, scalarspace, plist_id, val);
+  herr_t err = H5Dread(dset_id, hdf5_type, scalarspace, scalarspace, plist_id, val);
   if (err < 0) FAIL(err, "hdf5_read_single_val", path);
 
   H5Dclose(dset_id);
@@ -382,7 +382,7 @@ int hdf5_read_array(void *data, const char *name, size_t rank,
 #if USE_MPI
   H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 #endif
-  int err = H5Dread(dset_id, hdf5_type, memspace, filespace, plist_id, data);
+  herr_t err = H5Dread(dset_id, hdf5_type, memspace, filespace, plist_id, data);
   if (err < 0) FAIL(err, "hdf5_read_array", path);
 
   H5Dclose(dset_id);
