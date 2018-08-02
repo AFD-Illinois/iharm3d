@@ -140,12 +140,11 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 
 #pragma omp parallel for simd collapse(3)
   PLOOP ZLOOP {
-      Sf->U[ip][k][j][i] = Si->U[ip][k][j][i] +
-        Dt*((F->X1[ip][k][j][i] - F->X1[ip][k][j][i+1])/dx[1] +
-            (F->X2[ip][k][j][i] - F->X2[ip][k][j+1][i])/dx[2] +
-            (F->X3[ip][k][j][i] - F->X3[ip][k+1][j][i])/dx[3] +
-            (*dU)[ip][k][j][i]);
-    }
+    Sf->U[ip][k][j][i] = Si->U[ip][k][j][i] +
+      Dt*((F->X1[ip][k][j][i] - F->X1[ip][k][j][i+1])/dx[1] +
+          (F->X2[ip][k][j][i] - F->X2[ip][k][j+1][i])/dx[2] +
+          (F->X3[ip][k][j][i] - F->X3[ip][k+1][j][i])/dx[3] +
+          (*dU)[ip][k][j][i]);
   }
   timer_stop(TIMER_UPDATE_U);
 
