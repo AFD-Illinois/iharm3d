@@ -138,9 +138,8 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 
   prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);
 
-#pragma omp parallel for collapse(4)
-  PLOOP {
-    ZLOOP {
+#pragma omp parallel for simd collapse(3)
+  PLOOP ZLOOP {
       Sf->U[ip][k][j][i] = Si->U[ip][k][j][i] +
         Dt*((F->X1[ip][k][j][i] - F->X1[ip][k][j][i+1])/dx[1] +
             (F->X2[ip][k][j][i] - F->X2[ip][k][j+1][i])/dx[2] +
