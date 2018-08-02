@@ -250,7 +250,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       }
 
       U_to_P(G, S, i, j, k, CENT);
-      //get_state(G, S, i, j, k, CENT);
+      get_state(G, S, i, j, k, CENT);
 #if DRIFT_FLOORS
     } // if (trans > 0)
 #endif
@@ -277,7 +277,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     S->P[U1][k][j][i] *= f;
     S->P[U2][k][j][i] *= f;
     S->P[U3][k][j][i] *= f;
-    //get_state(G, S, i, j, k, CENT);
+    get_state(G, S, i, j, k, CENT);
   }
 
 }
@@ -325,7 +325,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   do {
     bad = 0;
     // TODO is this okay? Not /quite/ deterministic...
-#pragma omp parallel for collapse(3) reduction(+:bad)
+//#pragma omp parallel for collapse(3) reduction(+:bad)
     ZLOOP {
       if (pflag[k][j][i] == 0) {
         double wsum = 0.;
