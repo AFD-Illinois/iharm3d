@@ -16,7 +16,6 @@
 // Variables kept for output only
 GridDouble *omega;
 
-// TODO also need to change which packing routines are called
 #define OUT_TYPE float
 #define OUT_H5_TYPE H5T_IEEE_F32LE
 
@@ -44,7 +43,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
 
   static int firstc = 1;
   if(firstc) {
-    data = calloc(1,sizeof(GridDouble)); // TODO safe calloc for fails
+    data = calloc(1,sizeof(GridDouble));
     firstc = 0;
   }
 

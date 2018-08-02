@@ -263,7 +263,7 @@ void inflow_check(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
       ((S->ucon[1][k][j][i] < 0.) && (type == 1)))
   {
     // Find gamma and remove it from S->Pitives
-    // TODO check failures in more vectorization-friendly way
+    // TODO check failures in a vectorization-friendly way
     double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
     S->P[U1][k][j][i] /= gamma;
     S->P[U2][k][j][i] /= gamma;

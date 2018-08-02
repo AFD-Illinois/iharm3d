@@ -31,7 +31,7 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
   }
 
   // Calculate time-centered P
-  // TODO Intel 18.0.2 crashes at these parallel directives
+  // Intel 18.0.2 crashes at these parallel directives
 #if !INTEL_WORKAROUND
 #pragma omp parallel for simd collapse(3)
 #endif

@@ -292,7 +292,6 @@ int hdf5_write_array(const void *data, const char *name, size_t rank,
   herr_t err = H5Dwrite(dset_id, hdf5_type, memspace, filespace, plist_id, data);
   if (err < 0) FAIL(err, "hdf5_write_array", path);
 
-  // Close spaces (TODO could keep open for speed writing arrays of same size?)
   H5Dclose(dset_id);
   H5Pclose(plist_id);
   H5Sclose(filespace);

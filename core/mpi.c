@@ -147,10 +147,11 @@ int sync_mpi_bound_X1(struct FluidState *S)
 {
   MPI_Status *status = MPI_STATUS_IGNORE;
 
+  // We don't check returns since MPI kindly crashes on failure
 #if N1 > 1
   // First send right/receive left
   MPI_Sendrecv(&(S->P[0][NG][NG][N1]), 1, face_type[2], neighbors[1][1][2], 0,
-           &(S->P[0][NG][NG][0]), 1, face_type[2], neighbors[1][1][0], 0, comm, status); // TODO check the status
+           &(S->P[0][NG][NG][0]), 1, face_type[2], neighbors[1][1][0], 0, comm, status);
   MPI_Sendrecv(&(pflag[NG][NG][N1]), 1, pflag_face_type[2], neighbors[1][1][2], 6,
            &(pflag[NG][NG][0]), 1, pflag_face_type[2], neighbors[1][1][0], 6, comm, status);
   // And back
