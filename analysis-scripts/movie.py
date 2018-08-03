@@ -76,7 +76,7 @@ geom = io.load_geom(gridfile)
 
 if hdr['n1'] >= 256 or hdr['n2'] >= 256 or hdr['n3'] >= 256:
   #Roughly compute memory and leave some generous padding for multiple copies and Python games
-  NTHREADS = int(0.1 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
+  nthreads = int(0.1 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
 else:
   nthreads = psutil.cpu_count(logical=False)
 
