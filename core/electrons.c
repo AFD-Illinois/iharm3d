@@ -10,6 +10,12 @@
 
 #if ELECTRONS
 
+// TODO put these in options with a default in decs.h
+#define HOWES 0
+#define KAWAZURA 1
+#define CONSTANT 3
+#define FE_MODEL HOWES
+
 void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k);
 void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S, int i, int j, int k);
 double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
@@ -48,11 +54,7 @@ inline void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, stru
 
   double uel = 1./(game-1.)*S->P[KEL][k][j][i]*pow(S->P[RHO][k][j][i],game);
 
-#if BETA_HEAT
   double fel = get_fel(G, S, i, j, k);
-#else
-  double fel = fel0;
-#endif
 
   double ugHat = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
   double ugHarm = S->P[UU][k][j][i];
@@ -69,13 +71,11 @@ inline void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, stru
 
 inline double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
-  double c1 = 0.92;
-
   double Tpr = (gam-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
   double uel = 1./(game-1.)*S->P[KEL][k][j][i]*pow(S->P[RHO][k][j][i],game);
   double Tel = (game-1.)*uel/S->P[RHO][k][j][i];
-  Tel = (Tel <= 0.) ? Tel : SMALL;
-  Tpr = (Tpr <= 0.) ? Tpr : SMALL;
+  if(Tel <= 0.) Tel = SMALL;
+  if(Tpr <= 0.) Tpr = SMALL;
 
   double Trat = fabs(Tpr/Tel);
 
@@ -85,20 +85,29 @@ inline double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, in
   get_state(G, S, i, j, k, CENT);
   double bsq = bsq_calc(S, i, j, k);
 
-  double beta = MY_MIN(pres/bsq*2,1.e20);
+  double beta = pres/bsq*2;
+  if(beta > 1.e20) beta = 1.e20;
 
-  double mbeta = 2. - 0.2*log10(Trat);
+#if FE_MODEL == HOWES
+  double logTrat = log10(Trat);
+  double mbeta = 2. - 0.2*logTrat;
 
+  double c1 = 0.92;
   double c2 = (Trat <= 1.) ? 1.6/Trat : 1.2/Trat;
-  double c3 = (Trat <= 1.) ? 18. + 5.*log10(Trat) : 18.;
-  double c22 = pow(c2, 2.);
-  double c32 = pow(c3, 2.);
+  double c3 = (Trat <= 1.) ? 18. + 5.*logTrat : 18.;
 
-  double qrat = c1*(c22+pow(beta,mbeta))/(c32 + pow(beta,mbeta))*exp(-1./beta)*pow(MP/ME*Trat,.5);
+  double beta_pow = pow(beta,mbeta);
+  double qrat = c1*(c2*c2+beta_pow)/(c3*c3 + beta_pow)*exp(-1./beta)*pow(MP/ME*Trat,.5);
   double fel = 1./(1. + qrat);
+#elif FE_MODEL == KAWAZURA
+  double QiQe = 35./(1. + pow(beta/15.,-1.4)*exp(-0.1/Trat));
+  double fel = 1./(1. + QiQe);
+#elif FE_MODEL == CONSTANT
+  double fel = fel0;
+#endif
 
 #if SUPPRESS_HIGHB_HEAT
-  fel = (bsq/S->P[RHO][k][j][i] > 1.) ? 0. : fel;
+  if(bsq/S->P[RHO][k][j][i] > 1.) fel = 0;
 #endif
 
   return fel;
