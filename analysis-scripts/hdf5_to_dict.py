@@ -81,18 +81,18 @@ def load_geom(fname):
 
   return geom
 
-def load_dump(fname, geom, hdr):
+def load_dump(fname, geom, hdr, calc_omega=True):
   dfile = h5py.File(fname)
   
   dump = {}
   dump['hdr'] = hdr # Header is a pain to carry around separately
 
   # TODO this necessarily grabs the /whole/ primitives array
-  for key in [key for key in dfile['/'].keys() if key not in ['header','extras'] ]:
+  for key in [key for key in dfile['/'].keys() if key not in ['header', 'extras', 'prims'] ]:
     dump[key] = dfile[key][()]
 
   for name, num in zip(hdr['prim_names'], range(hdr['n_prims'])):
-    dump[name] = dump['prims'][:,:,:,num]
+    dump[name] = dfile['prims'][:,:,:,num]
 
   # Load the extras. TODO option for this
   for key in dfile['extras'].keys():
@@ -111,7 +111,8 @@ def load_dump(fname, geom, hdr):
   dump['ucon'], dump['ucov'], dump['bcon'], dump['bcov'] = get_state(dump, geom)
   dump['bsq'] = (dump['bcon']*dump['bcov']).sum(axis=-1)
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
-  dump['omega'] = omega_calc(dump, geom)
+  if calc_omega:
+    dump['omega'] = omega_calc(dump, geom)
 
   return dump
 

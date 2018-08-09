@@ -45,8 +45,19 @@ geom = io.load_geom(os.path.join(path,'grid.h5'))
 # Limit threads for 256^3 problem due to memory
 # TODO guess NTHREADS better (96e9/N^3*8?)
 if hdr['n1'] >= 256 or hdr['n2'] >= 256 or hdr['n3'] >= 256:
-  #Roughly compute memory and leave some generous padding for multiple copies and Python games
-  NTHREADS = int(0.1 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
+  # Roughly compute memory and leave some generous padding for multiple copies and Python games
+  NTHREADS = int(0.11 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
+  # Leave the rest of the parallelism to MKL
+  try:
+    import ctypes
+
+    mkl_rt = ctypes.CDLL('libmkl_rt.so')
+    mkl_set_num_threads = mkl_rt.MKL_Set_Num_Threads
+    mkl_get_max_threads = mkl_rt.MKL_Get_Max_Threads
+    mkl_set_num_threads(4)
+    print("Using", mkl_get_max_threads(), "MKL threads")
+  except Error as e:
+    print(e)
 else:
   NTHREADS = psutil.cpu_count(logical=False)
 
