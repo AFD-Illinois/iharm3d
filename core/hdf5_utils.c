@@ -34,7 +34,7 @@
 #endif
 
 #if FAIL_HARD
-#define FAIL(errcode, fn_name, val_name) { fprintf(stderr, "HDF5 Error code %d in %s processing %s\n", errcode, fn_name, val_name); exit(-1); }
+#define FAIL(errcode, fn_name, val_name) { fprintf(stderr, "HDF5 Error code %d in %s processing %s\n", (int) errcode, fn_name, val_name); exit(-1); }
 #else
 #define FAIL(errcode, fn_name, val_name) return errcode;
 #endif
@@ -64,7 +64,7 @@ hdf5_blob hdf5_get_blob(const char *name)
 
   hid_t file_image_id = H5Fcreate("blob", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
   H5Pclose(plist_id);
-  if ( file_image_id < 0 ) FAIL((int) file_image_id, "hdf5_get_blob", name);
+  if ( file_image_id < 0 ) FAIL(file_image_id, "hdf5_get_blob", name);
 
   char path[STRLEN];
   strncpy(path, hdf5_cur_dir, STRLEN);
@@ -119,7 +119,7 @@ int hdf5_create(const char *fname)
   // Quiet HDF5's own errors, so we can control them
   H5Eset_auto2(H5E_DEFAULT, NULL, NULL);
 
-  if(file_id < 0) FAIL((int) file_id, "hdf5_create", fname);
+  if(file_id < 0) FAIL(file_id, "hdf5_create", fname);
   return 0;
 }
 
@@ -139,7 +139,7 @@ int hdf5_open(const char *fname)
   // Quiet HDF5's own errors, so we can control them
   H5Eset_auto2(H5E_DEFAULT, NULL, NULL);
 
-  if(file_id < 0) FAIL((int) file_id, "hdf5_open", fname);
+  if(file_id < 0) FAIL(file_id, "hdf5_open", fname);
   return 0;
 }
 
@@ -165,7 +165,7 @@ int hdf5_make_directory(const char *name)
   if(DEBUG) printf("Adding dir %s\n", path);
 
   hid_t group_id = H5Gcreate2(file_id, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  if (group_id < 0) FAIL((int) group_id, "hdf5_make_directory", path);
+  if (group_id < 0) FAIL(group_id, "hdf5_make_directory", path);
   H5Gclose(group_id);
 
   return 0;
@@ -212,7 +212,7 @@ int hdf5_add_attr(const void *att, const char *att_name, const char *data_name, 
   if(DEBUG) printf("Adding att %s\n", path);
 
   hid_t attribute_id = H5Acreate_by_name(file_id, path, att_name, hdf5_type, H5Screate(H5S_SCALAR), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  if (attribute_id < 0) FAIL((int) attribute_id, "hdf5_add_attr", path);
+  if (attribute_id < 0) FAIL(attribute_id, "hdf5_add_attr", path);
   H5Awrite(attribute_id, hdf5_type, att);
   H5Aclose(attribute_id);
 

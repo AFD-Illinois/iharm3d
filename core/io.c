@@ -14,17 +14,18 @@
 #include <ctype.h>
 
 // Variables kept for output only
-GridDouble *omega;
+// Currently this calculation is done in post
+//GridDouble *omega;
 
+// TODO test outputting doubles
 #define OUT_TYPE float
 #define OUT_H5_TYPE H5T_IEEE_F32LE
 
 #define HDF_STR_LEN 20
 
-// TODO could make some HDF5 spaces here to save time
 void init_io()
 {
-  omega = calloc(1,sizeof(GridDouble));
+  //omega = calloc(1,sizeof(GridDouble));
 }
 
 void dump(struct GridGeom *G, struct FluidState *S)
@@ -67,26 +68,25 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_write_single_val(&has_electrons, "has_electrons", H5T_STD_I32LE);
 
 #if METRIC == MINKOWSKI
-  hdf5_write_single_val("MINKOWSKI", "metric_name", string_type);
+  hdf5_write_single_val("MINKOWSKI", "metric", string_type);
 #elif METRIC == MKS
 #if POLYTH // Morty Maxwell's Massively Modified Kerr-Schild Coordinates
-  hdf5_write_single_val("MMKS", "metric_name", string_type);
+  hdf5_write_single_val("MMKS", "metric", string_type);
 #else
-  hdf5_write_single_val("MKS", "metric_name", string_type);
+  hdf5_write_single_val("MKS", "metric", string_type);
 #endif //POLYTH
 #endif //MKS
-  char gridfile_name[HDF_STR_LEN] = "grid.h5"; // TODO match below instead of hard-coding
-  hdf5_write_single_val(&gridfile_name, "gridfile_name", string_type);
+  char gridfile[HDF_STR_LEN] = "grid.h5"; // TODO match below instead of hard-coding
+  hdf5_write_single_val(&gridfile, "gridfile", string_type);
 
-  // TODO Really caps here?
 #if RECONSTRUCTION == LINEAR
-  hdf5_write_single_val("LINEAR", "reconstruction_name", string_type);
+  hdf5_write_single_val("LINEAR", "reconstruction", string_type);
 #elif RECONSTRUCTION == PPM
-  hdf5_write_single_val("PPM", "reconstruction_name", string_type);
+  hdf5_write_single_val("PPM", "reconstruction", string_type);
 #elif RECONSTRUCTION == WENO
-  hdf5_write_single_val("WENO", "reconstruction_name", string_type);
+  hdf5_write_single_val("WENO", "reconstruction", string_type);
 #elif RECONSTRUCTION == MP5
-  hdf5_write_single_val("MP5", "reconstruction_name", string_type);
+  hdf5_write_single_val("MP5", "reconstruction", string_type);
 #endif
 
   int n1 = N1TOT, n2 = N2TOT, n3 = N3TOT;
@@ -95,7 +95,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_write_single_val(&n3, "n3", H5T_STD_I32LE);
 
   int n_prims = NVAR;
-  hdf5_write_single_val(&n_prims, "n_prims", H5T_STD_I32LE);
+  hdf5_write_single_val(&n_prims, "n_prim", H5T_STD_I32LE);
   // In case we do passive variables
   int n_prims_passive = 0;
   hdf5_write_single_val(&n_prims_passive, "n_prims_passive", H5T_STD_I32LE);
@@ -105,6 +105,9 @@ void dump(struct GridGeom *G, struct FluidState *S)
   #if ELECTRONS
   hdf5_write_single_val(&game, "gam_e", H5T_IEEE_F64LE);
   hdf5_write_single_val(&gamp, "gam_p", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&tptemin, "tptemin", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&tptemax, "tptemax", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&fel0, "fel0", H5T_IEEE_F64LE);
   #endif
   hdf5_write_single_val(&cour, "cour", H5T_IEEE_F64LE);
   hdf5_write_single_val(&tf, "tf", H5T_IEEE_F64LE);
@@ -182,6 +185,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
 //  pack_write_vector(S->bcon, NDIM, "bcon", OUT_H5_TYPE);
 //  hdf5_add_units("bcon", "code");
 
+  // Omega would be output here
 
   hdf5_close();
 

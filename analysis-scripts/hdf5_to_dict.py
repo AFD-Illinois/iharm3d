@@ -91,7 +91,7 @@ def load_dump(fname, geom, hdr, calc_omega=True):
   for key in [key for key in dfile['/'].keys() if key not in ['header', 'extras', 'prims'] ]:
     dump[key] = dfile[key][()]
 
-  for name, num in zip(hdr['prim_names'], range(hdr['n_prims'])):
+  for name, num in zip(hdr['prim_names'], range(hdr['n_prim'])):
     dump[name] = dfile['prims'][:,:,:,num]
 
   # Load the extras. TODO option for this
