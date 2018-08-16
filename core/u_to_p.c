@@ -164,6 +164,11 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   S->P[U2][k][j][i] = (gamma/(W + Bsq))*(Qtcon[2] + QdB*Bcon[2]/W);
   S->P[U3][k][j][i] = (gamma/(W + Bsq))*(Qtcon[3] + QdB*Bcon[3]/W);
 
+#if ELECTRONS
+  S->P[KEL][k][j][i] = S->U[KEL][k][j][i]/S->U[RHO][k][j][i];
+  S->P[KTOT][k][j][i] = S->U[KTOT][k][j][i]/S->U[RHO][k][j][i];
+#endif // ELECTRONS
+
   return 0;
 }
 

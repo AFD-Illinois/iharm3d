@@ -92,6 +92,14 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
 		    - S->bcon[dir][k][j][i] * S->ucon[3][k][j][i]) * G->gdet[loc][j][i];
 
   }
+
+#if ELECTRONS
+#pragma omp for simd collapse(2)
+  ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
+    flux[KEL][k][j][i] = flux[RHO][k][j][i]*S->P[KEL][k][j][i]*G->gdet[loc][j][i];
+    flux[KTOT][k][j][i] = flux[RHO][k][j][i]*S->P[KTOT][k][j][i]*G->gdet[loc][j][i];
+  }
+#endif
 }
 
 }
