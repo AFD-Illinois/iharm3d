@@ -36,7 +36,7 @@
       COMPILE-TIME PARAMETERS :
 *******************************************************************************/
 
-#define VERSION "iharm-alpha-3.4"
+#define VERSION "iharm-alpha-3.5"
 
 // Number of active zones on each MPI process
 #define N1       (N1TOT/N1CPU)
@@ -53,8 +53,8 @@
 // Fixup parameters
 #define RHOMINLIMIT (1.e-20)
 #define UUMINLIMIT  (1.e-20)
-#define RHOMIN  (1.e-5)
-#define UUMIN (1.e-7)
+#define RHOMIN  (1.e-6)
+#define UUMIN (1.e-8)
 
 // Numerical convenience to represent a small (<< 1) non-zero quantity
 #define SMALL (1.e-20)
@@ -62,9 +62,9 @@
 #define DELTA 1.e-5
 
 // Floors in terms of bsq
-#define BSQORHOMAX (100.)
-#define BSQOUMAX (10000.)
-#define UORHOMAX (100.)
+#define BSQORHOMAX (500.)
+#define UORHOMAX (500.)
+#define BSQOUMAX (BSQORHOMAX * UORHOMAX)
 
 // Maximum value of gamma, the Lorentz factor
 #define GAMMAMAX (50.)
