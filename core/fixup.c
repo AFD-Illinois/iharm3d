@@ -261,11 +261,11 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   // Reset entropy after floors
   S->P[KTOT][k][j][i] = (gam - 1.)*S->P[UU][k][j][i]/pow(S->P[RHO][k][j][i],gam);
 
-  // Keep to KTOTMAX by controlling u, to avoid anomalous cooling from funnel wall
-  if (S->P[KTOT][k][j][i] > KTOTMAX) {
-    S->P[UU][k][j][i] = KTOTMAX*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
-    S->P[KTOT][k][j][i] = KTOTMAX;
-  }
+//  // Keep to KTOTMAX by controlling u, to avoid anomalous cooling from funnel wall
+//  if (S->P[KTOT][k][j][i] > KTOTMAX) {
+//    S->P[UU][k][j][i] = KTOTMAX*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
+//    S->P[KTOT][k][j][i] = KTOTMAX;
+//  }
 #endif // ELECTRONS
 
   // Limit gamma with respect to normal observer
@@ -294,13 +294,14 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
     pflag[k][j][i] = !pflag[k][j][i];
   }
 
-  int nfixed_utop = 0;
 #if DEBUG
+  int nfixed_utop = 0;
 #pragma omp parallel for simd collapse(2) reduction (+:nfixed_utop)
   ZLOOP {
     // Count the 0 = bad cells
     nfixed_utop += !pflag[k][j][i];
   }
+  fprintf(stderr,"Fixing %d cells", nfixed_utop);
 #endif
 
   // Make sure we are not using ill defined corner regions
@@ -360,7 +361,22 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
     }
   } while (bad > 0);
 
-  LOGN("Fixed %d cells", nfixed_utop);
+#if DEBUG
+  int nleft_utop = 0;
+#pragma omp parallel for simd collapse(2) reduction (+:nleft_utop)
+  ZLOOP {
+    // Count the 0 = bad cells
+    nleft_utop += !pflag[k][j][i];
+  }
+  if(nleft_utop > 0) fprintf(stderr,"Cells STILL BAD after fixup_utoprim: %d\n", nleft_utop);
+#endif
+
+  // Re-initialize the pflag
+#pragma omp parallel for simd collapse(2)
+  ZLOOPALL {
+    pflag[k][j][i] = 0;
+  }
+
 
   timer_stop(TIMER_FIXUP);
 }
