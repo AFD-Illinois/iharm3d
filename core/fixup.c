@@ -374,7 +374,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   // Re-initialize the pflag
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
-    pflag[k][j][i] = 0;
+    pflag[k][j][i] = !pflag[k][j][i];
   }
 
 
