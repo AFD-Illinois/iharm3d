@@ -102,13 +102,13 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_write_str_list(varNames, "prim_names", HDF_STR_LEN, n_prims);
 
   hdf5_write_single_val(&gam, "gam", H5T_IEEE_F64LE);
-  #if ELECTRONS
+#if ELECTRONS
   hdf5_write_single_val(&game, "gam_e", H5T_IEEE_F64LE);
   hdf5_write_single_val(&gamp, "gam_p", H5T_IEEE_F64LE);
   hdf5_write_single_val(&tptemin, "tptemin", H5T_IEEE_F64LE);
   hdf5_write_single_val(&tptemax, "tptemax", H5T_IEEE_F64LE);
   hdf5_write_single_val(&fel0, "fel0", H5T_IEEE_F64LE);
-  #endif
+#endif
   hdf5_write_single_val(&cour, "cour", H5T_IEEE_F64LE);
   hdf5_write_single_val(&tf, "tf", H5T_IEEE_F64LE);
   hdf5_add_units("tf", "code");
@@ -125,20 +125,23 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_write_single_val(&(dx[3]), "dx3", H5T_IEEE_F64LE);
   int n_dim = NDIM;
   hdf5_write_single_val(&n_dim, "n_dim", H5T_STD_I32LE);
-  #if METRIC == MKS
+#if METRIC == MKS
+#if POLYTH
+  hdf5_make_directory("mmks");
+  hdf5_set_directory("/header/geom/mmks/");
+  hdf5_write_single_val(&poly_xt, "poly_xt", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&poly_alpha, "poly_alpha", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&mks_smooth, "mks_smooth", H5T_IEEE_F64LE);
+#else
   hdf5_make_directory("mks");
   hdf5_set_directory("/header/geom/mks/");
+#endif
   hdf5_write_single_val(&Rin, "Rin", H5T_IEEE_F64LE);
   hdf5_write_single_val(&Rout, "Rout", H5T_IEEE_F64LE);
   hdf5_write_single_val(&Rhor, "Reh", H5T_IEEE_F64LE);
   hdf5_write_single_val(&hslope, "hslope", H5T_IEEE_F64LE);
   hdf5_write_single_val(&a, "a", H5T_IEEE_F64LE);
-  #if POLYTH
-  hdf5_write_single_val(&poly_xt, "poly_xt", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&poly_alpha, "poly_alpha", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&mks_smooth, "mks_smooth", H5T_IEEE_F64LE);
-  #endif
-  #endif
+#endif
 
   hdf5_set_directory("/");
 
