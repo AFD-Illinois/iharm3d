@@ -25,9 +25,7 @@ double tp_over_te;
 
 // geometry
 double Rin, Rout, hslope, R0;
-#if POLYTH
 double poly_norm, poly_xt, poly_alpha, mks_smooth;
-#endif
 double cour;
 double dV, dx[NDIM], startx[NDIM];
 double x1Min, x1Max, x2Min, x2Max, x3Min, x3Max;

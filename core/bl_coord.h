@@ -16,16 +16,12 @@ struct of_geom {
 
 // Boyer-Lindquist metric functions
 
-// TODO this is in decs because I can't decide things
-//void bl_coord(const double X[NDIM], double *r, double *th);
-
 void blgset(int i, int j, struct of_geom *geom);
 
 void bl_gcov_func(double r, double th, double gcov[NDIM][NDIM]);
 void bl_gcon_func(double r, double th, double gcon[NDIM][NDIM]);
 double bl_gdet_func(double r, double th);
 
-void set_dxdX(double X[NDIM], double dxdX[NDIM][NDIM]);
 void bl_to_ks(double X[NDIM], double ucon_bl[NDIM], double ucon_ks[NDIM]);
 
 void coord_transform(struct GridGeom *G, struct FluidState *S, int i, int j, int k);

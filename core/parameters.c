@@ -54,7 +54,7 @@ void set_core_params() {
 #elif METRIC == MKS
   set_param("a", &a);
   set_param("hslope", &hslope);
-#if POLYTH
+#if DEREFINE_POLES
   set_param("poly_xt", &poly_xt);
   set_param("poly_alpha", &poly_alpha);
   set_param("mks_smooth", &mks_smooth);

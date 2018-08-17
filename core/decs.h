@@ -142,7 +142,6 @@
 // Metric
 #define MINKOWSKI (0)
 #define MKS       (1)
-// TODO make POLYTH a new metric "MMKS"?
 
 // Diagnostic calls
 #define DIAG_INIT  (0)
@@ -277,9 +276,8 @@ extern double fel0;
 extern double tptemin, tptemax;
 #endif
 
-#if POLYTH
+
 extern double poly_norm, poly_xt, poly_alpha, mks_smooth;
-#endif
 
 
 // MPI-specific stuff
@@ -358,11 +356,9 @@ void fix_flux(struct FluidFlux *F);
 
 // coord.c
 void coord(int i, int j, int k, int loc, double *X);
-double r_of_x(double x);
-double dr_dx(double x);
-double th_of_x(double x);
-double dth_dx(double x);
+void bl_coord(const double X[NDIM], double *r, double *th);
 void gcov_func(double *X, double gcov[NDIM][NDIM]);
+void set_dxdX(double X[NDIM], double dxdX[NDIM][NDIM]);
 void set_points();
 void set_grid(struct GridGeom *G);
 void set_grid_loc(struct GridGeom *G, int i, int j, int k, int loc);

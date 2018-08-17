@@ -70,11 +70,11 @@ void dump(struct GridGeom *G, struct FluidState *S)
 #if METRIC == MINKOWSKI
   hdf5_write_single_val("MINKOWSKI", "metric", string_type);
 #elif METRIC == MKS
-#if POLYTH // Morty Maxwell's Massively Modified Kerr-Schild Coordinates
+#if DEREFINE_POLES
   hdf5_write_single_val("MMKS", "metric", string_type);
 #else
   hdf5_write_single_val("MKS", "metric", string_type);
-#endif //POLYTH
+#endif //DEREFINE
 #endif //MKS
   char gridfile[HDF_STR_LEN] = "grid.h5"; // TODO match below instead of hard-coding
   hdf5_write_single_val(&gridfile, "gridfile", string_type);
@@ -126,7 +126,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   int n_dim = NDIM;
   hdf5_write_single_val(&n_dim, "n_dim", H5T_STD_I32LE);
 #if METRIC == MKS
-#if POLYTH
+#if DEREFINE_POLES
   hdf5_make_directory("mmks");
   hdf5_set_directory("/header/geom/mmks/");
   hdf5_write_single_val(&poly_xt, "poly_xt", H5T_IEEE_F64LE);
