@@ -1,6 +1,6 @@
 ################################################################################
 #                                                                              # 
-#  GENERATE MOVIES FROM SIMULATION OUTPUT                                      # 
+#  INTEGRATE QUANTITIES OF INTEREST                                            #
 #                                                                              # 
 ################################################################################
 
@@ -161,7 +161,18 @@ def avg_dump(n):
   out['omega_th_5'] = dump['omega'][:10,:N2/2,:].mean(axis=-1).mean(axis=0)# + dump['omega'][:10,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
   #out['omega_th_5'] /= N3*2*10
 
-  out['sigma_max'] = np.max(dump['bsq']/dump['RHO'])
+  out['sigma'] = dump['bsq']/2/dump['RHO']
+  out['sigma_max'] = np.max(out['sigma'])
+
+  LBZ = lambda i: (dx2*dx3*geom['gdet'][i,:,None]*(dump['bsq'][i,:,:]*dump['ucon'][i,:,:,1]*dump['ucov'][i,:,:,0] - dump['bcon'][i,:,:,1]*dump['bcov'][i,:,:,0])[np.where(out['sigma'][i,:,:]>1)] ).sum()
+
+  out['LBZ_10'] = LBZ(10)
+  out['LBZ_30'] = LBZ(30)
+  out['LBZ_50'] = LBZ(50)
+  if N1 > 80:
+    out['LBZ_80'] = LBZ(80)
+
+  print "L_BZ at ",t," is ",[LBZ(i) for i in range(10,100,10)] 
 
   if floor_workaround_funnel:
     mdot_full = dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3  

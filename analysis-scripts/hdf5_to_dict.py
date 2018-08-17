@@ -30,12 +30,15 @@ def load_hdr(fname):
       hdr[key] = dfile['header/' + key][()]
       
     # TODO load these from grid.h5? Or is the header actually the place for them?
-    for key in [key for key in dfile['header/geom'].keys() if not key == 'mks']:
+    for key in [key for key in dfile['header/geom'].keys() if not key in ['mks', 'mmks'] ]:
       hdr[key] = dfile['header/geom/' + key][()]
     if 'mks' in dfile['header/geom'].keys():
       for key in dfile['header/geom/mks']:
         hdr[key] = dfile['header/geom/mks/' + key][()]
-    
+    if 'mmks' in dfile['header/geom'].keys():
+      for key in dfile['header/geom/mmks']:
+        hdr[key] = dfile['header/geom/mmks/' + key][()]
+
   except KeyError, e:
     print "File is older than supported by this library. Use hdf5_to_dict_old.py"
 
