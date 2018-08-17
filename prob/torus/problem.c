@@ -260,7 +260,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   beta_act = (gam - 1.)*umax/(0.5*bsq_max);
 
 #if ELECTRONS
-  init_electrons(S);
+  init_electrons(G, S);
 #endif
 
   // Enforce boundary conditions

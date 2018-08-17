@@ -20,53 +20,57 @@ void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k);
 void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S, int i, int j, int k);
 double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
 
-void init_electrons(struct FluidState *S)
+void init_electrons(struct GridGeom *G, struct FluidState *S)
 {
   ZLOOPALL {
     // Set electron internal energy to constant fraction of internal energy
     double uel = fel0*S->P[UU][k][j][i];
 
     // Initialize entropies
-    S->P[KTOT][k][j][i] =  (gam-1.)*S->P[UU][k][j][i]*pow(S->P[RHO][k][j][i],-gam);
+    S->P[KTOT][k][j][i] = (gam-1.)*S->P[UU][k][j][i]*pow(S->P[RHO][k][j][i],-gam);
     S->P[KEL][k][j][i] = (game-1.)*uel*pow(S->P[RHO][k][j][i],-game);
   }
 
   // Necessary?  Usually called right afterward
-  //set_bounds(S);
+  set_bounds(G, S);
 }
 
-void heat_electrons(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S)
+// TODO merge these
+void heat_electrons(struct GridGeom *G, struct FluidState *Ss, struct FluidState *Sf)
 {
   timer_start(TIMER_ELECTRON_HEAT);
 
 #pragma omp parallel for collapse(3)
   ZLOOP {
-    heat_electrons_1zone(G, Sh, S, i, j, k);
+    heat_electrons_1zone(G, Ss, Sf, i, j, k);
   }
 
   timer_stop(TIMER_ELECTRON_HEAT);
 }
 
-inline void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S, int i, int j, int k)
+inline void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Ss, struct FluidState *Sf, int i, int j, int k)
 {
   // Actual entropy at final time
-  double kHarm = (gam-1.)*S->P[UU][k][j][i]/pow(S->P[RHO][k][j][i],gam);
+  double kHarm = (gam-1.)*Sf->P[UU][k][j][i]/pow(Sf->P[RHO][k][j][i],gam);
 
-  double uel = 1./(game-1.)*S->P[KEL][k][j][i]*pow(S->P[RHO][k][j][i],game);
+  //double uel = 1./(game-1.)*S->P[KEL][k][j][i]*pow(S->P[RHO][k][j][i],game);
 
-  double fel = get_fel(G, S, i, j, k);
+  double fel = get_fel(G, Ss, i, j, k);
 
-  double ugHat = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
-  double ugHarm = S->P[UU][k][j][i];
+  Sf->P[KEL][k][j][i] += (game-1.)/(gam-1.)*pow(Ss->P[RHO][k][j][i],gam-game)*fel*(kHarm - Sf->P[KTOT][k][j][i]);
+
+  // TODO bhlight calculates Qvisc here instead of this
+  //double ugHat = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
+  //double ugHarm = S->P[UU][k][j][i];
 
   // Update electron internal energy
-  uel += fel*(ugHarm - ugHat)*pow(Sh->P[RHO][k][j][i]/S->P[RHO][k][j][i],gam-game);
+  //uel += fel*(ugHarm - ugHat)*pow(Sh->P[RHO][k][j][i]/S->P[RHO][k][j][i],gam-game);
 
   // Convert back to electron entropy
-  S->P[KEL][k][j][i] = uel*(game-1.)*pow(S->P[RHO][k][j][i],-game);
+  //S->P[KEL][k][j][i] = uel*(game-1.)*pow(S->P[RHO][k][j][i],-game);
 
   // Reset total entropy
-  S->P[KTOT][k][j][i] = kHarm;
+  Sf->P[KTOT][k][j][i] = kHarm;
 }
 
 inline double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, int k)

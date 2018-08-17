@@ -261,11 +261,11 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   // Reset entropy after floors
   S->P[KTOT][k][j][i] = (gam - 1.)*S->P[UU][k][j][i]/pow(S->P[RHO][k][j][i],gam);
 
-//  // Keep to KTOTMAX by controlling u, to avoid anomalous cooling from funnel wall
-//  if (S->P[KTOT][k][j][i] > KTOTMAX) {
-//    S->P[UU][k][j][i] = KTOTMAX*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
-//    S->P[KTOT][k][j][i] = KTOTMAX;
-//  }
+  // Keep to KTOTMAX by controlling u, to avoid anomalous cooling from funnel wall
+  if (S->P[KTOT][k][j][i] > KTOTMAX) {
+    S->P[UU][k][j][i] = KTOTMAX*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
+    S->P[KTOT][k][j][i] = KTOTMAX;
+  }
 #endif // ELECTRONS
 
   // Limit gamma with respect to normal observer

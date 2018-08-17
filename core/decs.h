@@ -384,7 +384,7 @@ void check_nan(struct FluidState *S, const char* flag);
 
 // electrons.c
 #if ELECTRONS
-void init_electrons(struct FluidState *S);
+void init_electrons(struct GridGeom *G, struct FluidState *S);
 void heat_electrons(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S);
 void fixup_electrons(struct FluidState *S);
 #endif
