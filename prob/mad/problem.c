@@ -409,7 +409,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
 
 #if ELECTRONS
-  init_electrons(S);
+  init_electrons(G,S);
 #endif
 
   // Enforce boundary conditions
