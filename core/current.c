@@ -18,9 +18,6 @@ static struct FluidState *Sa;
 // Calculate the current
 void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *Ssave, double dtsave)
 {
-  double gF0p[NDIM], gF0m[NDIM], gF1p[NDIM], gF1m[NDIM], gF2p[NDIM], gF2m[NDIM];
-  double gF3p[NDIM], gF3m[NDIM];
-
   timer_start(TIMER_CURRENT);
 
   static int first_run = 1;
@@ -50,6 +47,9 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
   // TODO rewrite this vector-style
 #pragma omp parallel for collapse(3)
   ZLOOP {
+    double gF0p[NDIM], gF0m[NDIM], gF1p[NDIM], gF1m[NDIM], gF2p[NDIM], gF2m[NDIM];
+    double gF3p[NDIM], gF3m[NDIM];
+
     // Get sqrt{-g}*F^{mu nu} at neighboring points
 
     // X0
@@ -60,19 +60,19 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
 
     // X1
     DLOOP1 {
-      gF1p[mu] = Fcon_calc(G, Sa,  1, mu, i+1, j, k);
+      gF1p[mu] = Fcon_calc(G, Sa, 1, mu, i+1, j, k);
       gF1m[mu] = Fcon_calc(G, Sa, 1, mu, i-1, j, k);
     }
 
     // X2
     DLOOP1 {
-      gF2p[mu] = Fcon_calc(G, Sa,  2, mu, i, j+1, k);
+      gF2p[mu] = Fcon_calc(G, Sa, 2, mu, i, j+1, k);
       gF2m[mu] = Fcon_calc(G, Sa, 2, mu, i, j-1, k);
     }
 
     // X3
     DLOOP1 {
-      gF3p[mu] = Fcon_calc(G, Sa,  3, mu, i, j, k+1);
+      gF3p[mu] = Fcon_calc(G, Sa, 3, mu, i, j, k+1);
       gF3m[mu] = Fcon_calc(G, Sa, 3, mu, i, j, k-1);
     }
 
@@ -121,7 +121,7 @@ void omega_calc(struct GridGeom *G, struct FluidState *S, GridDouble *omega)
 // Return mu, nu component of contravarient Maxwell tensor at grid zone i, j, k
 inline double Fcon_calc(struct GridGeom *G, struct FluidState *S, int mu, int nu, int i, int j, int k)
 {
-  double Fcon, gFcon;
+  double Fcon;
 
   if (mu == nu) return 0.;
 
@@ -134,9 +134,7 @@ inline double Fcon_calc(struct GridGeom *G, struct FluidState *S, int mu, int nu
     }
   }
 
-  gFcon = Fcon*G->gdet[CENT][j][i];
-
-  return gFcon;
+  return Fcon*G->gdet[CENT][j][i];
 }
 
 // Completely antisymmetric 4D symbol
