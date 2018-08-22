@@ -194,7 +194,7 @@ if diags:
   ax.plot(avg['t_d'], (avg['Mdot_d'] - np.fabs(avg['Edot_d']))/mdot_mean_d, linestyle='--', color='r')
 ax.set_xlim([0,1e4])
 ax.set_xticklabels([])
-ax.set_ylabel('|Edot - Mdot|/|Mdot|')
+ax.set_ylabel('(Mdot - Edot)/<Mdot>')
 
 ax = plt.subplot(nplots,1,6)
 ax.plot(avg['t'], avg['Lum']/(np.fabs(avg['Mdot'])), color='k')

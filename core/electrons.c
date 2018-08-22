@@ -14,7 +14,7 @@
 #define HOWES 0
 #define KAWAZURA 1
 #define CONSTANT 3
-#define FE_MODEL HOWES
+#define FE_MODEL KAWAZURA
 
 void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k);
 void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S, int i, int j, int k);
