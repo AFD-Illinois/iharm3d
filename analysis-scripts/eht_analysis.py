@@ -55,7 +55,7 @@ if hdr['n1'] >= 256 or hdr['n2'] >= 256 or hdr['n3'] >= 256:
     mkl_set_num_threads = mkl_rt.MKL_Set_Num_Threads
     mkl_get_max_threads = mkl_rt.MKL_Get_Max_Threads
     mkl_set_num_threads(4)
-    print("Using", mkl_get_max_threads(), "MKL threads")
+    print "Using", mkl_get_max_threads(), "MKL threads"
   except Error as e:
     print(e)
 else:
@@ -96,7 +96,6 @@ iEH = 5
 ND = len(dumps)
 
 avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'rho_SADW', 'omega_th', 'omega_th_av', 'omega_th_5']
-
 
 # EVALUATE DIAGNOSTICS
   
@@ -155,16 +154,20 @@ def avg_dump(n):
   #norm = 1 # This is what BR used for EHT comparison + what fits that
   out['Phi'] = 0.5*(np.fabs(norm*dump['B1'][iEH,:,:])*geom['gdet'][iEH,:,None]*dx2*dx3).sum()
   
-  out['omega_th'] = dump['omega'][iEH,:N2/2,:].mean(axis=-1) + dump['omega'][iEH,:N2/2-1:-1,:].mean(axis=-1)
-  out['omega_th_av'] = dump['omega'][iEH:iEH+5,:N2/2,:].mean(axis=-1).mean(axis=0)# + dump['omega'][iEH:iEH+5,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
-  #out['omega_th_av'] /= N3*2*5
-  out['omega_th_5'] = dump['omega'][:10,:N2/2,:].mean(axis=-1).mean(axis=0)# + dump['omega'][:10,:N2/2-1:-1,:].sum(axis=-1).sum(axis=0)
-  #out['omega_th_5'] /= N3*2*10
+  out['omega_th'] = (dump['omega'][iEH,:N2/2,:].mean(axis=-1) + 
+                     dump['omega'][iEH,:N2/2-1:-1,:].mean(axis=-1)) / 2
 
-  out['sigma'] = dump['bsq']/2/dump['RHO']
-  out['sigma_max'] = np.max(out['sigma'])
+  omega_av_zones = 5
+  out['omega_th_av'] = (dump['omega'][iEH:iEH+omega_av_zones,:N2/2,:].mean(axis=-1).mean(axis=0) +
+                        dump['omega'][iEH:iEH+omega_av_zones,:N2/2-1:-1,:].mean(axis=-1).mean(axis=0)) / 2
 
-  LBZ = lambda i: (dx2*dx3*geom['gdet'][i,:,None]*(dump['bsq'][i,:,:]*dump['ucon'][i,:,:,1]*dump['ucov'][i,:,:,0] - dump['bcon'][i,:,:,1]*dump['bcov'][i,:,:,0])[np.where(out['sigma'][i,:,:]>1)] ).sum()
+  out['omega_th_5'] = (dump['omega'][:10,:N2/2,:].mean(axis=-1).mean(axis=0) +
+                       dump['omega'][:10,:N2/2-1:-1,:].mean(axis=-1).mean(axis=0)) / 2
+
+  sigma = dump['bsq']/2/dump['RHO']
+  out['sigma_max'] = np.max(sigma)
+
+  LBZ = lambda i: (dx2*dx3*geom['gdet'][i,:,None]*(dump['bsq'][i,:,:]*dump['ucon'][i,:,:,1]*dump['ucov'][i,:,:,0] - dump['bcon'][i,:,:,1]*dump['bcov'][i,:,:,0])[np.where(sigma[i,:,:]>1)] ).sum()
 
   out['LBZ_10'] = LBZ(10)
   out['LBZ_30'] = LBZ(30)
@@ -172,7 +175,7 @@ def avg_dump(n):
   if N1 > 80:
     out['LBZ_80'] = LBZ(80)
 
-  print "L_BZ at ",t," is ",[LBZ(i) for i in range(10,100,10)] 
+  print "L_BZ at ",out['t']," is ",[LBZ(i) for i in range(10,100,10)] 
 
   if floor_workaround_funnel:
     mdot_full = dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3  
@@ -208,11 +211,8 @@ out_full = {}
 
 # PARALLEL
 import multiprocessing
-import signal
 import psutil
-original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
 pool = multiprocessing.Pool(NTHREADS)
-signal.signal(signal.SIGINT, original_sigint_handler)
 try:
   out_list = pool.map(avg_dump, range(len(dumps)))  # This is /real big/ in memory
   print out_list[0].keys()

@@ -152,10 +152,10 @@ ax.set_ylabel('Lum')
 plt.savefig(fout + '_fluxes.png')
 plt.close(fig)
 
-
 fig = plt.figure(figsize=(FIGX, FIGY))
+nplots = 6
 
-ax = plt.subplot(5,1,1)
+ax = plt.subplot(nplots,1,1)
 ax.plot(avg['t'], np.fabs(avg['Mdot']), color='k')
 if diags: ax.plot(avg['t_d'], np.fabs(avg['Mdot_d']), linestyle='--', color='r')
 ax.set_xlim([0,1e4])
@@ -165,28 +165,38 @@ ax.set_ylabel('|Mdot|')
 print "Calculated Mdot max is %f" % np.fabs(avg['Mdot']).max()
 print "Recorded Mdot max is %f" % np.fabs(avg['Mdot_d']).max()
 
-ax = plt.subplot(5,1,2)
+ax = plt.subplot(nplots,1,2)
 ax.plot(avg['t'], avg['Phi']/np.sqrt(np.fabs(avg['Mdot'])), color='k')
 if diags: ax.plot(avg['t_d'], avg['Phi_d']/np.sqrt(np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
 ax.set_xlim([0,1e4])
 ax.set_xticklabels([])
 ax.set_ylabel('Phi/sqrt(|Mdot|)')
 
-ax = plt.subplot(5,1,3)
+ax = plt.subplot(nplots,1,3)
 ax.plot(avg['t'], np.fabs(avg['Ldot'])/(np.fabs(avg['Mdot'])), color='k')
 if diags: ax.plot(avg['t_d'], np.fabs(avg['Ldot_d'])/(np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
 ax.set_xlim([0,1e4])
 ax.set_xticklabels([])
 ax.set_ylabel('|Ldot|/|Mdot|')
 
-ax = plt.subplot(5,1,4)
+ax = plt.subplot(nplots,1,4)
 ax.plot(avg['t'], np.fabs(avg['Edot'] - np.fabs(avg['Mdot']))/(np.fabs(avg['Mdot'])), color='k')
 if diags: ax.plot(avg['t_d'], np.fabs(avg['Edot_d'] - np.fabs(avg['Mdot_d']))/(np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
 ax.set_xlim([0,1e4])
 ax.set_xticklabels([])
 ax.set_ylabel('|Edot - Mdot|/|Mdot|')
 
-ax = plt.subplot(5,1,5)
+ax = plt.subplot(nplots,1,5)
+mdot_mean = np.mean(avg['Mdot'][len(avg['Mdot'])/2:])
+ax.plot(avg['t'], (avg['Mdot'] - avg['Edot'])/mdot_mean, color='k')  # Just use the back half as <>
+if diags:
+  mdot_mean_d = np.mean(avg['Mdot'][len(avg['Mdot_d'])/2:])
+  ax.plot(avg['t_d'], (avg['Mdot_d'] - np.fabs(avg['Edot_d']))/mdot_mean_d, linestyle='--', color='r')
+ax.set_xlim([0,1e4])
+ax.set_xticklabels([])
+ax.set_ylabel('|Edot - Mdot|/|Mdot|')
+
+ax = plt.subplot(nplots,1,6)
 ax.plot(avg['t'], avg['Lum']/(np.fabs(avg['Mdot'])), color='k')
 if diags: ax.plot(avg['t_d'], avg['Lum_d']/(np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
 ax.set_xlim([0,1e4])
