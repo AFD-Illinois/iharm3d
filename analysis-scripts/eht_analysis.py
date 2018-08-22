@@ -175,7 +175,7 @@ def avg_dump(n):
   if N1 > 80:
     out['LBZ_80'] = LBZ(80)
 
-  print "L_BZ at ",out['t']," is ",[LBZ(i) for i in range(10,100,10)] 
+  print "L_BZ at ",out['t']," is ",[LBZ(i) for i in range(10,100,10)]
 
   if floor_workaround_funnel:
     mdot_full = dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3  
