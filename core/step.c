@@ -82,7 +82,7 @@ void step(struct GridGeom *G, struct FluidState *S)
   t += dt;
 
   // If we're dumping this step, update the current
-  if (t > tdump) {
+  if (t >= tdump) {
     current_calc(G, S, Ssave, dt);
   }
 
@@ -133,7 +133,6 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
     get_fluid_source(G, Ss, i, j, k, dU);
   }
 
-  // Can this be removed?
   get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
 
   prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);
