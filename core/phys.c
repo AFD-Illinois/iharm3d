@@ -53,6 +53,11 @@ void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   flux[B3][k][j][i] = S->bcon[3][k][j][i]*S->ucon[dir][k][j][i] -
                       S->bcon[dir][k][j][i]*S->ucon[3][k][j][i];
 
+#if ELECTRONS
+  flux[KEL][k][j][i] = flux[RHO][k][j][i]*S->P[KEL][k][j][i];
+  flux[KTOT][k][j][i] = flux[RHO][k][j][i]*S->P[KTOT][k][j][i];
+#endif
+
   PLOOP flux[ip][k][j][i] *= G->gdet[loc][j][i];
 }
 
@@ -81,7 +86,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
     flux[U3][k][j][i] = mhd[3] * G->gdet[loc][j][i];
   }
 
-#pragma omp for simd collapse(2)
+#pragma omp for simd collapse(2) nowait
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     // Dual of Maxwell tensor
     flux[B1][k][j][i] = (S->bcon[1][k][j][i] * S->ucon[dir][k][j][i]
@@ -96,8 +101,9 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
 #if ELECTRONS
 #pragma omp for simd collapse(2)
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
-    flux[KEL][k][j][i] = flux[RHO][k][j][i]*S->P[KEL][k][j][i]*G->gdet[loc][j][i];
-    flux[KTOT][k][j][i] = flux[RHO][k][j][i]*S->P[KTOT][k][j][i]*G->gdet[loc][j][i];
+    // RHO already includes a factor of gdet!
+    flux[KEL][k][j][i] = flux[RHO][k][j][i]*S->P[KEL][k][j][i];
+    flux[KTOT][k][j][i] = flux[RHO][k][j][i]*S->P[KTOT][k][j][i];
   }
 #endif
 }

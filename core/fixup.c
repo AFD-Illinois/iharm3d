@@ -9,7 +9,7 @@
 #include "decs.h"
 
 // Allow to specify old fluid-frame floors for stable problems
-// These impose no floor on magnetization
+// These impose no maximum magnetization
 #ifndef FLUID_FLOORS
 #define FLUID_FLOORS 0
 #endif
