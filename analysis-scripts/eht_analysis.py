@@ -80,6 +80,7 @@ dx3 = hdr['dx3']
 N1 = hdr['n1']
 N2 = hdr['n2']
 N3 = hdr['n3']
+gam = hdr['gam']
 
 r = geom['r'][:,N2/2,0]
 th = geom['th'][0,:N2/2,0]
@@ -95,18 +96,40 @@ iEH = 5
 
 ND = len(dumps)
 
-avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'rho_SADW', 'omega_th', 'omega_th_av', 'omega_th_5']
+avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'FE_r', 'FM_r', 'rho_SADW', 'omega_th', 'omega_th_av', 'omega_th_5']
 
 # EVALUATE DIAGNOSTICS
   
-vol = (dx2*2.*np.pi*geom['gdet'][:,:]).sum(axis=-1)
-
 def INT(var):
   return (dx2*dx3*geom['gdet'][:,:,None]*var[:,:,:]).sum(axis=-1).sum(axis=-1)
 
 def WAVG(var, w):
   return INT(w*var)/INT(w)
 
+def Tcon(geom,dump,i,j):
+  return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucon'][:,:,:,j] +
+           ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcon'][:,:,None,i,j] - dump['bcon'][:,:,:,i]*dump['bcon'][:,:,:,j] )
+
+def Tcov(geom,dump,i,j):
+  return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucov'][:,:,:,i]*dump['ucov'][:,:,:,j] +
+           ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcov'][:,:,None,i,j] - dump['bcov'][:,:,:,i]*dump['bcov'][:,:,:,j] )
+
+def Tmixed(geom,dump,i,j):
+  gmixedij = np.sum(geom['gcon'][:,:,None,i,:]*geom['gcov'][:,:,None,:,j],axis=-1)
+  return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
+           ((gam-1)*dump['UU'] + dump['bsq']/2)*gmixedij - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
+
+# Var must be a 3D array i.e. a grid scalar
+def sum_shell(geom, var, eht_partial=False):
+  if eht_partial:
+    vol = (dx2*2.*np.pi*geom['gdet'][:,jmin:jmax]).sum(axis=-1)
+    return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None] * dx2*dx3,axis=(1,2)) / vol
+  else:
+    vol = (dx2*2.*np.pi*geom['gdet'][:,:]).sum(axis=-1)
+    return np.sum(var * geom['gdet'][:,:,None] * dx2*dx3, axis=(1,2))
+
+# TODO this is not correct for EHT torus-only shells!
+vol = (dx2*2.*np.pi*geom['gdet'][:,:]).sum(axis=-1) # Shell averages volume
 def avg_dump(n):
   out = {}
 
@@ -118,34 +141,26 @@ def avg_dump(n):
   out['rho_SADW'] = WAVG(dump['RHO'], dump['RHO'])
 
   # SHELL AVERAGES
-  #vol = (dx2*dx3*geom['gdet'][:,:]).sum(axis=-1)
-  out['rho_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*dump['RHO'][:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  # TODO function for shell-averaging, make all keys ending in _r radial keys
+  out['rho_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*dump['RHO'][:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) / vol
   
   Theta = (hdr['gam']-1.)*dump['UU'][:,:,:]/dump['RHO'][:,:,:]
-  out['Theta_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Theta[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['Theta_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Theta[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) / vol
   
   B = np.sqrt(dump['bsq'][:,:,:])
-  out['B_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*B[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['B_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*B[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) / vol
 
   Pg = (hdr['gam']-1.)*dump['UU'][:,:,:]
-  out['Pg_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Pg[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['Pg_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Pg[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) / vol
 
   Ptot = Pg + dump['bsq'][:,:,:]/2
-  out['Ptot_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Ptot[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['Ptot_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*Ptot[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) / vol
 
   betainv = (dump['bsq'][:,:,:]/2)/Pg
-  out['betainv_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*betainv[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1)
+  out['betainv_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*betainv[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) / vol
 
   uphi = (dump['ucon'][:,:,:,3])
-  out['uphi_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*uphi[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) 
-
-  out['rho_r'] /= vol
-  out['Theta_r'] /= vol
-  out['B_r'] /= vol
-  out['Pg_r'] /= vol
-  out['Ptot_r'] /= vol
-  out['betainv_r'] /= vol
-  out['uphi_r'] /= vol
+  out['uphi_r'] = (dx2*dx3*geom['gdet'][:,jmin:jmax,None]*uphi[:,jmin:jmax,:]).sum(axis=-1).sum(axis=-1) / vol  
 
   # FLUXES
   #Phi_bcon[n] = 0.5*(np.fabs(dump['bcon'][iF,:,:,1])*geom['gdet'][iF,:,None]*dx2*dx3).sum()
@@ -164,10 +179,21 @@ def avg_dump(n):
   out['omega_th_5'] = (dump['omega'][:10,:N2/2,:].mean(axis=-1).mean(axis=0) +
                        dump['omega'][:10,:N2/2-1:-1,:].mean(axis=-1).mean(axis=0)) / 2
 
+  out['FE_r'] = sum_shell(geom, Tmixed(geom,dump,1,0))
+
+  out['FM_r'] = sum_shell(geom, dump['RHO']*dump['ucon'][:,:,:,1])
+
   sigma = dump['bsq']/2/dump['RHO']
   out['sigma_max'] = np.max(sigma)
 
+#  T_mixed_10 = np.zeros((N1,N2,N3))
+#  for i in range(4):
+#    T_mixed_10 += Tcon(geom,dump,1,i)*geom['gcov'][:,:,None,i,0]
+
   LBZ = lambda i: (dx2*dx3*geom['gdet'][i,:,None]*(dump['bsq'][i,:,:]*dump['ucon'][i,:,:,1]*dump['ucov'][i,:,:,0] - dump['bcon'][i,:,:,1]*dump['bcov'][i,:,:,0])[np.where(sigma[i,:,:]>1)] ).sum()
+#  LBZ2 = lambda i: np.sum((dx2*dx3*geom['gdet'][i,:,None]*(T_mixed_10[i,:,:]))[np.where(sigma[i,:,:]>1)])
+
+#  print "LBZ comparison ",LBZ(30),"vs",LBZ2(30)
 
   out['LBZ_10'] = LBZ(10)
   out['LBZ_30'] = LBZ(30)
@@ -175,7 +201,7 @@ def avg_dump(n):
   if N1 > 80:
     out['LBZ_80'] = LBZ(80)
 
-  print "L_BZ at ",out['t']," is ",[LBZ(i) for i in range(10,100,10)]
+  #print "L_BZ at ",out['t']," is ",[LBZ(i) for i in range(10,100,10)]
 
   if floor_workaround_funnel:
     mdot_full = dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3  
@@ -191,7 +217,8 @@ def avg_dump(n):
   Trt = (dump['RHO'] + dump['UU'] + (hdr['gam']-1.)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,1]*dump['ucov'][:,:,:,0]
   Trt -= dump['bcon'][:,:,:,1]*dump['bcov'][:,:,:,0]
   out['Ldot'] = (Trphi[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
-  out['Edot'] = -(Trt[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  out['Edot'] = (Trt[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3).sum()
+  print "Compare Edot: ",out['Edot'],"vs",np.sum(Tmixed(geom,dump,1,0)[iF,:,:]*geom['gdet'][iF,:,None]*dx2*dx3)
 
   rho = dump['RHO']
   P = (hdr['gam']-1.)*dump['UU']
@@ -199,14 +226,25 @@ def avg_dump(n):
   C = 0.2
   j = rho**3*P**(-2)*np.exp(-C*(rho**2/(B*P**2))**(1./3.))
   out['Lum'] = (j*geom['gdet'][:,:,None]*dx1*dx2*dx3).sum()
-  
+
+  T_mixed_00 = np.zeros((N1,N2,N3))
+  for i in range(4):
+    T_mixed_00 += Tcon(geom,dump,0,i)*geom['gcov'][:,:,None,i,0]
+
+  out['Etot'] = np.sum(T_mixed_00*geom['gdet'][:,:,None]*dx1*dx2*dx3)
+  print "Energy on grid: ",out['Etot']
+
   return out
 
 out_full = {}
 
 # SERIAL
 #for n in xrange(len(dumps)):
-#  out_full.append(avg_dump(n))
+#  outn = avg_dump(n)
+#  for key in outn:
+#    if n == 0:
+#      out_full[key] = []
+#    out_full[key].append(outn[key])
 
 
 # PARALLEL

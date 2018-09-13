@@ -82,6 +82,23 @@ ax.set_yscale('log')
 plt.savefig(fout + '_sadw.png')
 plt.close(fig)
 
+# Fluxes at radius
+fig = plt.figure(figsize=(FIGX, FIGY))
+ax = plt.subplot(2,1,1)
+ax.plot(avg['r'], avg['FE_r'], color='k', linewidth=2)
+ax.set_xlim([2,20])
+ax.set_ylabel('FE_r')
+#ax.set_ylim([-400, 100])
+
+ax = plt.subplot(2,1,2)
+ax.plot(avg['r'], -avg['FM_r'], color='k', linewidth=2)
+ax.set_xlim([2,20])
+ax.set_ylabel('FM_r')
+#ax.set_ylim([-100, 100])
+
+plt.savefig(fout + '_fluxr.png')
+plt.close(fig)
+
 # Omega
 print avg['th'].shape, avg['omega_th'].shape
 fig = plt.figure(figsize=(FIGX, FIGY))
@@ -142,12 +159,19 @@ ax.set_xlim([0,1e4])
 ax.set_xticklabels([])
 ax.set_ylabel('|Edot - Mdot|')
 
+#ax = plt.subplot(5,1,5)
+#ax.plot(avg['t'], avg['Lum'], color='k')
+#if diags: ax.plot(avg['t_d'], avg['Lum_d'], linestyle='--', color='r')
+#ax.set_xlim([0,1e4])
+#ax.set_xlabel('t/M')
+#ax.set_ylabel('Lum')
+
 ax = plt.subplot(5,1,5)
-ax.plot(avg['t'], avg['Lum'], color='k')
-if diags: ax.plot(avg['t_d'], avg['Lum_d'], linestyle='--', color='r')
+ax.plot(avg['t'], avg['Etot'], color='k')
 ax.set_xlim([0,1e4])
+ax.set_xticklabels([])
 ax.set_xlabel('t/M')
-ax.set_ylabel('Lum')
+ax.set_ylabel('Etot')
 
 plt.savefig(fout + '_fluxes.png')
 plt.close(fig)
@@ -188,20 +212,27 @@ ax.set_ylabel('|Edot - Mdot|/|Mdot|')
 
 ax = plt.subplot(nplots,1,5)
 mdot_mean = np.mean(avg['Mdot'][len(avg['Mdot'])/2:])
-ax.plot(avg['t'], (avg['Mdot'] - avg['Edot'])/mdot_mean, color='k')  # Just use the back half as <>
+ax.plot(avg['t'], (avg['Mdot'] - avg['Edot'])/mdot_mean*100, color='k')  # Just use the back half as <>
 if diags:
   mdot_mean_d = np.mean(avg['Mdot'][len(avg['Mdot_d'])/2:])
-  ax.plot(avg['t_d'], (avg['Mdot_d'] - np.fabs(avg['Edot_d']))/mdot_mean_d, linestyle='--', color='r')
+  ax.plot(avg['t_d'], (avg['Mdot_d'] - np.fabs(avg['Edot_d']))/mdot_mean_d*100, linestyle='--', color='r')
 ax.set_xlim([0,1e4])
 ax.set_xticklabels([])
-ax.set_ylabel('(Mdot - Edot)/<Mdot>')
+ax.set_ylim([-100,300])
+ax.set_ylabel('Efficiency (%)')
 
 ax = plt.subplot(nplots,1,6)
-ax.plot(avg['t'], avg['Lum']/(np.fabs(avg['Mdot'])), color='k')
-if diags: ax.plot(avg['t_d'], avg['Lum_d']/(np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
+ax.plot(avg['t'], -avg['LBZ_30'], color='k')
 ax.set_xlim([0,1e4])
 ax.set_xlabel('t/M')
-ax.set_ylabel('Lum/|Mdot|')
+ax.set_ylabel('LBZ')
+
+#ax = plt.subplot(nplots,1,6)
+#ax.plot(avg['t'], avg['Lum']/(np.fabs(avg['Mdot'])), color='k')
+#if diags: ax.plot(avg['t_d'], avg['Lum_d']/(np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
+#ax.set_xlim([0,1e4])
+#ax.set_xlabel('t/M')
+#ax.set_ylabel('Lum/|Mdot|')
 
 plt.savefig(fout + '_normfluxes.png')
 plt.close(fig)

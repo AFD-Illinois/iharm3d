@@ -27,7 +27,7 @@ SIZE = 40
 NLINES = 10
 
 # For plotting debug, "array-space" plots
-USEARRSPACE = False
+USEARRSPACE = True
 
 MAD = True
 if MAD:
