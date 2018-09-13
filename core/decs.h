@@ -62,8 +62,8 @@
 #define DELTA 1.e-5
 
 // Floors in terms of bsq
-#define BSQORHOMAX (500.)
-#define UORHOMAX (500.)
+#define BSQORHOMAX (100.)
+#define UORHOMAX (100.)
 #define BSQOUMAX (BSQORHOMAX * UORHOMAX)
 
 // Maximum value of gamma, the Lorentz factor
