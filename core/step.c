@@ -114,6 +114,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
 #endif
 
+  get_state_vec(G, Ss, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   double ndt = get_flux(G, Ss, F);
 
 #if METRIC == MKS
