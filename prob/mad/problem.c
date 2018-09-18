@@ -235,8 +235,8 @@ void init(struct GridGeom *G, struct FluidState *S)
       } else if (MAD == 1) { // BR's smoothed poloidal in-torus
         q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax;
 
-      } else if (MAD == 2) { // Just the r^3 term
-        q = pow(r/rin,3.)*rho_av/rhomax;
+      } else if (MAD == 2) { // Just the r^3 sin^3 term, possible MAD EHT standard
+        q = pow(sin(th),3)*pow(r/rin,3.)*rho_av/rhomax;
 
       } else if (MAD == 3) { // Gaussian-strength vertical threaded field
         double wid = 2; //Radius of half-maximum. Units of rin
