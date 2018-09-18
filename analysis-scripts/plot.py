@@ -35,7 +35,7 @@ def plot_xz(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
     if (arrayspace):
       x = np.reshape(np.repeat(np.linspace(0,1,N2),N1),(N1,N2))
       z = np.transpose(np.reshape(np.repeat(np.linspace(0,1,N1),N2),(N2,N1)))
-      var = flatten_xz(var, hdr)[N2:,:]
+      var = flatten_xz(var, hdr)[N1:,:]
     else:
       x = flatten_xz(geom['x'], hdr, patch_pole=True)
       z = flatten_xz(geom['z'], hdr)

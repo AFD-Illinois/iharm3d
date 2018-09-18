@@ -27,7 +27,7 @@ SIZE = 40
 NLINES = 10
 
 # For plotting debug, "array-space" plots
-USEARRSPACE = False
+USEARRSPACE = True
 
 MAD = True
 if MAD:
@@ -71,7 +71,7 @@ if len(files) == 0:
     util.warn("INVALID PATH TO DUMP FOLDER")
     sys.exit(1)
 
-FRAMEDIR = 'FRAMES'
+FRAMEDIR = 'FRAMES_b'
 util.make_dir(FRAMEDIR)
 
 hdr = io.load_hdr(files[0])
@@ -107,8 +107,8 @@ def plot(args):
   fig = plt.figure(figsize=(FIGX, FIGY))
 
   ax = plt.subplot(2,4,1)
-  bplt.plot_xz(ax, geom, np.log10(dump['RHO']), dump,
-               vmin=-4, vmax = 0, label='RHO', arrayspace=USEARRSPACE)
+  bplt.plot_xz(ax, geom, np.log10(dump['bsq']), dump,
+               vmin=-4, vmax = 0, label='bsq', arrayspace=USEARRSPACE)
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
@@ -116,31 +116,17 @@ def plot(args):
     ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
   ax = plt.subplot(2,4,2)
-  bplt.plot_xy(ax, geom, np.log10(dump['RHO']), dump,
-               vmin=-4, vmax=0, label='RHO', arrayspace=USEARRSPACE)
+  bplt.plot_xy(ax, geom, np.log10(dump['bsq']), dump,
+               vmin=-4, vmax=0, label='bsq', arrayspace=USEARRSPACE)
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
     ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
-
-  # I change this a lot
-  #var2_str = 'ucon_r'
-  #var2_data = dump['RHO'][:,:,:]*dump['ucon'][:,:,:,1]*dump['gdet'][:,:,None]*hdr['dx2']*hdr['dx3']
   var2_str = 'beta'
   var2_data = np.log10(dump[var2_str])
   var2_min = -2
   var2_max = 2
-
-#  var2_str = 'magnetization'
-#  var2_data = dump['bsq']/dump['RHO']
-#  var2_min = 0
-#  var2_max = 1000
-#  var2_str = 'omega'
-#  var2_data = np.log10(dump['omega']*4/hdr['a'])
-#  var2_min = -2
-#  var2_max = 2
-
 
   ax = plt.subplot(2,4,5)
   bplt.plot_xz(ax, geom, var2_data, dump, #cmap='RdBu_r'
@@ -159,32 +145,37 @@ def plot(args):
   else:
     ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
-#  ax = plt.subplot(2,4,7)
-#  bplt.plot_xz(ax, geom, var3_data, dump,
-#               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
-#  if (USEARRSPACE):
-#    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-#  else:
-#    bplt.overlay_field(ax, geom, dump, NLINES)
-#    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+  var3_str = 'magnetization'
+  var3_data = dump['bsq']/dump['RHO']
+  var3_min = 0
+  var3_max = 1000
 
-#  ax = plt.subplot(2,4,8)
-#  bplt.plot_xy(ax, geom, var3_data, dump,
-#               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
-#  if (USEARRSPACE):
-#    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-#  else:
-#    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+  ax = plt.subplot(2,4,7)
+  bplt.plot_xz(ax, geom, var3_data, dump,
+               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
+  if (USEARRSPACE):
+    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+  else:
+    bplt.overlay_field(ax, geom, dump, NLINES)
+    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+
+  ax = plt.subplot(2,4,8)
+  bplt.plot_xy(ax, geom, var3_data, dump,
+               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
+  if (USEARRSPACE):
+    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+  else:
+    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
   # Don't plot time-based variables for initial conditions
   if len(diag['t'].shape) > 0:
     ax = plt.subplot(4,2,2)
-    bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', logy=LOG_MDOT)
+    bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', ylim=[10**(-2),MAX_MDOT], logy=LOG_MDOT)
 
     ax = plt.subplot(4,2,4)
-    bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
+    bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', ylim=[10**(-1),MAX_PHI], logy=LOG_PHI)
     
     #ax = plt.subplot(4,2,6)
     #bplt.diag_plot(ax, diag, dump, 'sigma_max', 'Max magnetization', ylim=None, logy=False)
@@ -202,7 +193,8 @@ def plot(args):
 
 # BEGIN SCRIPT
 
-# Test-run a couple plots directly so that backtraces work
+# Test plot so that backtraces work
+# And for quicker turnaround
 if debug:
     plot(0)
     plot(100)
@@ -212,7 +204,8 @@ original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
 pool = multiprocessing.Pool(nthreads)
 signal.signal(signal.SIGINT, original_sigint_handler)
 try:
-  pool.map_async(plot, range(len(files))).get(720000)
+  res = pool.map_async(plot, range(len(files)))
+  res.get(720000)
 except KeyboardInterrupt:
   print 'Caught interrupt!'
   pool.terminate()
