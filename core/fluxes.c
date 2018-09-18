@@ -8,6 +8,19 @@
 
 #include "decs.h"
 
+// TODO declare internal functions here rather than decs, move find_cmax down
+
+double find_cmax(GridDouble *ctop) {
+  timer_start(TIMER_CMAX);
+  double cmax_tmp = 0;
+#pragma omp parallel for simd collapse(2) reduction(max:cmax_tmp)
+  ZLOOP {
+    if((*ctop)[k][j][i] > cmax_tmp) cmax_tmp = (*ctop)[k][j][i];
+  }
+  timer_stop(TIMER_CMAX);
+  return cmax_tmp;
+}
+
 double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
 {
   static struct FluidState *Sl, *Sr;
@@ -33,12 +46,7 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
   lr_to_flux(G, Sl, Sr, 1, FACE1, &(F->X1), ctop);
 
   // cmax1
-  timer_start(TIMER_CMAX);
-#pragma omp parallel for simd collapse(2)
-  ZLOOP {
-    cmax[1] = ((*ctop)[k][j][i] > cmax[1] ? (*ctop)[k][j][i] : cmax[1]);
-  }
-  timer_stop(TIMER_CMAX);
+  cmax[1] = find_cmax(ctop);
 
   // reconstruct X2
   reconstruct(S, Sl->P, Sr->P, 2);
@@ -47,12 +55,7 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
   lr_to_flux(G, Sl, Sr, 2, FACE2, &(F->X2), ctop);
 
   // cmax2
-  timer_start(TIMER_CMAX);
-#pragma omp parallel for simd collapse(2)
-  ZLOOP {
-    cmax[2] = ((*ctop)[k][j][i] > cmax[2] ? (*ctop)[k][j][i] : cmax[2]);
-  }
-  timer_stop(TIMER_CMAX);
+  cmax[2] = find_cmax(ctop);
 
   // reconstruct X3
   reconstruct(S, Sl->P, Sr->P, 3);
@@ -61,12 +64,7 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
   lr_to_flux(G, Sl, Sr, 3, FACE3, &(F->X3), ctop);
 
   // cmax3
-  timer_start(TIMER_CMAX);
-#pragma omp parallel for simd collapse(2)
-  ZLOOP {
-    cmax[3] = ((*ctop)[k][j][i] > cmax[3] ? (*ctop)[k][j][i] : cmax[3]);
-  }
-  timer_stop(TIMER_CMAX);
+  cmax[3] = find_cmax(ctop);
 
   for (int mu = 1; mu < NDIM; mu++) {
     ndts[mu] = cour*dx[mu]/cmax[mu];
