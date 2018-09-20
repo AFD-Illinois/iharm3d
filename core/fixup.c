@@ -20,11 +20,18 @@
 int nfixed = 0, nfixed_b = 0;
 #endif
 
+static struct FluidState *Stmp;
+
+void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
+
 // Apply floors to density, internal energy
 // TODO can this be made faster?  I may be calling get_state too much
 void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
+
+  static int firstc = 1;
+  if (firstc) {Stmp = calloc(1,sizeof(struct FluidState)); firstc = 0;}
 
   if (!FLUID_FLOORS) get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
@@ -214,43 +221,24 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     } else { // Weakly magnetized region; use normal observer frame floors
 #endif
 
-      double Padd[NVAR];
-      PLOOP Padd[ip] = 0.;
-      Padd[RHO] = MY_MAX(0., rhoflr - S->P[RHO][k][j][i]);
-      Padd[UU] = MY_MAX(0., uflr - S->P[UU][k][j][i]);
+      PLOOP {Stmp->P[ip][k][j][i] = 0; Stmp->U[ip][k][j][i] = 0;}
+      Stmp->P[RHO][k][j][i] = MY_MAX(0., rhoflr - S->P[RHO][k][j][i]);
+      Stmp->P[UU][k][j][i] = MY_MAX(0., uflr - S->P[UU][k][j][i]);
 
-      // Pull a /pretty bad/ hack to get 1-zone calculations
-      // TODO come back to this and re-think larger architecture
-      double P_bkp[NVAR], U_bkp[NVAR];
-      PLOOP {
-        P_bkp[ip] = S->P[ip][k][j][i];
-        U_bkp[ip] = S->U[ip][k][j][i];
-
-        S->P[ip][k][j][i] = Padd[ip];
-        S->U[ip][k][j][i] = 0;
-      }
-
-      double Uadd[NVAR];
-      get_state(G, S, i, j, k, CENT);
-      prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
-
-      PLOOP {
-        Uadd[ip] = S->U[ip][k][j][i];
-
-        S->P[ip][k][j][i] = P_bkp[ip];
-        S->U[ip][k][j][i] = U_bkp[ip];
-      }
+      get_state(G, Stmp, i, j, k, CENT);
+      prim_to_flux(G, Stmp, i, j, k, 0, CENT, Stmp->U);
 
       get_state(G, S, i, j, k, CENT);
       prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
 
       PLOOP {
-        S->U[ip][k][j][i] += Uadd[ip];
-        S->P[ip][k][j][i] += Padd[ip];
+        S->U[ip][k][j][i] += Stmp->U[ip][k][j][i];
+        S->P[ip][k][j][i] += Stmp->P[ip][k][j][i];
       }
 
       U_to_P(G, S, i, j, k, CENT);
-      get_state(G, S, i, j, k, CENT);
+      get_state(G, S, i, j, k, CENT); // TODO needed?
+
 #if DRIFT_FLOORS
     } // if (trans > 0)
 #endif

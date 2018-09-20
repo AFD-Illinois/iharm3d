@@ -390,7 +390,6 @@ void fixup_electrons(struct FluidState *S);
 
 // fixup.c
 void fixup(struct GridGeom *G, struct FluidState *S);
-void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
 void fixup_utoprim(struct GridGeom *G, struct FluidState *S);
 
 // fluxes.c
