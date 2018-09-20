@@ -162,8 +162,8 @@ inline void ucon_calc(struct GridGeom *G, struct FluidState *S, int i, int j, in
   double alpha = G->lapse[loc][j][i];
   S->ucon[0][k][j][i] = gamma/alpha;
   for (int mu = 1; mu < NDIM; mu++) {
-	S->ucon[mu][k][j][i] = S->P[U1+mu-1][k][j][i] -
-	    gamma*alpha*G->gcon[loc][0][mu][j][i];
+    S->ucon[mu][k][j][i] = S->P[U1+mu-1][k][j][i] -
+        gamma*alpha*G->gcon[loc][0][mu][j][i];
   }
 }
 
@@ -327,23 +327,71 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
 }
 
 // Source terms for equations of motion
-inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k, GridPrim *dU)
+inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim *dU)
 {
-  double mhd[NDIM][NDIM];
 
-  DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]);
+	static struct FluidState *dS;
+	static int firstc = 1;
+	if (firstc) {dS = calloc(1,sizeof(struct FluidState)); firstc = 0;}
 
-  // Contract mhd stress tensor with connection
-  PLOOP (*dU)[ip][k][j][i] = 0.;
+	// TODO tabs everywhere
+#pragma omp parallel for collapse(3)
+  ZLOOP {
+    double mhd[NDIM][NDIM];
 
-  // TODO this is some pretty scattered memory access...
-  DLOOP2 {
-    for (int gam = 0; gam < NDIM; gam++)
-      (*dU)[UU+gam][k][j][i] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
+    DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]); // TODO make an mhd_calc_vec?
+
+    // Contract mhd stress tensor with connection
+    // TODO this scattered.  Precompute mu,nu sums
+    PLOOP (*dU)[ip][k][j][i] = 0.;
+    DLOOP2 {
+      for (int gam = 0; gam < NDIM; gam++)
+    	  (*dU)[UU+gam][k][j][i] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
+    }
+
+    // TODO isn't this equiv to multiplying nonzero terms above?
+    PLOOP (*dU)[ip][k][j][i] *= G->gdet[CENT][j][i];
   }
 
-  PLOOP (*dU)[ip][k][j][i] *= G->gdet[CENT][j][i];
+  // Add a small "wind" source term in RHO,UU
+#if WIND_TERM
+#pragma omp parallel for simd collapse(2)
+  ZLOOP {
+    // Stolen shamelessly from iharm2d_v3
+    double drhopdt, Tp;
+    double r, th;
+    double cth;
+
+    /* need coordinates to evaluate particle addtn rate */
+    double X[NDIM];
+    coord(i, j, k, CENT, X);
+    bl_coord(X, &r, &th);
+    cth = cos(th) ;
+
+    /* here is the rate at which we're adding particles */
+    /* this function is designed to concentrate effect in the
+     funnel in black hole evolutions */
+    drhopdt = 2.e-4*cth*cth*cth*cth/pow(1. + r*r,2) ;
+
+    dS->P[RHO][k][j][i] = drhopdt ;
+
+    Tp = 10. ;  /* temp, in units of c^2, of new plasma */
+    dS->P[UU][k][j][i] = drhopdt*Tp*3. ;
+
+    /* Leave P[U{1,2,3}]=0 to add in particles in normal observer frame */
+    /* Likewise leave P[BN]=0 */
+  }
+
+  /* add in plasma to the T^t_a component of the stress-energy tensor */
+  /* notice that U already contains a factor of sqrt{-g} */
+  get_state_vec(G, dS, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
+  prim_to_flux_vec(G, S, 0, CENT, 0, N3-1, 0, N2-1, 0, N1-1, dS->U);
+
+#pragma omp parallel for simd collapse(3)
+  PLOOP ZLOOP {
+    (*dU)[ip][k][j][i] += dS->U[ip][k][j][i] ;
+  }
+#endif
 }
 
 // Returns b.b (twice magnetic pressure)

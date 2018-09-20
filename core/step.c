@@ -114,7 +114,6 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
 #endif
 
-  get_state_vec(G, Ss, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   double ndt = get_flux(G, Ss, F);
 
 #if METRIC == MKS
@@ -129,13 +128,10 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);
-#pragma omp parallel for collapse(3)
-  ZLOOP {
-    get_fluid_source(G, Ss, i, j, k, dU);
-  }
+  get_state_vec(G, Ss, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
+  get_fluid_source(G, Ss, dU);
 
   get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
-
   prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);
 
 #pragma omp parallel for simd collapse(3)

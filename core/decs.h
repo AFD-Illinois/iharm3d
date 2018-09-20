@@ -61,10 +61,13 @@
 // Set the spatial discretization in numerical derivatives
 #define DELTA 1.e-5
 
+// TODO Move this per-problem.  Keep defaults here?
 // Floors in terms of bsq
 #define BSQORHOMAX (100.)
 #define UORHOMAX (100.)
 #define BSQOUMAX (BSQORHOMAX * UORHOMAX)
+// Extra "wind" source term to avoid floors
+#define WIND_TERM 1
 
 // Maximum value of gamma, the Lorentz factor
 #define GAMMAMAX (50.)
@@ -456,8 +459,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir,
   int loc, int kstart, int kstop, int jstart, int jstop, int istart, int istop, GridPrim flux);
 void bcon_calc(struct FluidState *S, int i, int j, int k);
 void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double *mhd);
-void get_fluid_source(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k, GridPrim *dU);
+void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim *dU);
 double bsq_calc(struct FluidState *S, int i, int j, int k);
 void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc);
