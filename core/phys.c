@@ -90,11 +90,11 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     // Dual of Maxwell tensor
     flux[B1][k][j][i] = (S->bcon[1][k][j][i] * S->ucon[dir][k][j][i]
-		    - S->bcon[dir][k][j][i] * S->ucon[1][k][j][i]) * G->gdet[loc][j][i];
+        - S->bcon[dir][k][j][i] * S->ucon[1][k][j][i]) * G->gdet[loc][j][i];
     flux[B2][k][j][i] = (S->bcon[2][k][j][i] * S->ucon[dir][k][j][i]
-		    - S->bcon[dir][k][j][i] * S->ucon[2][k][j][i]) * G->gdet[loc][j][i];
+        - S->bcon[dir][k][j][i] * S->ucon[2][k][j][i]) * G->gdet[loc][j][i];
     flux[B3][k][j][i] = (S->bcon[3][k][j][i] * S->ucon[dir][k][j][i]
-		    - S->bcon[dir][k][j][i] * S->ucon[3][k][j][i]) * G->gdet[loc][j][i];
+        - S->bcon[dir][k][j][i] * S->ucon[3][k][j][i]) * G->gdet[loc][j][i];
 
   }
 
@@ -340,14 +340,13 @@ inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim 
     DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]); // TODO make an mhd_calc_vec?
 
     // Contract mhd stress tensor with connection
-    // TODO this scattered.  Precompute mu,nu sums
+    // TODO this is scattered memory access.  Precompute mu,nu sums
     PLOOP (*dU)[ip][k][j][i] = 0.;
     DLOOP2 {
       for (int gam = 0; gam < NDIM; gam++)
         (*dU)[UU+gam][k][j][i] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
     }
 
-    // TODO isn't this equiv to multiplying nonzero terms above?
     PLOOP (*dU)[ip][k][j][i] *= G->gdet[CENT][j][i];
   }
 
@@ -383,7 +382,7 @@ inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim 
   /* add in plasma to the T^t_a component of the stress-energy tensor */
   /* notice that U already contains a factor of sqrt{-g} */
   get_state_vec(G, dS, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
-  prim_to_flux_vec(G, S, 0, CENT, 0, N3-1, 0, N2-1, 0, N1-1, dS->U);
+  prim_to_flux_vec(G, dS, 0, CENT, 0, N3-1, 0, N2-1, 0, N1-1, dS->U);
 
 #pragma omp parallel for simd collapse(3)
   PLOOP ZLOOP {
