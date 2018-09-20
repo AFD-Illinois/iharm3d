@@ -329,12 +329,10 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
 // Source terms for equations of motion
 inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim *dU)
 {
+  static struct FluidState *dS;
+  static int firstc = 1;
+  if (firstc) {dS = calloc(1,sizeof(struct FluidState)); firstc = 0;}
 
-	static struct FluidState *dS;
-	static int firstc = 1;
-	if (firstc) {dS = calloc(1,sizeof(struct FluidState)); firstc = 0;}
-
-	// TODO tabs everywhere
 #pragma omp parallel for collapse(3)
   ZLOOP {
     double mhd[NDIM][NDIM];
@@ -346,7 +344,7 @@ inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim 
     PLOOP (*dU)[ip][k][j][i] = 0.;
     DLOOP2 {
       for (int gam = 0; gam < NDIM; gam++)
-    	  (*dU)[UU+gam][k][j][i] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
+        (*dU)[UU+gam][k][j][i] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
     }
 
     // TODO isn't this equiv to multiplying nonzero terms above?
