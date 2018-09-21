@@ -25,7 +25,7 @@ for arg in sys.argv:
   if arg == '-auto':
     AUTO = True
 
-RES = [16, 32, 64, 128] #, 256]
+RES = [32, 64, 128, 256]
 
 NVAR = 8
 

@@ -22,7 +22,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   // Mean state
   double rho0 = 1.;
-  double u0 = 1.;
+  double u0 = 1.; // TODO set U{n} for boosted entropy
   double B10 = 0.; // This is set later, see below
   double B20 = 0.;
   double B30 = 0.;
@@ -157,8 +157,8 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   // Override tf and the dump and log intervals
   tf = 2.*M_PI/fabs(cimag(omega));
-  //DTd = tf/5.; // These are set from param.dat
-  //DTl = tf/5.;
+  DTd = tf/5.; // These are set from param.dat
+  DTl = tf/5.;
 
   set_grid(G);
 
