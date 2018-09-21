@@ -20,7 +20,7 @@ export OMP_NUM_THREADS=$(( $(nproc --all) / 4 ))
 rm -rf $OUT_DIR
 mkdir -p $OUT_DIR
 
-for n in 16 32 64 128
+for n in 32 64 128 256
 do
 
   set_compile_int N1TOT $n
