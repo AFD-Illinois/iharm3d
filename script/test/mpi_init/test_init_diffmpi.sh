@@ -2,7 +2,7 @@
 
 source ../test_common.sh
 
-PROB=${1:-torus}
+PROB=${1:-bondi}
 
 # Must be just a name for now
 OUT_DIR=results_$PROB
@@ -31,10 +31,10 @@ set_run_dbl DTd 1.0
 
 if [ $PROB == "torus" ]
 then
-MADS="0 1 2 3 4"
-set_run_dbl u_jitter 0.0
+  MADS="0 1 2 3 4"
+  set_run_dbl u_jitter 0.0
 else
-MADS = "0"
+  MADS="0"
 fi
 
 for i in $MADS
@@ -48,7 +48,7 @@ set_compile_int N3CPU 1
 
 if [ $PROB == "torus" ]
 then 
-set_run_int mad_type $i
+  set_run_int mad_type $i
 fi
 
 make -f $BASEDIR/makefile -j4 PROB=$PROB
@@ -65,11 +65,19 @@ sleep 1
 
 set_compile_int N1CPU 2
 set_compile_int N2CPU 2
-set_compile_int N3CPU 4
+if [ $PROB == "bondi" ]
+then
+  set_compile_int N3CPU 1
+  NMPI="4"
+else
+  set_compile_int N3CPU 4
+  NMPI="16"
+fi
+
 export OMP_NUM_THREADS=2
 
 make -f $BASEDIR/makefile -j4 PROB=$PROB
-mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
+mpirun -n $NMPI ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
 
 ./verify.sh $PROB
 

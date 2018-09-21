@@ -36,7 +36,6 @@ else
   set_compile_int N3TOT $SIZE3
 fi
 
-cp param_gold.dat param.dat
 set_run_dbl tf $TF
 set_run_dbl DTd $TF
 # TODO test setting DTr real high
