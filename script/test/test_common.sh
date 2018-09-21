@@ -16,3 +16,15 @@ set_run_dbl () {
 set_run_int () {
   sed -i -e "s/$1 = [0-9]\+/$1 = $2/g" param.dat
 }
+
+set_problem_size () {
+  set_compile_int N1TOT $1
+  set_compile_int N2TOT $2
+  set_compile_int N3TOT $3
+}
+
+set_cpu_topo () {
+  set_compile_int N1CPU $1
+  set_compile_int N2CPU $2
+  set_compile_int N3CPU $3
+}

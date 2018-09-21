@@ -2,7 +2,8 @@
 
 source ../test_common.sh
 
-PROB=${1:-bondi}
+PROB=${1:-torus}
+MADS=${2:-0}
 
 # Must be just a name for now
 OUT_DIR=results_$PROB
@@ -16,74 +17,72 @@ rm -rf $OUT_DIR
 mkdir -p $OUT_DIR
 
 # Give the system a reasonable size to limit runtime
-set_compile_int N1TOT 64
-set_compile_int N2TOT 64
+# Bondi problem is 2D
 if [ "$PROB" == "bondi" ]; then
-  set_compile_int N3TOT 1
+  set_problem_size 256 256 1
 else
-  set_compile_int N3TOT 64
+  set_problem_size 96 48 48
 fi
 
 # Give a relatively short endpoint
 # We're testing init and basic propagation
 set_run_dbl tf 1.0
 set_run_dbl DTd 1.0
-
 if [ $PROB == "torus" ]
 then
-  MADS="0 1 2 3 4"
   set_run_dbl u_jitter 0.0
-else
-  MADS="0"
 fi
 
 for i in $MADS
 do
 
-rm -rf $OUT_DIR/dumps $OUT_DIR/restarts $OUT_DIR/*.h5
+  rm -rf $OUT_DIR/dumps $OUT_DIR/restarts $OUT_DIR/*.h5
 
-set_compile_int N1CPU 1
-set_compile_int N2CPU 1
-set_compile_int N3CPU 1
+  set_cpu_topo 1 1 1
 
-if [ $PROB == "torus" ]
-then 
-  set_run_int mad_type $i
-fi
+  make -f $BASEDIR/makefile -j4 PROB=$PROB
 
-make -f $BASEDIR/makefile -j4 PROB=$PROB
-./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
+  if [ $PROB == "torus" ]
+  then 
+    set_run_int mad_type $i
+    echo "First run of torus problem, mad_type $i..."
+  else
+    echo "First run of $PROB problem..."
+  fi
+  ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
+  echo "Done!"
 
-cd $OUT_DIR
-mv dumps/dump_00000000.h5 ./first_dump_gold.h5
-mv dumps/dump_00000001.h5 ./last_dump_gold.h5
-mv restarts/restart_00000001.h5 ./first_restart_gold.h5
-rm -rf dumps restarts
-cd ..
+  cd $OUT_DIR
+  mv dumps/dump_00000000.h5 ./first_dump_gold.h5
+  if [ $PROB == "mhdmodes" ]; then
+    mv dumps/dump_00000005.h5 ./last_dump_gold.h5
+  else
+    mv dumps/dump_00000001.h5 ./last_dump_gold.h5
+  fi
+  mv restarts/restart_00000001.h5 ./first_restart_gold.h5
+  rm -rf dumps restarts
+  cd ..
 
-sleep 1
+  sleep 1
 
-set_compile_int N1CPU 2
-set_compile_int N2CPU 2
-if [ $PROB == "bondi" ]
-then
-  set_compile_int N3CPU 1
-  NMPI="4"
-else
-  set_compile_int N3CPU 4
-  NMPI="16"
-fi
+  if [ $PROB == "bondi" ]
+  then
+    set_cpu_topo 4 4 1
+  else
+    set_cpu_topo 2 2 4
+  fi
+  export OMP_NUM_THREADS=2
 
-export OMP_NUM_THREADS=2
+  make -f $BASEDIR/makefile -j4 PROB=$PROB
+  echo "Second run..."
+  mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
+  echo "Done!"
 
-make -f $BASEDIR/makefile -j4 PROB=$PROB
-mpirun -n $NMPI ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
+  ./verify.sh $PROB
 
-./verify.sh $PROB
-
-if [ $PROB == "torus" ]
-then
-mv $OUT_DIR/verification_torus.txt $OUT_DIR/verification_torus_$i.txt
-fi
+  if [ $PROB == "torus" ]
+  then
+    mv $OUT_DIR/verification_torus.txt $OUT_DIR/verification_torus_$i.txt
+  fi
 
 done

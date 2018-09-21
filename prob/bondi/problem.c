@@ -14,10 +14,6 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_roots.h>
 
-#if POLYTH
-double mks_smooth;
-#endif
-
 double C1, C2, n;
 
 double mdot, rs;
@@ -120,7 +116,7 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
        (pow(rs,4)*pow(Tc,2*n)));
 
     firstc = 0;
-}
+  }
 
   double r, th, X[NDIM];
   coord(i, j, k, CENT, X);
