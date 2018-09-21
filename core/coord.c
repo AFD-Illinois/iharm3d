@@ -119,7 +119,12 @@ inline void bl_coord(const double X[NDIM], double *r, double *th)
 inline void set_dxdX(double X[NDIM], double dxdX[NDIM][NDIM])
 {
   memset(dxdX, 0, NDIM*NDIM*sizeof(double));
-#if METRIC == MKS && !DEREFINE_POLES
+
+#if METRIC == MINKOWSKI
+  for (int mu = 0; mu < NDIM; mu++) {
+    dxdX[mu][mu] = 1.;
+  }
+#elif METRIC == MKS && !DEREFINE_POLES
   dxdX[0][0] = 1.;
   dxdX[1][1] = exp(X[1]);
   dxdX[2][2] = M_PI - (hslope - 1.)*M_PI*cos(2.*M_PI*X[2]);
@@ -150,7 +155,7 @@ void gcov_func(double X[NDIM], double gcov[NDIM][NDIM])
 {
   memset(gcov, 0, NDIM*NDIM*sizeof(double));
 
-  #if METRIC == CARTESIAN
+  #if METRIC == MINKOWSKI
   gcov[0][0] = -1.;
   for (int j = 1; j < NDIM; j++) {
     gcov[j][j] = 1.;
