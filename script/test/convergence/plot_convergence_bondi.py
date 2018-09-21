@@ -1,6 +1,6 @@
 ################################################################################
 #                                                                              #
-# BONDI INFLOW                                                                 #
+# BONDI INFLOW CONVERGENCE PLOTS                                               #
 #                                                                              #
 ################################################################################
 
@@ -77,7 +77,7 @@ if not AUTO:
   ax = fig.add_subplot(1,1,1)
   ax.plot(RES, L1, marker='s', label='RHO')
 
-  amp = 1.0
+  amp = 1.0e-3
   ax.plot([RES[0]/2., RES[-1]*2.], 
     10.*amp*np.asarray([RES[0]/2., RES[-1]*2.])**-2.,
     color='k', linestyle='--', label='N^-2')

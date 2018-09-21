@@ -1,6 +1,6 @@
 ################################################################################
 #                                                                              #
-# SOD SHOCKTUBE                                                                #
+# MHD MODES CONVERGENCE PLOTS                                                  #
 #                                                                              #
 ################################################################################
 
@@ -186,3 +186,4 @@ if AUTO:
   data['CODE'] = powerfits
   import pickle
   pickle.dump(data, open('data.p', 'wb'))
+

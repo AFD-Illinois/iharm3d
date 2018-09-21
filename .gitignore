@@ -68,8 +68,7 @@ TAGS
 
 # Build directory #
 ###################
-build/
-SRC/
+build_archive/
 
 # Executable #
 ##############
@@ -85,8 +84,10 @@ outfiles-*
 dumps/
 dumps*/
 restarts/
-test_*/
-build_archive/
-TMP/
+
+# Testing #
+###########
+script/test/*/param.dat
+results_*/
 *.png
 vtune_*
