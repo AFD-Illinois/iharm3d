@@ -29,7 +29,9 @@ do
   sleep 1
 
   make -f $BASEDIR/makefile -j4 PROB=bondi
+  echo "Running $n-size problem..."
   mpirun -n 4 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/output_${n}.txt
+  echo "Done!"
 
   mv $OUT_DIR/dumps $OUT_DIR/dumps_${n}
   rm -rf $OUT_DIR/restarts
