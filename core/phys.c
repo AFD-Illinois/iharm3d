@@ -329,9 +329,11 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
 // Source terms for equations of motion
 inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim *dU)
 {
+#if WIND_TERM
   static struct FluidState *dS;
   static int firstc = 1;
   if (firstc) {dS = calloc(1,sizeof(struct FluidState)); firstc = 0;}
+#endif
 
 #pragma omp parallel for collapse(3)
   ZLOOP {

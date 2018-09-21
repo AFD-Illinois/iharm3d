@@ -63,11 +63,18 @@
 
 // TODO Move this per-problem.  Keep defaults here?
 // Floors in terms of bsq
+#ifndef BSQORHOMAX
 #define BSQORHOMAX (100.)
+#endif
+#ifndef UORHOMAX
 #define UORHOMAX (100.)
+#endif
 #define BSQOUMAX (BSQORHOMAX * UORHOMAX)
 // Extra "wind" source term to avoid floors
+// Test problems require disabling this
+#ifndef WIND_TERM
 #define WIND_TERM 1
+#endif
 
 // Maximum value of gamma, the Lorentz factor
 #define GAMMAMAX (50.)

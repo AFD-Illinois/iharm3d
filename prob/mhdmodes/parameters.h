@@ -22,6 +22,15 @@
  */
 #define METRIC MINKOWSKI
 
+/*
+ * FLOORS
+ * Wind term is a small source for torii only
+ * Maximum magnetization parameters should be set high for most problems
+ */
+#define WIND_TERM 0
+#define BSQORHOMAX (100.)
+#define UORHOMAX (100.)
+
 /* ELECTRONS AND OPTIONS
  *   SUPPRESS_MAG_HEAT - (0,1) NO ELECTRON HEATING WHEN SIGMA > 1
  *   BETA_HEAT         - (0,1) BETA-DEPENDENT HEATING
