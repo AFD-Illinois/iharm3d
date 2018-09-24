@@ -5,3 +5,4 @@
 # More MADs?
 ./test_init_diffmpi.sh bondi
 ./test_init_diffmpi.sh mhdmodes
+
