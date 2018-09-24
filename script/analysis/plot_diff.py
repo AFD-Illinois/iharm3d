@@ -16,19 +16,12 @@ import glob
 import os
 import plot as bplt
 
+USEARRSPACE=True
 NLINES = 20
 SIZE = 600
 
 FIGX = 16
 FIGY = 16
-
-#path1 = sys.argv[1]
-#path2 = sys.argv[2]
-#num = int(sys.argv[3])
-
-#gridfile = os.path.join(path1,"grid.h5")
-#dump1file = os.path.join(path1,"dump_{:08d}.h5".format(num))
-#dump2file = os.path.join(path2,"dump_{:08d}.h5".format(num))
 
 dump1file = sys.argv[1]
 dump2file = sys.argv[2]
@@ -48,14 +41,14 @@ N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
 def plot_diff(var, rel=False, lim=None):
     if rel:
         if lim is not None:
-            bplt.plot_xy(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), dump1, vmin=0, vmax=lim, label=var)
+            bplt.plot_xy(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), dump1, vmin=0, vmax=lim, label=var, arrayspace=USEARRSPACE)
         else:
-            bplt.plot_xy(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), dump1, label=var)
+            bplt.plot_xy(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), dump1, label=var, arrayspace=USEARRSPACE)
     else:
         if lim is not None:
-            bplt.plot_xy(ax, geom, np.abs(dump1[var] - dump2[var]), dump1, vmin=0, vmax=lim, label=var)
+            bplt.plot_xy(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), dump1, vmin=0, vmax=lim, label=var, arrayspace=USEARRSPACE)
         else:
-            bplt.plot_xy(ax, geom, np.abs(dump1[var] - dump2[var]), dump1, label=var)
+            bplt.plot_xy(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), dump1, vmin=-10, vmax=0, label=var, arrayspace=USEARRSPACE)
 
 # Plot the difference
 ax = plt.subplot(2,2,1)

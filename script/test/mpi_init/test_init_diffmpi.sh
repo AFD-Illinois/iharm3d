@@ -40,7 +40,7 @@ do
 
   set_cpu_topo 1 1 1
 
-  make -f $BASEDIR/makefile -j4 PROB=$PROB
+  make -f $BASEDIR/makefile -j4 PROB=$PROB debug
 
   if [ $PROB == "torus" ]
   then 
@@ -73,7 +73,7 @@ do
   fi
   export OMP_NUM_THREADS=2
 
-  make -f $BASEDIR/makefile -j4 PROB=$PROB
+  make -f $BASEDIR/makefile -j4 PROB=$PROB debug
   echo "Second run..."
   mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
   echo "Done!"

@@ -60,27 +60,13 @@ do
     mv dumps/dump_00000001.h5 ./last_dump_gold.h5
   fi
   mv restarts/restart_00000001.h5 ./first_restart_gold.h5
-  # Leave the grid file and folders
-  rm -rf dumps/dump_* restarts/*
-  # Copy the restart file back and use it
-  cd restarts
-  cp ../first_restart_gold.h5 ./restart_00000001.h5
-  ln -s restart_00000001.h5 restart.last
-  cd ../..
+  rm -rf dumps restarts
+  cd ..
 
   sleep 1
 
-  if [ $PROB == "bondi" ]
-  then
-    set_cpu_topo 4 4 1
-  else
-    set_cpu_topo 2 2 4
-  fi
-  export OMP_NUM_THREADS=2
-
-  make -f $BASEDIR/makefile -j4 PROB=$PROB debug
   echo "Second run..."
-  mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
+  ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
   echo "Done!"
 
   ./verify.sh $PROB
