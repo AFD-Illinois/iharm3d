@@ -1,4 +1,4 @@
-### RUNTIME PARAMETERS ###
+### RUNTIME PARAMETERS FOR LARGE-TORUS MAD###
 
 # COORDINATES
 [dbl] tf = 10000.0
@@ -8,6 +8,7 @@
 # FLUID
 [dbl] gam = 1.444444
 [dbl] cour = 0.9
+[dbl] u_jitter = 4.0e-02
 
 # OUTPUT
 [dbl] DTd = 5.0
@@ -26,13 +27,15 @@
 # PROBLEM
 [dbl] rin = 20.0
 [dbl] rmax = 41.0
+
+[int] mad_type = 1
+[dbl] beta = 100.0
+[dbl] BHflux = 0.0
+# Used for mad_type 4, Narayan '12 conditions
 [dbl] rBstart = 25.0
 [dbl] rBend = 810.0
 
-[int] MAD = 1
-[dbl] beta = 100.0
-[dbl] BHflux = 0.0
-
+# GEOMETRY
 [dbl] a = 0.9375
 [dbl] hslope = 0.3
 [dbl] mks_smooth = 0.5
