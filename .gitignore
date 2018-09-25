@@ -90,4 +90,5 @@ restarts/
 script/test/*/param.dat
 results_*/
 *.png
+test_output.txt
 vtune_*

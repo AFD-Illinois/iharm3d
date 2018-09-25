@@ -73,6 +73,7 @@ do
   if [ $PROB == "torus" ]
   then
     mv $OUT_DIR/verification_torus.txt $OUT_DIR/verification_torus_$i.txt
+    mv $OUT_DIR/differences_torus.png $OUT_DIR/differences_torus_$i.png
   fi
 
 done
