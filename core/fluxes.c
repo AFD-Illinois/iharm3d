@@ -10,21 +10,27 @@
 
 // TODO declare internal functions here rather than decs, move find_cmax down
 
-double find_cmax(GridDouble *ctop) {
+double ndt_min(GridVector *ctop) {
   timer_start(TIMER_CMAX);
-  double cmax_tmp = 0;
-#pragma omp parallel for simd collapse(2) reduction(max:cmax_tmp)
+  double ndt_min = 1e20;
+#pragma omp parallel for collapse(3) reduction(min:ndt_min)
   ZLOOP {
-    if((*ctop)[k][j][i] > cmax_tmp) cmax_tmp = (*ctop)[k][j][i];
+    double ndt_zone = 0;
+    for (int mu = 1; mu < NDIM; mu++) {
+      ndt_zone += 1/(cour*dx[mu]/(*ctop)[mu][k][j][i]);
+    }
+    ndt_zone = 1/ndt_zone;
+
+    if(ndt_zone < ndt_min) ndt_min = ndt_zone;
   }
   timer_stop(TIMER_CMAX);
-  return cmax_tmp;
+  return ndt_min;
 }
 
 double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
 {
   static struct FluidState *Sl, *Sr;
-  static GridDouble *ctop;
+  static GridVector *ctop;
   double cmax[NDIM], ndts[NDIM];
   memset(cmax, 0, NDIM*sizeof(double));
   memset(ndts, 0, NDIM*sizeof(double));
@@ -34,7 +40,7 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
   if (firstc) {
     Sl  = calloc(1,sizeof(struct FluidState));
     Sr  = calloc(1,sizeof(struct FluidState));
-    ctop = calloc(1,sizeof(GridDouble));
+    ctop = calloc(1,sizeof(GridVector));
 
     firstc = 0;
   }
@@ -43,34 +49,21 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
   reconstruct(S, Sl->P, Sr->P, 1);
 
   // lr_to_flux X1
-  lr_to_flux(G, Sl, Sr, 1, FACE1, &(F->X1), ctop);
-
-  // cmax1
-  cmax[1] = find_cmax(ctop);
+  lr_to_flux(G, Sl, Sr, 1, FACE1, &(F->X1), ctop[1]);
 
   // reconstruct X2
   reconstruct(S, Sl->P, Sr->P, 2);
 
   // lr_to_flux X2
-  lr_to_flux(G, Sl, Sr, 2, FACE2, &(F->X2), ctop);
-
-  // cmax2
-  cmax[2] = find_cmax(ctop);
+  lr_to_flux(G, Sl, Sr, 2, FACE2, &(F->X2), ctop[2]);
 
   // reconstruct X3
   reconstruct(S, Sl->P, Sr->P, 3);
 
   // lr_to_flux X3
-  lr_to_flux(G, Sl, Sr, 3, FACE3, &(F->X3), ctop);
+  lr_to_flux(G, Sl, Sr, 3, FACE3, &(F->X3), ctop[3]);
 
-  // cmax3
-  cmax[3] = find_cmax(ctop);
-
-  for (int mu = 1; mu < NDIM; mu++) {
-    ndts[mu] = cour*dx[mu]/cmax[mu];
-  }
-
-  return 1./(1./ndts[1] + 1./ndts[2] + 1./ndts[3]);
+  return ndt_min(ctop);
 }
 
 // Note that the sense of L/R flips from zone to interface during function call
