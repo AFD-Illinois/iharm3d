@@ -31,14 +31,7 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   timer_start(TIMER_FIXUP);
 
   static int firstc = 1;
-  if (firstc) {
-    Stmp = malloc(sizeof(struct FluidState)); // TODO add malloc_zero (or "new"?) that combines these
-    PLOOP ZLOOPALL {
-      Stmp->P[ip][k][j][i] = 0.;
-      Stmp->U[ip][k][j][i] = 0.;
-    }
-    firstc = 0;
-  }
+  if (firstc) {Stmp = calloc(1,sizeof(struct FluidState)); firstc = 0;}
 
   if (!FLUID_FLOORS) get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
@@ -236,7 +229,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       prim_to_flux(G, Stmp, i, j, k, 0, CENT, Stmp->U);
 
       get_state(G, S, i, j, k, CENT);
-      prim_to_flux(G, S, i, j, k, 0, CENT, S->U); // TODO is this messing with things?
+      prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
 
       PLOOP {
         S->U[ip][k][j][i] += Stmp->U[ip][k][j][i];
@@ -244,7 +237,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       }
 
       U_to_P(G, S, i, j, k, CENT);
-      //get_state(G, S, i, j, k, CENT); // TODO needed?
+      get_state(G, S, i, j, k, CENT); // TODO needed?
 
 #if DRIFT_FLOORS
     } // if (trans > 0)
@@ -260,7 +253,6 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   if (S->P[KTOT][k][j][i] > KTOTMAX) {
     S->P[UU][k][j][i] = KTOTMAX*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
     S->P[KTOT][k][j][i] = KTOTMAX;
-    // Need get_state?
   }
 #endif // ELECTRONS
 
@@ -273,7 +265,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     S->P[U1][k][j][i] *= f;
     S->P[U2][k][j][i] *= f;
     S->P[U3][k][j][i] *= f;
-    //get_state(G, S, i, j, k, CENT); // TODO needed?
+    get_state(G, S, i, j, k, CENT);
   }
 
 }

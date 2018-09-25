@@ -14,12 +14,12 @@ double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 
 void step(struct GridGeom *G, struct FluidState *S)
 {
-  static struct FluidState *Smid;
+  static struct FluidState *Stmp;
   static struct FluidState *Ssave;
 
   static int first_call = 1;
   if (first_call) {
-    Smid = calloc(1,sizeof(struct FluidState));
+    Stmp = calloc(1,sizeof(struct FluidState));
     Ssave = calloc(1,sizeof(struct FluidState));
     first_call = 0;
   }
@@ -36,34 +36,34 @@ void step(struct GridGeom *G, struct FluidState *S)
   LOG("Start step");
 
   // Predictor setup
-  advance_fluid(G, S, S, Smid, 0.5*dt);
+  advance_fluid(G, S, S, Stmp, 0.5*dt);
 
   LOG("Substep");
 
 #if ELECTRONS
-  heat_electrons(G, S, Smid);
+  heat_electrons(G, S, Stmp);
 #endif
 
   // Fixup routines: smooth over outlier zones
-  fixup(G, Smid);
-  fixup_utoprim(G, Smid);
+  fixup(G, Stmp);
+  fixup_utoprim(G, Stmp);
 #if ELECTRONS
-  fixup_electrons(Smid);
+  fixup_electrons(Stmp);
 #endif
 
   LOG("Fixup");
 
-  set_bounds(G, Smid);
+  set_bounds(G, Stmp);
 
   LOG("Bounds");
 
   // Corrector step
-  double ndt = advance_fluid(G, S, Smid, S, dt);
+  double ndt = advance_fluid(G, S, Stmp, S, dt);
 
   LOG("Fullstep");
 
 #if ELECTRONS
-  heat_electrons(G, Smid, S);
+  heat_electrons(G, Stmp, S);
 #endif
 
   fixup(G, S);
@@ -156,7 +156,6 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   // Not complete without setting four-vectors
   get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
 
-  //TODO if_debug this, or at least only bother on output invocations
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
     fail_save[k][j][i] = pflag[k][j][i];
