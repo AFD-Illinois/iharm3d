@@ -332,7 +332,15 @@ inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim 
 #if WIND_TERM
   static struct FluidState *dS;
   static int firstc = 1;
-  if (firstc) {dS = calloc(1,sizeof(struct FluidState)); firstc = 0;}
+  if (firstc) {
+    dS = malloc(sizeof(struct FluidState));
+    PLOOP ZLOOPALL {
+      dS->P[ip][k][j][i] = 0.;
+      dS->U[ip][k][j][i] = 0.;
+    }
+
+    firstc = 0;
+  }
 #endif
 
 #pragma omp parallel for collapse(3)
@@ -366,6 +374,9 @@ inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim 
     coord(i, j, k, CENT, X);
     bl_coord(X, &r, &th);
     cth = cos(th) ;
+
+    // Clear dS primitives and conserved
+    // TODO
 
     /* here is the rate at which we're adding particles */
     /* this function is designed to concentrate effect in the
