@@ -10,6 +10,10 @@
 
 // TODO declare internal functions here rather than decs, move find_cmax down
 
+void lr_to_flux(struct GridGeom *G, struct FluidState *Sl,
+  struct FluidState *Sr, int dir, int loc, GridPrim *flux, GridVector *ctop);
+double ndt_min(GridVector *ctop);
+
 double ndt_min(GridVector *ctop) {
   timer_start(TIMER_CMAX);
   double ndt_min = 1e20;
@@ -49,26 +53,26 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
   reconstruct(S, Sl->P, Sr->P, 1);
 
   // lr_to_flux X1
-  lr_to_flux(G, Sl, Sr, 1, FACE1, &(F->X1), ctop[1]);
+  lr_to_flux(G, Sl, Sr, 1, FACE1, &(F->X1), ctop);
 
   // reconstruct X2
   reconstruct(S, Sl->P, Sr->P, 2);
 
   // lr_to_flux X2
-  lr_to_flux(G, Sl, Sr, 2, FACE2, &(F->X2), ctop[2]);
+  lr_to_flux(G, Sl, Sr, 2, FACE2, &(F->X2), ctop);
 
   // reconstruct X3
   reconstruct(S, Sl->P, Sr->P, 3);
 
   // lr_to_flux X3
-  lr_to_flux(G, Sl, Sr, 3, FACE3, &(F->X3), ctop[3]);
+  lr_to_flux(G, Sl, Sr, 3, FACE3, &(F->X3), ctop);
 
   return ndt_min(ctop);
 }
 
 // Note that the sense of L/R flips from zone to interface during function call
 void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
-  struct FluidState *Sl, int dir, int loc, GridPrim *flux, GridDouble *ctop)
+  struct FluidState *Sl, int dir, int loc, GridPrim *flux, GridVector *ctop)
 {
   timer_start(TIMER_LR_TO_F);
 
@@ -153,8 +157,8 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   ZSLOOP(-1, N3, -1, N2, -1, N1) {
     (*cmax)[k][j][i] = fabs(MY_MAX(MY_MAX(0., (*cmaxL)[k][j][i]), (*cmaxR)[k][j][i]));
     (*cmin)[k][j][i] = fabs(MY_MAX(MY_MAX(0., -(*cminL)[k][j][i]), -(*cminR)[k][j][i]));
-    (*ctop)[k][j][i] = MY_MAX((*cmax)[k][j][i], (*cmin)[k][j][i]);
-    if (isnan(1./(*ctop)[k][j][i])) {
+    (*ctop)[dir][k][j][i] = MY_MAX((*cmax)[k][j][i], (*cmin)[k][j][i]);
+    if (isnan(1./(*ctop)[dir][k][j][i])) {
       printf("ctop is 0 or NaN at zone: %i %i %i (%i) ", i,j,k,dir);
 #if METRIC == MKS
       double X[NDIM];
@@ -174,7 +178,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   PLOOP {
     ZSLOOP(-1, N3, -1, N2, -1, N1) {
       (*flux)[ip][k][j][i] = 0.5*((*fluxL)[ip][k][j][i] + (*fluxR)[ip][k][j][i] -
-               (*ctop)[k][j][i]*(Sr->U[ip][k][j][i] - Sl->U[ip][k][j][i]));
+               (*ctop)[dir][k][j][i]*(Sr->U[ip][k][j][i] - Sl->U[ip][k][j][i]));
     }
   }
   timer_stop(TIMER_LR_FLUX);
