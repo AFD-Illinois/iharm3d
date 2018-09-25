@@ -12,7 +12,7 @@ else
 fi
 
 cp ../../../analysis/*.py .
-python plot_diff.py first_dump_gold.h5 $LAST_DUMP dumps/grid.h5 differences_$PROB.png
+python plot_diff.py last_dump_gold.h5 $LAST_DUMP dumps/grid.h5 differences_$PROB.png
 
 exec > verification_$PROB.txt 2>&1
 set -x
