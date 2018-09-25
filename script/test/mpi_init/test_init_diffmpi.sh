@@ -9,9 +9,8 @@ MADS=${2:-0}
 OUT_DIR=results_$PROB
 
 # Initial clean and make of work area
-BASEDIR=../../..
 rm -rf build_archive param.dat harm
-make -f $BASEDIR/makefile -j4 PROB=$PROB
+make_harm_here $PROB
 
 rm -rf $OUT_DIR
 mkdir -p $OUT_DIR
@@ -40,7 +39,7 @@ do
 
   set_cpu_topo 1 1 1
 
-  make -f $BASEDIR/makefile -j4 PROB=$PROB debug
+  make_harm_here $PROB
 
   if [ $PROB == "torus" ]
   then 
@@ -49,6 +48,9 @@ do
   else
     echo "First run of $PROB problem..."
   fi
+
+  sleep 1
+
   ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
   echo "Done!"
 
@@ -71,9 +73,8 @@ do
   else
     set_cpu_topo 2 2 4
   fi
-  export OMP_NUM_THREADS=2
 
-  make -f $BASEDIR/makefile -j4 PROB=$PROB debug
+  make_harm_here $PROB
   echo "Second run..."
   mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
   echo "Done!"

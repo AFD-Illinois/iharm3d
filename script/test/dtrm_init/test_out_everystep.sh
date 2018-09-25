@@ -9,9 +9,8 @@ MADS=${2:-0}
 OUT_DIR=results_everystep_$PROB
 
 # Initial clean and make of work area
-BASEDIR=../../..
 rm -rf build_archive param.dat harm
-make -f $BASEDIR/makefile -j4 PROB=$PROB
+make_harm_here $PROB
 
 rm -rf $OUT_DIR
 mkdir -p $OUT_DIR
@@ -27,7 +26,8 @@ fi
 # Give a relatively short endpoint
 # We're testing init and basic propagation
 set_run_dbl tf 1.0
-set_run_dbl DTd 0.0 # Output every step
+# Output every step
+set_run_dbl DTd 0.0
 if [ $PROB == "torus" ]
 then
   set_run_dbl u_jitter 0.0
@@ -40,7 +40,7 @@ do
 
   set_cpu_topo 1 1 1
 
-  make -f $BASEDIR/makefile -j4 PROB=$PROB debug
+  make_harm_here $PROB
 
   if [ $PROB == "torus" ]
   then 
@@ -49,6 +49,9 @@ do
   else
     echo "First run of $PROB problem..."
   fi
+
+  sleep 1
+
   ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
   echo "Done!"
 
@@ -59,7 +62,8 @@ do
 
   sleep 1
 
-  make -f $BASEDIR/makefile -j4 PROB=$PROB debug
+  make_harm_here $PROB
+
   echo "Second run..."
   ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
   echo "Done!"
