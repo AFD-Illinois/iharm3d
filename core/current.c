@@ -39,9 +39,9 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
   }
 
   // Keep all get_state calls outside the loop so it doesn't modify S{a,save}
-  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
-  get_state_vec(G, Ssave, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
-  get_state_vec(G, Sa, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
+  get_state_vec(G, S, CENT, -1, N3, -1, N2, -1, N1);
+  get_state_vec(G, Ssave, CENT, -1, N3, -1, N2, -1, N1);
+  get_state_vec(G, Sa, CENT, -1, N3, -1, N2, -1, N1);
 
 #if !INTEL_WORKAROUND
 #pragma omp parallel for simd collapse(3)
