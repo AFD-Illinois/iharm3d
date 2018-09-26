@@ -79,7 +79,7 @@ do
   mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
   echo "Done!"
 
-  ./verify.sh $PROB
+  ../verify.sh $PROB
 
   if [ $PROB == "torus" ]
   then

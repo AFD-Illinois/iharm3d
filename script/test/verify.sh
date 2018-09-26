@@ -12,7 +12,7 @@ else
 fi
 
 cp ../../../analysis/*.py .
-python plot_diff.py first_dump_gold.h5 $LAST_DUMP dumps/grid.h5 differences_$PROB.png
+python plot_diff.py last_dump_gold.h5 $LAST_DUMP dumps/grid.h5 differences_$PROB.png
 
 exec > verification_$PROB.txt 2>&1
 set -x
@@ -25,6 +25,6 @@ h5diff --delta=1e-12 first_dump_gold.h5 dumps/dump_00000000.h5
 h5diff --delta=1e-12 first_restart_gold.h5 restarts/restart_00000001.h5
 
 # Diff last dumps
+h5diff last_dump_gold.h5 $LAST_DUMP
 h5diff --delta=1e-12 last_dump_gold.h5 $LAST_DUMP
 h5diff --delta=1e-8 last_dump_gold.h5 $LAST_DUMP
-h5diff --delta=1e-4 last_dump_gold.h5 $LAST_DUMP
