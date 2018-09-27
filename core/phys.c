@@ -357,24 +357,22 @@ inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim 
 #pragma omp parallel for simd collapse(2)
   ZLOOP {
     // Stolen shamelessly from iharm2d_v3
-    double drhopdt, Tp;
-    double r, th;
-    double cth;
 
     /* need coordinates to evaluate particle addtn rate */
     double X[NDIM];
     coord(i, j, k, CENT, X);
+    double r, th;
     bl_coord(X, &r, &th);
-    cth = cos(th) ;
+    double cth = cos(th) ;
 
     /* here is the rate at which we're adding particles */
     /* this function is designed to concentrate effect in the
      funnel in black hole evolutions */
-    drhopdt = 2.e-4*cth*cth*cth*cth/pow(1. + r*r,2) ;
+    double drhopdt = 2.e-4*cth*cth*cth*cth/pow(1. + r*r,2) ;
 
     dS->P[RHO][k][j][i] = drhopdt ;
 
-    Tp = 10. ;  /* temp, in units of c^2, of new plasma */
+    double Tp = 10. ;  /* temp, in units of c^2, of new plasma */
     dS->P[UU][k][j][i] = drhopdt*Tp*3. ;
 
     /* Leave P[U{1,2,3}]=0 to add in particles in normal observer frame */

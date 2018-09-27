@@ -45,23 +45,26 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   // Convert from conserved variables to four-vectors
   double D = S->U[RHO][k][j][i]*lapse/gdet;
 
-  double Bcon[NDIM], Bcov[NDIM], Qcon[NDIM], Qcov[NDIM];
-  double ncov[NDIM], ncon[NDIM];
+  double Bcon[NDIM];
   Bcon[0] = 0.;
   Bcon[1] = S->U[B1][k][j][i]*lapse/gdet;
   Bcon[2] = S->U[B2][k][j][i]*lapse/gdet;
   Bcon[3] = S->U[B3][k][j][i]*lapse/gdet;
 
+  double Qcov[NDIM];
   Qcov[0] = (S->U[UU][k][j][i] - S->U[RHO][k][j][i])*lapse/gdet;
   Qcov[1] = S->U[U1][k][j][i]*lapse/gdet;
   Qcov[2] = S->U[U2][k][j][i]*lapse/gdet;
   Qcov[3] = S->U[U3][k][j][i]*lapse/gdet;
 
+  double ncov[NDIM];
   ncov[0] = -lapse;
   ncov[1] = 0.;
   ncov[2] = 0.;
   ncov[3] = 0.;
 
+  // Interlaced upper/lower operation
+  double Bcov[NDIM], Qcon[NDIM], ncon[NDIM];
   for (int mu = 0; mu < NDIM; mu++) {
     Bcov[mu] = 0.;
     Qcon[mu] = 0.;

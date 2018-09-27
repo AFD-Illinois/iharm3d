@@ -61,13 +61,13 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 
 inline void ucon_to_utcon(struct GridGeom *G, int i, int j, double ucon[NDIM], double utcon[NDIM])
 {
-  double alpha, beta[NDIM], gamma;
+  double beta[NDIM];
 
-  alpha = 1./sqrt(-G->gcon[CENT][0][0][j][i]);
+  double alpha = 1./sqrt(-G->gcon[CENT][0][0][j][i]);
   for (int mu = 1; mu < NDIM; mu++) {
     beta[mu] = G->gcon[CENT][0][mu][j][i]*alpha*alpha;
   }
-  gamma = alpha*ucon[0];
+  double gamma = alpha*ucon[0];
 
   utcon[0] = 0.;
   for (int mu = 1; mu < NDIM; mu++) {
