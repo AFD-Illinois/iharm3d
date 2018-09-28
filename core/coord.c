@@ -294,7 +294,7 @@ void set_grid(struct GridGeom *G)
     }
   }
   // Set the global min timestep based on light crossing time
-  dt_light = dt_light_min;
+  dt_light = mpi_min(dt_light_min);
 }
 
 inline void set_grid_loc(struct GridGeom *G, int i, int j, int k, int loc)
