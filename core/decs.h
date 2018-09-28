@@ -253,7 +253,7 @@ extern double Rin, Rout, hslope, R0;  // TODO use or ditch R0
 extern double cour;
 extern double dV, dx[NDIM], startx[NDIM];
 extern double x1Min, x1Max, x2Min, x2Max, x3Min, x3Max;
-extern double dt;
+extern double dt, dt_light;
 extern double t, tf;
 extern int nstep;
 extern int is_restart;

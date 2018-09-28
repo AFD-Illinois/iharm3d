@@ -29,7 +29,7 @@ double poly_norm, poly_xt, poly_alpha, mks_smooth;
 double cour;
 double dV, dx[NDIM], startx[NDIM];
 double x1Min, x1Max, x2Min, x2Max, x3Min, x3Max;
-double dt;
+double dt, dt_light;
 double t, tf;
 double rcurr, hcurr;
 int istart, istop, jstart, jstop;

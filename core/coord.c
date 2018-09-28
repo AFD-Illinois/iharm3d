@@ -256,6 +256,45 @@ void set_grid(struct GridGeom *G)
       conn_func(G, i, j, 0);
     }
   }
+
+  // Following stolen from bhlight's dt_light calculation
+  double dt_light_min = 1e20;
+
+#pragma omp parallel for collapse(2) reduction(min:dt_light_min)
+  JSLOOP(-NG, N2 - 1 + NG) {
+    ISLOOP(-NG, N1 - 1 + NG) {
+      double light_phase_speed = SMALL;
+      double dt_light_local = 0.;
+
+      for (int mu = 1; mu < NDIM; mu++) {
+        if(pow(G->gcon[CENT][0][mu][j][i], 2.) -
+           G->gcon[CENT][mu][mu][j][i]*G->gcon[CENT][0][0][j][i] >= 0.) {
+
+          double cplus = fabs((-G->gcon[CENT][0][mu][j][i] +
+            sqrt(pow(G->gcon[CENT][0][mu][j][i], 2.) -
+            G->gcon[CENT][mu][mu][j][i]*G->gcon[CENT][0][0][j][i]))/
+            (G->gcon[CENT][0][0][j][i]));
+
+          double cminus = fabs((-G->gcon[CENT][0][mu][j][i] -
+            sqrt(pow(G->gcon[CENT][0][mu][j][i], 2.) -
+            G->gcon[CENT][mu][mu][j][i]*G->gcon[CENT][0][0][j][i]))/
+            (G->gcon[CENT][0][0][j][i])) ;
+
+          light_phase_speed= MY_MAX(cplus,cminus);
+        } else {
+          light_phase_speed = SMALL;
+        }
+
+        dt_light_local += 1./(dx[mu]/light_phase_speed);
+
+      }
+
+      dt_light_local = 1./dt_light_local;
+      if (dt_light_local < dt_light_min) dt_light_min = dt_light_local;
+    }
+  }
+  // Set the global min timestep based on light crossing time
+  dt_light = dt_light_min;
 }
 
 inline void set_grid_loc(struct GridGeom *G, int i, int j, int k, int loc)

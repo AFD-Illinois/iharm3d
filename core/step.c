@@ -90,7 +90,12 @@ void step(struct GridGeom *G, struct FluidState *S)
   if (ndt > SAFE * dt) {
     ndt = SAFE * dt;
   }
-  dt = mpi_min(ndt);
+  //dt = mpi_min(ndt);
+
+  double fake_dt = mpi_min(ndt);
+  LOGN("dt would have been %f",fake_dt);
+  LOGN("Instead it is %f",dt_light);
+  dt = dt_light;
 
 }
 
