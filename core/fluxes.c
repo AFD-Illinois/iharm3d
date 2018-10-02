@@ -8,8 +8,6 @@
 
 #include "decs.h"
 
-// TODO declare internal functions here rather than decs, move find_cmax down
-
 void lr_to_flux(struct GridGeom *G, struct FluidState *Sl,
   struct FluidState *Sr, int dir, int loc, GridPrim *flux, GridVector *ctop);
 double ndt_min(GridVector *ctop);
@@ -67,6 +65,7 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
   // lr_to_flux X3
   lr_to_flux(G, Sl, Sr, 3, FACE3, &(F->X3), ctop);
 
+  // TODO don't call for static timestep
   return ndt_min(ctop);
 }
 

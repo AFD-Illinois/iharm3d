@@ -86,16 +86,25 @@ void step(struct GridGeom *G, struct FluidState *S)
     current_calc(G, S, Ssave, dt);
   }
 
-  // Set next timestep
-  if (ndt > SAFE * dt) {
-    ndt = SAFE * dt;
-  }
-  //dt = mpi_min(ndt);
+  // New dt proxy to choose fluid or light timestep
+  double max_dt = 0, fake_dt = 0;
+#if STATIC_TIMESTEP
+  if(DEBUG) fake_dt = mpi_min(ndt);
+  max_dt = cour*dt_light;
+#else
+  if(DEBUG) fake_dt = cour*dt_light;
+  max_dt = mpi_min(ndt);
+#endif
 
-  double fake_dt = mpi_min(ndt);
+  // Set next timestep
+  if (max_dt > SAFE * dt) {
+    dt = SAFE * dt;
+  } else {
+    dt = max_dt;
+  }
+
   LOGN("dt would have been %f",fake_dt);
-  LOGN("Instead it is %f",dt_light);
-  dt = dt_light;
+  LOGN("Instead it is %f",dt);
 
 }
 

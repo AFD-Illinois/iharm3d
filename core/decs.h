@@ -93,6 +93,9 @@
 #ifndef TIMERS
 #define TIMERS 1
 #endif
+#ifndef STATIC_TIMESTEP // TODO change default when sure
+#define STATIC_TIMESTEP 1
+#endif
 
 // The Intel compiler is a pain
 // Intel 18.0.0 aka 20170811 works
