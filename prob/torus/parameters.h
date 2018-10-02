@@ -7,9 +7,9 @@
  ******************************************************************************/
 
 /* GLOBAL RESOLUTION */
-#define N1TOT 96
-#define N2TOT 96
-#define N3TOT 96
+#define N1TOT 128
+#define N2TOT 128
+#define N3TOT 128
 
 /* MPI DECOMPOSITION */
 /* COUNTERINTUITIVE: Split N3, N2, N1 order to keep k smaller than i,j*/
@@ -28,7 +28,7 @@
  * Wind term is a small source for torii only
  * Maximum magnetization parameters should be set high for most problems
  */
-#define WIND_TERM 1
+#define WIND_TERM 0
 #define BSQORHOMAX (100.)
 #define UORHOMAX (100.)
 
@@ -43,7 +43,7 @@
 /* RECONSTRUCTION ALGORITHM
  *   LINEAR, PPM, WENO, MP5
  */
-#define RECONSTRUCTION LINEAR
+#define RECONSTRUCTION WENO
 
 /* BOUNDARY CONDITIONS
  *   OUTFLOW PERIODIC POLAR USER
