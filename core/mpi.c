@@ -111,14 +111,14 @@ void mpi_initialization(int argc, char *argv[])
   int subsizes2[4] = {NVAR,N3,NG,N1+2*NG};
   int starts[4] = {0,0,0,0};
   MPI_Type_create_subarray(4, sizes, subsizes2, starts,
-			   MPI_ORDER_C, scalar_type, &face_type[1]);
+               MPI_ORDER_C, scalar_type, &face_type[1]);
   MPI_Type_commit(&face_type[1]);
 
   int sizes_pflag[3] = {N3+2*NG,N2+2*NG,N1+2*NG};
   int subsizes2_pflag[3] = {N3,NG,N1+2*NG};
   int starts_pflag[3] = {0,0,0};
   MPI_Type_create_subarray(3, sizes_pflag, subsizes2_pflag, starts_pflag,
-			   MPI_ORDER_C, flag_type, &pflag_face_type[1]);
+               MPI_ORDER_C, flag_type, &pflag_face_type[1]);
   MPI_Type_commit(&pflag_face_type[1]);
 
   // N1 face: update only current good zones (No ghosts)
@@ -126,12 +126,12 @@ void mpi_initialization(int argc, char *argv[])
 
   int subsizes3[4] = {NVAR,N3,N2,NG};
   MPI_Type_create_subarray(4, sizes, subsizes3, starts,
-			   MPI_ORDER_C, scalar_type, &face_type[2]);
+               MPI_ORDER_C, scalar_type, &face_type[2]);
   MPI_Type_commit(&face_type[2]);
 
   int subsizes3_pflag[3] = {N3,NG,N1+2*NG};
   MPI_Type_create_subarray(3, sizes_pflag, subsizes3_pflag, starts_pflag,
-			   MPI_ORDER_C, flag_type, &pflag_face_type[2]);
+               MPI_ORDER_C, flag_type, &pflag_face_type[2]);
   MPI_Type_commit(&pflag_face_type[2]);
 
   MPI_Barrier(comm);
@@ -145,65 +145,57 @@ void mpi_finalize()
 // Share face data
 int sync_mpi_bound_X1(struct FluidState *S)
 {
-  MPI_Status *status = MPI_STATUS_IGNORE;
 
   // We don't check returns since MPI kindly crashes on failure
 #if N1 > 1
   // First send right/receive left
   MPI_Sendrecv(&(S->P[0][NG][NG][N1]), 1, face_type[2], neighbors[1][1][2], 0,
-           &(S->P[0][NG][NG][0]), 1, face_type[2], neighbors[1][1][0], 0, comm, status);
+           &(S->P[0][NG][NG][0]), 1, face_type[2], neighbors[1][1][0], 0, comm, MPI_STATUS_IGNORE);
   MPI_Sendrecv(&(pflag[NG][NG][N1]), 1, pflag_face_type[2], neighbors[1][1][2], 6,
-           &(pflag[NG][NG][0]), 1, pflag_face_type[2], neighbors[1][1][0], 6, comm, status);
+           &(pflag[NG][NG][0]), 1, pflag_face_type[2], neighbors[1][1][0], 6, comm, MPI_STATUS_IGNORE);
   // And back
   MPI_Sendrecv(&(S->P[0][NG][NG][NG]), 1, face_type[2], neighbors[1][1][0], 1,
-           &(S->P[0][NG][NG][N1+NG]), 1, face_type[2], neighbors[1][1][2], 1, comm, status);
+           &(S->P[0][NG][NG][N1+NG]), 1, face_type[2], neighbors[1][1][2], 1, comm, MPI_STATUS_IGNORE);
   MPI_Sendrecv(&(pflag[NG][NG][NG]), 1, pflag_face_type[2], neighbors[1][1][0], 7,
-           &(pflag[NG][NG][N1+NG]), 1, pflag_face_type[2], neighbors[1][1][2], 7, comm, status);
+           &(pflag[NG][NG][N1+NG]), 1, pflag_face_type[2], neighbors[1][1][2], 7, comm, MPI_STATUS_IGNORE);
 #endif
 
-  //For some reason IMPI '18 hates this
-  //return status->MPI_ERROR;
   return 0;
 }
 
 int sync_mpi_bound_X2(struct FluidState *S)
 {
-  MPI_Status *status = MPI_STATUS_IGNORE;
 
-  // Other directions
 #if N2 > 1
   MPI_Sendrecv(&(S->P[0][NG][N2][0]), 1, face_type[1], neighbors[1][2][1], 2,
-	       &(S->P[0][NG][0][0]), 1, face_type[1], neighbors[1][0][1], 2, comm, status);
+           &(S->P[0][NG][0][0]), 1, face_type[1], neighbors[1][0][1], 2, comm, MPI_STATUS_IGNORE);
   MPI_Sendrecv(&(pflag[NG][N2][0]), 1, pflag_face_type[1], neighbors[1][2][1], 8,
-	       &(pflag[NG][0][0]), 1, pflag_face_type[1], neighbors[1][0][1], 8, comm, status);
+           &(pflag[NG][0][0]), 1, pflag_face_type[1], neighbors[1][0][1], 8, comm, MPI_STATUS_IGNORE);
 
   MPI_Sendrecv(&(S->P[0][NG][NG][0]), 1, face_type[1], neighbors[1][0][1], 3,
-	       &(S->P[0][NG][N2+NG][0]), 1, face_type[1], neighbors[1][2][1], 3, comm, status);
+           &(S->P[0][NG][N2+NG][0]), 1, face_type[1], neighbors[1][2][1], 3, comm, MPI_STATUS_IGNORE);
   MPI_Sendrecv(&(pflag[NG][NG][0]), 1, pflag_face_type[1], neighbors[1][0][1], 9,
-	       &(pflag[NG][N2+NG][0]), 1, pflag_face_type[1], neighbors[1][2][1], 9, comm, status);
+           &(pflag[NG][N2+NG][0]), 1, pflag_face_type[1], neighbors[1][2][1], 9, comm, MPI_STATUS_IGNORE);
 #endif
 
-  //return status->MPI_ERROR;
   return 0;
 }
 
 int sync_mpi_bound_X3(struct FluidState *S)
 {
-  MPI_Status *status = MPI_STATUS_IGNORE;
 
 #if N3 > 1
   MPI_Sendrecv(&(S->P[0][N3][0][0]), 1, face_type[0], neighbors[2][1][1], 4,
-	       &(S->P[0][0][0][0]), 1, face_type[0], neighbors[0][1][1], 4, comm, status);
+           &(S->P[0][0][0][0]), 1, face_type[0], neighbors[0][1][1], 4, comm, MPI_STATUS_IGNORE);
   MPI_Sendrecv(&(pflag[N3][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 10,
-	       &(pflag[0][0][0]), 1, pflag_face_type[0], neighbors[0][1][1], 10, comm, status);
+           &(pflag[0][0][0]), 1, pflag_face_type[0], neighbors[0][1][1], 10, comm, MPI_STATUS_IGNORE);
 
   MPI_Sendrecv(&(S->P[0][NG][0][0]), 1, face_type[0], neighbors[0][1][1], 5,
-	       &(S->P[0][N3+NG][0][0]), 1, face_type[0], neighbors[2][1][1], 5, comm, status);
+           &(S->P[0][N3+NG][0][0]), 1, face_type[0], neighbors[2][1][1], 5, comm, MPI_STATUS_IGNORE);
   MPI_Sendrecv(&(pflag[NG][0][0]), 1, pflag_face_type[0], neighbors[0][1][1], 11,
-	       &(pflag[N3+NG][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 11, comm, status);
+           &(pflag[N3+NG][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 11, comm, MPI_STATUS_IGNORE);
 #endif
 
-  //return status->MPI_ERROR;
   return 0;
 }
 

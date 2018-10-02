@@ -6,7 +6,7 @@ PROB=${1:-torus}
 MADS=${2:-0}
 
 # Must be just a name for now
-OUT_DIR=results_$PROB
+OUT_DIR=results_everystep_$PROB
 
 # Initial clean and make of work area
 rm -rf build_archive param.dat harm
@@ -18,7 +18,7 @@ mkdir -p $OUT_DIR
 # Give the system a reasonable size to limit runtime
 # Bondi problem is 2D
 if [ "$PROB" == "bondi" ]; then
-set_problem_size 256 256 1
+  set_problem_size 256 256 1
 else
   set_problem_size 96 48 48
 fi
@@ -26,7 +26,8 @@ fi
 # Give a relatively short endpoint
 # We're testing init and basic propagation
 set_run_dbl tf 1.0
-set_run_dbl DTd 1.0
+# Output every step
+set_run_dbl DTd 0.0
 if [ $PROB == "torus" ]
 then
   set_run_dbl u_jitter 0.0
@@ -51,40 +52,22 @@ do
 
   sleep 1
 
-./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt 2> $OUT_DIR/err_firsttime.txt
+  ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
   echo "Done!"
 
   cd $OUT_DIR
-  mv dumps/dump_00000000.h5 ./first_dump_gold.h5
-  if [ $PROB == "mhdmodes" ]; then
-    mv dumps/dump_00000005.h5 ./last_dump_gold.h5
-  else
-    mv dumps/dump_00000001.h5 ./last_dump_gold.h5
-  fi
-  mv restarts/restart_00000001.h5 ./first_restart_gold.h5
-  rm -rf dumps restarts
+  mv dumps dumps_gold
+  rm -rf restarts
   cd ..
 
   sleep 1
 
-  if [ $PROB == "bondi" ]
-  then
-    set_cpu_topo 4 4 1
-  else
-    set_cpu_topo 2 2 4
-  fi
+  set_cpu_topo 1 2 1
 
   make_harm_here $PROB
+
   echo "Second run..."
-  mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt 2> $OUT_DIR/err_secondtime.txt
+  mpirun -n 2 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
   echo "Done!"
-
-  ../verify.sh $PROB
-
-  if [ $PROB == "torus" ]
-  then
-    mv $OUT_DIR/verification_torus.txt $OUT_DIR/verification_torus_$i.txt
-    mv $OUT_DIR/differences_torus.png $OUT_DIR/differences_torus_$i.png
-  fi
 
 done

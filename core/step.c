@@ -33,12 +33,13 @@ void step(struct GridGeom *G, struct FluidState *S)
 #pragma omp parallel for simd collapse(3)
   PLOOP ZLOOPALL Ssave->P[ip][k][j][i] = S->P[ip][k][j][i];
 #endif
-  LOG("Start step");
+  LOGN("Step %d",nstep);
+  FLAG("Start step");
 
   // Predictor setup
   advance_fluid(G, S, S, Stmp, 0.5*dt);
 
-  LOG("Substep");
+  FLAG("Substep");
 
 #if ELECTRONS
   heat_electrons(G, S, Stmp);
@@ -51,16 +52,16 @@ void step(struct GridGeom *G, struct FluidState *S)
   fixup_electrons(Stmp);
 #endif
 
-  LOG("Fixup");
+  FLAG("Fixup");
 
   set_bounds(G, Stmp);
 
-  LOG("Bounds");
+  FLAG("Bounds");
 
   // Corrector step
   double ndt = advance_fluid(G, S, Stmp, S, dt);
 
-  LOG("Fullstep");
+  FLAG("Fullstep");
 
 #if ELECTRONS
   heat_electrons(G, Stmp, S);
@@ -72,11 +73,11 @@ void step(struct GridGeom *G, struct FluidState *S)
   fixup_electrons(S);
 #endif
 
-  LOG("Fixup");
+  FLAG("Fixup");
 
   set_bounds(G, S);
 
-  LOG("Bounds");
+  FLAG("Bounds");
 
   // Increment time
   t += dt;

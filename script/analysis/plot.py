@@ -31,20 +31,18 @@ def flatten_xy(array, hdr):
 def plot_xz(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
             label=None, ticks=None, arrayspace=False):
   hdr = dump['hdr']; N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
-  if N3 > 1.:
-    if (arrayspace):
-      x = np.reshape(np.repeat(np.linspace(0,1,N2),N1),(N1,N2))
-      z = np.transpose(np.reshape(np.repeat(np.linspace(0,1,N1),N2),(N2,N1)))
+  if (arrayspace):
+    x = np.reshape(np.repeat(np.linspace(0,1,N2),N1),(N1,N2))
+    z = np.transpose(np.reshape(np.repeat(np.linspace(0,1,N1),N2),(N2,N1)))
+    if N3 > 1:
       var = flatten_xz(var, hdr)[N1:,:]
     else:
-      x = flatten_xz(geom['x'], hdr, patch_pole=True)
-      z = flatten_xz(geom['z'], hdr)
-      var = flatten_xz(var, hdr)
-
+      var = var[:,:,0]
   else:
-    x = x[:,:,0]
-    z = z[:,:,0]
-    var = var[:,:,0]
+    x = flatten_xz(geom['x'], hdr, patch_pole=True)
+    z = flatten_xz(geom['z'], hdr)
+    var = flatten_xz(var, hdr)
+    # TODO N3==1 option for axisymm plots
 
   #print 'xshape is ', x.shape, ', zshape is ', z.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,

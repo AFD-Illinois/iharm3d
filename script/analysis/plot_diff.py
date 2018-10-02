@@ -20,7 +20,7 @@ USEARRSPACE=True
 NLINES = 20
 SIZE = 600
 
-FIGX = 16
+FIGX = 20
 FIGY = 16
 
 dump1file = sys.argv[1]
@@ -33,34 +33,59 @@ geom = io.load_geom(gridfile)
 dump1 = io.load_dump(dump1file, geom, hdr)
 dump2 = io.load_dump(dump2file, geom, hdr) #Hopefully this fails for dumps that shouldn't be compared
 
-fig = plt.figure(figsize=(FIGX, FIGY))
-
 N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
 
-def plot_diff(var, rel=False, lim=None):
+log_floor = -10
+
+# TODO properly option log, rel, lim
+def plot_diff_xy(ax, var, rel=False, lim=None):
     if rel:
         if lim is not None:
-            bplt.plot_xy(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), dump1, vmin=0, vmax=lim, label=var, arrayspace=USEARRSPACE)
+            bplt.plot_xy(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), dump1, vmin=0, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
         else:
-            bplt.plot_xy(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), dump1, label=var, arrayspace=USEARRSPACE)
+            bplt.plot_xy(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), dump1, label=var, cbar=False, arrayspace=USEARRSPACE)
     else:
         if lim is not None:
-            bplt.plot_xy(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), dump1, vmin=0, vmax=lim, label=var, arrayspace=USEARRSPACE)
+            bplt.plot_xy(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), dump1, vmin=log_floor, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
         else:
-            bplt.plot_xy(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), dump1, vmin=-10, vmax=0, label=var, arrayspace=USEARRSPACE)
+            bplt.plot_xy(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), dump1, vmin=log_floor, vmax=0, label=var, cbar=False, arrayspace=USEARRSPACE)
+
+def plot_diff_xz(ax, var, rel=False, lim=None):
+    if rel:
+        if lim is not None:
+            bplt.plot_xz(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), dump1, vmin=0, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
+        else:
+            bplt.plot_xz(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), dump1, label=var, cbar=False, arrayspace=USEARRSPACE)
+    else:
+        if lim is not None:
+            bplt.plot_xz(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), dump1, vmin=log_floor, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
+        else:
+            bplt.plot_xz(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), dump1, vmin=log_floor, vmax=0, label=var, cbar=False, arrayspace=USEARRSPACE)
 
 # Plot the difference
-ax = plt.subplot(2,2,1)
-plot_diff('RHO')#, lim=10e-3)
-ax = plt.subplot(2,2,2)
-plot_diff('UU')#, lim=1.1*10e-5)
-ax = plt.subplot(2,2,3)
-plot_diff('beta', lim=100)
-ax = plt.subplot(2,2,4)
-plot_diff('bsq')#, lim=5*10e-9)
+nxplot = 4
+nyplot = 3
 
-#plt.subplots_adjust(left=0.1, right=0.9, bottom=0.05, top=0.95) # Avoid crowding
+fig = plt.figure(figsize=(FIGX, FIGY))
+for i,name in enumerate(hdr['prim_names']):
+  ax = plt.subplot(nyplot, nxplot, i+1)
+  plot_diff_xy(ax, name)
+  ax.set_xlabel('')
+  ax.set_ylabel('')
+
 plt.tight_layout()
 
-plt.savefig(imname, dpi=100) #, bbox_inches='tight')
+plt.savefig(imname+"_xy.png", dpi=100)
+plt.close(fig)
+
+fig = plt.figure(figsize=(FIGX, FIGY))
+for i,name in enumerate(hdr['prim_names']):
+  ax = plt.subplot(nyplot, nxplot, i+1)
+  plot_diff_xz(ax, name)
+  ax.set_xlabel('')
+  ax.set_ylabel('')
+
+plt.tight_layout()
+
+plt.savefig(imname+"_xz.png", dpi=100)
 plt.close(fig)

@@ -354,7 +354,9 @@ extern int global_stop[3];
 #define delta(i,j) ((i == j) ? 1. : 0.)
 
 #define LOG(msg) if(DEBUG && mpi_io_proc()) {fprintf(stderr,msg); fprintf(stderr,"\n");}
+#define FLAG(msg) if(DEBUG) { LOG(msg); mpi_barrier(); }
 #define LOGN(fmt,x) if(DEBUG && mpi_io_proc()) {fprintf(stderr,fmt,x); fprintf(stderr,"\n");}
+// TODO bring the whole MPI ship down too
 #define ERROR(msg) {if (mpi_io_proc()) {fprintf(stderr, msg); fprintf(stderr,"\n");} exit(-1);}
 
 /*******************************************************************************
@@ -385,6 +387,7 @@ void omega_calc(struct GridGeom *G, struct FluidState *S, GridDouble *omega);
 void reset_log_variables();
 void diag(struct GridGeom *G, struct FluidState *S, int call_code);
 void fail(struct GridGeom *G, struct FluidState *S, int fail_type, int i, int j, int k);
+void global_map(int iglobal, int jglobal, int kglobal, GridPrim prim);
 void area_map(int i, int j, int k, GridPrim prim);
 void diag_flux(struct FluidFlux *F);
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
