@@ -10,10 +10,10 @@
 
 // Allow to specify old fluid-frame floors for stable problems
 // These impose no maximum magnetization
-#ifndef FLUID_FLOORS
-#define FLUID_FLOORS 0
+#ifndef FLUID_FRAME_FLOORS
+#define FLUID_FRAME_FLOORS 0
 #endif
-// Use drift-frame to stabilize high magnetization
+// Can use drift-frame floors to stabilize high magnetization
 #define DRIFT_FLOORS 0
 
 #if DEBUG
@@ -33,7 +33,7 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   static int firstc = 1;
   if (firstc) {Stmp = calloc(1,sizeof(struct FluidState)); firstc = 0;}
 
-  if (!FLUID_FLOORS) get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
+  if (!FLUID_FRAME_FLOORS) get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
 #if DEBUG
 #pragma omp parallel for collapse(3) reduction(+:nfixed) reduction(+:nfixed_b)
@@ -126,7 +126,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   rhoflr = MY_MAX(rhoflr, RHOMINLIMIT);
   uflr = MY_MAX(uflr, UUMINLIMIT);
 
-#if FLUID_FLOORS
+#if FLUID_FRAME_FLOORS
   // Fluid frame floors: don't conserve momentum
   if (S->P[RHO][k][j][i] < rhoflr) {
     S->P[RHO][k][j][i] = rhoflr;
@@ -339,11 +339,11 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
         // Cell is fixed, can now use for other interpolations
         pflag[k][j][i] = 1;
 
-        if (!FLUID_FLOORS) get_state(G, S, i, j, k, CENT);
+        if (!FLUID_FRAME_FLOORS) get_state(G, S, i, j, k, CENT);
 
         fixup1zone(G, S, i, j, k);
 
-        if(!FLUID_FLOORS) get_state(G, S, i, j, k, CENT);
+        if(!FLUID_FRAME_FLOORS) get_state(G, S, i, j, k, CENT);
 
       }
     }
