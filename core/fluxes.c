@@ -198,6 +198,7 @@ void flux_ct(struct FluidFlux *F)
 
 #pragma omp parallel
   {
+    // This and the following are /not/ just ZLOOPs
 #pragma omp for simd collapse(2)
     ZSLOOP(0, N3, 0, N2, 0, N1) {
       emf->X3[k][j][i] =  0.25*(F->X1[B2][k][j][i] + F->X1[B2][k][j-1][i]
@@ -209,7 +210,6 @@ void flux_ct(struct FluidFlux *F)
     }
 
     // Rewrite EMFs as fluxes, after Toth
-    // These are /not/ ZLOOPS
 #pragma omp for simd collapse(2) nowait
     ZSLOOP(0, N3 - 1, 0, N2 - 1, 0, N1) {
       F->X1[B1][k][j][i] =  0.;

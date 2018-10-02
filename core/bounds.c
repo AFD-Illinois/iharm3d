@@ -53,9 +53,7 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           int iactive = NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iactive];
           pflag[k][j][i] = pflag[k][j][iactive];
-#else
-          {
-#if X1L_BOUND == OUTFLOW
+#elif X1L_BOUND == OUTFLOW
             int iz = 0 + NG;
             PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iz];
             pflag[k][j][i] = pflag[k][j][iz];
@@ -65,8 +63,18 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
             S->P[B2][k][j][i] *= rescale;
             S->P[B3][k][j][i] *= rescale;
 #endif
+        }
+      }
+    }
+
+    if(METRIC == MKS  && X1L_INFLOW == 0) {
+      // Make sure there is no inflow at the inner boundary
+#pragma omp parallel for collapse(2)
+      KLOOP {
+        JLOOP {
+          ISLOOP(-NG, -1) {
+            inflow_check(G, S, i, j, k, 0);
           }
-#endif
         }
       }
     }
@@ -82,25 +90,34 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           int iactive = N1 - 1 + NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iactive];
           pflag[k][j][i] = pflag[k][j][iactive];
-#else
-          {
-#if X1R_BOUND == OUTFLOW
-            int iz = N1 - 1 + NG;
-            PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iz];
-            pflag[k][j][i] = pflag[k][j][iz];
+#elif X1R_BOUND == OUTFLOW
+          int iz = N1 - 1 + NG;
+          PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iz];
+          pflag[k][j][i] = pflag[k][j][iz];
 
-            double rescale = G->gdet[CENT][j][iz]/G->gdet[CENT][j][i];
-            S->P[B1][k][j][i] *= rescale;
-            S->P[B2][k][j][i] *= rescale;
-            S->P[B3][k][j][i] *= rescale;
+          double rescale = G->gdet[CENT][j][iz]/G->gdet[CENT][j][i];
+          S->P[B1][k][j][i] *= rescale;
+          S->P[B2][k][j][i] *= rescale;
+          S->P[B3][k][j][i] *= rescale;
 #elif X1R_BOUND == USER
-            bound_gas_prob_x1r(i, j, k, S->P, G);
-#endif
-          }
+          bound_gas_prob_x1r(i, j, k, S->P, G);
 #endif
         }
       }
     }
+
+    if(METRIC == MKS && X1R_INFLOW == 0) {
+      // Make sure there is no inflow at the outer boundary
+#pragma omp parallel for collapse(2)
+      KLOOP {
+        JLOOP {
+          ISLOOP(N1, N1 - 1 + NG) {
+            inflow_check(G, S, i, j, k, 1);
+          }
+        }
+      }
+    }
+
   } // global_stop[0] == N1TOT
 
   timer_start(TIMER_BOUND_COMMS);
@@ -116,9 +133,7 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           int jactive = NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jactive][i];
           pflag[k][j][i] = pflag[k][jactive][i];
-#else
-          {
-#if X2L_BOUND == OUTFLOW
+#elif X2L_BOUND == OUTFLOW
           int jz = 0 + NG ;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jz][i];
           pflag[k][j][i] = pflag[k][jz][i];
@@ -128,8 +143,6 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           pflag[k][j][i] = pflag[k][jrefl][i];
           S->P[U2][k][j][i] *= -1.;
           S->P[B2][k][j][i] *= -1.;
-#endif
-          }
 #endif
         }
       }
@@ -146,9 +159,7 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           int jactive = N2 - 1 + NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jactive][i];
           pflag[k][j][i] = pflag[k][jactive][i];
-#else
-          {
-#if X2R_BOUND == OUTFLOW
+#elif X2R_BOUND == OUTFLOW
           int jz = N2 - 1 + NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jz][i];
           pflag[k][j][i] = pflag[k][jz][i];
@@ -159,16 +170,15 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           S->P[U2][k][j][i] *= -1.;
           S->P[B2][k][j][i] *= -1.;
 #endif
-          }
-#endif
         }
       }
     }
   } // global_stop[1] == N2TOT
 
-  timer_start (TIMER_BOUND_COMMS);
-  sync_mpi_bound_X2 (S);
-  timer_stop (TIMER_BOUND_COMMS);
+
+  timer_start(TIMER_BOUND_COMMS);
+  sync_mpi_bound_X2(S);
+  timer_stop(TIMER_BOUND_COMMS);
 
   if (global_start[2] == 0) {
 #pragma omp parallel for collapse(2)
@@ -179,14 +189,10 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           int kactive = NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][kactive][j][i];
           pflag[k][j][i] = pflag[kactive][j][i];
-#else
-          {
-#if X3L_BOUND == OUTFLOW
-            int kz = 0 + NG ;
-            PLOOP S->P[ip][k][j][i] = S->P[ip][kz][j][i];
-            pflag[k][j][i] = pflag[kz][j][i];
-#endif
-          }
+#elif X3L_BOUND == OUTFLOW
+          int kz = 0 + NG ;
+          PLOOP S->P[ip][k][j][i] = S->P[ip][kz][j][i];
+          pflag[k][j][i] = pflag[kz][j][i];
 #endif
         }
       }
@@ -199,17 +205,13 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
       ILOOPALL {
         KSLOOP(N3, N3-1+NG) {
 #if N3 < NG
-          int kactive = NG;
+          int kactive = N3-1+NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][kactive][j][i];
           pflag[k][j][i] = pflag[kactive][j][i];
-#else
-          {
-#if X3R_BOUND == OUTFLOW
-            int kz = N3 - 1 + NG;
-            PLOOP S->P[ip][k][j][i] = S->P[ip][kz][j][i];
-            pflag[k][j][i] = pflag[kz][j][i];
-#endif
-          }
+#elif X3R_BOUND == OUTFLOW
+          int kz = N3 - 1 + NG;
+          PLOOP S->P[ip][k][j][i] = S->P[ip][kz][j][i];
+          pflag[k][j][i] = pflag[kz][j][i];
 #endif
         }
       }
@@ -219,33 +221,6 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
   timer_start(TIMER_BOUND_COMMS);
   sync_mpi_bound_X3(S);
   timer_stop(TIMER_BOUND_COMMS);
-
-#if METRIC == MKS
-  //ucon_calc(G, state);
-  if(global_start[0] == 0  && X1L_INFLOW == 0) {
-    // Make sure there is no inflow at the inner boundary
-#pragma omp parallel for collapse(2)
-    KLOOPALL {
-      JLOOPALL {
-        ISLOOP(-NG, -1) {
-          inflow_check(G, S, i, j, k, 0);
-        }
-      }
-    }
-  }
-
-  if(global_stop[0] == N1TOT && X1R_INFLOW == 0) {
-    // Make sure there is no inflow at the outer boundary
-#pragma omp parallel for collapse(2)
-    KLOOPALL {
-      JLOOPALL {
-        ISLOOP(N1, N1 - 1 + NG) {
-          inflow_check(G, S, i, j, k, 1);
-        }
-      }
-    }
-  }
-#endif
 
   timer_stop(TIMER_BOUND);
 

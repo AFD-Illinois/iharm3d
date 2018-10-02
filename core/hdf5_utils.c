@@ -162,7 +162,7 @@ int hdf5_make_directory(const char *name)
   strncpy(path, hdf5_cur_dir, STRLEN);
   strncat(path, name, STRLEN - strlen(path));
 
-  if(DEBUG) printf("Adding dir %s\n", path);
+  if(DEBUG) fprintf(stderr,"Adding dir %s\n", path);
 
   hid_t group_id = H5Gcreate2(file_id, path, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   if (group_id < 0) FAIL(group_id, "hdf5_make_directory", path);
@@ -188,7 +188,7 @@ int hdf5_exists(const char *name) {
   herr_t exists = H5Lexists(file_id, path, link_plist);
   H5Pclose(link_plist);
 
-  if(DEBUG) printf("Checking existence of %s: %d\n", path, exists);
+  if(DEBUG) fprintf(stderr,"Checking existence of %s: %d\n", path, exists);
 
   return exists > 0;
 }
@@ -209,7 +209,7 @@ int hdf5_add_attr(const void *att, const char *att_name, const char *data_name, 
   strncpy(path, hdf5_cur_dir, STRLEN);
   strncat(path, data_name, STRLEN - strlen(path));
 
-  if(DEBUG) printf("Adding att %s\n", path);
+  if(DEBUG) fprintf(stderr,"Adding att %s\n", path);
 
   hid_t attribute_id = H5Acreate_by_name(file_id, path, att_name, hdf5_type, H5Screate(H5S_SCALAR), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   if (attribute_id < 0) FAIL(attribute_id, "hdf5_add_attr", path);
@@ -238,7 +238,7 @@ int hdf5_write_str_list(const void *data, const char *name, size_t str_len, size
   strncpy(path, hdf5_cur_dir, STRLEN);
   strncat(path, name, STRLEN - strlen(path));
 
-  if(DEBUG) printf("Adding str list %s\n", path);
+  if(DEBUG) fprintf(stderr,"Adding str list %s\n", path);
 
   // Adapted (stolen) from https://support.hdfgroup.org/ftp/HDF5/examples/C/
   hsize_t dims_of_char_dataspace[] = {len};
@@ -276,7 +276,7 @@ int hdf5_write_array(const void *data, const char *name, size_t rank,
   strncpy(path, hdf5_cur_dir, STRLEN);
   strncat(path, name, STRLEN - strlen(path));
 
-  if(DEBUG) printf("Adding array %s\n", path);
+  if(DEBUG) fprintf(stderr,"Adding array %s\n", path);
 
   // Create the dataset in the file
   hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
@@ -308,7 +308,7 @@ int hdf5_write_single_val(const void *val, const char *name, hsize_t hdf5_type)
   strncpy(path, hdf5_cur_dir, STRLEN);
   strncat(path, name, STRLEN - strlen(path));
 
-  if(DEBUG) printf("Adding val %s\n", path);
+  if(DEBUG) fprintf(stderr,"Adding val %s\n", path);
 
   // Declare scalar spaces
   hid_t scalarspace = H5Screate(H5S_SCALAR);
@@ -340,7 +340,7 @@ int hdf5_read_single_val(void *val, const char *name, hsize_t hdf5_type)
   strncpy(path, hdf5_cur_dir, STRLEN);
   strncat(path, name, STRLEN - strlen(path));
 
-  if(DEBUG) printf("Reading val %s\n", path);
+  if(DEBUG) fprintf(stderr,"Reading val %s\n", path);
 
   hid_t scalarspace = H5Screate(H5S_SCALAR);
   hid_t dset_id = H5Dopen(file_id, path, H5P_DEFAULT);
@@ -373,7 +373,7 @@ int hdf5_read_array(void *data, const char *name, size_t rank,
   strncpy(path, hdf5_cur_dir, STRLEN);
   strncat(path, name, STRLEN - strlen(path));
 
-  if(DEBUG) printf("Reading arr %s\n", path);
+  if(DEBUG) fprintf(stderr,"Reading arr %s\n", path);
 
   hid_t dset_id = H5Dopen(file_id, path, H5P_DEFAULT);
 
