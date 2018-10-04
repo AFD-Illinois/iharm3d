@@ -29,7 +29,7 @@ avg = pickle.load(open(favg, 'rb'))
 
 fig = plt.figure(figsize=(FIGX, FIGY))
 
-tf = 2e4
+tf = 1e4
 
 ax = plt.subplot(2,3,1)
 ax.plot(avg['r'], avg['rho_r'], color='k', linewidth=2)
@@ -90,13 +90,13 @@ ax = plt.subplot(2,1,1)
 ax.plot(avg['r'], avg['FE_r'], color='k', linewidth=2)
 ax.set_xlim([2,20])
 ax.set_ylabel('FE_r')
-#ax.set_ylim([-400, 100])
+ax.set_ylim([-150, 100])
 
 ax = plt.subplot(2,1,2)
 ax.plot(avg['r'], avg['FM_r'], color='k', linewidth=2)
 ax.set_xlim([2,20])
 ax.set_ylabel('FM_r')
-#ax.set_ylim([-100, 100])
+ax.set_ylim([0, 100])
 
 plt.savefig(fout + '_fluxr.png')
 plt.close(fig)

@@ -46,9 +46,9 @@ dumps = io.get_dumps_reduced(path)
 hdr = io.load_hdr(dumps[0])
 geom = io.load_geom(os.path.join(path,'grid.h5'))
 
-# Limit threads for 256^3 problem due to memory
+# Limit threads for 192^3+ problem due to memory
 # TODO guess NTHREADS better (96e9/N^3*8?)
-if hdr['n1'] >= 256 or hdr['n2'] >= 256 or hdr['n3'] >= 256:
+if hdr['n1'] * hdr['n2'] * hdr['n3'] >= 192 * 192 * 192:
   # Roughly compute memory and leave some generous padding for multiple copies and Python games
   NTHREADS = int(0.11 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
   # Leave the rest of the parallelism to MKL

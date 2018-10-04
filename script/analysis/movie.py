@@ -108,7 +108,7 @@ def plot(args):
 
   ax = plt.subplot(2,4,1)
   bplt.plot_xz(ax, geom, np.log10(dump['RHO']), dump,
-               vmin=-4, vmax = 0, label='RHO', arrayspace=USEARRSPACE)
+               vmin=-3, vmax=2, label='RHO', arrayspace=USEARRSPACE)
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
@@ -117,7 +117,7 @@ def plot(args):
 
   ax = plt.subplot(2,4,2)
   bplt.plot_xy(ax, geom, np.log10(dump['RHO']), dump,
-               vmin=-4, vmax=0, label='RHO', arrayspace=USEARRSPACE)
+               vmin=-3, vmax=2, label='RHO', arrayspace=USEARRSPACE)
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
