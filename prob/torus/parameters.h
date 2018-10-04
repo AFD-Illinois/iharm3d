@@ -21,7 +21,7 @@
  *   MINKOWSKI, MKS
  */
 #define METRIC MKS
-#define DEREFINE_POLES 0
+#define DEREFINE_POLES 1
 
 /*
  * FLOORS
