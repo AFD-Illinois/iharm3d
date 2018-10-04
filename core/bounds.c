@@ -76,7 +76,8 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
       }
     }
 
-    if(METRIC == MKS  && X1L_INFLOW == 0) {
+#if METRIC == MKS
+    if(X1L_INFLOW == 0) {
       // Make sure there is no inflow at the inner boundary
 #pragma omp parallel for collapse(2)
       KLOOP {
@@ -87,6 +88,7 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
         }
       }
     }
+#endif
 
   } // global_start[0] == 0
 
@@ -115,7 +117,8 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
       }
     }
 
-    if(METRIC == MKS && X1R_INFLOW == 0) {
+#if METRIC == MKS
+    if(X1R_INFLOW == 0) {
       // Make sure there is no inflow at the outer boundary
 #pragma omp parallel for collapse(2)
       KLOOP {
@@ -126,6 +129,7 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
         }
       }
     }
+#endif
 
   } // global_stop[0] == N1TOT
 
