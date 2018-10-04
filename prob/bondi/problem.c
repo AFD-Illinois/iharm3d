@@ -163,6 +163,17 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
   P[B2][k][j][i] = 0.;
   P[B3][k][j][i] = 0.;
 
+  // Electrons make no physical sense here but are a very useful debug tool
+  // At least set them consistently here to test deterministic evolution
+#if ELECTRONS
+    // Set electron internal energy to constant fraction of internal energy
+    double uel = fel0*P[UU][k][j][i];
+
+    // Initialize entropies
+    P[KTOT][k][j][i] = (gam-1.)*P[UU][k][j][i]*pow(P[RHO][k][j][i],-gam);
+    P[KEL][k][j][i] = (game-1.)*uel*pow(P[RHO][k][j][i],-game);
+#endif
+
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
