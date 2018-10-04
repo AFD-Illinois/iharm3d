@@ -18,7 +18,7 @@ mkdir -p $OUT_DIR
 # Give the system a reasonable size to limit runtime
 # Bondi problem is 2D
 if [ "$PROB" == "bondi" ]; then
-set_problem_size 256 256 1
+  set_problem_size 256 256 1
 else
   set_problem_size 96 48 48
 fi

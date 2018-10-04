@@ -62,12 +62,12 @@ do
 
   sleep 1
 
-  set_cpu_topo 1 2 1
+  set_cpu_topo 4 4 1
 
   make_harm_here $PROB
 
   echo "Second run..."
-  mpirun -n 2 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
+  mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
   echo "Done!"
 
 done

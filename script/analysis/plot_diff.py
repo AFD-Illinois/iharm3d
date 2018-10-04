@@ -65,9 +65,10 @@ def plot_diff_xz(ax, var, rel=False, lim=None):
 # Plot the difference
 nxplot = 4
 nyplot = 3
+vars = list(hdr['prim_names'])+['fail','divB']
 
 fig = plt.figure(figsize=(FIGX, FIGY))
-for i,name in enumerate(hdr['prim_names']):
+for i,name in enumerate(vars):
   ax = plt.subplot(nyplot, nxplot, i+1)
   plot_diff_xy(ax, name)
   ax.set_xlabel('')
@@ -79,7 +80,7 @@ plt.savefig(imname+"_xy.png", dpi=100)
 plt.close(fig)
 
 fig = plt.figure(figsize=(FIGX, FIGY))
-for i,name in enumerate(hdr['prim_names']):
+for i,name in enumerate(vars):
   ax = plt.subplot(nyplot, nxplot, i+1)
   plot_diff_xz(ax, name)
   ax.set_xlabel('')

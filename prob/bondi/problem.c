@@ -186,6 +186,10 @@ void init(struct GridGeom *G, struct FluidState *S)
     printf("C2   = %e\n", C2);
   }
 
+#if ELECTRONS
+  init_electrons(G, S);
+#endif
+
   //Enforce boundary conditions
   fixup(G, S);
   set_bounds(G, S);
