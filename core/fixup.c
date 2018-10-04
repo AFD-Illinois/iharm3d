@@ -283,17 +283,18 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   }
 
 #if DEBUG
-  int nfixed_utop = 0;
-#pragma omp parallel for simd collapse(2) reduction (+:nfixed_utop)
+  int nbad_utop = 0;
+#pragma omp parallel for simd collapse(2) reduction (+:nbad_utop)
   ZLOOP {
     // Count the 0 = bad cells
-    nfixed_utop += !pflag[k][j][i];
+    nbad_utop += !pflag[k][j][i];
   }
-  fprintf(stderr,"Fixing %d cells", nfixed_utop);
+  LOGN("Fixing %d bad cells", nbad_utop);
 #endif
 
   // Make sure we are not using ill defined corner regions
   // I don't think 27 iterations is worth OpenMP
+  // TODO reduce this to only _physical_ corner regions, not MPI
   for (int k = 0; k < NG; k++) {
     for (int j = 0; j < NG; j++) {
       for (int i = 0; i < NG; i++) {
@@ -309,62 +310,59 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
     }
   }
 
-  // Fix the interior points first
-  int bad = 0;
-  do {
-    bad = 0;
-    // TODO is this okay? Not /quite/ deterministic...
+#if DEBUG
+  // Keep track of how many points we fix
+  int nfixed_utop = 0;
+#endif
+
+  // TODO is parallelizing this version okay?
 //#pragma omp parallel for collapse(3) reduction(+:bad)
-    ZLOOP {
-      if (pflag[k][j][i] == 0) {
-        double wsum = 0.;
-        double sum[B1];
-        FLOOP sum[ip] = 0.;
-        for (int l = -1; l < 2; l++) {
-          for (int m = -1; m < 2; m++) {
-            for (int n = -1; n < 2; n++) {
-              double w = 1./(abs(l) + abs(m) + abs(n) + 1)*pflag[k+n][j+m][i+l];
-              wsum += w;
-              FLOOP sum[ip] += w*S->P[ip][k+n][j+m][i+l];
-            }
+  ZLOOP {
+    if (pflag[k][j][i] == 0) {
+      double wsum = 0.;
+      double sum[B1];
+      FLOOP sum[ip] = 0.;
+      for (int l = -1; l < 2; l++) {
+        for (int m = -1; m < 2; m++) {
+          for (int n = -1; n < 2; n++) {
+            double w = 1./(abs(l) + abs(m) + abs(n) + 1)*pflag[k+n][j+m][i+l];
+            wsum += w;
+            FLOOP sum[ip] += w*S->P[ip][k+n][j+m][i+l];
           }
         }
-        if(wsum < 1.e-10) {
-          fprintf(stderr, "fixup_utoprim problem: No usable neighbors!\n");
-          bad++;
-          continue;
-        }
-        FLOOP S->P[ip][k][j][i] = sum[ip]/wsum;
-
-        // Cell is fixed, can now use for other interpolations
-        pflag[k][j][i] = 1;
-
-        if (!FLUID_FRAME_FLOORS) get_state(G, S, i, j, k, CENT);
-
-        fixup1zone(G, S, i, j, k);
-
-        if(!FLUID_FRAME_FLOORS) get_state(G, S, i, j, k, CENT);
-
       }
-    }
-  } while (bad > 0);
+      if(wsum < 1.e-10) {
+        fprintf(stderr, "fixup_utoprim problem: No usable neighbors!\n");
+        // TODO set to something okay here.  This happens /very rarely/
+        continue;
+      }
+      FLOOP S->P[ip][k][j][i] = sum[ip]/wsum;
+
+      // Cell is fixed, can now use for other interpolations
+      // However, this is harmful to MPI-determinism
+      //pflag[k][j][i] = 1;
 
 #if DEBUG
-  int nleft_utop = 0;
-#pragma omp parallel for simd collapse(2) reduction (+:nleft_utop)
-  ZLOOP {
-    // Count the 0 = bad cells
-    nleft_utop += !pflag[k][j][i];
+      nfixed_utop++;
+#endif
+
+      if (!FLUID_FRAME_FLOORS) get_state(G, S, i, j, k, CENT);
+      fixup1zone(G, S, i, j, k);
+      // TODO need final call?
+      if (!FLUID_FRAME_FLOORS) get_state(G, S, i, j, k, CENT);
+    }
   }
+
+#if DEBUG
+  int nleft_utop = nbad_utop - nfixed_utop;
   if(nleft_utop > 0) fprintf(stderr,"Cells STILL BAD after fixup_utoprim: %d\n", nleft_utop);
 #endif
 
   // Re-initialize the pflag
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
-    pflag[k][j][i] = !pflag[k][j][i];
+    pflag[k][j][i] = 0;
   }
-
 
   timer_stop(TIMER_FIXUP);
 }

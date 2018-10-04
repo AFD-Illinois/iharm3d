@@ -366,6 +366,7 @@ extern int global_stop[3];
 void bl_coord(const double X[NDIM], double *r, double *th);
 
 // bounds.c
+void set_mpi_bounds(struct FluidState *S);
 void set_bounds(struct GridGeom *G, struct FluidState *S);
 void fix_flux(struct FluidFlux *F);
 

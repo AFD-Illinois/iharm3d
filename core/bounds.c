@@ -40,6 +40,15 @@
 void inflow_check(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k, int type);
 
+void set_mpi_bounds(struct FluidState *S)
+{
+  timer_start(TIMER_BOUND_COMMS);
+  sync_mpi_bound_X1(S);
+  sync_mpi_bound_X2(S);
+  sync_mpi_bound_X3(S);
+  timer_stop(TIMER_BOUND_COMMS);
+}
+
 void set_bounds(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_BOUND);

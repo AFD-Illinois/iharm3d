@@ -129,7 +129,7 @@ void mpi_initialization(int argc, char *argv[])
                MPI_ORDER_C, scalar_type, &face_type[2]);
   MPI_Type_commit(&face_type[2]);
 
-  int subsizes3_pflag[3] = {N3,NG,N1+2*NG};
+  int subsizes3_pflag[3] = {N3,N2,NG};
   MPI_Type_create_subarray(3, sizes_pflag, subsizes3_pflag, starts_pflag,
                MPI_ORDER_C, flag_type, &pflag_face_type[2]);
   MPI_Type_commit(&pflag_face_type[2]);
