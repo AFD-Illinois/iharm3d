@@ -147,7 +147,8 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jz][i];
           pflag[k][j][i] = pflag[k][jz][i];
 #elif X2L_BOUND == POLAR
-          int jrefl = -j + 2*NG - 1;
+          // Reflect the zone past NG by NG-j
+          int jrefl = NG + (NG - j) - 1;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jrefl][i];
           pflag[k][j][i] = pflag[k][jrefl][i];
           S->P[U2][k][j][i] *= -1.;
@@ -173,7 +174,8 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jz][i];
           pflag[k][j][i] = pflag[k][jz][i];
 #elif X2R_BOUND == POLAR
-          int jrefl = -j + 2*(N2 + NG) - 1;
+          // As j grows beyond N2+NG, reflect the zone that far previous
+          int jrefl = (N2 + NG) + (N2 + NG - j) - 1;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jrefl][i];
           pflag[k][j][i] = pflag[k][jrefl][i];
           S->P[U2][k][j][i] *= -1.;
