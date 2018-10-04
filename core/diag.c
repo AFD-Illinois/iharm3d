@@ -183,6 +183,7 @@ int i_have(int iglobal, int jglobal, int kglobal) {
 void global_map(int iglobal, int jglobal, int kglobal, GridPrim prim) {
   if(i_have(iglobal, jglobal, kglobal)){
     area_map(iglobal-global_start[0]+NG, jglobal-global_start[1]+NG, kglobal-global_start[2]+NG, prim);
+    area_map_pflag(iglobal-global_start[0]+NG, jglobal-global_start[1]+NG, kglobal-global_start[2]+NG);
   }
 }
 
@@ -207,6 +208,28 @@ void area_map(int i, int j, int k, GridPrim prim)
       prim[ip][k][j - 1][i - 1], prim[ip][k][j - 1][i],
       prim[ip][k][j - 1][i + 1]);
   }
+
+  //fprintf(stderr, "****************\n");
+}
+
+void area_map_pflag(int i, int j, int k)
+{
+  //fprintf(stderr, "*** AREA MAP ***\n");
+
+  fprintf(stderr, "pflag: \n");
+  //fprintf(stderr, "i = \t %12d %12d %12d\n", i - 1, i, i + 1);
+  //fprintf(stderr, "j = %d \t", j+1);
+  fprintf(stderr, "%d %d %d\n",
+    pflag[k][j + 1][i - 1], pflag[k][j + 1][i],
+    pflag[k][j + 1][i + 1]);
+  //fprintf(stderr, "j = %d \t", j);
+  fprintf(stderr, "%d %d %d\n",
+    pflag[k][j][i - 1], pflag[k][j][i],
+    pflag[k][j][i + 1]);
+  //fprintf(stderr, "j = %d \t", j-1);
+  fprintf(stderr, "%d %d %d\n",
+    pflag[k][j - 1][i - 1], pflag[k][j - 1][i],
+    pflag[k][j - 1][i + 1]);
 
   //fprintf(stderr, "****************\n");
 }

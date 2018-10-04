@@ -390,6 +390,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code);
 void fail(struct GridGeom *G, struct FluidState *S, int fail_type, int i, int j, int k);
 void global_map(int iglobal, int jglobal, int kglobal, GridPrim prim);
 void area_map(int i, int j, int k, GridPrim prim);
+void area_map_pflag(int i, int j, int k);
 void diag_flux(struct FluidFlux *F);
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k);
