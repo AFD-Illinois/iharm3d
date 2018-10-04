@@ -143,14 +143,17 @@ void restart_read(char *fname, struct FluidState *S)
   hdf5_read_single_val(&fel0, "fel0", H5T_IEEE_F64LE);
   #endif
   // I want to be able to change tf/cadences/courant mid-run
-  // Hence we just pick these up from param.dat again
-  hdf5_read_single_val(&tf, "tf", H5T_IEEE_F64LE); // TODO currently necessary for tests
-//  hdf5_read_single_val(&cour, "cour", H5T_IEEE_F64LE);
-//  hdf5_read_single_val(&DTd, "DTd", H5T_IEEE_F64LE);
-//  hdf5_read_single_val(&DTf, "DTf", H5T_IEEE_F64LE);
-//  hdf5_read_single_val(&DTl, "DTl", H5T_IEEE_F64LE);
-//  hdf5_read_single_val(&DTr, "DTr", H5T_STD_I32LE);
-//  hdf5_read_single_val(&DTp, "DTp", H5T_STD_I32LE);
+  // Hence we just pick these up from param.dat again unless we're testing the MHD modes
+  // TODO include problem name in parameters.h
+if (METRIC != MKS) {
+  hdf5_read_single_val(&tf, "tf", H5T_IEEE_F64LE);
+  hdf5_read_single_val(&cour, "cour", H5T_IEEE_F64LE);
+  hdf5_read_single_val(&DTd, "DTd", H5T_IEEE_F64LE);
+  hdf5_read_single_val(&DTf, "DTf", H5T_IEEE_F64LE);
+  hdf5_read_single_val(&DTl, "DTl", H5T_IEEE_F64LE);
+  hdf5_read_single_val(&DTr, "DTr", H5T_STD_I32LE);
+  hdf5_read_single_val(&DTp, "DTp", H5T_STD_I32LE);
+}
   hdf5_read_single_val(&restart_id, "restart_id", H5T_STD_I32LE);
   hdf5_read_single_val(&dump_cnt, "dump_cnt", H5T_STD_I32LE);
   hdf5_read_single_val(&dt, "dt", H5T_IEEE_F64LE);
