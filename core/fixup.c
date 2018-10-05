@@ -292,6 +292,23 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   LOGN("Fixing %d bad cells", nbad_utop);
 #endif
 
+  // Make sure we are not using ill defined physical corner regions
+  // TODO find a way to do this once, or put it in bounds at least?
+  for (int k = 0; k < NG; k++) {
+    for (int j = 0; j < NG; j++) {
+      for (int i = 0; i < NG; i++) {
+        if(global_start[2] == 0 && global_start[1] == 0 && global_start[0] == 0) pflag[k][j][i] = 0;
+        if(global_start[2] == 0 && global_start[1] == 0 && global_stop[0] == N1TOT) pflag[k][j][i+N1+NG] = 0;
+        if(global_start[2] == 0 && global_stop[1] == N2TOT && global_start[0] == 0) pflag[k][j+N2+NG][i] = 0;
+        if(global_stop[2] == N3TOT && global_start[1] == 0 && global_start[0] == 0) pflag[k+N3+NG][j][i] = 0;
+        if(global_start[2] == 0 && global_stop[1] == N2TOT && global_stop[0] == N1TOT) pflag[k][j+N2+NG][i+N1+NG] = 0;
+        if(global_stop[2] == N3TOT && global_start[1] == 0 && global_stop[0] == N1TOT) pflag[k+N3+NG][j][i+N1+NG] = 0;
+        if(global_stop[2] == N3TOT && global_stop[1] == N2TOT && global_start[0] == 0) pflag[k+N3+NG][j+N2+NG][i] = 0;
+        if(global_stop[2] == N3TOT && global_stop[1] == N2TOT && global_stop[0] == N1TOT) pflag[k+N3+NG][j+N2+NG][i+N1+NG] = 0;
+      }
+    }
+}
+
 #if DEBUG
   // Keep track of how many points we fix
   int nfixed_utop = 0;
