@@ -49,7 +49,7 @@ void step(struct GridGeom *G, struct FluidState *S)
   fixup_electrons(Stmp);
 #endif
   // Need an MPI call _before_ fixup_utop to obtain correct pflags
-  set_mpi_bounds(Stmp);
+  set_bounds(G, Stmp);
   fixup_utoprim(G, Stmp);
   set_bounds(G, Stmp); // TODO still need one after?
 
@@ -68,7 +68,7 @@ void step(struct GridGeom *G, struct FluidState *S)
 #if ELECTRONS
   fixup_electrons(S);
 #endif
-  set_mpi_bounds(S);
+  set_bounds(G, S);
   fixup_utoprim(G, S);
   set_bounds(G, S);
 
