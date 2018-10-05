@@ -292,24 +292,6 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   LOGN("Fixing %d bad cells", nbad_utop);
 #endif
 
-  // Make sure we are not using ill defined corner regions
-  // I don't think 27 iterations is worth OpenMP
-  // TODO reduce this to only _physical_ corner regions, not MPI
-  for (int k = 0; k < NG; k++) {
-    for (int j = 0; j < NG; j++) {
-      for (int i = 0; i < NG; i++) {
-        pflag[k][j][i] = 0;
-        pflag[k][j][i+N1+NG] = 0;
-        pflag[k][j+N2+NG][i] = 0;
-        pflag[k+N3+NG][j][i] = 0;
-        pflag[k][j+N2+NG][i+N1+NG] = 0;
-        pflag[k+N3+NG][j][i+N1+NG] = 0;
-        pflag[k+N3+NG][j+N2+NG][i] = 0;
-        pflag[k+N3+NG][j+N2+NG][i+N1+NG] = 0;
-      }
-    }
-  }
-
 #if DEBUG
   // Keep track of how many points we fix
   int nfixed_utop = 0;
@@ -338,7 +320,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
       }
       FLOOP S->P[ip][k][j][i] = sum[ip]/wsum;
 
-      // Cell is fixed, can now use for other interpolations
+      // Cell is fixed, could now use for other interpolations
       // However, this is harmful to MPI-determinism
       //pflag[k][j][i] = 1;
 
