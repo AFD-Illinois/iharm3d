@@ -225,7 +225,6 @@ ax.set_ylabel('Efficiency (%)')
 
 ax = plt.subplot(nplots,1,6)
 ax.plot(avg['t'], -avg['LBZ'], color='k')
-ax.set_ylim([-1,2])
 ax.set_xlim([0,tf])
 ax.set_xlabel('t/M')
 ax.set_ylabel('BZ Luminosity')

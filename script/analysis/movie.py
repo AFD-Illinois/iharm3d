@@ -159,22 +159,28 @@ def plot(args):
   else:
     ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
 
-#  ax = plt.subplot(2,4,7)
-#  bplt.plot_xz(ax, geom, var3_data, dump,
-#               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
-#  if (USEARRSPACE):
-#    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-#  else:
-#    bplt.overlay_field(ax, geom, dump, NLINES)
-#    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+  # Zoomed-in plot
+  var3_str = 'RHO'
+  var3_data = np.log10(dump[var3_str])
+  var3_min = -3
+  var3_max = 2
 
-#  ax = plt.subplot(2,4,8)
-#  bplt.plot_xy(ax, geom, var3_data, dump,
-#               label=var3_str, cmap='RdBu_r', vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
-#  if (USEARRSPACE):
-#    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-#  else:
-#    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+  ax = plt.subplot(2,4,7)
+  bplt.plot_xz(ax, geom, var3_data, dump,
+               label=var3_str, vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
+  if (USEARRSPACE):
+    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+  else:
+    bplt.overlay_field(ax, geom, dump, NLINES*10)
+    ax.set_xlim([-SIZE/4, SIZE/4]); ax.set_ylim([-SIZE/4, SIZE/4])
+
+  ax = plt.subplot(2,4,8)
+  bplt.plot_xy(ax, geom, var3_data, dump,
+               label=var3_str, vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
+  if (USEARRSPACE):
+    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+  else:
+    ax.set_xlim([-SIZE/4, SIZE/4]); ax.set_ylim([-SIZE/4, SIZE/4])
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
