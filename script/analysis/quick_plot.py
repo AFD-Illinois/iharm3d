@@ -33,17 +33,24 @@ dump = io.load_dump(dumpfile, geom, hdr)
 
 N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
 
-# TODO properly handle vectors
-# Plot the variable
-
 nplotsx = 2
 nplotsy = 2
 
 fig = plt.figure(figsize=(FIGX, FIGY))
-for n in range(4):
-  ax = plt.subplot(nplotsy, nplotsx, n+1)
-  #bplt.plot_xy(ax, var)
-  bplt.plot_xy(ax, geom, np.log10(np.abs(dump['jcon'][:,:,:,n])), dump, arrayspace=USEARRSPACE)
+
+if var == 'jsq':
+  dump['jcov'] = np.zeros_like(dump['jcon'])
+  for n in range(hdr['n_dim']):
+    dump['jcov'][:,:,:,n] = np.sum(dump['jcon']*geom['gcov'][:,:,None,:,n], axis=3)
+  dump['jsq'] = np.sum(dump['jcon']*dump['jcov'], axis=-1)
+
+if var in ['jcon','ucon','ucov','bcon','bcov']:
+  for n in range(4):
+    ax = plt.subplot(nplotsy, nplotsx, n+1)
+    bplt.plot_xy(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), dump, arrayspace=USEARRSPACE)
+else:
+  ax = plt.subplot(1, 1, 1)                                                                                                                                                                                        
+  bplt.plot_xz(ax, geom, dump[var], dump, arrayspace=USEARRSPACE) 
 
 plt.tight_layout()
 
@@ -51,10 +58,14 @@ plt.savefig(var+"_xy.png", dpi=100)
 plt.close(fig)
 
 fig = plt.figure(figsize=(FIGX, FIGY))
-for n in range(4):
-  ax = plt.subplot(nplotsx, nplotsy, n+1)
-  #bplt.plot_xz(ax, var)
-  bplt.plot_xz(ax, geom, np.log10(np.abs(dump['jcon'][:,:,:,n])), dump, arrayspace=USEARRSPACE)
+
+if var in ['jcon','ucon','ucov','bcon','bcov']:
+  for n in range(4):
+    ax = plt.subplot(nplotsx, nplotsy, n+1)
+    bplt.plot_xz(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), dump, arrayspace=USEARRSPACE)
+else:
+  ax = plt.subplot(1, 1, 1)
+  bplt.plot_xz(ax, geom, dump[var], dump, arrayspace=USEARRSPACE)
 
 plt.tight_layout()
 
