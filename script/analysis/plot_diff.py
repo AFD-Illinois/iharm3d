@@ -29,7 +29,7 @@ gridfile = sys.argv[3]
 imname = sys.argv[4]
 
 hdr = io.load_hdr(dump1file)
-geom = io.load_geom(gridfile)
+geom = io.load_geom(hdr, gridfile)
 dump1 = io.load_dump(dump1file, geom, hdr)
 dump2 = io.load_dump(dump2file, geom, hdr) #Hopefully this fails for dumps that shouldn't be compared
 
