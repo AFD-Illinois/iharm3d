@@ -28,7 +28,7 @@ gridfile = sys.argv[2]
 var = sys.argv[3]
 
 hdr = io.load_hdr(dumpfile)
-geom = io.load_geom(gridfile)
+geom = io.load_geom(hdr, gridfile)
 dump = io.load_dump(dumpfile, geom, hdr)
 
 N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
@@ -50,7 +50,7 @@ if var in ['jcon','ucon','ucov','bcon','bcov']:
     bplt.plot_xy(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), dump, arrayspace=USEARRSPACE)
 else:
   ax = plt.subplot(1, 1, 1)                                                                                                                                                                                        
-  bplt.plot_xz(ax, geom, dump[var], dump, arrayspace=USEARRSPACE) 
+  bplt.plot_xy(ax, geom, dump[var], dump, arrayspace=USEARRSPACE) 
 
 plt.tight_layout()
 

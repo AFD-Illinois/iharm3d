@@ -43,9 +43,12 @@ echo "Restarting with 1 proc..."
 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
 echo "Done!"
 
-# Save output dump.  Might be whatever number
+# Save output dump.  Might be whatever number so we save it the dumb way
 cd $OUT_DIR
-mv dumps/dump_*.h5 ./last_dump_gold.h5
+for file in dumps/dump_*.h5
+do
+  mv $file ./last_dump_gold.h5
+done
 rm -rf dumps
 cd ..
 
