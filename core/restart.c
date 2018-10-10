@@ -77,6 +77,7 @@ void restart_write(struct FluidState *S)
   hdf5_write_single_val(&x3Min, "x3Min", H5T_IEEE_F64LE);
   hdf5_write_single_val(&x3Max, "x3Max", H5T_IEEE_F64LE);
 #endif
+  // TODO these are unused.  Stop writing them when backward compatibility will not be an issue
   hdf5_write_single_val(&tdump, "tdump", H5T_IEEE_F64LE);
   hdf5_write_single_val(&tlog, "tlog", H5T_IEEE_F64LE);
 
@@ -172,8 +173,8 @@ if (METRIC != MKS) {
   hdf5_read_single_val(&x3Min, "x3Min", H5T_IEEE_F64LE);
   hdf5_read_single_val(&x3Max, "x3Max", H5T_IEEE_F64LE);
 #endif
-  hdf5_read_single_val(&tdump, "tdump", H5T_IEEE_F64LE);
-  hdf5_read_single_val(&tlog, "tlog", H5T_IEEE_F64LE);
+//  hdf5_read_single_val(&tdump, "tdump", H5T_IEEE_F64LE);
+//  hdf5_read_single_val(&tlog, "tlog", H5T_IEEE_F64LE);
 
   // Read data
   hsize_t fstart[] = {0, global_start[2], global_start[1], global_start[0]};

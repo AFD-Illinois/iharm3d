@@ -95,14 +95,15 @@ int main(int argc, char *argv[])
     // Set globals
     nstep = 0;
     t = 0;
-    tdump = DTd;
-    tlog  = DTl;
     dump_cnt = 0;
     // Zero the pflag array
     zero_arrays();
     if (mpi_io_proc())
       fprintf(stdout, "Initial conditions generated\n\n");
   }
+  // In case we're restarting and these changed
+  tdump = t + DTd;
+  tlog = t + DTl;
 
   // Initial diagnostics
   diag(G, S, DIAG_INIT);
