@@ -61,12 +61,16 @@ def load_hdr(fname):
 
   return hdr
 
-def load_geom(fname):
+def load_geom(hdr, fname):
   gfile = h5py.File(fname, 'r')
 
   geom = {}
   for key in gfile['/'].keys():
     geom[key] = gfile[key][()]
+
+  # Useful stuff to pack in from header, kind of also belongs here
+  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
+    geom[key] = hdr[key]
 
   # these get used interchangeably and I don't care
   geom['x'] = geom['X']
@@ -74,12 +78,12 @@ def load_geom(fname):
   geom['z'] = geom['Z']
   
   # Compress geom in phi for normal use
-  geom['gdet_full'] = geom['gdet']
+  #geom['gdet_full'] = geom['gdet']
   geom['gdet'] = geom['gdet'][:,:,0]
   
-  geom['gcon_full'] = geom['gcon']
+  #geom['gcon_full'] = geom['gcon']
   geom['gcon'] = geom['gcon'][:,:,0,:,:]
-  geom['gcov_full'] = geom['gcov']
+  #geom['gcov_full'] = geom['gcov']
   geom['gcov'] = geom['gcov'][:,:,0,:,:]
 
   return geom
@@ -103,25 +107,19 @@ def load_dump(fname, geom, hdr, calc_omega=True):
   
   dfile.close()
 
+  # Recalculate all the derived variables
+  # TODO calculate these on demand with an object?
   if hdr['has_electrons']:
     dump['Thetae'] = units['MP']/units['ME']*dump['KEL']*dump['RHO']**(hdr['gam_e']-1.)
     dump['ue'] = dump['KEL']*dump['RHO']**(hdr['gam_e'])/(hdr['gam_e']-1.)
-    dump['up'] = dump['UU'] - dump['ue'] # TODO this will fail cuz I don't output ue
+    dump['up'] = dump['UU'] - dump['ue']
     dump['TpTe'] = (hdr['gam_p']-1.)*dump['up']/((hdr['gam_e']-1.)*dump['ue'])
 
-  # This recalculates all the derived variables
-  # TODO move these somewhere less disruptive where they can be fetched on demand
   dump['ucon'], dump['ucov'], dump['bcon'], dump['bcov'] = get_state(dump, geom)
   dump['bsq'] = (dump['bcon']*dump['bcov']).sum(axis=-1)
   dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
-  if calc_omega:
-    dump['omega'] = omega_calc(dump, geom)
 
   return dump
-
-# For compatibility with bhlight scripts
-def load_diag(hdr, path):
-  return load_log(hdr, os.path.join(path, "log.out"))
 
 def load_log(hdr, logfile):
   dfile = np.loadtxt(logfile).transpose()
@@ -159,93 +157,20 @@ def log_time(diag, var, t):
       i += 1
     return diag[var][i-1]
 
-# Calculate field rotation rate
-# Following fns are adapted from C versions
-def omega_calc(dump, geom):
-  hdr = dump['hdr']
-  N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3'];
-  NDIM = hdr['n_dim']
-
-  Fcov01 = np.zeros((N1,N2,N3))
-  Fcov13 = np.zeros((N1,N2,N3))
-
-  F = Fcon_calc(hdr, geom, dump)
-  
-  for mu in range(NDIM):
-    for nu in range(NDIM):
-      Fcov01 += F[:,:,:,mu,nu]*geom['gcov'][:,:,None,mu,0]*geom['gcov'][:,:,None,nu,1]
-      Fcov13 += F[:,:,:,mu,nu]*geom['gcov'][:,:,None,mu,1]*geom['gcov'][:,:,None,nu,3]
-
-  return Fcov01/Fcov13
-
-# Return mu, nu component of contravarient Maxwell tensor
-def Fcon_calc(hdr, geom, dump):
-  N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3'];
-  NDIM = hdr['n_dim']
-  
-  Fcon = np.zeros((N1,N2,N3,NDIM,NDIM))
-  for mu in range(NDIM):
-    for nu in range(NDIM):
-      if mu == nu:
-        Fcon[:,:,:,mu,nu] = 0
-      else:
-        for kap in range(NDIM):
-          for lam in range(NDIM):
-            Fcon[:,:,:,mu,nu] += antisym(mu,nu,kap,lam) * dump['ucov'][:,:,:,kap] * dump['bcov'][:,:,:,lam]
-
-  return Fcon #*geom['gdet'][:,:,None]
-
-# Completely antisymmetric 4D symbol
-def antisym(a, b, c, d):
-  # Check for valid permutation
-  if (a < 0 or a > 3): return 100
-  if (b < 0 or b > 3): return 100
-  if (c < 0 or c > 3): return 100
-  if (d < 0 or d > 3): return 100
-
-  # Entries different? 
-  if (a == b): return 0
-  if (a == c): return 0
-  if (a == d): return 0
-  if (b == c): return 0
-  if (b == d): return 0
-  if (c == d): return 0
-
-  return pp([a,b,c,d])
-
-# Due to Norm Hardy; good for general n
-def pp(P):
-  v = np.zeros_like(P)
-
-  p = 0
-  for j in range(len(P)):
-    if (v[j]):
-      p += 1
-    else:
-      x = j
-      while True:
-        x = P[x]
-        v[x] = 1
-        if x == j:
-          break
-
-  if p % 2 == 0:
-    return 1
-  else:
-    return -1
-
+# Include vectors with dumps.  This may change in the future
 def get_state(dump, geom):
-  import numpy as np
   hdr = dump['hdr']
   N1 = hdr['n1']
   N2 = hdr['n2']
   N3 = hdr['n3']
+  NDIM = hdr['n_dim']
 
   ucon = np.zeros([N1,N2,N3,4])
-  ucov = np.zeros([N1,N2,N3,4])
-  bcon = np.zeros([N1,N2,N3,4])
-  bcov = np.zeros([N1,N2,N3,4])
+  ucov = np.zeros_like(ucon)
+  bcon = np.zeros_like(ucon)
+  bcov = np.zeros_like(ucon)
 
+  # Aliases to make the below remotely readable
   gcov = geom['gcov']
   gcon = geom['gcon']
 
@@ -268,7 +193,7 @@ def get_state(dump, geom):
   ucon[:,:,:,2] = U2 - gamma*alpha*gcon[:,:,None,0,2]
   ucon[:,:,:,3] = U3 - gamma*alpha*gcon[:,:,None,0,3]
 
-  for mu in range(4):
+  for mu in range(NDIM):
     ucov[:,:,:,mu] = (ucon[:,:,:,:]*gcov[:,:,None,mu,:]).sum(axis=-1)
 
   bcon[:,:,:,0] = B1*ucov[:,:,:,1] + B2*ucov[:,:,:,2] + B3*ucov[:,:,:,3]
@@ -276,7 +201,7 @@ def get_state(dump, geom):
   bcon[:,:,:,2] = (B2 + bcon[:,:,:,0]*ucon[:,:,:,2])/ucon[:,:,:,0]
   bcon[:,:,:,3] = (B3 + bcon[:,:,:,0]*ucon[:,:,:,3])/ucon[:,:,:,0]
 
-  for mu in range(4):
+  for mu in range(NDIM):
     bcov[:,:,:,mu] = (bcon[:,:,:,:]*gcov[:,:,None,mu,:]).sum(axis=-1)
 
   return ucon, ucov, bcon, bcov

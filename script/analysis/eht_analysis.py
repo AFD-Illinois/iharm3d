@@ -4,24 +4,15 @@
 #                                                                              # 
 ################################################################################
 
-import sys; sys.dont_write_bytecode = True
-sys.path.insert(0, '../')
 import numpy as np
 import hdf5_to_dict as io
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
 import util
 import glob
 import os
+import sys
 import psutil
-#import plot as bplt
-
-FIGX = 14
-FIGY = 10
-#SIZE = 40
-THMIN = np.pi/3.
-THMAX = 2.*np.pi/3.
+# TODO hide behind a namespace?
+from analysis_fns import *
 
 # Option to calculate fluxes at (just inside) r = 5
 # This reduces interference from floors
@@ -36,15 +27,18 @@ if len(sys.argv) < 2:
 
 path = sys.argv[1]
 
+dumps = io.get_dumps_reduced(path)
+ND = len(dumps)
+
+hdr = io.load_hdr(dumps[0])
+geom = io.load_geom(hdr, os.path.join(path,'grid.h5'))
+
 if len(sys.argv) > 2:
   tavg = float(sys.argv[2])
 else:
-  tavg = None
+  tavg = io.load_dump(dumps[ND/2])['t'] - 1.0
 
-dumps = io.get_dumps_reduced(path)
-
-hdr = io.load_hdr(dumps[0])
-geom = io.load_geom(os.path.join(path,'grid.h5'))
+init_analysis(geom)
 
 # Limit threads for 192^3+ problem due to memory
 # TODO guess NTHREADS better (96e9/N^3*8?)
@@ -65,18 +59,7 @@ if hdr['n1'] * hdr['n2'] * hdr['n3'] >= 192 * 192 * 192:
 else:
   NTHREADS = psutil.cpu_count(logical=False)
 
-# Calculate jmin, jmax
-ths = geom['th'][-1,:,0]
-for n in xrange(len(ths)):
-  if ths[n] > THMIN:
-    jmin = n
-    break
-for n in xrange(len(ths)):
-  if ths[n] > THMAX:
-    jmax = n
-    break
-
-diag = io.load_diag(hdr, path)
+diag = io.load_log(hdr, os.path.join(path, "log.out"))
 
 dx1 = hdr['dx1']
 dx2 = hdr['dx2']
@@ -104,97 +87,70 @@ iEmax = i_of(40)
 
 # BZ luminosity
 debug_lbz = False
-iBZ = i_of(10) # TODO standard measuring spot?
+iBZ = i_of(10) # TODO is there a standard measuring spot?
 
-# Some variables (Phi) should only be computed at EH
+# Some variables (Phi) should only be computed at EH=zone 5
 iEH = 5
 
-ND = len(dumps)
-
-avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'FE_r', 'FM_r', 'rho_SADW', 'omega_th', 'omega_th_av', 'omega_th_5']
-
-# Convenience functions
-  
-def WAVG(var, w):
-  return sum_shell(w*var)/sum_shell(w)
-
-def Tcon(dump,i,j):
-  return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucon'][:,:,:,j] +
-           ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcon'][:,:,None,i,j] - dump['bcon'][:,:,:,i]*dump['bcon'][:,:,:,j] )
-
-def Tcov(dump,i,j):
-  return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucov'][:,:,:,i]*dump['ucov'][:,:,:,j] +
-           ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcov'][:,:,None,i,j] - dump['bcov'][:,:,:,i]*dump['bcov'][:,:,:,j] )
-
-def Tmixed(dump,i,j):
-  gmixedij = np.sum(geom['gcon'][:,:,None,i,:]*geom['gcov'][:,:,None,:,j],axis=-1)
-  return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
-           ((gam-1)*dump['UU'] + dump['bsq']/2)*gmixedij - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
-
-# Var must be a 3D array i.e. a grid scalar
-def sum_shell(var):
-  return np.sum(var * geom['gdet'][:,:,None] * dx2*dx3, axis=(1,2))
-
-def sum_shell_at(var, i):
-  return np.sum(var[i,:,:] * geom['gdet'][i,:,None] * dx2*dx3, axis=(0,1))
-
-vol_profile = (dx2*2.*np.pi*geom['gdet'][:,:]).sum(axis=-1)
-def eht_profile(var):
-  return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None] * dx2*dx3,axis=(1,2)) / vol_profile
+avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'FE_r', 'FM_r', 'rho_SADW', 'omega_th', 'omega_th_av', 'omega_th_alt', 'omega_th_alt_av']
 
 def avg_dump(n):
   out = {}
 
   dump = io.load_dump(dumps[n], geom, hdr)
   out['t'] = dump['t']
-  print "Loaded ",(n+1),"/",len(dumps),": ",dump['t']
+  print "Loaded ",(n+1),"/",len(dumps),": ",out['t']
 
-  out['rho_SADW'] = WAVG(dump['RHO'], dump['RHO'])
+  # SHELL AVERAGES (only for t > tavg usu. tmax/2)
+  if out['t'] > tavg:
 
-  # SHELL AVERAGES
-  # TODO function for shell-averaging, make all keys ending in _r radial keys
-  out['rho_r'] = eht_profile(dump['RHO'])
+    out['rho_SADW'] = WAVG(geom, dump['RHO'], dump['RHO'])
+
+    out['rho_r'] = eht_profile(geom, dump['RHO'])
+    
+    Theta = (hdr['gam']-1.)*dump['UU']/dump['RHO']
+    out['Theta_r'] = eht_profile(geom, Theta)
+    
+    B = np.sqrt(dump['bsq'])
+    out['B_r'] = eht_profile(geom, B)
   
-  Theta = (hdr['gam']-1.)*dump['UU']/dump['RHO']
-  out['Theta_r'] = eht_profile(Theta)
+    Pg = (hdr['gam']-1.)*dump['UU']
+    out['Pg_r'] = eht_profile(geom, Pg)
   
-  B = np.sqrt(dump['bsq'])
-  out['B_r'] = eht_profile(B)
+    Ptot = Pg + dump['bsq']/2
+    out['Ptot_r'] = eht_profile(geom, Ptot)
+  
+    betainv = (dump['bsq']/2)/Pg
+    out['betainv_r'] = eht_profile(geom, betainv)
+  
+    uphi = (dump['ucon'][:,:,:,3])
+    out['uphi_r'] = eht_profile(geom, uphi)
+  
+    # THETA AVERAGES
+    out['omega_th'] = theta_av(Fcov(geom,dump,0,1), iEH, 1) / theta_av(Fcov(geom,dump,1,3), iEH, 1)
+    out['omega_th_av'] = theta_av(Fcov(geom,dump,0,1), iEH-2, 5) / theta_av(Fcov(geom,dump,1,3), iEH-2, 5)
 
-  Pg = (hdr['gam']-1.)*dump['UU']
-  out['Pg_r'] = eht_profile(Pg)
+    out['omega_th_alt'] = theta_av(Fcov(geom,dump,0,2), iEH, 1) / theta_av(Fcov(geom,dump,2,3), iEH, 1)
+    out['omega_th_alt_av'] = theta_av(Fcov(geom,dump,0,2), iEH-2, 5) / theta_av(Fcov(geom,dump,2,3), iEH-2, 5)
 
-  Ptot = Pg + dump['bsq']/2
-  out['Ptot_r'] = eht_profile(Ptot)
-
-  betainv = (dump['bsq']/2)/Pg
-  out['betainv_r'] = eht_profile(betainv)
-
-  uphi = (dump['ucon'][:,:,:,3])
-  out['uphi_r'] = eht_profile(uphi)
-
-  # THETA AVERAGES
-  out['omega_th'] = (dump['omega'][iEH,:N2/2,:].mean(axis=-1) +
-                     dump['omega'][iEH,:N2/2-1:-1,:].mean(axis=-1)) / 2
-
-  omega_av_zones = 5
-  out['omega_th_av'] = (dump['omega'][iEH:iEH+omega_av_zones,:N2/2,:].mean(axis=-1).mean(axis=0) +
-                        dump['omega'][iEH:iEH+omega_av_zones,:N2/2-1:-1,:].mean(axis=-1).mean(axis=0)) / 2
-
-  out['omega_th_5'] = (dump['omega'][:10,:N2/2,:].mean(axis=-1).mean(axis=0) +
-                       dump['omega'][:10,:N2/2-1:-1,:].mean(axis=-1).mean(axis=0)) / 2
+  else:
+    for key in avg_keys:
+      if '_r' in key or '_SADW' in key:
+        out[key] = np.zeros_like(r)
+      elif '_th' in key:
+        out[key] = np.zeros_like(th)
 
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
-  #norm = 1 # This is what the EHT comparison uses
-  out['Phi'] = 0.5*norm*sum_shell_at(np.fabs(dump['B1']), iEH)
+  #norm = 1 # This is what the EHT comparison used for a while
+  out['Phi'] = 0.5*norm*sum_shell_at(geom, np.fabs(dump['B1']), iEH)
 
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
-  out['FE_r'] = sum_shell(Tmixed(dump,1,0))
+  out['FE_r'] = sum_shell(geom, Tmixed(geom, dump, 1,0))
   out['Edot'] = out['FE_r'][iF]
 
-  out['FM_r'] = -sum_shell(dump['RHO']*dump['ucon'][:,:,:,1])
+  out['FM_r'] = -sum_shell(geom, dump['RHO']*dump['ucon'][:,:,:,1])
   if floor_workaround_funnel:
     mdot_full = dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3
     sigma_shaped = dump['bsq'][iF,:,:]/dump['RHO'][iF,:,:]
@@ -202,7 +158,7 @@ def avg_dump(n):
   else:
     out['Mdot'] = out['FM_r'][iF]
 
-  out['Ldot'] = sum_shell_at(Tmixed(dump,1,3), iF)
+  out['Ldot'] = sum_shell_at(geom, Tmixed(geom, dump, 1,3), iF)
 
   # Maximum magnetization (and allow re-use of the variable)
   sigma = dump['bsq']/2/dump['RHO']
@@ -231,7 +187,7 @@ def avg_dump(n):
   out['Lum'] = (j*geom['gdet'][:,:,None]*dx1*dx2*dx3).sum()
 
   # TODO define a sum_grid for this and above?
-  out['Etot'] = np.sum(Tmixed(dump, 0, 0)[:iEmax,:,:]*geom['gdet'][:iEmax,:,None]*dx1*dx2*dx3)
+  out['Etot'] = np.sum(Tmixed(geom, dump, 0,0)[:iEmax,:,:]*geom['gdet'][:iEmax,:,None]*dx1*dx2*dx3)
   #print "Energy on grid: ",out['Etot']
 
   return out
@@ -274,13 +230,10 @@ out_full['r'] = r
 out_full['th'] = th
 
 # Time average the radial profiles
-if tavg is not None:
-  n = 0
-  for n in xrange(ND):
-    if out_full['t'][n] >= tavg:
-      break
-else:
-  n = ND/2
+n = 0
+for n in xrange(ND):
+  if out_full['t'][n] >= tavg:
+    break
 
 print "nmin = ",n
 

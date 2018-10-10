@@ -75,7 +75,7 @@ FRAMEDIR = 'FRAMES_b'
 util.make_dir(FRAMEDIR)
 
 hdr = io.load_hdr(files[0])
-geom = io.load_geom(gridfile)
+geom = io.load_geom(hdr, gridfile)
 
 if hdr['n1'] >= 256 or hdr['n2'] >= 256 or hdr['n3'] >= 256:
   #Roughly compute memory and leave some generous padding for multiple copies and Python games

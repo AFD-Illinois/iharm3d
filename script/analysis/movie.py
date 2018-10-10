@@ -75,9 +75,9 @@ FRAMEDIR = 'FRAMES'
 util.make_dir(FRAMEDIR)
 
 hdr = io.load_hdr(files[0])
-geom = io.load_geom(gridfile)
+geom = io.load_geom(hdr, gridfile)
 
-if hdr['n1'] >= 256 or hdr['n2'] >= 256 or hdr['n3'] >= 256:
+if hdr['n1'] * hdr['n2'] * hdr['n3'] >= 192*192*192:
   #Roughly compute memory and leave some generous padding for multiple copies and Python games
   nthreads = int(0.1 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
 else:
@@ -90,11 +90,10 @@ print 'Number of threads: %i' % nthreads
 #diag = io.load_log(hdr, os.path.join(path, "log.out"))
 
 # Or from  Python post-analysis
-# TODO make this an option
+# TODO make this a runtime option
 diag = pickle.load(open("eht_out.p", 'rb'))
 
-def plot(args):
-  n = args
+def plot(n):
   imname = 'frame_%08d.png' % n
   imname = os.path.join(FRAMEDIR, imname)
   print '%08d / ' % (n+1) + '%08d' % len(files)
@@ -192,6 +191,8 @@ def plot(args):
     ax = plt.subplot(4,2,4)
     bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
     
+    # Alternative to zoom in: more plots
+    
     #ax = plt.subplot(4,2,6)
     #bplt.diag_plot(ax, diag, dump, 'sigma_max', 'Max magnetization', ylim=None, logy=False)
     
@@ -207,6 +208,7 @@ def plot(args):
   plt.close(fig)
 
 # BEGIN SCRIPT
+# TODO if name = main
 
 # Test-run a couple plots directly so that backtraces work
 if debug:
