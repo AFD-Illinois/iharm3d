@@ -170,7 +170,7 @@ def plot(n):
   if (USEARRSPACE):
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
-    bplt.overlay_field(ax, geom, dump, NLINES*10)
+    bplt.overlay_field(ax, geom, dump, NLINES*4)
     ax.set_xlim([-SIZE/4, SIZE/4]); ax.set_ylim([-SIZE/4, SIZE/4])
 
   ax = plt.subplot(2,4,8)

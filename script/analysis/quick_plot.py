@@ -17,7 +17,6 @@ import os
 import plot as bplt
 
 USEARRSPACE=True
-NLINES = 20
 SIZE = 600
 
 FIGX = 20
@@ -28,7 +27,7 @@ gridfile = sys.argv[2]
 var = sys.argv[3]
 
 hdr = io.load_hdr(dumpfile)
-geom = io.load_geom(gridfile)
+geom = io.load_geom(hdr, gridfile)
 dump = io.load_dump(dumpfile, geom, hdr)
 
 N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
@@ -43,14 +42,19 @@ if var == 'jsq':
   for n in range(hdr['n_dim']):
     dump['jcov'][:,:,:,n] = np.sum(dump['jcon']*geom['gcov'][:,:,None,:,n], axis=3)
   dump['jsq'] = np.sum(dump['jcon']*dump['jcov'], axis=-1)
+elif var == 'sigma':
+  dump['sigma'] = dump['bsq']/dump['RHO']
 
 if var in ['jcon','ucon','ucov','bcon','bcov']:
   for n in range(4):
     ax = plt.subplot(nplotsy, nplotsx, n+1)
     bplt.plot_xy(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), dump, arrayspace=USEARRSPACE)
+elif var in ['sigma']:
+  ax = plt.subplot(1, 1, 1)
+  bplt.plot_xy(ax, geom, dump[var], dump, vmin=0, vmax=300, arrayspace=USEARRSPACE)
 else:
-  ax = plt.subplot(1, 1, 1)                                                                                                                                                                                        
-  bplt.plot_xz(ax, geom, dump[var], dump, arrayspace=USEARRSPACE) 
+  ax = plt.subplot(1, 1, 1)
+  bplt.plot_xy(ax, geom, dump[var], dump, arrayspace=USEARRSPACE) 
 
 plt.tight_layout()
 
@@ -63,6 +67,9 @@ if var in ['jcon','ucon','ucov','bcon','bcov']:
   for n in range(4):
     ax = plt.subplot(nplotsx, nplotsy, n+1)
     bplt.plot_xz(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), dump, arrayspace=USEARRSPACE)
+elif var in ['sigma']:
+  ax = plt.subplot(1, 1, 1)
+  bplt.plot_xz(ax, geom, dump[var], dump, vmin=0, vmax=300, arrayspace=USEARRSPACE)
 else:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, dump[var], dump, arrayspace=USEARRSPACE)
