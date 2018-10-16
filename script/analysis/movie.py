@@ -27,7 +27,7 @@ SIZE = 40
 NLINES = 10
 
 # For plotting debug, "array-space" plots
-USEARRSPACE = False
+USEARRSPACE = True
 
 MAD = True
 if MAD:
@@ -41,8 +41,6 @@ else:
   MAX_MDOT = 1
   LOG_PHI = False
   MAX_PHI = 5
-  
-
 
 # TODO this is a dirty hack
 args_bad = False
@@ -85,6 +83,8 @@ else:
 
 print 'Number of threads: %i' % nthreads
 
+nplotsx = 4
+nplotsy = 2
 
 # Load diagnostics from HARM itself
 #diag = io.load_log(hdr, os.path.join(path, "log.out"))
@@ -93,109 +93,62 @@ print 'Number of threads: %i' % nthreads
 # TODO make this a runtime option
 diag = pickle.load(open("eht_out.p", 'rb'))
 
+def plot_slices(name, data, dump, min, max, subplot, avg=False, window=[-SIZE,SIZE,-SIZE,SIZE], arrspace=USEARRSPACE,
+                cmap='jet', xlabel=True, ylabel=True):
+  # Switch to RdBu_r default?
+  
+  ax = plt.subplot(nplotsy, nplotsx, subplot)
+  bplt.plot_xz(ax, geom, data, window=window, cbar=False, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
+               label=name, vmin=min, vmax=max, arrayspace=arrspace, average=avg)
+  if not USEARRSPACE:
+    bplt.overlay_field(ax, geom, dump, NLINES)
+
+  ax = plt.subplot(nplotsy, nplotsx, subplot+1)
+  bplt.plot_xy(ax, geom, data, window=window, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
+               label=name, vmin=min, vmax=max, arrayspace=arrspace, average=avg)
+
 def plot(n):
   imname = 'frame_%08d.png' % n
   imname = os.path.join(FRAMEDIR, imname)
   print '%08d / ' % (n+1) + '%08d' % len(files)
 
-  # Ignore if frame already exists
-  if os.path.isfile(imname):
-    return
-
-  dump = io.load_dump(files[n], geom, hdr, calc_omega=False)
+  # Don't calculate b/ucon/cov/e- stuff unless we need it below
+  # Only skip this if no bsq/beta/etc
+  dump = io.load_dump(files[n], geom, hdr, derived_vars = True)
+  
   fig = plt.figure(figsize=(FIGX, FIGY))
 
-  ax = plt.subplot(2,4,1)
-  bplt.plot_xz(ax, geom, np.log10(dump['RHO']), dump,
-               vmin=-3, vmax=2, label='RHO', arrayspace=USEARRSPACE)
-  if (USEARRSPACE):
-    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-  else:
-    bplt.overlay_field(ax, geom, dump, NLINES)
-    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+  # Subplots 1 & 2
+  plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 1)
+  #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 1)
 
-  ax = plt.subplot(2,4,2)
-  bplt.plot_xy(ax, geom, np.log10(dump['RHO']), dump,
-               vmin=-3, vmax=2, label='RHO', arrayspace=USEARRSPACE)
-  if (USEARRSPACE):
-    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-  else:
-    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
+  # Subplots 5 & 6
+  plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 5)
+  #plot_slices('magnetization', dump['bsq']/dump['RHO'], dump, 0, 1000, 5)
 
+  # Subplots 7 & 8
+  # Zoomed in RHO
+  #plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 7, window=[-SIZE/4,SIZE/4,-SIZE/4,SIZE/4])
+  # Bsq
+  #plot_slices('bsq', np.log10(dump['bsq']), dump, -5, 0, 7)
+  # Failures: all failed zones, one per nonzero pflag
+  plot_slices('fails', dump['fail'] != 0, dump, 0, 0.03, 7, cmap='Reds', avg=True) #, arrspace=True)
 
-  # I change this a lot
-  #var2_str = 'ucon_r'
-  #var2_data = dump['RHO'][:,:,:]*dump['ucon'][:,:,:,1]*dump['gdet'][:,:,None]*hdr['dx2']*hdr['dx3']
-  var2_str = 'beta'
-  var2_data = np.log10(dump[var2_str])
-  var2_min = -2
-  var2_max = 2
-
-#  var2_str = 'magnetization'
-#  var2_data = dump['bsq']/dump['RHO']
-#  var2_min = 0
-#  var2_max = 1000
-#  var2_str = 'omega'
-#  var2_data = np.log10(dump['omega']*4/hdr['a'])
-#  var2_min = -2
-#  var2_max = 2
-
-
-  ax = plt.subplot(2,4,5)
-  bplt.plot_xz(ax, geom, var2_data, dump, #cmap='RdBu_r'
-               label=var2_str, vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
-  if (USEARRSPACE):
-    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-  else:
-    bplt.overlay_field(ax, geom, dump, NLINES)
-    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
-
-  ax = plt.subplot(2,4,6)
-  bplt.plot_xy(ax, geom, var2_data, dump, #cmap='RdBu_r'
-               label=var2_str, vmin=var2_min, vmax=var2_max, arrayspace=USEARRSPACE)
-  if (USEARRSPACE):
-    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-  else:
-    ax.set_xlim([-SIZE, SIZE]); ax.set_ylim([-SIZE, SIZE])
-
-  # Zoomed-in plot
-  var3_str = 'RHO'
-  var3_data = np.log10(dump[var3_str])
-  var3_min = -3
-  var3_max = 2
-
-  ax = plt.subplot(2,4,7)
-  bplt.plot_xz(ax, geom, var3_data, dump,
-               label=var3_str, vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
-  if (USEARRSPACE):
-    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-  else:
-    bplt.overlay_field(ax, geom, dump, NLINES*4)
-    ax.set_xlim([-SIZE/4, SIZE/4]); ax.set_ylim([-SIZE/4, SIZE/4])
-
-  ax = plt.subplot(2,4,8)
-  bplt.plot_xy(ax, geom, var3_data, dump,
-               label=var3_str, vmin=var3_min, vmax=var3_max, arrayspace=USEARRSPACE)
-  if (USEARRSPACE):
-    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
-  else:
-    ax.set_xlim([-SIZE/4, SIZE/4]); ax.set_ylim([-SIZE/4, SIZE/4])
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
+  # Fluxes as top right corner pair of frames
   # Don't plot time-based variables for initial conditions
   if len(diag['t'].shape) > 0:
-    ax = plt.subplot(4,2,2)
+    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2)
     bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', logy=LOG_MDOT)
 
-    ax = plt.subplot(4,2,4)
+    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx)
     bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
     
     # Alternative to zoom in: more plots
-    
     #ax = plt.subplot(4,2,6)
     #bplt.diag_plot(ax, diag, dump, 'sigma_max', 'Max magnetization', ylim=None, logy=False)
-    
     #ax = plt.subplot(4,2,8)
     #bplt.diag_plot(ax, diag, dump, 'egas', 'Gas energy', ylim=None, logy=False)
 

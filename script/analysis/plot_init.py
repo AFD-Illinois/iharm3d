@@ -31,6 +31,8 @@ else:
   NPLOTSX = 2
   NPLOTSY = 2
 
+imname = 'initial_conditions.png'
+
 # TODO this is a dirty hack
 args_bad = False
 if sys.argv[1] == '-d':
@@ -60,24 +62,25 @@ geom = io.load_geom(hdr, gridfile)
 dump = io.load_dump(files[0], geom, hdr)
 
 # Plot the first dump, specifically init as in Narayan '12
-
-imname = 'initial_conditions.png'
-
-fig = plt.figure(figsize=(FIGX, FIGY))
-
 N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
 
+# Zoom in for smaller SANE torii
+if SIZE > geom['r'][-1,0,0]:
+  SIZE = geom['r'][-1,0,0]
+
+fig = plt.figure(figsize=(FIGX, FIGY))
 # Density profile
 ax = plt.subplot(NPLOTSY,NPLOTSX,1)
 bplt.plot_r(ax, geom, dump['RHO'], N2/2, N3/2, 'RHO', logx=True, logy=True)
 ax.set_xlim([8, 2*10**3]); ax.set_ylim([10**(-4), 2])
 
 # B-flux thru midplane inside radius
-flux = np.sum(dump['B2'][:,N2/2,:]*geom['gdet'][:,N2/2,None]*hdr['dx1']*hdr['dx3'],axis=-1)
+#flux = np.sum(dump['B2'][:,N2/2,:]*geom['gdet'][:,N2/2,None]*hdr['dx1']*hdr['dx3'],axis=-1)
 
 flux_in = np.zeros((N1,))
-for n in range(N1):
-  flux_in[n] = np.sum(dump['B2'][:n,N2/2,:]*geom['gdet'][:n,N2/2,None]*hdr['dx1']*hdr['dx3'])
+flux_in[0] = np.sum(dump['B2'][0,N2/2,:]*geom['gdet'][0,N2/2,None]*hdr['dx1']*hdr['dx3'])
+for n in range(1,N1):
+  flux_in[n] = flux_in[n-1] + np.sum(dump['B2'][n,N2/2,:]*geom['gdet'][n,N2/2,None]*hdr['dx1']*hdr['dx3'])
 
 ax = plt.subplot(NPLOTSY,NPLOTSX,2)
 bplt.plot_r(ax, geom, flux_in, None, None, 'flux_in', logx=False, logy=False)
@@ -85,25 +88,25 @@ ax.set_xlim([0, SIZE]) #; ax.set_ylim([-200, 10])
 
 # Density 2D
 ax = plt.subplot(NPLOTSY,NPLOTSX,3)
-bplt.plot_xz(ax, geom, np.log10(dump['RHO']), dump,
+bplt.plot_xz(ax, geom, np.log10(dump['RHO']),
              vmin=-4, vmax = 0, label='RHO')
 ax.set_xlim([0, SIZE]); ax.set_ylim([-SIZE/2, SIZE/2])
 
 # Beta 2D
 ax = plt.subplot(NPLOTSY,NPLOTSX,4)
-bplt.plot_xz(ax, geom, np.log10(dump['beta']), dump,
+bplt.plot_xz(ax, geom, np.log10(dump['beta']),
              label='beta', cmap='RdBu_r', vmin=1, vmax=4)
 bplt.overlay_field(ax, geom, dump, NLINES)
 ax.set_xlim([0, SIZE]); ax.set_ylim([-SIZE/2, SIZE/2])
 
 if PLOT_EXTRA:
   ax = plt.subplot(NPLOTSY,NPLOTSX,5)
-  bplt.plot_xz(ax, geom, np.log10(dump['UU']), dump,
+  bplt.plot_xz(ax, geom, np.log10(dump['UU']),
                vmin=-4, vmax = 0, label='UU')
   ax.set_xlim([0, SIZE]); ax.set_ylim([-SIZE/2, SIZE/2])
   
   ax = plt.subplot(NPLOTSY,NPLOTSX,6)
-  bplt.plot_xz(ax, geom, np.log10(dump['bsq']), dump,
+  bplt.plot_xz(ax, geom, np.log10(dump['bsq']),
                label='bsq', cmap='RdBu_r', vmin=-8, vmax=2)
   bplt.overlay_field(ax, geom, dump, NLINES)
   ax.set_xlim([0, SIZE]); ax.set_ylim([-SIZE/2, SIZE/2])

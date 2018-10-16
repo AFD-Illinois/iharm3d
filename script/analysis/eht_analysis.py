@@ -36,7 +36,7 @@ geom = io.load_geom(hdr, os.path.join(path,'grid.h5'))
 if len(sys.argv) > 2:
   tavg = float(sys.argv[2])
 else:
-  tavg = io.load_dump(dumps[ND/2])['t'] - 1.0
+  tavg = io.load_dump(dumps[ND/2], geom, hdr)['t'] - 1.0
 
 init_analysis(geom)
 
@@ -245,7 +245,7 @@ for key in avg_keys:
 out_full['mdot'] = out_full['Mdot']
 out_full['phi'] = out_full['Phi']/np.sqrt(np.abs(out_full['Mdot']))
 
-# Variables that can be read once
+# Pass along HARM's own diagnostics for comparison
 out_full['a'] = hdr['a']
 out_full['t_d'] = diag['t']
 out_full['Mdot_d'] = diag['mdot']

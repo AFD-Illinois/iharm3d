@@ -68,7 +68,11 @@ def load_geom(hdr, fname):
   for key in gfile['/'].keys():
     geom[key] = gfile[key][()]
 
-  # Useful stuff to pack in from header, kind of also belongs here
+  # Cart around the header inside both geom and dump
+  # this lacks grace, but is surprisingly efficient
+  geom['hdr'] = hdr
+  
+  # Useful stuff for direct access: more likely to stay
   for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
     geom[key] = hdr[key]
 
@@ -88,11 +92,12 @@ def load_geom(hdr, fname):
 
   return geom
 
-def load_dump(fname, geom, hdr, calc_omega=True):
+def load_dump(fname, geom, hdr, derived_vars=True):
   dfile = h5py.File(fname)
   
   dump = {}
-  dump['hdr'] = hdr # Header is a pain to carry around separately
+  # See geom note on carrying header along with things
+  dump['hdr'] = hdr
 
   # TODO this necessarily grabs the /whole/ primitives array
   for key in [key for key in dfile['/'].keys() if key not in ['header', 'extras', 'prims'] ]:
@@ -107,17 +112,17 @@ def load_dump(fname, geom, hdr, calc_omega=True):
   
   dfile.close()
 
-  # Recalculate all the derived variables
-  # TODO calculate these on demand with an object?
-  if hdr['has_electrons']:
-    dump['Thetae'] = units['MP']/units['ME']*dump['KEL']*dump['RHO']**(hdr['gam_e']-1.)
-    dump['ue'] = dump['KEL']*dump['RHO']**(hdr['gam_e'])/(hdr['gam_e']-1.)
-    dump['up'] = dump['UU'] - dump['ue']
-    dump['TpTe'] = (hdr['gam_p']-1.)*dump['up']/((hdr['gam_e']-1.)*dump['ue'])
+  # Recalculate all the derived variables, if we need to
+  if derived_vars:
+    dump['ucon'], dump['ucov'], dump['bcon'], dump['bcov'] = get_state(dump, geom)
+    dump['bsq'] = (dump['bcon']*dump['bcov']).sum(axis=-1)
+    dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
 
-  dump['ucon'], dump['ucov'], dump['bcon'], dump['bcov'] = get_state(dump, geom)
-  dump['bsq'] = (dump['bcon']*dump['bcov']).sum(axis=-1)
-  dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
+    if hdr['has_electrons']:
+      dump['Thetae'] = units['MP']/units['ME']*dump['KEL']*dump['RHO']**(hdr['gam_e']-1.)
+      dump['ue'] = dump['KEL']*dump['RHO']**(hdr['gam_e'])/(hdr['gam_e']-1.)
+      dump['up'] = dump['UU'] - dump['ue']
+      dump['TpTe'] = (hdr['gam_p']-1.)*dump['up']/((hdr['gam_e']-1.)*dump['ue'])
 
   return dump
 

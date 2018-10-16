@@ -4,7 +4,6 @@
 
 import numpy as np
 
-# TODO hide these globals
 jmin, jmax = 0,0
 vol_profile = 0
 
@@ -12,6 +11,9 @@ THMIN = np.pi/3.
 THMAX = 2.*np.pi/3.
 
 def init_analysis(geom):
+  # Setting module-wide variables
+  global jmin, jmax, vol_profile
+  
   # Calculate jmin, jmax
   ths = geom['th'][-1,:,0]
   for n in xrange(len(ths)):
