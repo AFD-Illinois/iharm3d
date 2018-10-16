@@ -37,7 +37,7 @@ for m in xrange(len(RES)):
 
   dfiles = np.sort(glob.glob('dump*.h5'))
   hdr = io.load_hdr(dfiles[0])
-  geom = io.load_geom("grid.h5")
+  geom = io.load_geom(hdr, "grid.h5")
   dump0 = io.load_dump(dfiles[0], geom, hdr)
   dump1 = io.load_dump(dfiles[-1], geom, hdr)
   

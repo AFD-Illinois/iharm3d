@@ -90,7 +90,7 @@ for n in xrange(len(MODES)):
     dfile = np.sort(glob.glob('dump*.h5'))[-1]
 
     hdr = io.load_hdr(dfile)
-    geom = io.load_geom("grid.h5")
+    geom = io.load_geom(hdr, "grid.h5")
     dump = io.load_dump(dfile, geom, hdr)
 
     X1 = geom['x']
