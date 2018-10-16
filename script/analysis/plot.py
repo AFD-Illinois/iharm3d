@@ -9,70 +9,132 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 # Get xz slice of 3D data
-def flatten_xz(array, hdr, patch_pole=False):
-  N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
+def flatten_xz(array, patch_pole=False, average=False):
+  N1 = array.shape[0]; N2 = array.shape[1]; N3 = array.shape[2]
   flat = np.zeros([2*N1,N2])
-  for j in xrange(N2):
-      for i in xrange(N1):
-          flat[i,j] = array[N1 - 1 - i,j,N3/2]
-      for i in xrange(N1):
-          flat[i+N1,j] = array[i,j,0]
+  if average:
+    for i in range(N1):
+      # Produce identical hemispheres to get the right size output
+      flat[i,:] = np.mean(array[N1 - 1 - i,:,:], axis=-1)
+      flat[i+N1,:] = np.mean(array[i,:,:], axis=-1)
+  else:
+    for i in range(N1):
+      flat[i,:] = array[N1 - 1 - i,:,N3/2]
+      flat[i+N1,:] = array[i,:,0]
+
   # Theta is technically [small,pi/2-small]
   # This patches the X coord so the plot looks nice
   if patch_pole:
       flat[:,0] = 0
       flat[:,-1] = 0
+
   return flat
 
 # Get xy slice of 3D data
-def flatten_xy(array, hdr):
-  return np.vstack((array.transpose(),array.transpose()[0])).transpose()
+def flatten_xy(array, average=False):
+  if average:
+    slice = np.mean(array, axis=1)
+  else:
+    slice = array[:,array.shape[1]/2,:]
 
-def plot_xz(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
-            label=None, ticks=None, arrayspace=False):
-  hdr = dump['hdr']; N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
+  return np.vstack((slice.transpose(),slice.transpose()[0])).transpose()
+
+def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
+            cbar=True, label=None, xlabel=True, ylabel=True,
+            ticks=None, arrayspace=False, average=False):
+
   if (arrayspace):
-    x = np.reshape(np.repeat(np.linspace(0,1,N2),N1),(N1,N2))
-    z = np.transpose(np.reshape(np.repeat(np.linspace(0,1,N1),N2),(N2,N1)))
-    if N3 > 1:
-      var = flatten_xz(var, hdr)[N1:,:]
+    x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
+    x2_norm = (geom['X2'] - geom['startx2']) / (geom['n2'] * geom['dx2'])
+    x = flatten_xz(x1_norm)[geom['n1']:,:]
+    z = flatten_xz(x2_norm)[geom['n1']:,:]
+    if geom['n3'] > 1:
+      var = flatten_xz(var, average=average)[geom['n1']:,:]
     else:
       var = var[:,:,0]
   else:
-    x = flatten_xz(geom['x'], hdr, patch_pole=True)
-    z = flatten_xz(geom['z'], hdr)
-    var = flatten_xz(var, hdr)
-    # TODO N3==1 option for axisymm plots
+    x = flatten_xz(geom['x'], patch_pole=True)
+    z = flatten_xz(geom['z'])
+    var = flatten_xz(var, average=average)
 
   #print 'xshape is ', x.shape, ', zshape is ', z.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
       shading='gouraud')
 
-  if not arrayspace:
-    circle1=plt.Circle((0,0),hdr['Reh'],color='k');
+  if arrayspace:
+    if xlabel: ax.set_xlabel('X1 (arbitrary)')
+    if ylabel: ax.set_ylabel('X2 (arbitrary)')
+    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+  else:
+    if xlabel: ax.set_xlabel('x/M')
+    if ylabel: ax.set_ylabel('z/M')
+    if window:
+      ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
+    # BH silhouette
+    circle1=plt.Circle((0,0),geom['hdr']['Reh'],color='k');
     ax.add_artist(circle1)
+
+  ax.set_aspect('equal')
 
   if cbar:
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(mesh, cax=cax, ticks=ticks)
-  ax.set_aspect('equal')
-  if (arrayspace):
-    ax.set_xlabel('r (arbitrary)'); ax.set_ylabel('theta (arbitrary)')
-  else:
-    ax.set_xlabel('x/M'); ax.set_ylabel('z/M')
-  
+
   if label:
     ax.set_title(label)
-  #ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
+
+def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
+            cbar=True, label=None, xlabel=True, ylabel=True,
+            ticks=None, arrayspace=False, average=False):
+
+  if arrayspace:
+    # Flatten_xy adds a rank. TODO is this the way to handle it?
+    x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
+    x3_norm = (geom['X3'] - geom['startx3']) / (geom['n3'] * geom['dx3'])
+    x = flatten_xy(x1_norm)
+    y = flatten_xy(x3_norm)
+  else:
+    x = flatten_xy(geom['x'])
+    y = flatten_xy(geom['y'])
+
+  var = flatten_xy(var, average=average)
+
+  #print 'xshape is ', x.shape, ', yshape is ', y.shape, ', varshape is ', var.shape
+  mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
+      shading='gouraud')
+
+  if arrayspace:
+    if xlabel: ax.set_xlabel('X1 (arbitrary)')
+    if ylabel: ax.set_ylabel('X3 (arbitrary)')
+    ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+  else:
+    if xlabel: ax.set_xlabel('x/M')
+    if ylabel: ax.set_ylabel('y/M')
+    if window:
+      ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
+    # BH silhouette
+    circle1=plt.Circle((0,0),geom['hdr']['Reh'],color='k');
+    ax.add_artist(circle1)
+
+  ax.set_aspect('equal')
+
+  if cbar:
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(mesh, cax=cax, ticks=ticks)
+
+  if label:
+    ax.set_title(label)
 
 def overlay_field(ax, geom, dump, NLEV):
   from scipy.integrate import trapz
   hdr = dump['hdr']
   N1 = hdr['n1']; N2 = hdr['n2']
-  x = flatten_xz(geom['x'], hdr).transpose()
-  z = flatten_xz(geom['z'], hdr).transpose()
+  x = flatten_xz(geom['x']).transpose()
+  z = flatten_xz(geom['z']).transpose()
   A_phi = np.zeros([N2, 2*N1])
   gdet = geom['gdet'][:,:].transpose()
   B1 = dump['B1'].mean(axis=-1).transpose()
@@ -90,43 +152,6 @@ def overlay_field(ax, geom, dump, NLEV):
   levels = np.concatenate((np.linspace(-Apm,0,NLEV)[:-1],
                            np.linspace(0,Apm,NLEV)[1:]))
   ax.contour(x, z, A_phi, levels=levels, colors='k')
-
-def plot_xy(ax, geom, var, dump, cmap='jet', vmin=None, vmax=None, cbar=True,
-            label=None, ticks=None, arrayspace=False):
-  hdr = dump['hdr']; N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']+1
-
-  if (arrayspace):
-    x = np.reshape(np.repeat(np.linspace(0,1,N3),N1),(N1,N3))
-    y = np.transpose(np.reshape(np.repeat(np.linspace(0,1,N1),N3),(N3,N1)))
-  else:
-    x = geom['x'][:N1,N2/2,:N3-1]
-    y = geom['y'][:N1,N2/2,:N3-1]
-    x = flatten_xy(x, hdr)
-    y = flatten_xy(y, hdr)
-
-  var = flatten_xy(var[:,N2/2,:], hdr)
-
-  #print 'xshape is ', x.shape, ', yshape is ', y.shape, ', varshape is ', var.shape
-  mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
-      shading='gouraud')
-
-  if (not arrayspace):
-    circle1=plt.Circle((0,0),hdr['Reh'],color='k');
-    ax.add_artist(circle1)
-
-  if cbar:
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    plt.colorbar(mesh, cax=cax, ticks=ticks)
-    if label:
-      ax.set_title(label)
-  ax.set_aspect('equal')
-  if (arrayspace):
-    ax.set_xlabel('r (arbitrary)'); ax.set_ylabel('phi (arbitrary)')
-  else:
-    ax.set_xlabel('x/M'); ax.set_ylabel('y/M')
-  #ax.grid(True, linestyle=':', color='k', alpha=0.5, linewidth=0.5)
 
 # TODO allow coordinate x2,3? Allow average over said?
 def plot_r(ax, geom, var, n2, n3, label, logx=False, logy=False):
