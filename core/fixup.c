@@ -16,6 +16,9 @@
 // Can use drift-frame floors to stabilize high magnetization
 #define DRIFT_FLOORS 0
 
+// Point in m, around which to steepen floor prescription, eventually toward r^-3
+#define FLOOR_R_CHAR 10
+
 #if DEBUG
 int nfixed = 0, nfixed_b = 0;
 #endif
@@ -111,8 +114,10 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     coord(i, j, k, CENT, X);
     bl_coord(X, &r, &th);
 
+    // New, steeper floor in rho
+    rhoscal = pow(r, -2.) * 1 / (1 + r/FLOOR_R_CHAR);
     // Classic harm floors
-    rhoscal = pow(r, -2.);
+//    rhoscal = pow(r, -2.);
     uscal = pow(rhoscal, gam);
     // Very classic floors
 //    rhoscal = pow(r,-1.5);
