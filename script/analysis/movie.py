@@ -7,6 +7,8 @@
 import matplotlib
 matplotlib.use('Agg')
 
+from analysis_fns import *
+
 import sys; sys.dont_write_bytecode = True
 import numpy as np
 import hdf5_to_dict as io
@@ -126,6 +128,7 @@ def plot(n):
   dump = io.load_dump(files[n], geom, hdr, derived_vars = True)
   
   fig = plt.figure(figsize=(FIGX, FIGY))
+  fig.suptitle("t = %d"%dump['t'])
 
   # Subplots 1 & 2
   plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 1)
@@ -142,7 +145,7 @@ def plot(n):
 
   # Subplots 7 & 8
   # Zoomed in RHO
-  plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 7, window=[-SIZE/4,SIZE/4,-SIZE/4,SIZE/4], overlay_field=False)
+  #plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 7, window=[-SIZE/4,SIZE/4,-SIZE/4,SIZE/4], overlay_field=False)
   # Bsq
   #plot_slices('bsq', np.log10(dump['bsq']), dump, -5, 0, 7)
   # Failures: all failed zones, one per nonzero pflag
@@ -160,8 +163,8 @@ def plot(n):
     bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
     
     # Alternative to 7 & 8: more fluxes
-    #ax = plt.subplot(4,2,6)
-    #bplt.diag_plot(ax, diag, dump, 'sigma_max', 'Max magnetization', ylim=None, logy=False)
+    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*3)
+    bplt.radial_plot(ax, geom, radial_sum(geom,Tmixed(geom,dump,0,0)), 'Energy at R')
     #ax = plt.subplot(4,2,8)
     #bplt.diag_plot(ax, diag, dump, 'egas', 'Gas energy', ylim=None, logy=False)
 

@@ -12,7 +12,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import util
 import pickle
-import hdf5_to_dict as io
 
 FIGX = 14
 FIGY = 14
