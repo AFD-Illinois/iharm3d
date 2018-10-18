@@ -69,11 +69,13 @@
 #ifndef UORHOMAX
 #define UORHOMAX (100.)
 #endif
+#ifndef BSQOUMAX
 #define BSQOUMAX (BSQORHOMAX * UORHOMAX)
+#endif
 // Extra "wind" source term to avoid floors
 // Test problems require disabling this
 #ifndef WIND_TERM
-#define WIND_TERM 1
+#define WIND_TERM 0
 #endif
 
 // Maximum value of gamma, the Lorentz factor
@@ -93,8 +95,8 @@
 #ifndef TIMERS
 #define TIMERS 1
 #endif
-#ifndef STATIC_TIMESTEP // TODO change default when sure
-#define STATIC_TIMESTEP 1
+#ifndef STATIC_TIMESTEP
+#define STATIC_TIMESTEP 0
 #endif
 
 // The Intel compiler is a pain
@@ -163,12 +165,22 @@
 #define DIAG_FINAL (3)
 
 // Failure modes
+// TODO find+eliminate uses
 #define FAIL_UTOPRIM     (0)
 #define FAIL_VCHAR_DISCR (1)
 #define FAIL_COEFF_NEG   (2)
 #define FAIL_COEFF_SUP   (3)
 #define FAIL_GAMMA       (4)
 #define FAIL_METRIC      (5)
+
+// U to P failure modes
+
+
+// Floors
+#define HIT_FLOOR_GEOM 1
+#define HIT_FLOOR_SIGMA 2
+#define HIT_FLOOR_GAMMA 3
+#define HIT_FLOOR_KTOT 4
 
 // Timers
 #define TIMER_RECON    (1)
@@ -239,6 +251,7 @@ struct FluidEMF {
 //struct FluidFail {
 extern GridInt pflag;
 extern GridInt fail_save;
+extern GridInt fflag;
 //};
 
 /*******************************************************************************

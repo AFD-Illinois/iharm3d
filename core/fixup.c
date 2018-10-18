@@ -33,8 +33,11 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   static int firstc = 1;
   if (firstc) {Stmp = calloc(1,sizeof(struct FluidState)); firstc = 0;}
 
+  ZLOOPALL fflag[k][j][i] = 0;
+
   if (!FLUID_FRAME_FLOORS) get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
+  // TODO rewrite this in light of fflag
 #if DEBUG
 #pragma omp parallel for collapse(3) reduction(+:nfixed) reduction(+:nfixed_b)
 #else
@@ -129,9 +132,11 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 #if FLUID_FRAME_FLOORS
   // Fluid frame floors: don't conserve momentum
   if (S->P[RHO][k][j][i] < rhoflr) {
+    fflag[k][j][i] = HIT_FLOOR_GEOM;
     S->P[RHO][k][j][i] = rhoflr;
   }
   if (S->P[UU][k][j][i] < uflr) {
+    fflag[k][j][i] = HIT_FLOOR_GEOM;
     S->P[UU][k][j][i] = uflr;
   }
 #else
@@ -147,10 +152,18 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       rhoflr_b > S->P[RHO][k][j][i] || uflr_b > S->P[UU][k][j][i]) { // Apply floors
 #if DEBUG
     nfixed++;
-    // If we would not have hit the floors w/o magnetic floors...
-    if(S->P[RHO][k][j][i] > rhoflr && S->P[UU][k][j][i] > uflr)
+#endif
+
+    // If we would not have hit the floors w/o magnetic floors, record this
+    if(S->P[RHO][k][j][i] > rhoflr && S->P[UU][k][j][i] > uflr) {
+      fflag[k][j][i] = HIT_FLOOR_SIGMA;
+
+#if DEBUG
       nfixed_b++;
 #endif
+    } else {
+      fflag[k][j][i] = HIT_FLOOR_GEOM;
+    }
 
 #if DRIFT_FLOORS
     double trans = 10.*bsq/MY_MIN(S->P[RHO][k][j][i], S->P[UU][k][j][i]) - 1.;
@@ -251,6 +264,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
   // Keep to KTOTMAX by controlling u, to avoid anomalous cooling from funnel wall
   if (S->P[KTOT][k][j][i] > KTOTMAX) {
+    fflag[k][j][i] = HIT_FLOOR_KTOT;
     S->P[UU][k][j][i] = KTOTMAX*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
     S->P[KTOT][k][j][i] = KTOTMAX;
   }
@@ -261,6 +275,8 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
 
   if (gamma > GAMMAMAX) {
+    fflag[k][j][i] = HIT_FLOOR_GAMMA;
+
     double f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
     S->P[U1][k][j][i] *= f;
     S->P[U2][k][j][i] *= f;

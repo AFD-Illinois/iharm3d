@@ -17,7 +17,6 @@
 // Currently this calculation is done in post
 //GridDouble *omega;
 
-// TODO test outputting doubles
 #define OUT_TYPE float
 #define OUT_H5_TYPE H5T_IEEE_F32LE
 
@@ -180,6 +179,9 @@ void dump(struct GridGeom *G, struct FluidState *S)
   // Space for any extra items
   hdf5_make_directory("extras");
   hdf5_set_directory("/extras/");
+  if (is_full_dump) {
+    pack_write_int(fflag, "fixup");
+  }
 
 //  ZLOOP (*data)[k][j][i] = bsq_calc(G, S, i, j, k);
 //  pack_write_scalar((*data), "bsq", OUT_H5_TYPE);

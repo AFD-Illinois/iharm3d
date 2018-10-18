@@ -15,6 +15,7 @@
 // Zone flags.  TODO move these to the heap
 GridInt pflag;
 GridInt fail_save;
+GridInt fflag;
 
 // Parameters
 // physical
