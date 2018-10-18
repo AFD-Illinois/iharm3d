@@ -31,13 +31,16 @@ def flatten_xz(array, patch_pole=False, average=False):
   return flat
 
 # Get xy slice of 3D data
-def flatten_xy(array, average=False):
+def flatten_xy(array, average=False, loop=True):
   if average:
     slice = np.mean(array, axis=1)
   else:
     slice = array[:,array.shape[1]/2,:]
-
-  return np.vstack((slice.transpose(),slice.transpose()[0])).transpose()
+  
+  if loop:
+    return np.vstack((slice.transpose(),slice.transpose()[0])).transpose()
+  else:
+    return slice
 
 def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
             cbar=True, label=None, xlabel=True, ylabel=True,
@@ -93,13 +96,13 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
     # Flatten_xy adds a rank. TODO is this the way to handle it?
     x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
     x3_norm = (geom['X3'] - geom['startx3']) / (geom['n3'] * geom['dx3'])
-    x = flatten_xy(x1_norm)
-    y = flatten_xy(x3_norm)
+    x = flatten_xy(x1_norm, loop=False)
+    y = flatten_xy(x3_norm, loop=False)
+    var = flatten_xy(var, average=average, loop=False)
   else:
     x = flatten_xy(geom['x'])
     y = flatten_xy(geom['y'])
-
-  var = flatten_xy(var, average=average)
+    var = flatten_xy(var, average=average)
 
   #print 'xshape is ', x.shape, ', yshape is ', y.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,

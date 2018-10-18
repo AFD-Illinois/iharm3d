@@ -27,7 +27,7 @@ SIZE = 40
 NLINES = 10
 
 # For plotting debug, "array-space" plots
-USEARRSPACE = True
+USEARRSPACE = False
 
 MAD = True
 if MAD:
@@ -93,19 +93,28 @@ nplotsy = 2
 # TODO make this a runtime option
 diag = pickle.load(open("eht_out.p", 'rb'))
 
-def plot_slices(name, data, dump, min, max, subplot, avg=False, window=[-SIZE,SIZE,-SIZE,SIZE], arrspace=USEARRSPACE,
-                cmap='jet', xlabel=True, ylabel=True):
+def plot_slices(name, data, dump, min, max, subplot, avg=False, int=False, window=[-SIZE,SIZE,-SIZE,SIZE], arrspace=USEARRSPACE,
+                overlay_field=True, cmap='jet', xlabel=True, ylabel=True):
   # Switch to RdBu_r default?
+  if int:
+    # Average multiplied values for the integral
+    data_xz = data*data.shape[2] #N1,2,(3)
+    data_xy = data*data.shape[1] #N1,(2),3
+    avg = True
+  else:
+    data_xz = data
+    data_xy = data
   
   ax = plt.subplot(nplotsy, nplotsx, subplot)
-  bplt.plot_xz(ax, geom, data, window=window, cbar=False, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
+  bplt.plot_xz(ax, geom, data_xz, window=window, cbar=False, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
                label=name, vmin=min, vmax=max, arrayspace=arrspace, average=avg)
-  if not USEARRSPACE:
+  if overlay_field and not USEARRSPACE:
     bplt.overlay_field(ax, geom, dump, NLINES)
 
   ax = plt.subplot(nplotsy, nplotsx, subplot+1)
-  bplt.plot_xy(ax, geom, data, window=window, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
+  bplt.plot_xy(ax, geom, data_xy, window=window, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
                label=name, vmin=min, vmax=max, arrayspace=arrspace, average=avg)
+
 
 def plot(n):
   imname = 'frame_%08d.png' % n
@@ -121,19 +130,23 @@ def plot(n):
   # Subplots 1 & 2
   plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 1)
   #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 1)
+  #plot_slices('UU/RHO', np.log10(dump['UU']/dump['RHO']), dump, -3, 3, 1, avg=True)
+
+  # Subplots 3 & 4
+  #plot_slices('sigma', np.log10(dump['bsq']/dump['RHO']), dump, -3, 3, 3, avg=True)
 
   # Subplots 5 & 6
-  plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 5)
+  #plot_slices('inverse beta', np.log10(1/dump['beta']), dump, -3, 3, 5, avg=True)
   #plot_slices('magnetization', dump['bsq']/dump['RHO'], dump, 0, 1000, 5)
+  plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 5)
 
   # Subplots 7 & 8
   # Zoomed in RHO
-  #plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 7, window=[-SIZE/4,SIZE/4,-SIZE/4,SIZE/4])
+  plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 7, window=[-SIZE/4,SIZE/4,-SIZE/4,SIZE/4], overlay_field=False)
   # Bsq
   #plot_slices('bsq', np.log10(dump['bsq']), dump, -5, 0, 7)
   # Failures: all failed zones, one per nonzero pflag
-  plot_slices('fails', dump['fail'] != 0, dump, 0, 0.03, 7, cmap='Reds', avg=True) #, arrspace=True)
-
+  #plot_slices('fails', dump['fail'] != 0, dump, 0, 20, 7, cmap='Reds', int=True) #, arrspace=True)
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
@@ -142,11 +155,11 @@ def plot(n):
   if len(diag['t'].shape) > 0:
     ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2)
     bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', logy=LOG_MDOT)
-
+ 
     ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx)
     bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
     
-    # Alternative to zoom in: more plots
+    # Alternative to 7 & 8: more fluxes
     #ax = plt.subplot(4,2,6)
     #bplt.diag_plot(ax, diag, dump, 'sigma_max', 'Max magnetization', ylim=None, logy=False)
     #ax = plt.subplot(4,2,8)
