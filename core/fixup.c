@@ -151,6 +151,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   double bsq = bsq_calc(S, i, j, k);
   double rhoflr_b = bsq/BSQORHOMAX;
   double uflr_b = bsq/BSQOUMAX;
+  // TODO apply this after updates to UU (or play equivalent tricks)
   rhoflr = MY_MAX(rhoflr, S->P[UU][k][j][i]/UORHOMAX);
 
   if (rhoflr > S->P[RHO][k][j][i] || uflr > S->P[UU][k][j][i] ||
@@ -169,6 +170,10 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     } else {
       fflag[k][j][i] = HIT_FLOOR_GEOM;
     }
+
+    // Set single consistent floor
+    rhoflr = MY_MAX(rhoflr, rhoflr_b);
+    uuflr = MY_MAX(uflr, uflr_b);
 
 #if DRIFT_FLOORS
     double trans = 10.*bsq/MY_MIN(S->P[RHO][k][j][i], S->P[UU][k][j][i]) - 1.;
