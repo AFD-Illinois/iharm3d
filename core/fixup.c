@@ -173,7 +173,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
     // Set single consistent floor
     rhoflr = MY_MAX(rhoflr, rhoflr_b);
-    uuflr = MY_MAX(uflr, uflr_b);
+    uflr = MY_MAX(uflr, uflr_b);
 
 #if DRIFT_FLOORS
     double trans = 10.*bsq/MY_MIN(S->P[RHO][k][j][i], S->P[UU][k][j][i]) - 1.;
