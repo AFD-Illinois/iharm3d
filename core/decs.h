@@ -367,6 +367,8 @@ extern int global_stop[3];
 #define delta(i,j) ((i == j) ? 1. : 0.)
 
 #define LOG(msg) if(DEBUG && mpi_io_proc()) {fprintf(stderr,msg); fprintf(stderr,"\n");}
+// Can add custom code to run at each FLAG
+// eg double sig_max = mpi_max(sigma_max(G, Stmp)); if(mpi_io_proc()) fprintf(stderr,"sig_max = %f\n",sig_max);
 #define FLAG(msg) if(DEBUG) { LOG(msg); mpi_barrier(); }
 #define LOGN(fmt,x) if(DEBUG && mpi_io_proc()) {fprintf(stderr,fmt,x); fprintf(stderr,"\n");}
 // TODO bring the whole MPI ship down too
@@ -408,6 +410,7 @@ void diag_flux(struct FluidFlux *F);
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k);
 void check_nan(struct FluidState *S, const char* flag);
+double sigma_max(struct GridGeom *G, struct FluidState *S);
 
 // electrons.c
 #if ELECTRONS

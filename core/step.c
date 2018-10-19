@@ -39,18 +39,24 @@ void step(struct GridGeom *G, struct FluidState *S)
   // Predictor setup
   advance_fluid(G, S, S, Stmp, 0.5*dt);
 
+  FLAG("Heat Electrons");
 #if ELECTRONS
   heat_electrons(G, S, Stmp);
 #endif
 
+  FLAG("Fixup");
   // Fixup routines: smooth over outlier zones
   fixup(G, Stmp);
+  FLAG("Fixup e-");
 #if ELECTRONS
   fixup_electrons(Stmp);
 #endif
   // Need an MPI call _before_ fixup_utop to obtain correct pflags
+  FLAG("Bounds");
   set_bounds(G, Stmp);
+  FLAG("Fixup U to P Failures");
   fixup_utoprim(G, Stmp);
+  FLAG("Bounds");
   set_bounds(G, Stmp); // TODO still need one after?
 
   FLAG("Fixup/Bounds Temp");

@@ -187,6 +187,23 @@ void global_map(int iglobal, int jglobal, int kglobal, GridPrim prim) {
   }
 }
 
+double sigma_max (struct GridGeom *G, struct FluidState *S)
+{
+
+	double sigma_max = 0;
+
+#pragma omp parallel for simd collapse(3) reduction(max:sigma_max)
+	ZLOOP {
+		get_state(G, S, i, j, k, CENT);
+		double bsq = bsq_calc(S, i, j, k);
+
+		if (bsq/S->P[RHO][k][j][i] > sigma_max)
+			sigma_max = bsq/S->P[RHO][k][j][i];
+	}
+
+	return sigma_max;
+}
+
 // Map out region around failure point
 void area_map(int i, int j, int k, GridPrim prim)
 {
