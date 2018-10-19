@@ -40,7 +40,7 @@ def Tcov(geom, dump,i,j):
 
 def Tmixed(geom, dump,i,j):
   gam = dump['hdr']['gam']
-  gmixedij = np.sum(geom['gcon'][:,:,None,i,:]*geom['gcov'][:,:,None,:,j],axis=-1)
+  gmixedij = (i == j)
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*gmixedij - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
 
@@ -121,9 +121,6 @@ def sum_shell_at(geom, var, i):
 
 def eht_profile(geom, var):
   return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3'], axis=(1,2)) / vol_profile
-
-def radial_sum(geom, var):
-  return np.sum(var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3'], axis=(1,2))
 
 def theta_av(var, start, av):
   # Sum theta from each pole to equator and take overall mean. N2 hack is a hack

@@ -71,7 +71,7 @@ if SIZE > geom['r'][-1,0,0]:
 fig = plt.figure(figsize=(FIGX, FIGY))
 # Density profile
 ax = plt.subplot(NPLOTSY,NPLOTSX,1)
-bplt.plot_r(ax, geom, dump['RHO'], N2/2, N3/2, 'RHO', logx=True, logy=True)
+bplt.radial_plot(ax, geom, dump['RHO'], 'RHO', n2=N2/2, n3=N3/2, logx=True, logy=True)
 ax.set_xlim([8, 2*10**3]); ax.set_ylim([10**(-4), 2])
 
 # B-flux thru midplane inside radius
@@ -83,7 +83,7 @@ for n in range(1,N1):
   flux_in[n] = flux_in[n-1] + np.sum(dump['B2'][n,N2/2,:]*geom['gdet'][n,N2/2,None]*hdr['dx1']*hdr['dx3'])
 
 ax = plt.subplot(NPLOTSY,NPLOTSX,2)
-bplt.plot_r(ax, geom, flux_in, None, None, 'flux_in', logx=False, logy=False)
+bplt.radial_plot(ax, geom, flux_in, 'flux_in')
 ax.set_xlim([0, SIZE]) #; ax.set_ylim([-200, 10])
 
 # Density 2D
