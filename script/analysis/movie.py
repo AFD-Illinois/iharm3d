@@ -7,6 +7,8 @@
 import matplotlib
 matplotlib.use('Agg')
 
+from analysis_fns import *
+
 import sys; sys.dont_write_bytecode = True
 import numpy as np
 import hdf5_to_dict as io
@@ -126,6 +128,7 @@ def plot(n):
   dump = io.load_dump(files[n], geom, hdr, derived_vars = True)
   
   fig = plt.figure(figsize=(FIGX, FIGY))
+  fig.suptitle("t = %d"%dump['t'])
 
   # Subplots 1 & 2
   plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 1)
@@ -133,26 +136,27 @@ def plot(n):
   #plot_slices('UU/RHO', np.log10(dump['UU']/dump['RHO']), dump, -3, 3, 1, avg=True)
 
   # Subplots 3 & 4
-  #plot_slices('sigma', np.log10(dump['bsq']/dump['RHO']), dump, -3, 3, 3, avg=True)
+  plot_slices('sigma', np.log10(dump['bsq']/dump['RHO']), dump, -3, 3, 3)
 
   # Subplots 5 & 6
   #plot_slices('inverse beta', np.log10(1/dump['beta']), dump, -3, 3, 5, avg=True)
   #plot_slices('magnetization', dump['bsq']/dump['RHO'], dump, 0, 1000, 5)
-  plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 5)
+  #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 5)
+  plot_slices('sigma', dump['bsq']/dump['RHO'] - 200, dump, -100, 100, 5, cmap='RdBu_r')
 
   # Subplots 7 & 8
   # Zoomed in RHO
-  plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 7, window=[-SIZE/4,SIZE/4,-SIZE/4,SIZE/4], overlay_field=False)
+  #plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 7, window=[-SIZE/4,SIZE/4,-SIZE/4,SIZE/4], overlay_field=False)
   # Bsq
   #plot_slices('bsq', np.log10(dump['bsq']), dump, -5, 0, 7)
   # Failures: all failed zones, one per nonzero pflag
-  #plot_slices('fails', dump['fail'] != 0, dump, 0, 20, 7, cmap='Reds', int=True) #, arrspace=True)
+  plot_slices('fails', dump['fail'] != 0, dump, 0, 20, 7, cmap='Reds', int=True) #, arrspace=True)
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
   # Fluxes as top right corner pair of frames
   # Don't plot time-based variables for initial conditions
-  if len(diag['t'].shape) > 0:
+  if False and len(diag['t'].shape) > 0:
     ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2)
     bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', logy=LOG_MDOT)
  
@@ -160,10 +164,11 @@ def plot(n):
     bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
     
     # Alternative to 7 & 8: more fluxes
-    #ax = plt.subplot(4,2,6)
-    #bplt.diag_plot(ax, diag, dump, 'sigma_max', 'Max magnetization', ylim=None, logy=False)
-    #ax = plt.subplot(4,2,8)
-    #bplt.diag_plot(ax, diag, dump, 'egas', 'Gas energy', ylim=None, logy=False)
+    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*3)
+    E_r = sum_shell(geom,Tmixed(geom,dump,0,0))
+    bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', logy=True, ylim=[1e3,1e7])
+    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
+    bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', rlim=[0,15], logy=True, ylim=[1,1e5])
 
   # TODO enlarge plots w/o messing up even pixel count
   # Maybe share axes, even?

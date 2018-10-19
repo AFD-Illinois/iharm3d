@@ -190,6 +190,9 @@ def avg_dump(n):
   out['Etot'] = np.sum(Tmixed(geom, dump, 0,0)[:iEmax,:,:]*geom['gdet'][:iEmax,:,None]*dx1*dx2*dx3)
   #print "Energy on grid: ",out['Etot']
 
+  # For an averaged energy profile
+  #out['E_r'] = radial_sum(geom, Tmixed(geom, dump, 0,0))
+
   return out
 
 out_full = {}

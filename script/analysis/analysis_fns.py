@@ -40,7 +40,7 @@ def Tcov(geom, dump,i,j):
 
 def Tmixed(geom, dump,i,j):
   gam = dump['hdr']['gam']
-  gmixedij = np.sum(geom['gcon'][:,:,None,i,:]*geom['gcov'][:,:,None,:,j],axis=-1)
+  gmixedij = (i == j)
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*gmixedij - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
 
