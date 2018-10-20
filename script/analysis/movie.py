@@ -156,7 +156,7 @@ def plot(n):
 
   # Fluxes as top right corner pair of frames
   # Don't plot time-based variables for initial conditions
-  if False and len(diag['t'].shape) > 0:
+  if len(diag['t'].shape) > 0:
     ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2)
     bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', logy=LOG_MDOT)
  
@@ -165,10 +165,11 @@ def plot(n):
     
     # Alternative to 7 & 8: more fluxes
     ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*3)
-    E_r = sum_shell(geom,Tmixed(geom,dump,0,0))
-    bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', logy=True, ylim=[1e3,1e7])
-    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
-    bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', rlim=[0,15], logy=True, ylim=[1,1e5])
+    bplt.radial_plot(ax, geom, (dump['fail'] != 0).sum(axis=(1,2)), 'Fails at R', arrayspace=True, rlim=[0,50])
+    #E_r = sum_shell(geom,Tmixed(geom,dump,0,0))
+    #bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', logy=True, ylim=[1e3,1e7])
+    #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
+    #bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', rlim=[0,15], logy=True, ylim=[1,1e5])
 
   # TODO enlarge plots w/o messing up even pixel count
   # Maybe share axes, even?
@@ -187,9 +188,9 @@ if debug:
     plot(100)
     exit(0)
 
-original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+#original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
 pool = multiprocessing.Pool(nthreads)
-signal.signal(signal.SIGINT, original_sigint_handler)
+#signal.signal(signal.SIGINT, original_sigint_handler)
 try:
   pool.map_async(plot, range(len(files))).get(720000)
 except KeyboardInterrupt:
