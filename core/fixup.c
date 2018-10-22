@@ -256,10 +256,9 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
       PLOOP {
         S->U[ip][k][j][i] += Stmp->U[ip][k][j][i];
-        S->P[ip][k][j][i] += Stmp->P[ip][k][j][i];
       }
 
-      U_to_P(G, S, i, j, k, CENT);
+      pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
       get_state(G, S, i, j, k, CENT); // TODO needed?
 
 #if DRIFT_FLOORS
