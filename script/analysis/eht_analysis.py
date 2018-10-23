@@ -161,7 +161,7 @@ def avg_dump(n):
   out['Ldot'] = sum_shell_at(geom, Tmixed(geom, dump, 1,3), iF)
 
   # Maximum magnetization (and allow re-use of the variable)
-  sigma = dump['bsq']/2/dump['RHO']
+  sigma = dump['bsq']/dump['RHO']
   out['sigma_max'] = np.max(sigma)
 
   # Blandford-Znajek Luminosity L_BZ
