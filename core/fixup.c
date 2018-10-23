@@ -65,6 +65,7 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   timer_stop(TIMER_FIXUP);
 }
 
+// CFG: this is for drift frame floors, could be removed and cleaned out
 inline void ucon_to_utcon(struct GridGeom *G, int i, int j, double ucon[NDIM], double utcon[NDIM])
 {
   double beta[NDIM];
@@ -81,6 +82,7 @@ inline void ucon_to_utcon(struct GridGeom *G, int i, int j, double ucon[NDIM], d
   }
 }
 
+// CFG: this is for drift frame floors, could be removed and cleaned out
 inline double ut_calc_3vel(struct GridGeom *G, int i, int j, double vcon[NDIM])
 {
   double AA, BB, CC, DD;
@@ -131,9 +133,11 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     uflr = UUMIN*uscal;
   }
 
+  // CFG: are these ever hit?  If not, we should remove.
   rhoflr = MY_MAX(rhoflr, RHOMINLIMIT);
   uflr = MY_MAX(uflr, UUMINLIMIT);
 
+  // CFG : I think these floors are unstable and should probably be removed.
 #if FLUID_FRAME_FLOORS
   // Fluid frame floors: don't conserve momentum
   if (S->P[RHO][k][j][i] < rhoflr) {
@@ -152,6 +156,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   double rhoflr_b = bsq/BSQORHOMAX;
   double uflr_b = bsq/BSQOUMAX;
   // TODO apply this after updates to UU (or play equivalent tricks)
+  // CFG: 2nd argument amounts to a temperature maximum
   rhoflr = MY_MAX(rhoflr, S->P[UU][k][j][i]/UORHOMAX);
 
   if (rhoflr > S->P[RHO][k][j][i] || uflr > S->P[UU][k][j][i] ||
@@ -174,7 +179,8 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     // Set single consistent floor
     rhoflr = MY_MAX(rhoflr, rhoflr_b);
     uflr = MY_MAX(uflr, uflr_b);
-
+ 
+    // CFG: this is deprecated.
 #if DRIFT_FLOORS
     double trans = 10.*bsq/MY_MIN(S->P[RHO][k][j][i], S->P[UU][k][j][i]) - 1.;
     if (trans > 0.) { // Strongly magnetized region; use drift frame floors
@@ -257,7 +263,8 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       PLOOP {
         S->U[ip][k][j][i] += Stmp->U[ip][k][j][i];
       }
-
+  
+      // CFG: do we get any failures here?
       pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
       get_state(G, S, i, j, k, CENT); // TODO needed?
 
@@ -279,6 +286,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   }
 #endif // ELECTRONS
 
+  // CFG: should this be done first?
   // Limit gamma with respect to normal observer
   // TODO check for fail here
   double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
