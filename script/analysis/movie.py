@@ -135,22 +135,23 @@ def plot(n):
   #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 1)
   #plot_slices('UU/RHO', np.log10(dump['UU']/dump['RHO']), dump, -3, 3, 1, avg=True)
 
-  # Subplots 3 & 4
-  plot_slices('sigma', np.log10(dump['bsq']/dump['RHO']), dump, -3, 3, 3)
+  # Subplots 3 & 4: usually fluxes, see below
+  #plot_slices('sigma', np.log10(dump['bsq']/dump['RHO']), dump, -3, 3, 3)
 
   # Subplots 5 & 6
   #plot_slices('inverse beta', np.log10(1/dump['beta']), dump, -3, 3, 5, avg=True)
   #plot_slices('magnetization', dump['bsq']/dump['RHO'], dump, 0, 1000, 5)
   #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 5)
-  plot_slices('sigma', dump['bsq']/dump['RHO'] - 200, dump, -100, 100, 5, cmap='RdBu_r')
+  # We're used to seeing the field in blue right?
+  plot_slices('sigma ceiling', dump['bsq']/dump['RHO'] - 100, dump, -100, 100, 5, cmap='Blues')
 
-  # Subplots 7 & 8
+  # Subplots 7 & 8: usually radial, see below
   # Zoomed in RHO
   #plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 7, window=[-SIZE/4,SIZE/4,-SIZE/4,SIZE/4], overlay_field=False)
   # Bsq
   #plot_slices('bsq', np.log10(dump['bsq']), dump, -5, 0, 7)
   # Failures: all failed zones, one per nonzero pflag
-  plot_slices('fails', dump['fail'] != 0, dump, 0, 20, 7, cmap='Reds', int=True) #, arrspace=True)
+  #plot_slices('fails', dump['fail'] != 0, dump, 0, 20, 7, cmap='Reds', int=True) #, arrspace=True)
 
   plt.subplots_adjust(hspace=0.15, wspace=0.4)
 
@@ -160,14 +161,19 @@ def plot(n):
     ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2)
     bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', logy=LOG_MDOT)
  
-    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx)
+    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*2)
     bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
     
-    # Alternative to 7 & 8: more fluxes
+    # Alternative to 7 & 8: more diagnostics
     ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*3)
-    bplt.radial_plot(ax, geom, (dump['fail'] != 0).sum(axis=(1,2)), 'Fails at R', arrayspace=True, rlim=[0,50])
-    #E_r = sum_shell(geom,Tmixed(geom,dump,0,0))
-    #bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', logy=True, ylim=[1e3,1e7])
+    bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
+
+    # Alternative to 7 & 8: radial
+    #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
+    #bplt.radial_plot(ax, geom, (dump['fail'] != 0).sum(axis=(1,2)), 'Fails at R', arrayspace=True, rlim=[0,50], ylim=[0,1000])
+    E_r = sum_shell(geom,Tmixed(geom,dump,0,0))
+    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
+    bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', logy=True, ylim=[1e3,1e7]) # TODO angular momentum, mass
     #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
     #bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', rlim=[0,15], logy=True, ylim=[1,1e5])
 
