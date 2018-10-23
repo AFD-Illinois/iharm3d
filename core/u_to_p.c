@@ -154,8 +154,10 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   double u = w - (rho0 + P);
 
   // Return without updating non-B primitives
-  if (rho0 < 0 || u < 0) {
-    return(5);
+  if (rho0 < 0) {
+    return 6;
+  if (u < 0) {
+    return 7;
   }
 
   // Set primitives
