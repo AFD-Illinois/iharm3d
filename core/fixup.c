@@ -53,7 +53,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
 
   if (gamma > GAMMAMAX) {
-    fflag[k][j][i] += HIT_FLOOR_GAMMA;
+    fflag[k][j][i] |= HIT_FLOOR_GAMMA;
 
     double f = sqrt((GAMMAMAX*GAMMAMAX - 1.)/(gamma*gamma - 1.));
     S->P[U1][k][j][i] *= f;
@@ -70,7 +70,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
     // Keep to KTOTMAX by controlling u, to avoid anomalous cooling from funnel wall
     if (S->P[KTOT][k][j][i] > KTOTMAX) {
-      fflag[k][j][i] += HIT_FLOOR_KTOT;
+      fflag[k][j][i] |= HIT_FLOOR_KTOT;
       S->P[UU][k][j][i] = KTOTMAX*rho_to_gam/(gam-1.);
       S->P[KTOT][k][j][i] = KTOTMAX;
     }
@@ -100,8 +100,8 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   }
 
   // Record Geometric floor hits
-  if (rhoflr_geom > S->P[RHO][k][j][i]) fflag[k][j][i] += HIT_FLOOR_GEOM_RHO;
-  if (uflr_geom > S->P[UU][k][j][i]) fflag[k][j][i] += HIT_FLOOR_GEOM_U;
+  if (rhoflr_geom > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_GEOM_RHO;
+  if (uflr_geom > S->P[UU][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_GEOM_U;
 
 
   // 2. Magnetic floors: impose maximum magnetization sigma = bsq/rho, inverse beta prop. to bsq/U
@@ -110,8 +110,8 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   double uflr_b = bsq/BSQOUMAX;
 
   // Record Magnetic floor hits
-  if (rhoflr_b > S->P[RHO][k][j][i]) fflag[k][j][i] += HIT_FLOOR_B_RHO;
-  if (uflr_b > S->P[UU][k][j][i]) fflag[k][j][i] += HIT_FLOOR_B_U;
+  if (rhoflr_b > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_B_RHO;
+  if (uflr_b > S->P[UU][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_B_U;
 
   // Evaluate highest U floor
   double uflr_max = MY_MAX(uflr_geom, uflr_b);
