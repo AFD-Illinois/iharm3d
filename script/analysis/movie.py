@@ -143,7 +143,7 @@ def plot(n):
   #plot_slices('magnetization', dump['bsq']/dump['RHO'], dump, 0, 1000, 5)
   #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 5)
   # We're used to seeing the field in blue right?
-  plot_slices('sigma ceiling', dump['bsq']/dump['RHO'] - 100, dump, -100, 100, 5, cmap='Blues')
+  plot_slices('sigma ceiling', dump['bsq']/dump['RHO'] - 100, dump, -100, 100, 5, cmap='RdBu_r')
 
   # Subplots 7 & 8: usually radial, see below
   # Zoomed in RHO
@@ -172,8 +172,13 @@ def plot(n):
     #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
     #bplt.radial_plot(ax, geom, (dump['fail'] != 0).sum(axis=(1,2)), 'Fails at R', arrayspace=True, rlim=[0,50], ylim=[0,1000])
     E_r = sum_shell(geom,Tmixed(geom,dump,0,0))
+    Ang_r = sum_shell(geom,Tmixed(geom,dump,0,3))
+    mass_r = sum_shell(geom,dump['ucon'][:,:,:,0]*dump['RHO'])
+    
     ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
-    bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', logy=True, ylim=[1e3,1e7]) # TODO angular momentum, mass
+    bplt.radial_plot(ax, geom, np.abs(E_r), 'Conserved vars at R', ylim=[0,1e7], col='b')
+    bplt.radial_plot(ax, geom, np.abs(Ang_r)/10, '', ylim=[0,1e7], col='r')
+    bplt.radial_plot(ax, geom, np.abs(mass_r), '', ylim=[0,1e7])
     #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
     #bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', rlim=[0,15], logy=True, ylim=[1,1e5])
 

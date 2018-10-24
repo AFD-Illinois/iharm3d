@@ -256,6 +256,7 @@ out_full['Phi_d'] = diag['Phi']
 out_full['Ldot_d'] = diag['ldot']
 out_full['Edot_d'] = -diag['edot']
 out_full['Lum_d'] = diag['lum_eht']
+out_full['divbmax_d'] = diag['divbmax']
 
 # OUTPUT
 import pickle

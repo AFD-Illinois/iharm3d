@@ -157,7 +157,7 @@ def overlay_field(ax, geom, dump, NLEV):
   ax.contour(x, z, A_phi, levels=levels, colors='k')
 
 # TODO allow coordinate x2,3? Allow average over said?
-def radial_plot(ax, geom, var, label, n2=0, n3=0, logx=False, logy=False, rlim=None, ylim=None, arrayspace=False):
+def radial_plot(ax, geom, var, label, n2=0, n3=0, logx=False, logy=False, rlim=None, ylim=None, arrayspace=False, col='k'):
   r = geom['r'][:,0,0]
   if var.ndim == 1:
     data = var
@@ -169,18 +169,18 @@ def radial_plot(ax, geom, var, label, n2=0, n3=0, logx=False, logy=False, rlim=N
   if arrayspace:
     # logx doesn't make sense here
     if logy:
-      ax.semilogy(range(geom['n1']), data)
+      ax.semilogy(range(geom['n1']), data, color=col)
     else:
-      ax.plot(range(geom['n1']), data)
+      ax.plot(range(geom['n1']), data, color=col)
   else:
     if logx and logy:
-      ax.loglog(r,data)
+      ax.loglog(r,data, color=col)
     elif logx:
-      ax.semilogx(r,data)
+      ax.semilogx(r,data, color=col)
     elif logy:
-      ax.semilogy(r,data)
+      ax.semilogy(r,data, color=col)
     else:
-      ax.plot(r,data)
+      ax.plot(r,data, color=col)
 
   if rlim:
     ax.set_xlim(rlim)

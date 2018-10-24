@@ -259,3 +259,21 @@ if EXTRAS:
 plt.savefig(fout + '_normfluxes.png')
 plt.close(fig)
 
+## Values which should be boring
+
+if EXTRAS:
+  fig = plt.figure(figsize=(FIGX, FIGY/2))
+  nplots = 2
+
+  ax = plt.subplot(nplots,1,1)
+  ax.plot(avg['t'], np.fabs(avg['sigma_max']), color='k')
+  ax.set_xlim([0,tf])
+  ax.set_xticklabels([])
+  ax.set_ylabel('sigma_max')
+
+  ax = plt.subplot(nplots,1,2)
+  ax.plot(avg['t'], avg['divbmax_d'], color='k')
+  ax.set_xlim([0,tf])
+  ax.set_xlabel('t/M')
+  ax.set_ylabel('Phi')
+
