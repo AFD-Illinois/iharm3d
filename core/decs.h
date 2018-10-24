@@ -176,12 +176,6 @@
 // U to P failure modes
 
 
-// Floors
-#define HIT_FLOOR_GEOM 1
-#define HIT_FLOOR_SIGMA 2
-#define HIT_FLOOR_GAMMA 3
-#define HIT_FLOOR_KTOT 4
-
 // Timers
 #define TIMER_RECON    (1)
 #define TIMER_LR_TO_F  (2)
