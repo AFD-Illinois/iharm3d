@@ -13,8 +13,9 @@
 #define HIT_FLOOR_GEOM_U 2
 #define HIT_FLOOR_B_RHO 4
 #define HIT_FLOOR_B_U 8
-#define HIT_FLOOR_GAMMA 16
-#define HIT_FLOOR_KTOT 32
+#define HIT_FLOOR_TEMP 16
+#define HIT_FLOOR_GAMMA 32
+#define HIT_FLOOR_KTOT 64
 
 // Point in m, around which to steepen floor prescription, eventually toward r^-3
 #define FLOOR_R_CHAR 10
@@ -32,6 +33,7 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   static int firstc = 1;
   if (firstc) {Stmp = calloc(1,sizeof(struct FluidState)); firstc = 0;}
 
+#pragma omp parallel for simd collapse(2)
   ZLOOPALL fflag[k][j][i] = 0;
 
   get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
@@ -66,6 +68,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     // Keep to KTOTMAX by controlling u, to avoid anomalous cooling from funnel wall
     if (S->P[KTOT][k][j][i] > KTOTMAX) {
       fflag[k][j][i] |= HIT_FLOOR_KTOT;
+
       S->P[UU][k][j][i] = KTOTMAX*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
       S->P[KTOT][k][j][i] = KTOTMAX;
     }
@@ -116,12 +119,22 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   // Take floors on U into account
   double rhoflr_temp = MY_MAX(S->P[UU][k][j][i], uflr_max)/UORHOMAX;
 
+  // Record temp floor hit
+  if (rhoflr_temp > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_TEMP;
+
   // Evaluate highest RHO floor
   double rhoflr_max = MY_MAX(MY_MAX(rhoflr_geom, rhoflr_b), rhoflr_temp);
 
+  LOGN("Floor flag at %d %d %d: %d", i, j, k, fflag[k][j][i]);
+
   if (rhoflr_max > S->P[RHO][k][j][i] || uflr_max > S->P[UU][k][j][i]) { // Apply floors
 
-    PLOOP {Stmp->P[ip][k][j][i] = 0; Stmp->U[ip][k][j][i] = 0;}
+    PLOOP {
+      Stmp->P[ip][k][j][i] = 0;
+      Stmp->U[ip][k][j][i] = 0;
+    }
+
+
     Stmp->P[RHO][k][j][i] = MY_MAX(0., rhoflr_max - S->P[RHO][k][j][i]);
     Stmp->P[UU][k][j][i] = MY_MAX(0., uflr_max - S->P[UU][k][j][i]);
 
