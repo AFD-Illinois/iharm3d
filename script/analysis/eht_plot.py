@@ -15,7 +15,7 @@ import pickle
 
 FIGX = 14
 FIGY = 14
-EXTRAS = False
+EXTRAS = True
 DIAGS = False
 
 if len(sys.argv) != 3:

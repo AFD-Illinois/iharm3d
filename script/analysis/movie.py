@@ -143,7 +143,8 @@ def plot(n):
   #plot_slices('magnetization', dump['bsq']/dump['RHO'], dump, 0, 1000, 5)
   #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 5)
   # We're used to seeing the field in blue right?
-  plot_slices('sigma ceiling', dump['bsq']/dump['RHO'] - 100, dump, -100, 100, 5, cmap='RdBu_r')
+  #plot_slices('sigma ceiling', dump['bsq']/dump['RHO'] - 100, dump, -100, 100, 5, cmap='RdBu_r')
+  plot_slices('fixup gamma', dump['fixup'] == 3, dump, 0, 1, 5, cmap='Reds', arrspace=True)
 
   # Subplots 7 & 8: usually radial, see below
   # Zoomed in RHO
