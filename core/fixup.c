@@ -59,7 +59,6 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     S->P[U1][k][j][i] *= f;
     S->P[U2][k][j][i] *= f;
     S->P[U3][k][j][i] *= f;
-    get_state(G, S, i, j, k, CENT);
   }
 
   // 2. Limit KTOT
@@ -101,7 +100,8 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
 
   // 2. Magnetic floors: impose maximum magnetization sigma = bsq/rho, inverse beta prop. to bsq/U
-  double bsq = bsq_calc(S, i, j, k); // called get_state above
+  get_state(G, S, i, j, k, CENT); // TODO apply ceilings in separate call so we can call this vectorized
+  double bsq = bsq_calc(S, i, j, k);
   double rhoflr_b = bsq/BSQORHOMAX;
   double uflr_b = bsq/BSQOUMAX;
 
@@ -128,7 +128,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     get_state(G, Stmp, i, j, k, CENT);
     prim_to_flux(G, Stmp, i, j, k, 0, CENT, Stmp->U);
 
-    get_state(G, S, i, j, k, CENT);
+    //get_state(G, S, i, j, k, CENT); // Called just above, or vectorized above that
     prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
 
     PLOOP {
@@ -137,7 +137,6 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
     // CFG: do we get any failures here?
     pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
-    get_state(G, S, i, j, k, CENT); // TODO needed?
   }
 
   // We do need KTOT in a consistent state
@@ -145,6 +144,10 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     // Reset entropy after floors
     S->P[KTOT][k][j][i] = (gam - 1.)*S->P[UU][k][j][i]/pow(S->P[RHO][k][j][i],gam);
   }
+
+  // Leave a consistent state if we changed anything
+  // TODO I think this call can be eliminated with some bugfixing...
+  if (fflag[k][j][i] != 0) get_state(G, S, i, j, k, CENT);
 
 }
 
@@ -209,7 +212,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
         }
       }
       if(wsum < 1.e-10) {
-        fprintf(stderr, "fixup_utoprim problem: No usable neighbors!\n");
+        fprintf(stderr, "fixup_utoprim: No usable neighbors at %d %d %d\n", i, j, k);
         // TODO set to something ~okay here, or exit screaming
         // This happens /very rarely/
         //exit(-1);
