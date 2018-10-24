@@ -62,14 +62,14 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   }
 
   // 2. Limit KTOT
-  if (ELECTRONS) {
+#if ELECTRONS
     // Keep to KTOTMAX by controlling u, to avoid anomalous cooling from funnel wall
     if (S->P[KTOT][k][j][i] > KTOTMAX) {
       fflag[k][j][i] |= HIT_FLOOR_KTOT;
       S->P[UU][k][j][i] = KTOTMAX*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
       S->P[KTOT][k][j][i] = KTOTMAX;
     }
-  }
+#endif
 
   // Then apply floors:
   // 1. Geometric hard floors, not based on fluid relationships
@@ -139,11 +139,10 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
     pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
   }
 
-  // We do need KTOT in a consistent state
-  if (ELECTRONS) {
+#if ELECTRONS
     // Reset entropy after floors
     S->P[KTOT][k][j][i] = (gam - 1.)*S->P[UU][k][j][i]/pow(S->P[RHO][k][j][i],gam);
-  }
+#endif
 
   // Leave a consistent state if we changed anything
   // TODO I think this call can be eliminated with some bugfixing...
