@@ -125,7 +125,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
   // Evaluate highest RHO floor
   double rhoflr_max = MY_MAX(MY_MAX(rhoflr_geom, rhoflr_b), rhoflr_temp);
 
-  LOGN("Floor flag at %d %d %d: %d", i, j, k, fflag[k][j][i]);
+  fprintf(stderr,"Floor flag at %d %d %d: %d", i, j, k, fflag[k][j][i]);
 
   if (rhoflr_max > S->P[RHO][k][j][i] || uflr_max > S->P[UU][k][j][i]) { // Apply floors
 
