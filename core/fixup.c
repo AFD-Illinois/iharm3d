@@ -22,10 +22,10 @@
 
 static struct FluidState *Stmp;
 
-void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
+inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
+inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
 
 // Apply floors to density, internal energy
-// TODO can this be made faster?  I may be calling get_state too much
 void fixup(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);
@@ -36,16 +36,20 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL fflag[k][j][i] = 0;
 
+#pragma omp parallel for collapse(3)
+  ZLOOP fixup_ceiling(G, S, i, j, k);
+
+  // Bulk call before bsq calculation below
   get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
 #pragma omp parallel for collapse(3)
-  ZLOOP fixup1zone(G, S, i, j, k);
+  ZLOOP fixup_floor(G, S, i, j, k);
 
   // Some debug info about floors
 #if DEBUG
-  int n_geom_rho, n_geom_u, n_b_rho, n_b_u, n_temp, n_gamma, n_ktot;
+  int n_geom_rho = 0, n_geom_u = 0, n_b_rho = 0, n_b_u = 0, n_temp = 0, n_gamma = 0, n_ktot = 0;
 
-#pragma omp parallel for simd collapse(2) reduction(+:n_geom_rho) reduction(+:n_geom_u) \
+#pragma omp parallel for collapse(3) reduction(+:n_geom_rho) reduction(+:n_geom_u) \
     reduction(+:n_b_rho) reduction(+:n_b_u) reduction(+:n_temp) reduction(+:n_gamma) reduction(+:n_ktot)
   ZLOOP {
     int flag = fflag[k][j][i];
@@ -82,7 +86,7 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   timer_stop(TIMER_FIXUP);
 }
 
-inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
+inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
   // First apply ceilings:
   // 1. Limit gamma with respect to normal observer
@@ -107,7 +111,10 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
       S->P[KTOT][k][j][i] = KTOTMAX;
     }
 #endif
+}
 
+inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
+{
   // Then apply floors:
   // 1. Geometric hard floors, not based on fluid relationships
   double rhoflr_geom, uflr_geom;
@@ -137,7 +144,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
 
   // 2. Magnetic floors: impose maximum magnetization sigma = bsq/rho, inverse beta prop. to bsq/U
-  get_state(G, S, i, j, k, CENT); // TODO apply ceilings in separate call so we can call this vectorized
+  //get_state(G, S, i, j, k, CENT); // called above
   double bsq = bsq_calc(S, i, j, k);
   double rhoflr_b = bsq/BSQORHOMAX;
   double uflr_b = bsq/BSQOUMAX;
@@ -151,9 +158,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
   // 3. Temperature ceiling: impose maximum temperature
   // Take floors on U into account
-  //double rhoflr_temp = MY_MAX(S->P[UU][k][j][i] / UORHOMAX, uflr_max / UORHOMAX);
-  // Or don't, that was a bad idea
-  double rhoflr_temp = S->P[UU][k][j][i] / UORHOMAX;
+  double rhoflr_temp = MY_MAX(S->P[UU][k][j][i] / UORHOMAX, uflr_max / UORHOMAX);
 
   // Record temp floor hit
   if (rhoflr_temp > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_TEMP;
@@ -163,25 +168,31 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
   if (rhoflr_max > S->P[RHO][k][j][i] || uflr_max > S->P[UU][k][j][i]) { // Apply floors
 
+    // Initialize a dummy fluid parcel
     PLOOP {
       Stmp->P[ip][k][j][i] = 0;
       Stmp->U[ip][k][j][i] = 0;
     }
 
-
+    // Add mass and internal energy, but not velocity
     Stmp->P[RHO][k][j][i] = MY_MAX(0., rhoflr_max - S->P[RHO][k][j][i]);
     Stmp->P[UU][k][j][i] = MY_MAX(0., uflr_max - S->P[UU][k][j][i]);
 
+    // Get conserved variables for the parcel
     get_state(G, Stmp, i, j, k, CENT);
     prim_to_flux(G, Stmp, i, j, k, 0, CENT, Stmp->U);
 
+    // And for the current state
     //get_state(G, S, i, j, k, CENT); // Called just above, or vectorized above that
     prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
 
+    // Add new conserved variables to current values
     PLOOP {
       S->U[ip][k][j][i] += Stmp->U[ip][k][j][i];
+      S->P[ip][k][j][i] += Stmp->P[ip][k][j][i];
     }
 
+    // Recover primitive variables
     // CFG: do we get any failures here?
     pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
   }
@@ -193,7 +204,7 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
   // Leave a consistent state if we changed anything
   // TODO I think this call can be eliminated with some bugfixing...
-  if (fflag[k][j][i] != 0) get_state(G, S, i, j, k, CENT);
+  //if (fflag[k][j][i] != 0) get_state(G, S, i, j, k, CENT);
 
 }
 
@@ -275,8 +286,9 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
 #endif
 
       // Make sure fixed values still abide by floors
+      fixup_ceiling(G, S, i, j, k);
       get_state(G, S, i, j, k, CENT);
-      fixup1zone(G, S, i, j, k);
+      fixup_floor(G, S, i, j, k);
     }
   }
 

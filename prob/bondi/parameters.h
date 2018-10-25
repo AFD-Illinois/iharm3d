@@ -27,7 +27,6 @@
  *   Wind term is a small source for torii only
  *   Maximum magnetization parameters should be set high for most problems
  */
-#define FLUID_FRAME_FLOORS 0
 #define WIND_TERM 0
 #define BSQORHOMAX (100.)
 #define UORHOMAX (100.)
