@@ -41,7 +41,41 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 #pragma omp parallel for collapse(3)
   ZLOOP fixup1zone(G, S, i, j, k);
 
-  // TODO write debug output about floors
+  // Some debug info about floors
+#if DEBUG
+  int n_geom_rho, n_geom_u, n_b_rho, n_b_u, n_temp, n_gamma, n_ktot;
+
+#pragma omp parallel for simd collapse(2) reduction(+:n_geom_rho) reduction(+:n_geom_u) \
+    reduction(+:n_b_rho) reduction(+:n_b_u) reduction(+:n_temp) reduction(+:n_gamma) reduction(+:n_ktot)
+  ZLOOP {
+    int flag = fflag[k][j][i];
+    if (flag & HIT_FLOOR_GEOM_RHO) n_geom_rho++;
+    if (flag & HIT_FLOOR_GEOM_U) n_geom_u++;
+    if (flag & HIT_FLOOR_B_RHO) n_b_rho++;
+    if (flag & HIT_FLOOR_B_U) n_b_u++;
+    if (flag & HIT_FLOOR_TEMP) n_temp++;
+    if (flag & HIT_FLOOR_GAMMA) n_gamma++;
+    if (flag & HIT_FLOOR_KTOT) n_ktot++;
+  }
+
+  n_geom_rho = mpi_reduce_int(n_geom_rho);
+  n_geom_u = mpi_reduce_int(n_geom_u);
+  n_b_rho = mpi_reduce_int(n_b_rho);
+  n_b_u = mpi_reduce_int(n_b_u);
+  n_temp = mpi_reduce_int(n_temp);
+  n_gamma = mpi_reduce_int(n_gamma);
+  n_ktot = mpi_reduce_int(n_ktot);
+
+  LOG("FLOORS:");
+  if (n_geom_rho > 0) LOGN("Hit %d GEOM_RHO", n_geom_rho);
+  if (n_geom_u > 0) LOGN("Hit %d GEOM_U", n_geom_u);
+  if (n_b_rho > 0) LOGN("Hit %d B_RHO", n_b_rho);
+  if (n_b_u > 0) LOGN("Hit %d B_U", n_b_u);
+  if (n_temp > 0) LOGN("Hit %d TEMPERATURE", n_temp);
+  if (n_gamma > 0) LOGN("Hit %d GAMMA", n_gamma);
+  if (n_ktot > 0) LOGN("Hit %d KTOT", n_ktot);
+
+#endif
 
   LOG("End fixup");
 
@@ -117,15 +151,15 @@ inline void fixup1zone(struct GridGeom *G, struct FluidState *S, int i, int j, i
 
   // 3. Temperature ceiling: impose maximum temperature
   // Take floors on U into account
-  double rhoflr_temp = MY_MAX(S->P[UU][k][j][i], uflr_max)/UORHOMAX;
+  //double rhoflr_temp = MY_MAX(S->P[UU][k][j][i] / UORHOMAX, uflr_max / UORHOMAX);
+  // Or don't, that was a bad idea
+  double rhoflr_temp = S->P[UU][k][j][i] / UORHOMAX;
 
   // Record temp floor hit
   if (rhoflr_temp > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_TEMP;
 
   // Evaluate highest RHO floor
   double rhoflr_max = MY_MAX(MY_MAX(rhoflr_geom, rhoflr_b), rhoflr_temp);
-
-  fprintf(stderr,"Floor flag at %d %d %d: %d", i, j, k, fflag[k][j][i]);
 
   if (rhoflr_max > S->P[RHO][k][j][i] || uflr_max > S->P[UU][k][j][i]) { // Apply floors
 
