@@ -144,7 +144,13 @@ def plot(n):
   #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 5)
   # We're used to seeing the field in blue right?
   #plot_slices('sigma ceiling', dump['bsq']/dump['RHO'] - 100, dump, -100, 100, 5, cmap='RdBu_r')
-  plot_slices('fixup gamma', dump['fixup'] == 3, dump, 0, 1, 5, cmap='Reds', arrspace=True)
+  #plot_slices('fixup gamma', dump['fixup'] == 3, dump, 0, 1, 5, cmap='Reds', arrspace=True)
+  
+  # 2D histograms
+  ax = plt.subplot(nplotsy, nplotsx, 5)
+  bplt.hist_2d(ax, np.log10(dump['RHO']), np.log10(dump['UU']),"RHO", "UU", logcolor=True)
+  ax = plt.subplot(nplotsy, nplotsx, 6)
+  bplt.hist_2d(ax, np.log10(dump['UU']), np.log10(dump['bsq']),"UU", "bsq", logcolor=True)
 
   # Subplots 7 & 8: usually radial, see below
   # Zoomed in RHO

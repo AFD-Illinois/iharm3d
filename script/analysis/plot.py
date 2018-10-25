@@ -202,3 +202,28 @@ def diag_plot(ax, diag, dump, varname_dump, varname_pretty, ylim=None, logy=Fals
     ax.set_ylim(ylim)
   ax.set_xlabel('t/M')
   ax.set_ylabel(varname_pretty)
+  
+def hist_2d(ax, var_x, var_y, xlbl, ylbl, title=None, logcolor=False, bins=40, cbar=True, ticks=None):
+  # Courtesy of George Wong
+  var_x_flat = var_x.flatten()
+  var_y_flat = var_y.flatten()
+  nidx = np.isfinite(var_x_flat) & np.isfinite(var_y_flat)
+  hist = np.histogram2d(var_x_flat[nidx], var_y_flat[nidx], bins=bins)
+  X,Y = np.meshgrid(hist[1], hist[2])
+  
+  if logcolor:
+    hist[0][hist[0] == 0] = np.min(hist[0][np.nonzero(hist[0])])
+    mesh = ax.pcolormesh(X,Y,np.log10(hist[0]))
+  else:
+    mesh = ax.pcolormesh(X,Y,hist[0])
+
+  # Add the patented Ben Ryan colorbar
+  if cbar:
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(mesh, cax=cax, ticks=ticks)
+
+  if title is not None: ax.set_title(title)
+  ax.set_xlabel(xlbl)
+  ax.set_ylabel(ylbl)
