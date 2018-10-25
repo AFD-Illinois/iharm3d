@@ -110,7 +110,7 @@ def plot_slices(name, data, dump, min, max, subplot, avg=False, int=False, windo
   ax = plt.subplot(nplotsy, nplotsx, subplot)
   bplt.plot_xz(ax, geom, data_xz, window=window, cbar=False, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
                label=name, vmin=min, vmax=max, arrayspace=arrspace, average=avg)
-  if overlay_field and not USEARRSPACE:
+  if overlay_field and not arrspace:
     bplt.overlay_field(ax, geom, dump, NLINES)
 
   ax = plt.subplot(nplotsy, nplotsx, subplot+1)
@@ -130,10 +130,14 @@ def plot(n):
   fig = plt.figure(figsize=(FIGX, FIGY))
   fig.suptitle("t = %d"%dump['t'])
 
+  energy_big = 1e5
+
   # Subplots 1 & 2
-  plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 1)
+  #plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 1)
   #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 1)
   #plot_slices('UU/RHO', np.log10(dump['UU']/dump['RHO']), dump, -3, 3, 1, avg=True)
+
+  plot_slices('T^1_0 integrated', Tmixed(geom, dump, 1, 0), dump, 0, 600, 1, arrspace=True, int=True)
 
   # Subplots 3 & 4: usually fluxes, see below
   #plot_slices('sigma', np.log10(dump['bsq']/dump['RHO']), dump, -3, 3, 3)
@@ -146,11 +150,14 @@ def plot(n):
   #plot_slices('sigma ceiling', dump['bsq']/dump['RHO'] - 100, dump, -100, 100, 5, cmap='RdBu_r')
   #plot_slices('fixup gamma', dump['fixup'] == 3, dump, 0, 1, 5, cmap='Reds', arrspace=True)
   
+  # integrated T00
+  plot_slices('T^0_0 integrated', np.abs(Tmixed(geom, dump, 0, 0)), dump, 0, 3000, 5, arrspace=True, int=True)
+
   # 2D histograms
-  ax = plt.subplot(nplotsy, nplotsx, 5)
-  bplt.hist_2d(ax, np.log10(dump['RHO']), np.log10(dump['UU']),"RHO", "UU", logcolor=True)
-  ax = plt.subplot(nplotsy, nplotsx, 6)
-  bplt.hist_2d(ax, np.log10(dump['UU']), np.log10(dump['bsq']),"UU", "bsq", logcolor=True)
+  #ax = plt.subplot(nplotsy, nplotsx, 5)
+  #bplt.hist_2d(ax, np.log10(dump['RHO']), np.log10(dump['UU']),"RHO", "UU", logcolor=True)
+  #ax = plt.subplot(nplotsy, nplotsx, 6)
+  #bplt.hist_2d(ax, np.log10(dump['UU']), np.log10(dump['bsq']),"UU", "bsq", logcolor=True)
 
   # Subplots 7 & 8: usually radial, see below
   # Zoomed in RHO
@@ -169,25 +176,30 @@ def plot(n):
     bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', logy=LOG_MDOT)
  
     ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*2)
-    bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
-    
+    #bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
+    bplt.diag_plot(ax, diag, dump, 'Edot', 'Edot')
+ 
     # Alternative to 7 & 8: more diagnostics
-    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*3)
-    bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
+    #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*3)
+    #bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
 
     # Alternative to 7 & 8: radial
     #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
     #bplt.radial_plot(ax, geom, (dump['fail'] != 0).sum(axis=(1,2)), 'Fails at R', arrayspace=True, rlim=[0,50], ylim=[0,1000])
     E_r = sum_shell(geom,Tmixed(geom,dump,0,0))
+    Edot_r = sum_shell(geom,Tmixed(geom,dump,1,0))
     Ang_r = sum_shell(geom,Tmixed(geom,dump,0,3))
     mass_r = sum_shell(geom,dump['ucon'][:,:,:,0]*dump['RHO'])
     
-    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
-    bplt.radial_plot(ax, geom, np.abs(E_r), 'Conserved vars at R', ylim=[0,1e7], col='b')
-    bplt.radial_plot(ax, geom, np.abs(Ang_r)/10, '', ylim=[0,1e7], col='r')
-    bplt.radial_plot(ax, geom, np.abs(mass_r), '', ylim=[0,1e7])
+    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*3)
+    bplt.radial_plot(ax, geom, np.abs(E_r), 'Conserved vars at R', ylim=(0,1000), col='b', rlim=(0,20), arrayspace=True)
+    bplt.radial_plot(ax, geom, np.abs(Ang_r)/10, '', ylim=(0,1000), col='r', rlim=(0,20), arrayspace=True)
+    bplt.radial_plot(ax, geom, np.abs(mass_r), '', ylim=(0,1000), rlim=(0,20), arrayspace=True)
     #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
     #bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', rlim=[0,15], logy=True, ylim=[1,1e5])
+
+    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
+    bplt.radial_plot(ax, geom, np.abs(Edot_r), 'Edot at R', ylim=(0,200), rlim=(0,20), arrayspace=True)
 
   # TODO enlarge plots w/o messing up even pixel count
   # Maybe share axes, even?

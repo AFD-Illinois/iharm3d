@@ -44,7 +44,7 @@ def flatten_xy(array, average=False, loop=True):
 
 def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
             cbar=True, label=None, xlabel=True, ylabel=True,
-            ticks=None, arrayspace=False, average=False):
+            ticks=None, arrayspace=False, average=False, bh=True):
 
   if (arrayspace):
     x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
@@ -73,9 +73,11 @@ def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
     if ylabel: ax.set_ylabel('z/M')
     if window:
       ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
-    # BH silhouette
-    circle1=plt.Circle((0,0),geom['hdr']['Reh'],color='k');
-    ax.add_artist(circle1)
+
+    if bh:
+      # BH silhouette
+      circle1=plt.Circle((0,0),geom['hdr']['Reh'],color='k');
+      ax.add_artist(circle1)
 
   ax.set_aspect('equal')
 
@@ -90,7 +92,7 @@ def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
 
 def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
             cbar=True, label=None, xlabel=True, ylabel=True,
-            ticks=None, arrayspace=False, average=False):
+            ticks=None, arrayspace=False, average=False, bh=True):
 
   if arrayspace:
     # Flatten_xy adds a rank. TODO is this the way to handle it?
@@ -117,9 +119,11 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
     if ylabel: ax.set_ylabel('y/M')
     if window:
       ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
-    # BH silhouette
-    circle1=plt.Circle((0,0),geom['hdr']['Reh'],color='k');
-    ax.add_artist(circle1)
+
+    if bh:
+      # BH silhouette
+      circle1=plt.Circle((0,0),geom['hdr']['Reh'],color='k');
+      ax.add_artist(circle1)
 
   ax.set_aspect('equal')
 
