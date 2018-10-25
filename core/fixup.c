@@ -22,8 +22,8 @@
 
 static struct FluidState *Stmp;
 
-inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
-inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
+void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
+void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
 
 // Apply floors to density, internal energy
 void fixup(struct GridGeom *G, struct FluidState *S)
