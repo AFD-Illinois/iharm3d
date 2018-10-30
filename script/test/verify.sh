@@ -11,6 +11,8 @@ else
   LAST_DUMP=dumps/dump_00000001.h5
 fi
 
+# TODO if stampede...
+module restort i17
 cp ../../../analysis/*.py .
 python plot_diff.py last_dump_gold.h5 $LAST_DUMP dumps/grid.h5 differences_$PROB
 

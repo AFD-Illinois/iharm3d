@@ -51,7 +51,7 @@ do
 
   sleep 1
 
-./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt 2> $OUT_DIR/err_firsttime.txt
+  run_harm $OUT_DIR firsttime
   echo "Done!"
 
   cd $OUT_DIR
@@ -76,7 +76,7 @@ do
 
   make_harm_here $PROB
   echo "Second run..."
-  mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt 2> $OUT_DIR/err_secondtime.txt
+  run_harm $OUT_DIR secondtime
   echo "Done!"
 
   ../verify.sh $PROB

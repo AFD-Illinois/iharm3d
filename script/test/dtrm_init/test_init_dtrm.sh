@@ -48,7 +48,7 @@ do
   else
     echo "First run of $PROB problem..."
   fi
-  ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
+  run_harm $OUT_DIR firsttime
   echo "Done!"
 
   cd $OUT_DIR
@@ -65,7 +65,7 @@ do
   sleep 1
 
   echo "Second run..."
-  ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
+  run_harm $OUT_DIR secondtime
   echo "Done!"
 
   ../verify.sh $PROB

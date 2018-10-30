@@ -29,7 +29,9 @@ set_cpu_topo () {
   set_compile_int N1CPU $1
   set_compile_int N2CPU $2
   set_compile_int N3CPU $3
-  export OMP_NUM_THREADS=$(( $(nproc --all) / ($1 * $2 * $3) ))
+  export HARM_NPROC=$(( $1 * $2 * $3 ))
+  export IBRUN_TASKS_PER_NODE=$HARM_NPROC
+  export OMP_NUM_THREADS=$(( $(nproc --all) / $HARM_NPROC ))
   #echo "Exporting $OMP_NUM_THREADS threads"
 }
 
@@ -37,7 +39,14 @@ set_cpu_topo () {
 make_harm_here () {
   [ -z ${HARM_BASE_DIR+x} ] && HARM_BASE_DIR=../../..
   [ -z ${HARM_MAKE_JOBS+x} ] && HARM_MAKE_JOBS=$(nproc --all)
-  make -f $HARM_BASE_DIR/makefile -j$HARM_MAKE_JOBS PROB=$1
+  make -f $HARM_BASE_DIR/makefile -j$HARM_MAKE_JOBS PROB=$1 debug
   # Use default param.dat if none is present in test dir
   [ ! -f param.dat ] && cp $HARM_BASE_DIR/prob/$1/param.dat .
+}
+
+# Usage: run_harm $OUT_DIR name 
+run_harm() {
+  # TODO if stampede...
+  mpirun -n $HARM_NPROC ./harm -p param.dat -o $1 > $1/out_$2.txt 2> $1/err_$2.txt
+  #ibrun ./harm -p param.dat -o $1 > $1/out_$2.txt 2> $1/err_$2.txt
 }
