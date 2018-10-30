@@ -248,6 +248,9 @@ extern GridInt fail_save;
 extern GridInt fflag;
 //};
 
+extern struct FluidFlux preserve_F;
+extern GridPrim preserve_dU;
+
 /*******************************************************************************
     GLOBAL VARIABLES SECTION
 *******************************************************************************/
@@ -363,7 +366,7 @@ extern int global_stop[3];
 #define LOG(msg) if(DEBUG && mpi_io_proc()) {fprintf(stderr,msg); fprintf(stderr,"\n");}
 // Can add custom code to run at each FLAG
 // eg double sig_max = mpi_max(sigma_max(G, Stmp)); if(mpi_io_proc()) fprintf(stderr,"sig_max = %f\n",sig_max);
-#define FLAG(msg) if(DEBUG) { LOG(msg); mpi_barrier(); }
+#define FLAG(msg) if(DEBUG) { LOG(msg); mpi_barrier(); diag(G, Sl, DIAG_DUMP); diag(G, Sr, DIAG_DUMP); }
 #define LOGN(fmt,x) if(DEBUG && mpi_io_proc()) {fprintf(stderr,fmt,x); fprintf(stderr,"\n");}
 // TODO bring the whole MPI ship down too
 #define ERROR(msg) {if (mpi_io_proc()) {fprintf(stderr, msg); fprintf(stderr,"\n");} exit(-1);}

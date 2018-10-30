@@ -136,6 +136,15 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
 
   timer_stop(TIMER_LR_PTOF);
 
+  PLOOP ZLOOP {
+    preserve_F.X1[ip][k][j][i] = (*fluxL)[ip][k][j][i];
+    preserve_F.X2[ip][k][j][i] = (*fluxR)[ip][k][j][i];
+    preserve_F.X3[ip][k][j][i] = 0;
+    preserve_dU[ip][k][j][i] = 0;
+  }
+
+  FLAG("State, flux");
+
   timer_start(TIMER_LR_VCHAR);
   // TODO vectorizing these loops fails for some reason
 #pragma omp parallel

@@ -181,6 +181,13 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_set_directory("/extras/");
   if (is_full_dump) {
     pack_write_int(fflag, "fixup");
+
+    pack_write_vector(S->U, NVAR, "U", OUT_H5_TYPE);
+
+    pack_write_vector(preserve_F.X1, NVAR, "X1", OUT_H5_TYPE);
+    pack_write_vector(preserve_F.X2, NVAR, "X2", OUT_H5_TYPE);
+    pack_write_vector(preserve_F.X3, NVAR, "X3", OUT_H5_TYPE);
+    pack_write_vector(preserve_dU, NVAR, "dU", OUT_H5_TYPE);
   }
 
 //  ZLOOP (*data)[k][j][i] = bsq_calc(G, S, i, j, k);

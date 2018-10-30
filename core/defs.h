@@ -16,6 +16,8 @@
 GridInt pflag;
 GridInt fail_save;
 GridInt fflag;
+struct FluidFlux preserve_F;
+GridPrim preserve_dU;
 
 // Parameters
 // physical
