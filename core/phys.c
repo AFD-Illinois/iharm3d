@@ -71,7 +71,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
   // TODO try pragma simd for last loop only
 #pragma omp parallel
 {
-#pragma omp for simd collapse(2) nowait
+#pragma omp for collapse(3) nowait
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     double mhd[NDIM];
 

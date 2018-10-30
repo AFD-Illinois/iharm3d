@@ -243,7 +243,9 @@ void set_grid(struct GridGeom *G)
   set_points();
   dV = dx[1]*dx[2]*dx[3];
 
+#if !INTEL_WORKAROUND
 #pragma omp parallel for collapse(2)
+#endif
   JSLOOP(-NG, N2 - 1 + NG) {
     ISLOOP(-NG, N1 - 1 + NG) {
       set_grid_loc(G, i, j, 0, CENT);
@@ -259,8 +261,9 @@ void set_grid(struct GridGeom *G)
 
   // Following stolen from bhlight's dt_light calculation
   double dt_light_min = 1e20;
-
-#pragma omp parallel for collapse(2) reduction(min:dt_light_min)
+#if !INTEL_WORKAROUND
+#pragma omp parallel for collapse(2) recuction(min:dt_light_min)
+#endif
   JSLOOP(-NG, N2 - 1 + NG) {
     ISLOOP(-NG, N1 - 1 + NG) {
       double light_phase_speed = SMALL;

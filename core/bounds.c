@@ -54,7 +54,9 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
   timer_start(TIMER_BOUND);
 
   if(global_start[0] == 0) {
+#if !INTEL_WORKAROUND
 #pragma omp parallel for collapse(2)
+#endif
     KLOOP {
       JLOOP {
         ISLOOP(-NG, -1) {
@@ -79,7 +81,9 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
 #if METRIC == MKS
     if(X1L_INFLOW == 0) {
       // Make sure there is no inflow at the inner boundary
+#if !INTEL_WORKAROUND
 #pragma omp parallel for collapse(2)
+#endif
       KLOOP {
         JLOOP {
           ISLOOP(-NG, -1) {
@@ -93,7 +97,9 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
   } // global_start[0] == 0
 
   if(global_stop[0] == N1TOT) {
+#if !INTEL_WORKAROUND
 #pragma omp parallel for collapse(2)
+#endif
     KLOOP {
       JLOOP {
         ISLOOP(N1, N1 - 1 + NG) {
@@ -120,7 +126,9 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
 #if METRIC == MKS
     if(X1R_INFLOW == 0) {
       // Make sure there is no inflow at the outer boundary
+#if !INTEL_WORKAROUND
 #pragma omp parallel for collapse(2)
+#endif
       KLOOP {
         JLOOP {
           ISLOOP(N1, N1 - 1 + NG) {
@@ -138,7 +146,9 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
   timer_stop(TIMER_BOUND_COMMS);
 
   if(global_start[1] == 0) {
+#if !INTEL_WORKAROUND
 #pragma omp parallel for collapse(2)
+#endif
     KLOOP {
       ILOOPALL {
         JSLOOP(-NG, -1) {
@@ -165,7 +175,9 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
   } // global_start[1] == 0
 
   if(global_stop[1] == N2TOT) {
+#if !INTEL_WORKAROUND
 #pragma omp parallel for collapse(2)
+#endif
     KLOOP {
       ILOOPALL {
         JSLOOP(N2, N2-1+NG) {
@@ -196,7 +208,9 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
   timer_stop(TIMER_BOUND_COMMS);
 
   if (global_start[2] == 0) {
+#if !INTEL_WORKAROUND
 #pragma omp parallel for collapse(2)
+#endif
     JLOOPALL {
       ILOOPALL {
         KSLOOP(-NG, -1) {
@@ -215,7 +229,9 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
   } // global_start[2] == 0
 
   if(global_stop[2] == N3TOT) {
-    #pragma omp parallel for collapse(2)
+#if !INTEL_WORKAROUND
+#pragma omp parallel for collapse(2)
+#endif
     JLOOPALL {
       ILOOPALL {
         KSLOOP(N3, N3-1+NG) {

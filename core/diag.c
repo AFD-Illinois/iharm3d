@@ -16,10 +16,12 @@ void diag_flux(struct FluidFlux *F)
   mdot_eh = edot_eh = ldot_eh = 0.;
   int iEH = NG + 5;
   if (global_start[0] == 0) {
+#if !INTEL_WORKAROUND
 #pragma omp parallel for \
   reduction(+:mdot) reduction(+:edot) reduction(+:ldot) \
   reduction(+:mdot_eh) reduction(+:edot_eh) reduction(+:ldot_eh) \
   collapse(2)
+#endif
     JSLOOP(0, N2 - 1) {
       KSLOOP(0, N3 - 1) {
         mdot += -F->X1[RHO][k][j][NG]*dx[2]*dx[3];
@@ -59,10 +61,11 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
 
     get_state_vec(G, S, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
     prim_to_flux_vec(G, S, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, S->U);
-
+#if !INTEL_WORKAROUND
 #pragma omp parallel for \
   reduction(+:rmed) reduction(+:pp) reduction(+:e) \
   reduction(max:divbmax) collapse(3)
+#endif
     ZLOOP {
       rmed += S->U[RHO][k][j][i]*dV;
       pp += S->U[U3][k][j][i]*dV;
@@ -86,10 +89,12 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   double Phi_proc = 0.;
   double jet_EM_flux_proc = 0.;
   double lum_eht_proc = 0.;
+#if !INTEL_WORKAROUND
 #pragma omp parallel for \
   reduction(+:mass_proc) reduction(+:egas_proc) reduction(+:Phi_proc) \
   reduction(+:jet_EM_flux_proc) reduction(+:lum_eht_proc) \
   collapse(3)
+#endif
   ZLOOP {
     mass_proc += S->U[RHO][k][j][i]*dV;
     egas_proc += S->U[UU][k][j][i]*dV;
@@ -191,8 +196,9 @@ double sigma_max (struct GridGeom *G, struct FluidState *S)
 {
 
 	double sigma_max = 0;
-
+#if !INTEL_WORKAROUND
 #pragma omp parallel for simd collapse(3) reduction(max:sigma_max)
+#endif
 	ZLOOP {
 		get_state(G, S, i, j, k, CENT);
 		double bsq = bsq_calc(S, i, j, k);
@@ -256,15 +262,18 @@ void area_map_pflag(int i, int j, int k)
 inline void check_nan(struct FluidState *S, const char* flag)
 {
 #if DEBUG
+#if !INTEL_WORKAROUND
 #pragma omp parallel for collapse(3)
+#endif
   PLOOP ZLOOPALL {
     if (isnan(S->P[ip][k][j][i])) {
       fprintf(stderr, "NaN in prims[%d]: %d, %d, %d as of position %s\n",ip,i,j,k,flag);
       exit(-1);
     }
   }
-
+#if !INTEL_WORKAROUND
 #pragma omp parallel for collapse(3)
+#endif
   DLOOP1 ZLOOPALL {
     if (isnan(S->ucon[mu][k][j][i]) || isnan(S->ucov[mu][k][j][i]) || isnan(S->bcon[mu][k][j][i]) || isnan(S->bcov[mu][k][j][i])){
       fprintf(stderr, "NaN in derived: %d, %d, %d at %s\n",i,j,k,flag);
