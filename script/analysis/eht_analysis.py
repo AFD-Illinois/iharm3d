@@ -4,15 +4,16 @@
 #                                                                              # 
 ################################################################################
 
-import numpy as np
+# TODO hide behind a namespace?
+from analysis_fns import *
 import hdf5_to_dict as io
+
+import numpy as np
 import util
 import glob
 import os
 import sys
 import psutil
-# TODO hide behind a namespace?
-from analysis_fns import *
 
 # Option to calculate fluxes at (just inside) r = 5
 # This reduces interference from floors
@@ -36,9 +37,10 @@ geom = io.load_geom(hdr, os.path.join(path,'grid.h5'))
 if len(sys.argv) > 2:
   tavg = float(sys.argv[2])
 else:
-  tavg = io.load_dump(dumps[ND/2], geom, hdr)['t'] - 1.0
+  tavg = io.load_dump(dumps[ND/2], hdr)['t'] - 1.0
 
-init_analysis(geom)
+init_analysis(hdr, geom)
+
 
 # Limit threads for 192^3+ problem due to memory
 # TODO guess NTHREADS better (96e9/N^3*8?)
@@ -97,34 +99,34 @@ avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 
 def avg_dump(n):
   out = {}
 
-  dump = io.load_dump(dumps[n], geom, hdr)
+  dump = io.load_dump(dumps[n], hdr)
   out['t'] = dump['t']
   print "Loaded ",(n+1),"/",len(dumps),": ",out['t']
 
   # SHELL AVERAGES (only for t > tavg usu. tmax/2)
   if out['t'] > tavg:
 
-    out['rho_SADW'] = WAVG(geom, dump['RHO'], dump['RHO'])
+    out['rho_SADW'] = WAVG(dump['RHO'], dump['RHO'])
 
-    out['rho_r'] = eht_profile(geom, dump['RHO'])
+    out['rho_r'] = eht_profile(dump['RHO'])
     
     Theta = (hdr['gam']-1.)*dump['UU']/dump['RHO']
-    out['Theta_r'] = eht_profile(geom, Theta)
+    out['Theta_r'] = eht_profile(Theta)
     
     B = np.sqrt(dump['bsq'])
-    out['B_r'] = eht_profile(geom, B)
+    out['B_r'] = eht_profile(B)
   
     Pg = (hdr['gam']-1.)*dump['UU']
-    out['Pg_r'] = eht_profile(geom, Pg)
+    out['Pg_r'] = eht_profile(Pg)
   
     Ptot = Pg + dump['bsq']/2
-    out['Ptot_r'] = eht_profile(geom, Ptot)
+    out['Ptot_r'] = eht_profile(Ptot)
   
     betainv = (dump['bsq']/2)/Pg
-    out['betainv_r'] = eht_profile(geom, betainv)
+    out['betainv_r'] = eht_profile(betainv)
   
     uphi = (dump['ucon'][:,:,:,3])
-    out['uphi_r'] = eht_profile(geom, uphi)
+    out['uphi_r'] = eht_profile(uphi)
   
     # THETA AVERAGES
     out['omega_th'] = theta_av(Fcov(geom,dump,0,1), iEH, 1) / theta_av(Fcov(geom,dump,1,3), iEH, 1)
@@ -143,14 +145,14 @@ def avg_dump(n):
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
   #norm = 1 # This is what the EHT comparison used for a while
-  out['Phi'] = 0.5*norm*sum_shell_at(geom, np.fabs(dump['B1']), iEH)
+  out['Phi'] = 0.5*norm*sum_shell_at(np.fabs(dump['B1']), iEH)
 
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
-  out['FE_r'] = sum_shell(geom, Tmixed(geom, dump, 1,0))
+  out['FE_r'] = sum_shell(Tmixed(dump, 1,0))
   out['Edot'] = out['FE_r'][iF]
 
-  out['FM_r'] = -sum_shell(geom, dump['RHO']*dump['ucon'][:,:,:,1])
+  out['FM_r'] = -sum_shell(dump['RHO']*dump['ucon'][:,:,:,1])
   if floor_workaround_funnel:
     mdot_full = dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*dx2*dx3
     sigma_shaped = dump['bsq'][iF,:,:]/dump['RHO'][iF,:,:]
@@ -158,7 +160,7 @@ def avg_dump(n):
   else:
     out['Mdot'] = out['FM_r'][iF]
 
-  out['Ldot'] = sum_shell_at(geom, Tmixed(geom, dump, 1,3), iF)
+  out['Ldot'] = sum_shell_at(Tmixed(dump, 1,3), iF)
 
   # Maximum magnetization (and allow re-use of the variable)
   sigma = dump['bsq']/dump['RHO']
@@ -187,11 +189,11 @@ def avg_dump(n):
   out['Lum'] = (j*geom['gdet'][:,:,None]*dx1*dx2*dx3).sum()
 
   # TODO define a sum_grid for this and above?
-  out['Etot'] = np.sum(Tmixed(geom, dump, 0,0)[:iEmax,:,:]*geom['gdet'][:iEmax,:,None]*dx1*dx2*dx3)
+  out['Etot'] = np.sum(Tmixed(dump, 0,0)[:iEmax,:,:]*geom['gdet'][:iEmax,:,None]*dx1*dx2*dx3)
   #print "Energy on grid: ",out['Etot']
 
   # For an averaged energy profile
-  #out['E_r'] = radial_sum(geom, Tmixed(geom, dump, 0,0))
+  #out['E_r'] = radial_sum(Tmixed(dump, 0,0))
 
   return out
 

@@ -7,28 +7,28 @@
 import matplotlib
 matplotlib.use('Agg')
 
+import plot as bplt
 from analysis_fns import *
 
 import sys; sys.dont_write_bytecode = True
 import numpy as np
 import hdf5_to_dict as io
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import util
 import glob
 import os
-import plot as bplt
 import pickle
 
 import multiprocessing
 import signal
 import psutil
 
-FIGX = 20
-FIGY = 10
-SIZE = 40
-NLINES = 10
-
+# Movie size in matplotlib units
+FIGX = 16
+FIGY = 9
 # For plotting debug, "array-space" plots
+# Default for all plots, can be overridden below
 USEARRSPACE = False
 
 MAD = True
@@ -44,6 +44,11 @@ else:
   LOG_PHI = False
   MAX_PHI = 5
 
+# Choose between several predefined layouts below
+# For keeping around lots of possible movies with same infrastructure
+movie_type = "simpler"
+
+# ARGUMENTS
 # TODO this is a dirty hack
 args_bad = False
 if sys.argv[1] == '-d':
@@ -64,6 +69,7 @@ if args_bad:
   util.warn('PATH TO DUMP FOLDER NEEDED AS ARGUMENT')
   sys.exit(1)
 
+# LOAD FILES
 files = np.sort(glob.glob(os.path.join(path, "dump*.h5")))
 gridfile = os.path.join(path,"grid.h5")
 
@@ -77,6 +83,11 @@ util.make_dir(FRAMEDIR)
 hdr = io.load_hdr(files[0])
 geom = io.load_geom(hdr, gridfile)
 
+# Avoid passing globals in and out everywhere
+bplt.init_plotting(hdr, geom)
+init_analysis(hdr, geom)
+
+# DECIDE THREADS
 if hdr['n1'] * hdr['n2'] * hdr['n3'] >= 192*192*192:
   #Roughly compute memory and leave some generous padding for multiple copies and Python games
   nthreads = int(0.1 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
@@ -85,38 +96,13 @@ else:
 
 print 'Number of threads: %i' % nthreads
 
-nplotsx = 4
-nplotsy = 2
-
-# Load diagnostics from HARM itself
-#diag = io.load_log(hdr, os.path.join(path, "log.out"))
-
-# Or from  Python post-analysis
-# TODO make this a runtime option
-diag = pickle.load(open("eht_out.p", 'rb'))
-
-def plot_slices(name, data, dump, min, max, subplot, avg=False, int=False, window=[-SIZE,SIZE,-SIZE,SIZE], arrspace=USEARRSPACE,
-                overlay_field=True, cmap='jet', xlabel=True, ylabel=True):
-  # Switch to RdBu_r default?
-  if int:
-    # Average multiplied values for the integral
-    data_xz = data*data.shape[2] #N1,2,(3)
-    data_xy = data*data.shape[1] #N1,(2),3
-    avg = True
-  else:
-    data_xz = data
-    data_xy = data
-  
-  ax = plt.subplot(nplotsy, nplotsx, subplot)
-  bplt.plot_xz(ax, geom, data_xz, window=window, cbar=False, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
-               label=name, vmin=min, vmax=max, arrayspace=arrspace, average=avg)
-  if overlay_field and not arrspace:
-    bplt.overlay_field(ax, geom, dump, NLINES)
-
-  ax = plt.subplot(nplotsy, nplotsx, subplot+1)
-  bplt.plot_xy(ax, geom, data_xy, window=window, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
-               label=name, vmin=min, vmax=max, arrayspace=arrspace, average=avg)
-
+diag_post = True
+if diag_post:
+  # Load fluxes from post-analysis: more flexible
+  diag = pickle.load(open("eht_out.p", 'rb'))
+else:
+  # Load diagnostics from HARM itself
+  diag = io.load_log(hdr, os.path.join(path, "log.out"))
 
 def plot(n):
   imname = 'frame_%08d.png' % n
@@ -125,81 +111,96 @@ def plot(n):
 
   # Don't calculate b/ucon/cov/e- stuff unless we need it below
   # Only skip this if no bsq/beta/etc
-  dump = io.load_dump(files[n], geom, hdr, derived_vars = True)
+  # Obvs add extras if plotting them
+  dump = io.load_dump(files[n], hdr, derived_vars = False, extras = False)
   
   fig = plt.figure(figsize=(FIGX, FIGY))
-  fig.suptitle("t = %d"%dump['t'])
+  fig.suptitle("t = %d"%dump['t']) # TODO put this at end...
+  # Usual layout: 
+  #ax_slc = plt.subplots(nplotsy, nplotsx)
+  #ax_flux = plt.subplots(nplotsy*2, nplotsx/2)
+  # Just two large slices
+  gs = gridspec.GridSpec(3, 2, height_ratios=[4, 1, 1])
+  #gs = gridspec.GridSpec(2, 2, height_ratios=[7, 2])
+  ax_slc = [plt.subplot(gs[0,0]), plt.subplot(gs[0,1])]
+  ax_flux = [plt.subplot(gs[1,:]), plt.subplot(gs[2,:])]
 
-  energy_big = 1e5
+  if movie_type == "simplest":
+    # Simplest movie: just RHO
+    ax_slc = plt.subplots(1,2)
+    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='YlOrRd')
+  elif movie_type == "simpler":
+    # Simpler movie: RHO and mdot
+    gs = gridspec.GridSpec(2, 2, height_ratios=[5, 1])
+    ax_slc = [plt.subplot(gs[0,0]), plt.subplot(gs[0,1])]
+    ax_flux = [plt.subplot(gs[1,:])]
+    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='YlOrRd')
+    bplt.diag_plot(ax_flux[0], diag, dump, 'mdot', r"$\dot{M}$", logy=LOG_MDOT)
+  elif movie_type == "simple":
+    # Simple movie: RHO mdot phi
+    gs = gridspec.GridSpec(3, 2, height_ratios=[4, 1, 1])
+    ax_slc = [plt.subplot(gs[0,0]), plt.subplot(gs[0,1])]
+    ax_flux = [plt.subplot(gs[1,:]), plt.subplot(gs[2,:])]
+    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='YlOrRd')
+    bplt.diag_plot(ax_flux[0], diag, dump, 'mdot', r"$\dot{M}$", logy=LOG_MDOT)
+    bplt.diag_plot(ax_flux[1], diag, dump, 'phi', r"$\phi_BH$", logy=LOG_PHI)
+  else: # All other movie types share a layout
+    ax_slc = plt.subplots(nplotsy, nplotsx)
+    ax_flux = plt.subplots(nplotsy*2, nplotsx/2)
+    if movie_type == "traditional":
+      # Usual movie: RHO beta fluxes
+      # CUTS
+      bplt.plot_slices(ax_slc[0], ax_slc[1], 'RHO', np.log10(dump['RHO']), dump, -3, 2)
+      bplt.plot_slices(ax_slc[4], ax_slc[5], 'beta', np.log10(dump['beta']), dump, -2, 2, cmap="RdBu_r")
+      # FLUXES
+      bplt.diag_plot(ax_flux[0], diag, dump, 'mdot', 'mdot', logy=LOG_MDOT)
+      bplt.diag_plot(ax_flux[1], diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
+      # Mixins:
+      # Zoomed in RHO
+      bplt.plot_slices(ax_slc[6], ax_slc[7], 'RHO', np.log10(dump['RHO']), dump, -3, 2, 7, window=[-10,10,-10,10], overlay_field=False)
+      # Bsq
+      #bplt.plot_slices('bsq', np.log10(dump['bsq']), dump, -5, 0, 7)
+      # Failures: all failed zones, one per nonzero pflag
+      #bplt.plot_slices('fails', dump['fail'] != 0, dump, 0, 20, 7, cmap='Reds', int=True) #, arrspace=True)
+      # 2D histograms
+      #bplt.hist_2d(ax1, np.log10(dump['RHO']), np.log10(dump['UU']),"RHO", "UU", logcolor=True)
+      #bplt.hist_2d(ax2, np.log10(dump['UU']), np.log10(dump['bsq']),"UU", "bsq", logcolor=True)
+      
+      # Extra fluxes:
+      bplt.diag_plot(ax_flux[1], diag, dump, 'edot', 'Edot', logy=LOG_PHI)
+    elif movie_type == "e_ratio":
+      # Energy ratios: difficult places to integrate, with failures
+      bplt.plot_slices(ax_slc[0], ax_slc[1], 'UU/RHO', np.log10(dump['UU']/dump['RHO']), dump, -3, avg=True)
+      bplt.plot_slices(ax_slc[2], ax_slc[3], 'sigma', np.log10(dump['bsq']/dump['RHO']), dump, -3, 3, 3)
+      bplt.plot_slices(ax_slc[4], ax_slc[5], 'inverse beta', np.log10(1/dump['beta']), dump, -3, 3, 5, avg=True)
+      bplt.plot_slices(ax_slc[6], ax_slc[7], 'fails', dump['fail'] != 0, dump, 0, 20, 7, cmap='Reds', int=True) #, arrspace=True)
+    elif movie_type == "conservation":
+      # Continuity plots to verify local conservation of energy, angular + linear momentum
+      # Integrated T01: continuity for momentum conservation
+      bplt.plot_slices(ax_slc[0], ax_slc[1], 'T^1_0 integrated', Tmixed(dump, 1, 0), dump, 0, 600, 1, arrspace=True, int=True)
+      # integrated T00: continuity plot for energy conservation
+      bplt.plot_slices(ax_slc[4], ax_slc[5], 'T^0_0 integrated', np.abs(Tmixed(dump, 0, 0)), dump, 0, 3000, 5, arrspace=True, int=True)
+      # Radial conservation plots
+      E_r = sum_shell(geom,Tmixed(geom,dump,0,0))
+      Ang_r = sum_shell(geom,Tmixed(geom,dump,0,3))
+      mass_r = sum_shell(geom,dump['ucon'][:,:,:,0]*dump['RHO'])
+      
+      ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*3)
+      bplt.radial_plot(ax, np.abs(E_r), 'Conserved vars at R', ylim=(0,1000), col='b', rlim=(0,20), arrayspace=True)
+      bplt.radial_plot(ax, np.abs(Ang_r)/10, '', ylim=(0,1000), col='r', rlim=(0,20), arrayspace=True)
+      bplt.radial_plot(ax, np.abs(mass_r), '', ylim=(0,1000), rlim=(0,20), arrayspace=True)
+      
+      # Radial energy accretion rate
+      Edot_r = sum_shell(geom,Tmixed(geom,dump,1,0))
+      bplt.radial_plot(ax, np.abs(Edot_r), 'Edot at R', ylim=(0,200), rlim=(0,20), arrayspace=True)
 
-  # Subplots 1 & 2
-  #plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 1)
-  #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 1)
-  #plot_slices('UU/RHO', np.log10(dump['UU']/dump['RHO']), dump, -3, 3, 1, avg=True)
+      # Radial integrated failures
+      bplt.radial_plot(ax, (dump['fail'] != 0).sum(axis=(1,2)), 'Fails at R', arrayspace=True, rlim=[0,50], ylim=[0,1000])
 
-  plot_slices('T^1_0 integrated', Tmixed(geom, dump, 1, 0), dump, 0, 600, 1, arrspace=True, int=True)
-
-  # Subplots 3 & 4: usually fluxes, see below
-  #plot_slices('sigma', np.log10(dump['bsq']/dump['RHO']), dump, -3, 3, 3)
-
-  # Subplots 5 & 6
-  #plot_slices('inverse beta', np.log10(1/dump['beta']), dump, -3, 3, 5, avg=True)
-  #plot_slices('magnetization', dump['bsq']/dump['RHO'], dump, 0, 1000, 5)
-  #plot_slices('beta', np.log10(dump['beta']), dump, -2, 2, 5)
-  # We're used to seeing the field in blue right?
-  #plot_slices('sigma ceiling', dump['bsq']/dump['RHO'] - 100, dump, -100, 100, 5, cmap='RdBu_r')
-  #plot_slices('fixup gamma', dump['fixup'] == 3, dump, 0, 1, 5, cmap='Reds', arrspace=True)
-  
-  # integrated T00
-  plot_slices('T^0_0 integrated', np.abs(Tmixed(geom, dump, 0, 0)), dump, 0, 3000, 5, arrspace=True, int=True)
-
-  # 2D histograms
-  #ax = plt.subplot(nplotsy, nplotsx, 5)
-  #bplt.hist_2d(ax, np.log10(dump['RHO']), np.log10(dump['UU']),"RHO", "UU", logcolor=True)
-  #ax = plt.subplot(nplotsy, nplotsx, 6)
-  #bplt.hist_2d(ax, np.log10(dump['UU']), np.log10(dump['bsq']),"UU", "bsq", logcolor=True)
-
-  # Subplots 7 & 8: usually radial, see below
-  # Zoomed in RHO
-  #plot_slices('RHO', np.log10(dump['RHO']), dump, -3, 2, 7, window=[-SIZE/4,SIZE/4,-SIZE/4,SIZE/4], overlay_field=False)
-  # Bsq
-  #plot_slices('bsq', np.log10(dump['bsq']), dump, -5, 0, 7)
-  # Failures: all failed zones, one per nonzero pflag
-  #plot_slices('fails', dump['fail'] != 0, dump, 0, 20, 7, cmap='Reds', int=True) #, arrspace=True)
-
-  plt.subplots_adjust(hspace=0.15, wspace=0.4)
-
-  # Fluxes as top right corner pair of frames
-  # Don't plot time-based variables for initial conditions
-  if len(diag['t'].shape) > 0:
-    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2)
-    bplt.diag_plot(ax, diag, dump, 'mdot', 'mdot', logy=LOG_MDOT)
- 
-    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*2)
-    #bplt.diag_plot(ax, diag, dump, 'phi', 'phi_BH', logy=LOG_PHI)
-    bplt.diag_plot(ax, diag, dump, 'Edot', 'Edot')
- 
-    # Alternative to 7 & 8: more diagnostics
-    #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*3)
-    #bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
-
-    # Alternative to 7 & 8: radial
-    #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
-    #bplt.radial_plot(ax, geom, (dump['fail'] != 0).sum(axis=(1,2)), 'Fails at R', arrayspace=True, rlim=[0,50], ylim=[0,1000])
-    E_r = sum_shell(geom,Tmixed(geom,dump,0,0))
-    Edot_r = sum_shell(geom,Tmixed(geom,dump,1,0))
-    Ang_r = sum_shell(geom,Tmixed(geom,dump,0,3))
-    mass_r = sum_shell(geom,dump['ucon'][:,:,:,0]*dump['RHO'])
-    
-    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*3)
-    bplt.radial_plot(ax, geom, np.abs(E_r), 'Conserved vars at R', ylim=(0,1000), col='b', rlim=(0,20), arrayspace=True)
-    bplt.radial_plot(ax, geom, np.abs(Ang_r)/10, '', ylim=(0,1000), col='r', rlim=(0,20), arrayspace=True)
-    bplt.radial_plot(ax, geom, np.abs(mass_r), '', ylim=(0,1000), rlim=(0,20), arrayspace=True)
-    #ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
-    #bplt.radial_plot(ax, geom, np.abs(E_r), 'Energy at R', rlim=[0,15], logy=True, ylim=[1,1e5])
-
-    ax = plt.subplot(nplotsy*2,nplotsx/2,nplotsx/2*4)
-    bplt.radial_plot(ax, geom, np.abs(Edot_r), 'Edot at R', ylim=(0,200), rlim=(0,20), arrayspace=True)
+    elif movie_type == "ceilings":
+      # TODO add measures of all ceiling efficacy.  Record ceilings in header or extras?
+      bplt.plot_slices('sigma ceiling', dump['bsq']/dump['RHO'] - 100, dump, -100, 100, 5, cmap='RdBu_r')
+      bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
 
   # TODO enlarge plots w/o messing up even pixel count
   # Maybe share axes, even?
@@ -208,9 +209,6 @@ def plot(n):
 
   plt.savefig(imname, dpi=100) #, bbox_inches='tight')
   plt.close(fig)
-
-# BEGIN SCRIPT
-# TODO if name = main
 
 # Test-run a couple plots directly so that backtraces work
 if debug:

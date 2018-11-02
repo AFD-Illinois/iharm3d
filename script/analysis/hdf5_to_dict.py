@@ -67,13 +67,9 @@ def load_geom(hdr, fname):
   geom = {}
   for key in gfile['/'].keys():
     geom[key] = gfile[key][()]
-
-  # Cart around the header inside both geom and dump
-  # this lacks grace, but is surprisingly efficient
-  geom['hdr'] = hdr
   
-  # Useful stuff for direct access: more likely to stay
-  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
+  # Useful stuff for direct access in geom
+  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim', 'Reh']:
     geom[key] = hdr[key]
 
   # these get used interchangeably and I don't care
@@ -92,12 +88,10 @@ def load_geom(hdr, fname):
 
   return geom
 
-def load_dump(fname, geom, hdr, derived_vars=True):
+def load_dump(fname, hdr, derived_vars=True, extras=True):
   dfile = h5py.File(fname)
   
   dump = {}
-  # See geom note on carrying header along with things
-  dump['hdr'] = hdr
 
   # TODO this necessarily grabs the /whole/ primitives array
   for key in [key for key in dfile['/'].keys() if key not in ['header', 'extras', 'prims'] ]:
@@ -106,9 +100,10 @@ def load_dump(fname, geom, hdr, derived_vars=True):
   for name, num in zip(hdr['prim_names'], range(hdr['n_prim'])):
     dump[name] = dfile['prims'][:,:,:,num]
 
-  # Load the extras. TODO option for this
-  for key in dfile['extras'].keys():
-    dump[key] = dfile['extras/' + key][()]
+  if extras:
+    # Load the extras.
+    for key in dfile['extras'].keys():
+      dump[key] = dfile['extras/' + key][()]
   
   dfile.close()
 

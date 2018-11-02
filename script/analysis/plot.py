@@ -8,6 +8,14 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
+hdr = {}
+geom = {}
+
+def init_plotting(hdr_init, geom_init):
+  global hdr, geom
+  hdr = hdr_init
+  geom = geom_init
+
 # Get xz slice of 3D data
 def flatten_xz(array, patch_pole=False, average=False):
   N1 = array.shape[0]; N2 = array.shape[1]; N3 = array.shape[2]
@@ -42,7 +50,7 @@ def flatten_xy(array, average=False, loop=True):
   else:
     return slice
 
-def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
+def plot_xz(ax, var, cmap='jet', vmin=None, vmax=None, window=None,
             cbar=True, label=None, xlabel=True, ylabel=True,
             ticks=None, arrayspace=False, average=False, bh=True):
 
@@ -65,18 +73,18 @@ def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
       shading='gouraud')
 
   if arrayspace:
-    if xlabel: ax.set_xlabel('X1 (arbitrary)')
-    if ylabel: ax.set_ylabel('X2 (arbitrary)')
+    if xlabel: ax.set_xlabel("X1 (arbitrary)")
+    if ylabel: ax.set_ylabel("X2 (arbitrary)")
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
-    if xlabel: ax.set_xlabel('x/M')
-    if ylabel: ax.set_ylabel('z/M')
+    if xlabel: ax.set_xlabel(r"$x \frac{c^2}{G M}$")
+    if ylabel: ax.set_ylabel(r"$z \frac{c^2}{G M}$")
     if window:
       ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
 
     if bh:
       # BH silhouette
-      circle1=plt.Circle((0,0),geom['hdr']['Reh'],color='k');
+      circle1=plt.Circle((0,0), hdr['Reh'], color='k');
       ax.add_artist(circle1)
 
   ax.set_aspect('equal')
@@ -90,7 +98,7 @@ def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
   if label:
     ax.set_title(label)
 
-def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
+def plot_xy(ax, var, cmap='jet', vmin=None, vmax=None, window=None,
             cbar=True, label=None, xlabel=True, ylabel=True,
             ticks=None, arrayspace=False, average=False, bh=True):
 
@@ -111,18 +119,18 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
       shading='gouraud')
 
   if arrayspace:
-    if xlabel: ax.set_xlabel('X1 (arbitrary)')
-    if ylabel: ax.set_ylabel('X3 (arbitrary)')
+    if xlabel: ax.set_xlabel("X1 (arbitrary)")
+    if ylabel: ax.set_ylabel("X3 (arbitrary)")
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
-    if xlabel: ax.set_xlabel('x/M')
-    if ylabel: ax.set_ylabel('y/M')
+    if xlabel: ax.set_xlabel(r"$x \frac{c^2}{G M}$")
+    if ylabel: ax.set_ylabel(r"$y \frac{c^2}{G M}$")
     if window:
       ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
 
     if bh:
       # BH silhouette
-      circle1=plt.Circle((0,0),geom['hdr']['Reh'],color='k');
+      circle1=plt.Circle((0,0), hdr['Reh'], color='k');
       ax.add_artist(circle1)
 
   ax.set_aspect('equal')
@@ -136,9 +144,8 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
   if label:
     ax.set_title(label)
 
-def overlay_field(ax, geom, dump, NLEV):
+def overlay_field(ax, dump, NLEV):
   from scipy.integrate import trapz
-  hdr = dump['hdr']
   N1 = hdr['n1']; N2 = hdr['n2']
   x = flatten_xz(geom['x']).transpose()
   z = flatten_xz(geom['z']).transpose()
@@ -160,8 +167,28 @@ def overlay_field(ax, geom, dump, NLEV):
                            np.linspace(0,Apm,NLEV)[1:]))
   ax.contour(x, z, A_phi, levels=levels, colors='k')
 
+# Usual slice plots -- plot an _xy and _xz slice to two given axes
+def plot_slices(ax1, ax2, name, data, dump, min, max, avg=False, int=False, window=[-40,40,-40,40], arrspace=False,
+                field_overlay=True, nlines=10, cmap='jet', xlabel=True, ylabel=True, vert_split=False):
+  if int:
+    # Average multiplied values for the integral
+    data_xz = data*data.shape[2] #N1,2,(3)
+    data_xy = data*data.shape[1] #N1,(2),3
+    avg = True
+  else:
+    data_xz = data
+    data_xy = data
+  
+  plot_xz(ax1, data_xz, window=window, cbar=False, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
+               label=name, vmin=min, vmax=max, arrayspace=arrspace, average=avg)
+  if field_overlay and not arrspace:
+    overlay_field(ax1, dump, nlines)
+
+  plot_xy(ax2, data_xy, window=window, cmap=cmap, xlabel=xlabel, ylabel=ylabel,
+               label=name, vmin=min, vmax=max, arrayspace=arrspace, average=avg)
+
 # TODO allow coordinate x2,3? Allow average over said?
-def radial_plot(ax, geom, var, label, n2=0, n3=0, logx=False, logy=False, rlim=None, ylim=None, arrayspace=False, col='k'):
+def radial_plot(ax, var, label, n2=0, n3=0, logx=False, logy=False, rlim=None, ylim=None, arrayspace=False, col='k'):
   r = geom['r'][:,0,0]
   if var.ndim == 1:
     data = var
@@ -170,6 +197,7 @@ def radial_plot(ax, geom, var, label, n2=0, n3=0, logx=False, logy=False, rlim=N
   elif var.ndim == 3:
     data = var[:,n2,n3]
 
+  # TODO there's probably a way to add log
   if arrayspace:
     # logx doesn't make sense here
     if logy:
@@ -190,7 +218,7 @@ def radial_plot(ax, geom, var, label, n2=0, n3=0, logx=False, logy=False, rlim=N
     ax.set_xlim(rlim)
   if ylim:
     ax.set_ylim(ylim)
-  ax.set_xlabel('r (M)')
+  ax.set_xlabel(r"$r \frac{c^2}{G M}$")
   ax.set_ylabel(label)
 
 def diag_plot(ax, diag, dump, varname_dump, varname_pretty, ylim=None, logy=False):
@@ -201,10 +229,10 @@ def diag_plot(ax, diag, dump, varname_dump, varname_pretty, ylim=None, logy=Fals
   else:
     ax.plot(diag['t'][slc], var[slc], color='k')
   ax.axvline(dump['t'], color='r') # Trace current t on finished plot
-  ax.set_xlim([0, dump['hdr']['tf']])
+  ax.set_xlim([0, hdr['tf']])
   if ylim is not None:
     ax.set_ylim(ylim)
-  ax.set_xlabel('t/M')
+  ax.set_xlabel(r"$t \frac{c^3}{G M}$")
   ax.set_ylabel(varname_pretty)
   
 def hist_2d(ax, var_x, var_y, xlbl, ylbl, title=None, logcolor=False, bins=40, cbar=True, ticks=None):

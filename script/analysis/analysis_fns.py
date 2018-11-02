@@ -10,9 +10,15 @@ vol_profile = 0
 THMIN = np.pi/3.
 THMAX = 2.*np.pi/3.
 
-def init_analysis(geom):
+hdr = {}
+geom = {}
+
+# Yes, this is a wannabe object. Yes, Python has objects. No, I won't change it
+def init_analysis(hdr_init, geom_init):
   # Setting module-wide variables
-  global jmin, jmax, vol_profile
+  global jmin, jmax, vol_profile, hdr, geom
+  hdr = hdr_init
+  geom = geom_init
   
   # Calculate jmin, jmax
   ths = geom['th'][-1,:,0]
@@ -28,25 +34,25 @@ def init_analysis(geom):
   # Constant volume for profiles
   vol_profile = (geom['dx2']*2.*np.pi*geom['gdet'][:,:]).sum(axis=-1)
 
-def Tcon(geom, dump,i,j):
-  gam = dump['hdr']['gam']
+def Tcon(dump,i,j):
+  gam = hdr['gam']
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucon'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcon'][:,:,None,i,j] - dump['bcon'][:,:,:,i]*dump['bcon'][:,:,:,j] )
 
-def Tcov(geom, dump,i,j):
-  gam = dump['hdr']['gam']
+def Tcov(dump,i,j):
+  gam = hdr['gam']
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucov'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcov'][:,:,None,i,j] - dump['bcov'][:,:,:,i]*dump['bcov'][:,:,:,j] )
 
-def Tmixed(geom, dump,i,j):
-  gam = dump['hdr']['gam']
+def Tmixed(dump,i,j):
+  gam = hdr['gam']
   gmixedij = (i == j)
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*gmixedij - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
 
 # Return mu, nu component of contravarient Maxwell tensor
-def Fcon(geom, dump, i, j):
-  NDIM = dump['hdr']['n_dim']
+def Fcon(dump, i, j):
+  NDIM = hdr['n_dim']
   
   Fconij = np.zeros_like(dump['RHO'])
   if i != j:
@@ -58,13 +64,13 @@ def Fcon(geom, dump, i, j):
   return Fconij*geom['gdet'][:,:,None]
 
 # TODO there's a computationally easier way to do this
-def Fcov(geom, dump, i, j):
-  NDIM = dump['hdr']['n_dim']
+def Fcov(dump, i, j):
+  NDIM = hdr['n_dim']
   
   Fcovij = np.zeros_like(dump['RHO'])
   for mu in range(NDIM):
     for nu in range(NDIM):
-      Fcovij += Fcon(geom, dump, mu, nu)*geom['gcov'][:,:,None,mu,i]*geom['gcov'][:,:,None,nu,j]
+      Fcovij += Fcon(dump, mu, nu)*geom['gcov'][:,:,None,mu,i]*geom['gcov'][:,:,None,nu,j]
   
   return Fcovij
 
@@ -109,17 +115,17 @@ def _pp(P):
 
 ## SUMS AND INTEGRALS
 
-def WAVG(geom, var, w):
-  return sum_shell(geom, w*var)/sum_shell(geom, w)
+def WAVG(var, w):
+  return sum_shell(w*var)/sum_shell(w)
   
   # Var must be a 3D array i.e. a grid scalar
-def sum_shell(geom, var):
+def sum_shell(var):
   return np.sum(var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3'], axis=(1,2))
 
-def sum_shell_at(geom, var, i):
+def sum_shell_at(var, i):
   return np.sum(var[i,:,:] * geom['gdet'][i,:,None]*geom['dx2']*geom['dx3'], axis=(0,1))
 
-def eht_profile(geom, var):
+def eht_profile(var):
   return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3'], axis=(1,2)) / vol_profile
 
 def theta_av(var, start, av):
