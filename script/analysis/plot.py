@@ -7,6 +7,8 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+from scipy.integrate import trapz
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 hdr = {}
 geom = {}
@@ -50,7 +52,7 @@ def flatten_xy(array, average=False, loop=True):
   else:
     return slice
 
-def plot_xz(ax, var, cmap='jet', vmin=None, vmax=None, window=None,
+def plot_xz(ax, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
             cbar=True, label=None, xlabel=True, ylabel=True,
             ticks=None, arrayspace=False, average=False, bh=True):
 
@@ -90,7 +92,6 @@ def plot_xz(ax, var, cmap='jet', vmin=None, vmax=None, window=None,
   ax.set_aspect('equal')
 
   if cbar:
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(mesh, cax=cax, ticks=ticks)
@@ -98,7 +99,7 @@ def plot_xz(ax, var, cmap='jet', vmin=None, vmax=None, window=None,
   if label:
     ax.set_title(label)
 
-def plot_xy(ax, var, cmap='jet', vmin=None, vmax=None, window=None,
+def plot_xy(ax, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
             cbar=True, label=None, xlabel=True, ylabel=True,
             ticks=None, arrayspace=False, average=False, bh=True):
 
@@ -136,7 +137,6 @@ def plot_xy(ax, var, cmap='jet', vmin=None, vmax=None, window=None,
   ax.set_aspect('equal')
 
   if cbar:
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(mesh, cax=cax, ticks=ticks)
@@ -144,8 +144,13 @@ def plot_xy(ax, var, cmap='jet', vmin=None, vmax=None, window=None,
   if label:
     ax.set_title(label)
 
+def overlay_contour(ax, var, levels):
+  x = flatten_xz(geom['x'])
+  z = flatten_xz(geom['z'])
+  var = flatten_xz(var, average=True)
+  ax.contour(x, z, var, levels=levels, colors='k')
+
 def overlay_field(ax, dump, NLEV):
-  from scipy.integrate import trapz
   N1 = hdr['n1']; N2 = hdr['n2']
   x = flatten_xz(geom['x']).transpose()
   z = flatten_xz(geom['z']).transpose()
@@ -251,7 +256,6 @@ def hist_2d(ax, var_x, var_y, xlbl, ylbl, title=None, logcolor=False, bins=40, c
 
   # Add the patented Ben Ryan colorbar
   if cbar:
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(mesh, cax=cax, ticks=ticks)

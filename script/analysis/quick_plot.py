@@ -18,8 +18,8 @@ import glob
 import os
 import plot as bplt
 
-USEARRSPACE=True
-SIZE = 600
+USEARRSPACE=False
+SIZE = 40
 
 FIGX = 20
 FIGY = 20
@@ -33,6 +33,7 @@ geom = io.load_geom(hdr, gridfile)
 dump = io.load_dump(dumpfile, hdr, geom)
 
 init_analysis(hdr, geom)
+bplt.init_plotting(hdr, geom)
 
 N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
 
@@ -49,7 +50,7 @@ if var == 'jsq':
 elif var == 'sigma':
   dump['sigma'] = dump['bsq']/dump['RHO']
 elif var == 'bernoulli':
-  dump['bernoulli'] = Tmixed(dump,0,0)/(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
+  dump['bernoulli'] = -Tmixed(dump,0,0) /(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
 
 if var in ['jcon','ucon','ucov','bcon','bcov']:
   for n in range(4):
@@ -57,10 +58,10 @@ if var in ['jcon','ucon','ucov','bcon','bcov']:
     bplt.plot_xy(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), dump, arrayspace=USEARRSPACE)
 elif var in ['sigma']:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xy(ax, geom, dump[var], dump, vmin=0, vmax=300, arrayspace=USEARRSPACE)
+  bplt.plot_xy(ax, dump[var], vmin=0, vmax=10, arrayspace=USEARRSPACE)
 else:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xy(ax, geom, dump[var], dump, arrayspace=USEARRSPACE) 
+  bplt.plot_xy(ax, dump[var], arrayspace=USEARRSPACE) 
 
 plt.tight_layout()
 
@@ -72,13 +73,17 @@ fig = plt.figure(figsize=(FIGX, FIGY))
 if var in ['jcon','ucon','ucov','bcon','bcov']:
   for n in range(4):
     ax = plt.subplot(nplotsx, nplotsy, n+1)
-    bplt.plot_xz(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), dump, arrayspace=USEARRSPACE)
+    bplt.plot_xz(ax, np.log10(np.abs(dump[var][:,:,:,n])), arrayspace=USEARRSPACE)
 elif var in ['sigma']:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xz(ax, geom, dump[var], dump, vmin=0, vmax=300, arrayspace=USEARRSPACE)
+  bplt.plot_xz(ax, dump[var], vmin=0, vmax=10, arrayspace=USEARRSPACE)
+elif var in ['bernoulli']:
+  ax = plt.subplot(1, 1, 1)
+  bplt.plot_xz(ax, dump[var], arrayspace=USEARRSPACE, average=True)
+  bplt.overlay_contour(ax, dump[var], [0.05])
 else:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xz(ax, geom, dump[var], dump, arrayspace=USEARRSPACE)
+  bplt.plot_xz(ax, dump[var], arrayspace=USEARRSPACE)
 
 plt.tight_layout()
 
