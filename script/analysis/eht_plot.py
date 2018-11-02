@@ -135,7 +135,6 @@ if EXTRAS:
   plt.close(fig)
 
 ## FLUXES
-
 if EXTRAS:
   fig = plt.figure(figsize=(FIGX, FIGY*1.2))
   nplots = 6
@@ -177,17 +176,16 @@ if DIAGS: ax.plot(avg['t_d'], avg['Lum_d'], linestyle='--', color='r')
 ax.set_xlim([ti,tf])
 ax.set_ylabel('Lum')
 
-if EXTRAS:
-  ax.set_xticklabels([])
-else:
+if not EXTRAS:
   ax.set_xlabel('t/M')
-
-if EXTRAS:
+else:
+  ax.set_xticklabels([])
+  
   ax = plt.subplot(nplots,1,6)
-  ax.plot(avg['t'], avg['Etot'], color='k')
+  ax.plot(avg['t'], -avg['LBZ'], color='k')
   ax.set_xlim([ti,tf])
   ax.set_xlabel('t/M')
-  ax.set_ylabel('Etot')
+  ax.set_ylabel('BZ Luminosity')
 
 plt.savefig(fout + '_fluxes.png')
 plt.close(fig)
@@ -195,8 +193,8 @@ plt.close(fig)
 ## NORMALIZED FLUXES
 
 if EXTRAS:
-  fig = plt.figure(figsize=(FIGX, FIGY*1.4))
-  nplots = 7
+  fig = plt.figure(figsize=(FIGX, FIGY*1.2))
+  nplots = 6
 else:
   fig = plt.figure(figsize=(FIGX, FIGY))
   nplots = 5
@@ -235,12 +233,11 @@ if DIAGS: ax.plot(avg['t_d'], avg['Lum_d']/(np.fabs(avg['Mdot_d'])), linestyle='
 ax.set_xlim([ti,tf])
 ax.set_ylabel('Lum/|Mdot|')
 
-if EXTRAS:
-  ax.set_xticklabels([])
-else:
+if not EXTRAS:
   ax.set_xlabel('t/M')
+else:
+  ax.set_xticklabels([])
 
-if EXTRAS:
   ax = plt.subplot(nplots,1,6)
   # Just use the back half as <>
   mdot_mean = np.mean(avg['Mdot'][len(avg['Mdot'])/2:])
@@ -249,15 +246,9 @@ if EXTRAS:
     mdot_mean_d = np.mean(avg['Mdot'][len(avg['Mdot_d'])/2:])
     ax.plot(avg['t_d'], (avg['Mdot_d'] - np.fabs(avg['Edot_d']))/mdot_mean_d*100, linestyle='--', color='r')
   ax.set_xlim([ti,tf])
-  ax.set_xticklabels([])
-  ax.set_ylim([-100,300])
-  ax.set_ylabel('Efficiency (%)')
-  
-  ax = plt.subplot(nplots,1,7)
-  ax.plot(avg['t'], -avg['LBZ'], color='k')
-  ax.set_xlim([ti,tf])
   ax.set_xlabel('t/M')
-  ax.set_ylabel('BZ Luminosity')
+  ax.set_ylim([-10,200])
+  ax.set_ylabel('Efficiency (%)')
 
 plt.savefig(fout + '_normfluxes.png')
 plt.close(fig)
@@ -266,15 +257,21 @@ plt.close(fig)
 
 if EXTRAS:
   fig = plt.figure(figsize=(FIGX, FIGY/2))
-  nplots = 2
+  nplots = 3
 
   ax = plt.subplot(nplots,1,1)
+  ax.plot(avg['t'], avg['Etot'], color='k')
+  ax.set_xlim([ti,tf])
+  ax.set_xticklabels([])
+  ax.set_ylabel('Etot')
+
+  ax = plt.subplot(nplots,1,2)
   ax.plot(avg['t'], np.fabs(avg['sigma_max']), color='k')
   ax.set_xlim([ti,tf])
   ax.set_xticklabels([])
   ax.set_ylabel('sigma_max')
 
-  ax = plt.subplot(nplots,1,2)
+  ax = plt.subplot(nplots,1,3)
   ax.plot(avg['t_d'], avg['divbmax_d'], color='k')
   ax.set_xlim([ti,tf])
   ax.set_xlabel('t/M')

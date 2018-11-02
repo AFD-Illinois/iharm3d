@@ -88,7 +88,7 @@ def load_geom(hdr, fname):
 
   return geom
 
-def load_dump(fname, hdr, derived_vars=True, extras=True):
+def load_dump(fname, hdr, geom, derived_vars=True, extras=True):
   dfile = h5py.File(fname)
   
   dump = {}
@@ -109,7 +109,7 @@ def load_dump(fname, hdr, derived_vars=True, extras=True):
 
   # Recalculate all the derived variables, if we need to
   if derived_vars:
-    dump['ucon'], dump['ucov'], dump['bcon'], dump['bcov'] = get_state(dump, geom)
+    dump['ucon'], dump['ucov'], dump['bcon'], dump['bcov'] = get_state(hdr, geom, dump)
     dump['bsq'] = (dump['bcon']*dump['bcov']).sum(axis=-1)
     dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
 
@@ -158,8 +158,7 @@ def log_time(diag, var, t):
     return diag[var][i-1]
 
 # Include vectors with dumps.  This may change in the future
-def get_state(dump, geom):
-  hdr = dump['hdr']
+def get_state(hdr, geom, dump):
   N1 = hdr['n1']
   N2 = hdr['n2']
   N3 = hdr['n3']

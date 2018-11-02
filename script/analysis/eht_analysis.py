@@ -99,7 +99,7 @@ avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 
 def avg_dump(n):
   out = {}
 
-  dump = io.load_dump(dumps[n], hdr)
+  dump = io.load_dump(dumps[n], hdr, geom, extras=False)
   out['t'] = dump['t']
   print "Loaded ",(n+1),"/",len(dumps),": ",out['t']
 

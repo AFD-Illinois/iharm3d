@@ -112,7 +112,7 @@ def plot(n):
   # Don't calculate b/ucon/cov/e- stuff unless we need it below
   # Only skip this if no bsq/beta/etc
   # Obvs add extras if plotting them
-  dump = io.load_dump(files[n], hdr, derived_vars = False, extras = False)
+  dump = io.load_dump(files[n], hdr, geom, derived_vars = False, extras = False)
   
   fig = plt.figure(figsize=(FIGX, FIGY))
   fig.suptitle("t = %d"%dump['t']) # TODO put this at end...
