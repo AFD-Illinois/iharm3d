@@ -94,7 +94,7 @@ iBZ = i_of(10) # TODO is there a standard measuring spot?
 # Some variables (Phi) should only be computed at EH=zone 5
 iEH = 5
 
-avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'FE_r', 'FM_r', 'rho_SADW', 'omega_th', 'omega_th_av', 'omega_th_alt', 'omega_th_alt_av']
+avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'FE_r', 'FM_r', 'rho_SADW', 'omega_th', 'omega_th_av' ] #, 'omega_th_alt', 'omega_th_alt_av']
 
 def avg_dump(n):
   out = {}
@@ -129,11 +129,12 @@ def avg_dump(n):
     out['uphi_r'] = eht_profile(uphi)
   
     # THETA AVERAGES
-    out['omega_th'] = theta_av(Fcov(geom,dump,0,1), iEH, 1) / theta_av(Fcov(geom,dump,1,3), iEH, 1)
-    out['omega_th_av'] = theta_av(Fcov(geom,dump,0,1), iEH-2, 5) / theta_av(Fcov(geom,dump,1,3), iEH-2, 5)
+    out['omega_th'] = theta_av(Fcov(dump, 0, 1), iEH, 1) / theta_av(Fcov(dump, 1, 3), iEH, 1)
+    out['omega_th_av'] = theta_av(Fcov(dump, 0, 1), iEH-2, 5) / theta_av(Fcov(dump, 1, 3), iEH-2, 5)
 
-    out['omega_th_alt'] = theta_av(Fcov(geom,dump,0,2), iEH, 1) / theta_av(Fcov(geom,dump,2,3), iEH, 1)
-    out['omega_th_alt_av'] = theta_av(Fcov(geom,dump,0,2), iEH-2, 5) / theta_av(Fcov(geom,dump,2,3), iEH-2, 5)
+    # This produces much worse results
+    #out['omega_th_alt'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
+    #out['omega_th_alt_av'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
   else:
     for key in avg_keys:

@@ -7,6 +7,8 @@
 import matplotlib
 matplotlib.use('Agg')
 
+from analysis_fns import *
+
 import sys; sys.dont_write_bytecode = True
 import numpy as np
 import hdf5_to_dict as io
@@ -28,7 +30,9 @@ var = sys.argv[3]
 
 hdr = io.load_hdr(dumpfile)
 geom = io.load_geom(hdr, gridfile)
-dump = io.load_dump(dumpfile, geom, hdr)
+dump = io.load_dump(dumpfile, hdr, geom)
+
+init_analysis(hdr, geom)
 
 N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
 
@@ -44,6 +48,8 @@ if var == 'jsq':
   dump['jsq'] = np.sum(dump['jcon']*dump['jcov'], axis=-1)
 elif var == 'sigma':
   dump['sigma'] = dump['bsq']/dump['RHO']
+elif var == 'bernoulli':
+  dump['bernoulli'] = Tmixed(dump,0,0)/(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
 
 if var in ['jcon','ucon','ucov','bcon','bcov']:
   for n in range(4):

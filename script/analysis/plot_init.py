@@ -59,7 +59,7 @@ if len(files) == 0:
 
 hdr = io.load_hdr(files[0])
 geom = io.load_geom(hdr, gridfile)
-dump = io.load_dump(files[0], geom, hdr)
+dump = io.load_dump(files[0], hdr, geom)
 
 # Plot the first dump, specifically init as in Narayan '12
 N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']

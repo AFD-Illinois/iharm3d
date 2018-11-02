@@ -128,20 +128,20 @@ def plot(n):
   if movie_type == "simplest":
     # Simplest movie: just RHO
     ax_slc = plt.subplots(1,2)
-    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='YlOrRd')
+    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='BuGn')
   elif movie_type == "simpler":
     # Simpler movie: RHO and mdot
     gs = gridspec.GridSpec(2, 2, height_ratios=[5, 1])
     ax_slc = [plt.subplot(gs[0,0]), plt.subplot(gs[0,1])]
     ax_flux = [plt.subplot(gs[1,:])]
-    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='YlOrRd')
-    bplt.diag_plot(ax_flux[0], diag, dump, 'mdot', r"$\dot{M}$", logy=LOG_MDOT)
+    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='BuGn')
+    bplt.diag_plot(ax_flux[0], diag, dump, 'phi', r"$\phi_BH$", logy=LOG_MDOT)
   elif movie_type == "simple":
     # Simple movie: RHO mdot phi
     gs = gridspec.GridSpec(3, 2, height_ratios=[4, 1, 1])
     ax_slc = [plt.subplot(gs[0,0]), plt.subplot(gs[0,1])]
     ax_flux = [plt.subplot(gs[1,:]), plt.subplot(gs[2,:])]
-    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='YlOrRd')
+    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='BuGn')
     bplt.diag_plot(ax_flux[0], diag, dump, 'mdot', r"$\dot{M}$", logy=LOG_MDOT)
     bplt.diag_plot(ax_flux[1], diag, dump, 'phi', r"$\phi_BH$", logy=LOG_PHI)
   else: # All other movie types share a layout
