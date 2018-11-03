@@ -37,7 +37,7 @@ geom = io.load_geom(hdr, os.path.join(path,'grid.h5'))
 if len(sys.argv) > 2:
   tavg = float(sys.argv[2])
 else:
-  tavg = io.load_dump(dumps[ND/2], hdr)['t'] - 1.0
+  tavg = io.load_dump(dumps[ND/2], hdr, geom)['t'] - 1.0
 
 init_analysis(hdr, geom)
 

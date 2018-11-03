@@ -25,24 +25,15 @@ import signal
 import psutil
 
 # Movie size in matplotlib units
-FIGX = 16
-FIGY = 9
+FIGX = 12
+FIGY = 27/4
 # For plotting debug, "array-space" plots
 # Default for all plots, can be overridden below
 USEARRSPACE = False
 
-MAD = True
-if MAD:
-  LOG_MDOT = False
-  MAX_MDOT = 80
-  LOG_PHI = False
-  MAX_PHI = 100
-else:
-  # SANE
-  LOG_MDOT = False
-  MAX_MDOT = 1
-  LOG_PHI = False
-  MAX_PHI = 5
+MAD = False
+LOG_MDOT = False
+LOG_PHI = False
 
 # Choose between several predefined layouts below
 # For keeping around lots of possible movies with same infrastructure
@@ -115,35 +106,39 @@ def plot(n):
   dump = io.load_dump(files[n], hdr, geom, derived_vars = False, extras = False)
   
   fig = plt.figure(figsize=(FIGX, FIGY))
-  fig.suptitle("t = %d"%dump['t']) # TODO put this at end...
-  # Usual layout: 
-  #ax_slc = plt.subplots(nplotsy, nplotsx)
-  #ax_flux = plt.subplots(nplotsy*2, nplotsx/2)
-  # Just two large slices
-  gs = gridspec.GridSpec(3, 2, height_ratios=[4, 1, 1])
-  #gs = gridspec.GridSpec(2, 2, height_ratios=[7, 2])
-  ax_slc = [plt.subplot(gs[0,0]), plt.subplot(gs[0,1])]
-  ax_flux = [plt.subplot(gs[1,:]), plt.subplot(gs[2,:])]
+  
+  if movie_type not in ["simplest", "simpler", "simple"]:
+    fig.suptitle("t = %d"%dump['t']) # TODO put this at end...
+
+  # Zoom in for SANEs
+  if MAD:
+    window = [-40,40,-40,40]
+    nlines = 20
+    rho_l, rho_h = -3, 2
+  else:
+    window = [-20,20,-20,20]
+    nlines = 10
+    rho_l, rho_h = -3, 0
 
   if movie_type == "simplest":
     # Simplest movie: just RHO
     ax_slc = plt.subplots(1,2)
-    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='BuGn')
+    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, rho_l, rho_h, window=window, cmap='jet')
   elif movie_type == "simpler":
-    # Simpler movie: RHO and mdot
-    gs = gridspec.GridSpec(2, 2, height_ratios=[5, 1])
+    # Simpler movie: RHO and phi
+    gs = gridspec.GridSpec(2, 2, height_ratios=[6, 1], width_ratios=[16,17])
     ax_slc = [plt.subplot(gs[0,0]), plt.subplot(gs[0,1])]
     ax_flux = [plt.subplot(gs[1,:])]
-    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='BuGn')
-    bplt.diag_plot(ax_flux[0], diag, dump, 'phi', r"$\phi_BH$", logy=LOG_MDOT)
+    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, rho_l, rho_h, window=window, cmap='jet')
+    bplt.diag_plot(ax_flux[0], diag, dump, 'phi', r"$\phi_{BH}$", logy=LOG_PHI, xlabel=False)
   elif movie_type == "simple":
     # Simple movie: RHO mdot phi
     gs = gridspec.GridSpec(3, 2, height_ratios=[4, 1, 1])
     ax_slc = [plt.subplot(gs[0,0]), plt.subplot(gs[0,1])]
     ax_flux = [plt.subplot(gs[1,:]), plt.subplot(gs[2,:])]
-    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, -3, 2, cmap='BuGn')
+    bplt.plot_slices(ax_slc[0], ax_slc[1], r"$\log_{10}(\rho)$", np.log10(dump['RHO']), dump, rho_l, rho_h, window=window, cmap='jet')
     bplt.diag_plot(ax_flux[0], diag, dump, 'mdot', r"$\dot{M}$", logy=LOG_MDOT)
-    bplt.diag_plot(ax_flux[1], diag, dump, 'phi', r"$\phi_BH$", logy=LOG_PHI)
+    bplt.diag_plot(ax_flux[1], diag, dump, 'phi', r"$\phi_{BH}$", logy=LOG_PHI)
   else: # All other movie types share a layout
     ax_slc = plt.subplots(nplotsy, nplotsx)
     ax_flux = plt.subplots(nplotsy*2, nplotsx/2)
@@ -204,10 +199,11 @@ def plot(n):
 
   # TODO enlarge plots w/o messing up even pixel count
   # Maybe share axes, even?
-  plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95) # Avoid crowding
+  pad = 0.05
+  plt.subplots_adjust(left=2*pad, right=1-2*pad, bottom=pad, top=1-pad) # Avoid crowding
   #plt.tight_layout()
 
-  plt.savefig(imname, dpi=100) #, bbox_inches='tight')
+  plt.savefig(imname, dpi=1920/FIGX) #, bbox_inches='tight')
   plt.close(fig)
 
 # Test-run a couple plots directly so that backtraces work

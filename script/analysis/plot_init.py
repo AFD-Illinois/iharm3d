@@ -61,6 +61,8 @@ hdr = io.load_hdr(files[0])
 geom = io.load_geom(hdr, gridfile)
 dump = io.load_dump(files[0], hdr, geom)
 
+bplt.init_plotting(hdr, geom)
+
 # Plot the first dump, specifically init as in Narayan '12
 N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
 
@@ -71,7 +73,7 @@ if SIZE > geom['r'][-1,0,0]:
 fig = plt.figure(figsize=(FIGX, FIGY))
 # Density profile
 ax = plt.subplot(NPLOTSY,NPLOTSX,1)
-bplt.radial_plot(ax, geom, dump['RHO'], 'RHO', n2=N2/2, n3=N3/2, logx=True, logy=True)
+bplt.radial_plot(ax, dump['RHO'], "RHO", n2=N2/2, n3=N3/2, logx=True, logy=True)
 ax.set_xlim([8, 2*10**3]); ax.set_ylim([10**(-4), 2])
 
 # B-flux thru midplane inside radius
@@ -83,32 +85,32 @@ for n in range(1,N1):
   flux_in[n] = flux_in[n-1] + np.sum(dump['B2'][n,N2/2,:]*geom['gdet'][n,N2/2,None]*hdr['dx1']*hdr['dx3'])
 
 ax = plt.subplot(NPLOTSY,NPLOTSX,2)
-bplt.radial_plot(ax, geom, flux_in, 'flux_in')
+bplt.radial_plot(ax, flux_in, "flux in r")
 ax.set_xlim([0, SIZE]) #; ax.set_ylim([-200, 10])
 
 # Density 2D
 ax = plt.subplot(NPLOTSY,NPLOTSX,3)
-bplt.plot_xz(ax, geom, np.log10(dump['RHO']),
+bplt.plot_xz(ax, np.log10(dump['RHO']),
              vmin=-4, vmax = 0, label='RHO')
 ax.set_xlim([0, SIZE]); ax.set_ylim([-SIZE/2, SIZE/2])
 
 # Beta 2D
 ax = plt.subplot(NPLOTSY,NPLOTSX,4)
-bplt.plot_xz(ax, geom, np.log10(dump['beta']),
+bplt.plot_xz(ax, np.log10(dump['beta']),
              label='beta', cmap='RdBu_r', vmin=1, vmax=4)
-bplt.overlay_field(ax, geom, dump, NLINES)
+bplt.overlay_field(ax, dump, NLINES)
 ax.set_xlim([0, SIZE]); ax.set_ylim([-SIZE/2, SIZE/2])
 
 if PLOT_EXTRA:
   ax = plt.subplot(NPLOTSY,NPLOTSX,5)
-  bplt.plot_xz(ax, geom, np.log10(dump['UU']),
+  bplt.plot_xz(ax, np.log10(dump['UU']),
                vmin=-4, vmax = 0, label='UU')
   ax.set_xlim([0, SIZE]); ax.set_ylim([-SIZE/2, SIZE/2])
   
   ax = plt.subplot(NPLOTSY,NPLOTSX,6)
-  bplt.plot_xz(ax, geom, np.log10(dump['bsq']),
+  bplt.plot_xz(ax, np.log10(dump['bsq']),
                label='bsq', cmap='RdBu_r', vmin=-8, vmax=2)
-  bplt.overlay_field(ax, geom, dump, NLINES)
+  bplt.overlay_field(ax, dump, NLINES)
   ax.set_xlim([0, SIZE]); ax.set_ylim([-SIZE/2, SIZE/2])
 
 # TODO enlarge plots w/o messing up even pixel count

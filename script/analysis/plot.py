@@ -193,14 +193,17 @@ def plot_slices(ax1, ax2, name, data, dump, min, max, avg=False, int=False, wind
                label=name, vmin=min, vmax=max, arrayspace=arrspace, average=avg)
 
 # TODO allow coordinate x2,3? Allow average over said?
-def radial_plot(ax, var, label, n2=0, n3=0, logx=False, logy=False, rlim=None, ylim=None, arrayspace=False, col='k'):
+def radial_plot(ax, var, label, n2=0, n3=0, average=False, logx=False, logy=False, rlim=None, ylim=None, arrayspace=False, col='k'):
   r = geom['r'][:,0,0]
   if var.ndim == 1:
     data = var
   elif var.ndim == 2:
     data = var[:,n2]
   elif var.ndim == 3:
-    data = var[:,n2,n3]
+    if average:
+      data = np.mean(var[:,n2,:], axis=-1)
+    else:
+      data = var[:,n2,n3]
 
   # TODO there's probably a way to add log
   if arrayspace:
@@ -226,7 +229,7 @@ def radial_plot(ax, var, label, n2=0, n3=0, logx=False, logy=False, rlim=None, y
   ax.set_xlabel(r"$r \frac{c^2}{G M}$")
   ax.set_ylabel(label)
 
-def diag_plot(ax, diag, dump, varname_dump, varname_pretty, ylim=None, logy=False):
+def diag_plot(ax, diag, dump, varname_dump, varname_pretty, ylim=None, logy=False, xlabel=True):
   var = diag[varname_dump]
   slc = np.nonzero(var)
   if logy:
@@ -237,7 +240,8 @@ def diag_plot(ax, diag, dump, varname_dump, varname_pretty, ylim=None, logy=Fals
   ax.set_xlim([0, hdr['tf']])
   if ylim is not None:
     ax.set_ylim(ylim)
-  ax.set_xlabel(r"$t \frac{c^3}{G M}$")
+  if xlabel:
+    ax.set_xlabel(r"$t \frac{c^3}{G M}$")
   ax.set_ylabel(varname_pretty)
   
 def hist_2d(ax, var_x, var_y, xlbl, ylbl, title=None, logcolor=False, bins=40, cbar=True, ticks=None):

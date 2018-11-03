@@ -16,8 +16,8 @@ import pickle
 FIGX = 14
 FIGY = 14
 EXTRAS = True
-DIAGS = True
-RADS = False
+DIAGS = False
+RADS = True
 
 if len(sys.argv) != 3:
   util.warn('Format: python eht_plot.py [averages] [output]')
@@ -136,8 +136,8 @@ if EXTRAS:
 
 ## FLUXES
 if EXTRAS:
-  fig = plt.figure(figsize=(FIGX, FIGY*1.2))
-  nplots = 6
+  fig = plt.figure(figsize=(FIGX, FIGY*1.4))
+  nplots = 7
 else:
   fig = plt.figure(figsize=(FIGX, FIGY))
   nplots = 5
@@ -147,6 +147,7 @@ ax.plot(avg['t'], np.fabs(avg['Mdot']), color='k')
 if DIAGS: ax.plot(avg['t_d'], np.fabs(avg['Mdot_d']), linestyle='--', color='r')
 ax.set_xlim([ti,tf])
 ax.set_xticklabels([])
+ax.grid(axis='y')
 ax.set_ylabel('|Mdot|')
 
 ax = plt.subplot(nplots,1,2)
@@ -154,6 +155,7 @@ ax.plot(avg['t'], avg['Phi'], color='k')
 if DIAGS: ax.plot(avg['t_d'], avg['Phi_d'], linestyle='--', color='r')
 ax.set_xlim([ti,tf])
 ax.set_xticklabels([])
+ax.grid(axis='y')
 ax.set_ylabel('Phi')
 
 ax = plt.subplot(nplots,1,3)
@@ -161,6 +163,7 @@ ax.plot(avg['t'], np.fabs(avg['Ldot']), color='k')
 if DIAGS: ax.plot(avg['t_d'], np.fabs(avg['Ldot_d']), linestyle='--', color='r')
 ax.set_xlim([ti,tf])
 ax.set_xticklabels([])
+ax.grid(axis='y')
 ax.set_ylabel('|Ldot|')
 
 ax = plt.subplot(nplots,1,4)
@@ -168,23 +171,34 @@ ax.plot(avg['t'], np.fabs(avg['Edot'] - np.fabs(avg['Mdot'])), color='k')
 if DIAGS: ax.plot(avg['t_d'], np.fabs(avg['Edot_d'] - np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
 ax.set_xlim([ti,tf])
 ax.set_xticklabels([])
+ax.grid(axis='y')
 ax.set_ylabel('|Edot - Mdot|')
 
 ax = plt.subplot(nplots,1,5)
 ax.plot(avg['t'], avg['Lum'], color='k')
 if DIAGS: ax.plot(avg['t_d'], avg['Lum_d'], linestyle='--', color='r')
 ax.set_xlim([ti,tf])
+ax.grid(axis='y')
 ax.set_ylabel('Lum')
 
 if not EXTRAS:
   ax.set_xlabel('t/M')
 else:
   ax.set_xticklabels([])
-  
+
   ax = plt.subplot(nplots,1,6)
+  ax.plot(avg['t'], avg['Edot'], color='k')
+  if DIAGS: ax.plot(avg['t_d'], avg['Edot_d'], linestyle='--', color='r')
+  ax.set_xlim([ti,tf])
+  ax.set_xlabel('t/M')
+  ax.grid(axis='y')
+  ax.set_ylabel('BZ Luminosity')
+  
+  ax = plt.subplot(nplots,1,7)
   ax.plot(avg['t'], -avg['LBZ'], color='k')
   ax.set_xlim([ti,tf])
   ax.set_xlabel('t/M')
+  ax.grid(axis='y')
   ax.set_ylabel('BZ Luminosity')
 
 plt.savefig(fout + '_fluxes.png')
@@ -204,6 +218,7 @@ ax.plot(avg['t'], np.fabs(avg['Mdot']), color='k')
 if DIAGS: ax.plot(avg['t_d'], np.fabs(avg['Mdot_d']), linestyle='--', color='r')
 ax.set_xlim([ti,tf])
 ax.set_xticklabels([])
+ax.grid(axis='y')
 ax.set_ylabel('|Mdot|')
 
 ax = plt.subplot(nplots,1,2)
@@ -211,6 +226,7 @@ ax.plot(avg['t'], avg['Phi']/np.sqrt(np.fabs(avg['Mdot'])), color='k')
 if DIAGS: ax.plot(avg['t_d'], avg['Phi_d']/np.sqrt(np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
 ax.set_xlim([ti,tf])
 ax.set_xticklabels([])
+ax.grid(axis='y')
 ax.set_ylabel('Phi/sqrt(|Mdot|)')
 
 ax = plt.subplot(nplots,1,3)
@@ -218,6 +234,7 @@ ax.plot(avg['t'], np.fabs(avg['Ldot'])/(np.fabs(avg['Mdot'])), color='k')
 if DIAGS: ax.plot(avg['t_d'], np.fabs(avg['Ldot_d'])/(np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
 ax.set_xlim([ti,tf])
 ax.set_xticklabels([])
+ax.grid(axis='y')
 ax.set_ylabel('|Ldot|/|Mdot|')
 
 ax = plt.subplot(nplots,1,4)
@@ -225,12 +242,14 @@ ax.plot(avg['t'], np.fabs(avg['Edot'] - np.fabs(avg['Mdot']))/(np.fabs(avg['Mdot
 if DIAGS: ax.plot(avg['t_d'], np.fabs(avg['Edot_d'] - np.fabs(avg['Mdot_d']))/(np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
 ax.set_xlim([ti,tf])
 ax.set_xticklabels([])
+ax.grid(axis='y')
 ax.set_ylabel('|Edot - Mdot|/|Mdot|')
 
 ax = plt.subplot(nplots,1,5)
 ax.plot(avg['t'], avg['Lum']/(np.fabs(avg['Mdot'])), color='k')
 if DIAGS: ax.plot(avg['t_d'], avg['Lum_d']/(np.fabs(avg['Mdot_d'])), linestyle='--', color='r')
 ax.set_xlim([ti,tf])
+ax.grid(axis='y')
 ax.set_ylabel('Lum/|Mdot|')
 
 if not EXTRAS:
@@ -248,6 +267,7 @@ else:
   ax.set_xlim([ti,tf])
   ax.set_xlabel('t/M')
   ax.set_ylim([-10,200])
+  ax.grid(axis='y')
   ax.set_ylabel('Efficiency (%)')
 
 plt.savefig(fout + '_normfluxes.png')
@@ -263,18 +283,21 @@ if EXTRAS:
   ax.plot(avg['t'], avg['Etot'], color='k')
   ax.set_xlim([ti,tf])
   ax.set_xticklabels([])
+  ax.grid(axis='y')
   ax.set_ylabel('Etot')
 
   ax = plt.subplot(nplots,1,2)
   ax.plot(avg['t'], np.fabs(avg['sigma_max']), color='k')
   ax.set_xlim([ti,tf])
   ax.set_xticklabels([])
+  ax.grid(axis='y')
   ax.set_ylabel('sigma_max')
 
   ax = plt.subplot(nplots,1,3)
   ax.plot(avg['t_d'], avg['divbmax_d'], color='k')
   ax.set_xlim([ti,tf])
   ax.set_xlabel('t/M')
+  ax.grid(axis='y')
   ax.set_ylabel('max divB')
 
   plt.savefig(fout + '_diagnostics.png')

@@ -89,7 +89,7 @@ def load_geom(hdr, fname):
   return geom
 
 def load_dump(fname, hdr, geom, derived_vars=True, extras=True):
-  dfile = h5py.File(fname)
+  dfile = h5py.File(fname, 'r')
   
   dump = {}
 

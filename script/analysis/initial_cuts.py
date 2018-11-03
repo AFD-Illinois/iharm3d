@@ -1,6 +1,4 @@
-
-#from pylab import *
-#import astropy.io.ascii as ascii
+## Initial conditions cuts
 
 import sys; sys.dont_write_bytecode = True
 import numpy as np
