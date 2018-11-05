@@ -63,6 +63,7 @@ def WAVG(geom, var, w):
 # Var must be a 3D array i.e. a grid scalar
 def sum_shell(geom, var, at_zone=None):
   if at_zone is not None:
+
     return np.sum(var[at_zone,:,:] * geom['gdet'][at_zone,:,None]*geom['dx2']*geom['dx3'], axis=(0,1))
   else:
     return np.sum(var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3'], axis=(1,2))
@@ -86,6 +87,7 @@ def theta_av(var, start, av):
 ## Internal functions ##
 
 # Completely antisymmetric 4D symbol
+# TODO cache?
 def _antisym(a, b, c, d):
   # Check for valid permutation
   if (a < 0 or a > 3): return 100
@@ -123,3 +125,4 @@ def _pp(P):
     return 1
   else:
     return -1
+

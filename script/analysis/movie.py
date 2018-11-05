@@ -61,8 +61,8 @@ def plot(n):
     rho_l, rho_h = -3, 2
   else:
     window = [-20,20,-20,20]
-    nlines = 10
-    rho_l, rho_h = -3, 0
+    nlines = 5
+    rho_l, rho_h = -3, 1
 
   if movie_type == "simplest":
     # Simplest movie: just RHO
