@@ -4,9 +4,13 @@
 #                                                                              #
 ################################################################################
 
-import numpy as np
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+import numpy as np
+from scipy.integrate import trapz
 
 # Get xz slice of 3D data
 def flatten_xz(array, patch_pole=False, average=False):
@@ -42,9 +46,22 @@ def flatten_xy(array, average=False, loop=True):
   else:
     return slice
 
-def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
-            cbar=True, label=None, xlabel=True, ylabel=True,
-            ticks=None, arrayspace=False, average=False):
+# Plotting fns: pass dump file and var as either string (key) or ndarray
+# Note integrate option overrides average
+# Also note label convention:
+# * "known labels" are assigned true or false,
+# * "unknown labels" are assigned None or a string
+def plot_xz(ax, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
+            cbar=True, cbar_ticks=None, label=None, xlabel=True, ylabel=True,
+            arrayspace=False, average=False, integrate=False, bh=True, half_cut=False):
+
+  if isinstance(var, str):
+    var = dump[var]
+
+  geom = dump['geom']
+  if integrate:
+    var *= geom['n3']
+    average = True
 
   if (arrayspace):
     x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
@@ -56,42 +73,58 @@ def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
     else:
       var = var[:,:,0]
   else:
-    x = flatten_xz(geom['x'], patch_pole=True)
-    z = flatten_xz(geom['z'])
-    var = flatten_xz(var, average=average)
+    if half_cut:
+      x = flatten_xz(geom['x'], patch_pole=True)[geom['n1']:,:]
+      z = flatten_xz(geom['z'])[geom['n1']:,:]
+      var = flatten_xz(var, average=average)[geom['n1']:,:]
+      window[0] = 0
+    else:
+      x = flatten_xz(geom['x'], patch_pole=True)
+      z = flatten_xz(geom['z'])
+      var = flatten_xz(var, average=average)
 
   #print 'xshape is ', x.shape, ', zshape is ', z.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
       shading='gouraud')
 
   if arrayspace:
-    if xlabel: ax.set_xlabel('X1 (arbitrary)')
-    if ylabel: ax.set_ylabel('X2 (arbitrary)')
+    if xlabel: ax.set_xlabel("X1 (arbitrary)")
+    if ylabel: ax.set_ylabel("X2 (arbitrary)")
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
-    if xlabel: ax.set_xlabel('x/M')
-    if ylabel: ax.set_ylabel('z/M')
+    if xlabel: ax.set_xlabel(r"$x \frac{c^2}{G M}$")
+    if ylabel: ax.set_ylabel(r"$z \frac{c^2}{G M}$")
     if window:
       ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
-    # BH silhouette
-    circle1=plt.Circle((0,0),geom['hdr']['Reh'],color='k');
-    ax.add_artist(circle1)
 
-  ax.set_aspect('equal')
+    if bh:
+      # BH silhouette
+      circle1=plt.Circle((0,0), dump['hdr']['Reh'], color='k');
+      ax.add_artist(circle1)
+
+  if not half_cut:
+    ax.set_aspect('equal')
 
   if cbar:
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
-    plt.colorbar(mesh, cax=cax, ticks=ticks)
+    plt.colorbar(mesh, cax=cax, ticks=cbar_ticks)
 
-  if label:
+  if label is not None:
     ax.set_title(label)
 
-def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
+def plot_xy(ax, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
             cbar=True, label=None, xlabel=True, ylabel=True,
-            ticks=None, arrayspace=False, average=False):
+            ticks=None, arrayspace=False, average=False, integrate=False, bh=True):
 
+  if isinstance(var, str):
+    var = dump[var]
+
+  geom = dump['geom']
+  if integrate:
+    var *= geom['n2']
+    average = True
+  
   if arrayspace:
     # Flatten_xy adds a rank. TODO is this the way to handle it?
     x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
@@ -109,22 +142,23 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
       shading='gouraud')
 
   if arrayspace:
-    if xlabel: ax.set_xlabel('X1 (arbitrary)')
-    if ylabel: ax.set_ylabel('X3 (arbitrary)')
+    if xlabel: ax.set_xlabel("X1 (arbitrary)")
+    if ylabel: ax.set_ylabel("X3 (arbitrary)")
     ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
   else:
-    if xlabel: ax.set_xlabel('x/M')
-    if ylabel: ax.set_ylabel('y/M')
+    if xlabel: ax.set_xlabel(r"$x \frac{c^2}{G M}$")
+    if ylabel: ax.set_ylabel(r"$y \frac{c^2}{G M}$")
     if window:
       ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
-    # BH silhouette
-    circle1=plt.Circle((0,0),geom['hdr']['Reh'],color='k');
-    ax.add_artist(circle1)
+
+    if bh:
+      # BH silhouette
+      circle1=plt.Circle((0,0), dump['hdr']['Reh'], color='k');
+      ax.add_artist(circle1)
 
   ax.set_aspect('equal')
 
   if cbar:
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(mesh, cax=cax, ticks=ticks)
@@ -132,10 +166,16 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=None,
   if label:
     ax.set_title(label)
 
-def overlay_field(ax, geom, dump, NLEV):
-  from scipy.integrate import trapz
-  hdr = dump['hdr']
-  N1 = hdr['n1']; N2 = hdr['n2']
+def overlay_contour(ax, dump, var, levels):
+  if isinstance(var, str): var = dump[var]
+  x = flatten_xz(dump['geom']['x'])
+  z = flatten_xz(dump['geom']['z'])
+  var = flatten_xz(var, average=True)
+  ax.contour(x, z, var, levels=levels, colors='k')
+
+def overlay_field(ax, dump, nlines=10):
+  geom = dump['geom']; hdr = dump['hdr']
+  N1 = geom['n1']; N2 = geom['n2']
   x = flatten_xz(geom['x']).transpose()
   z = flatten_xz(geom['z']).transpose()
   A_phi = np.zeros([N2, 2*N1])
@@ -152,53 +192,112 @@ def overlay_field(ax, geom, dump, NLEV):
   Apm = np.fabs(A_phi).max()
   if np.fabs(A_phi.min()) > A_phi.max():
     A_phi *= -1.
-  levels = np.concatenate((np.linspace(-Apm,0,NLEV)[:-1],
-                           np.linspace(0,Apm,NLEV)[1:]))
+  levels = np.concatenate((np.linspace(-Apm,0,nlines)[:-1],
+                           np.linspace(0,Apm,nlines)[1:]))
   ax.contour(x, z, A_phi, levels=levels, colors='k')
 
-# TODO allow coordinate x2,3? Allow average over said?
-def radial_plot(ax, geom, var, label, n2=0, n3=0, logx=False, logy=False, rlim=None, ylim=None, arrayspace=False, col='k'):
-  r = geom['r'][:,0,0]
+# Plot two slices together without duplicating everything in the caller
+def plot_slices(ax1, ax2, dump, var, field_overlay=True, nlines=10, **kwargs):
+  # Pull out some arguments manually so we can dump the rest into plot fns
+  # TODO can python do more of this for us?
+#  if 'field_overlay' in kwargs.keys():
+#    field_overlay = kwargs['field_overlay']
+#    del kwargs['field_overlay']
+#  else:
+#    field_overlay=True
+#  if 'nlines' in kwargs.keys():
+#    nlines = kwargs['nlines']
+#    del kwargs['nlines']
+    
+  if 'arrspace' in kwargs.keys():
+    arrspace = kwargs['arrspace']
+  else:
+    arrspace = False
+  
+  plot_xz(ax1, dump, var, **kwargs)
+  if field_overlay and not arrspace:
+    overlay_field(ax1, dump, nlines=nlines)
+
+  plot_xy(ax2, dump, var, **kwargs)
+
+# TODO Consistent idea of plane/average in x2,x3
+def radial_plot(ax, dump, var, n2=0, n3=0, average=False, 
+                logr=False, logy=False, rlim=None, ylim=None, arrayspace=False,
+                ylabel=None, style='k-'):
+
+  if isinstance(var, str):
+    var = dump[var]
+
+  r = dump['geom']['r'][:,0,0]
   if var.ndim == 1:
     data = var
   elif var.ndim == 2:
     data = var[:,n2]
   elif var.ndim == 3:
-    data = var[:,n2,n3]
+    if average:
+      data = np.mean(var[:,n2,:], axis=-1)
+    else:
+      data = var[:,n2,n3]
 
   if arrayspace:
-    # logx doesn't make sense here
-    if logy:
-      ax.semilogy(range(geom['n1']), data, color=col)
-    else:
-      ax.plot(range(geom['n1']), data, color=col)
+    ax.plot(range(geom['n1']), data, style)
   else:
-    if logx and logy:
-      ax.loglog(r,data, color=col)
-    elif logx:
-      ax.semilogx(r,data, color=col)
-    elif logy:
-      ax.semilogy(r,data, color=col)
-    else:
-      ax.plot(r,data, color=col)
+    ax.plot(r,data, style)
 
-  if rlim:
-    ax.set_xlim(rlim)
-  if ylim:
-    ax.set_ylim(ylim)
-  ax.set_xlabel('r (M)')
-  ax.set_ylabel(label)
+  if logr: ax.set_xscale('log')
+  if logy: ax.set_yscale('log')
 
-def diag_plot(ax, diag, dump, varname_dump, varname_pretty, ylim=None, logy=False):
-  var = diag[varname_dump]
-  slc = np.nonzero(var)
-  if logy:
-    ax.semilogy(diag['t'][slc], var[slc], color='k')
-  else:
-    ax.plot(diag['t'][slc], var[slc], color='k')
-  ax.axvline(dump['t'], color='r') # Trace current t on finished plot
-  ax.set_xlim([0, dump['hdr']['tf']])
+  if rlim: ax.set_xlim(rlim)
+  if ylim: ax.set_ylim(ylim)
+  
+  ax.set_xlabel(r"$r \frac{c^2}{G M}$")
+  if ylabel is not None: ax.set_ylabel(ylabel)
+
+def diag_plot(ax, diag, varname, t=0, ylabel=None, ylim=None, logy=False, xlabel=True, style='k-'):
+  var = diag[varname]
+
   if ylim is not None:
-    ax.set_ylim(ylim)
-  ax.set_xlabel('t/M')
-  ax.set_ylabel(varname_pretty)
+    slc = np.where((var > ylim[0]) & (var < ylim[1]))
+  else:
+    slc = np.nonzero(var)
+  ax.plot(diag['t'][slc], var[slc], style)
+
+  ax.set_xlim([diag['t'][0], diag['t'][-1]])
+
+  # Trace current t on finished plot
+  if t != 0:
+    ax.axvline(t, color='r')
+
+  if ylim is not None: ax.set_ylim(ylim)
+  if logy: ax.set_yscale('log')
+
+  if xlabel:
+    ax.set_xlabel(r"$t \frac{c^3}{G M}$")
+  if ylabel is not None:
+    ax.set_ylabel(ylabel)
+  else:
+    ax.set_ylabel(varname)
+
+def hist_2d(ax, var_x, var_y, xlbl, ylbl, title=None, logcolor=False, bins=40, cbar=True, cmap='jet', ticks=None):
+  # Courtesy of George Wong
+  var_x_flat = var_x.flatten()
+  var_y_flat = var_y.flatten()
+  nidx = np.isfinite(var_x_flat) & np.isfinite(var_y_flat)
+  hist = np.histogram2d(var_x_flat[nidx], var_y_flat[nidx], bins=bins)
+  X,Y = np.meshgrid(hist[1], hist[2])
+  
+  if logcolor:
+    hist[0][hist[0] == 0] = np.min(hist[0][np.nonzero(hist[0])])
+    mesh = ax.pcolormesh(X, Y, np.log10(hist[0]), cmap=cmap)
+  else:
+    mesh = ax.pcolormesh(X, Y, hist[0], cmap=cmap)
+
+  # Add the patented Ben Ryan colorbar
+  if cbar:
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(mesh, cax=cax, ticks=ticks)
+
+  if title is not None: ax.set_title(title)
+  ax.set_xlabel(xlbl)
+  ax.set_ylabel(ylbl)

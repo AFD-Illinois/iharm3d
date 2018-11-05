@@ -151,6 +151,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   //FLAG("CT Step");
 
   // Flux diagnostic globals
+  // TODO don't compute every step, only for logs?
   diag_flux(F);
 
   //update_f(F, dU);

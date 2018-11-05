@@ -44,8 +44,7 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     if(mpi_io_proc()) {
       ener_file = fopen("dumps/log.out", "a");
       if (ener_file == NULL) {
-        fprintf(stderr,
-          "error opening energy output file\n");
+        fprintf(stderr, "Error opening log file!\n");
         exit(1);
       }
     }
@@ -178,6 +177,7 @@ void fail(struct GridGeom *G, struct FluidState *S, int fail_type, int i, int j,
   exit(-1);
 }
 
+// Some quick one-off functions for debugging
 int i_have(int iglobal, int jglobal, int kglobal) {
   int have_i = (global_start[0] <= iglobal) && (global_stop[0] > iglobal);
   int have_j = (global_start[1] <= jglobal) && (global_stop[1] > jglobal);
@@ -210,23 +210,17 @@ double sigma_max (struct GridGeom *G, struct FluidState *S)
 	return sigma_max;
 }
 
-// Map out region around failure point
+// Map out region around failure point (local index)
 void area_map(int i, int j, int k, GridPrim prim)
 {
-  //fprintf(stderr, "*** AREA MAP ***\n");
-
   PLOOP {
     fprintf(stderr, "variable %d \n", ip);
-    //fprintf(stderr, "i = \t %12d %12d %12d\n", i - 1, i, i + 1);
-    //fprintf(stderr, "j = %d \t", j+1);
     fprintf(stderr, "%12.5g %12.5g %12.5g\n",
       prim[ip][k][j + 1][i - 1], prim[ip][k][j + 1][i],
       prim[ip][k][j + 1][i + 1]);
-    //fprintf(stderr, "j = %d \t", j);
     fprintf(stderr, "%12.5g %12.5g %12.5g\n",
       prim[ip][k][j][i - 1], prim[ip][k][j][i],
       prim[ip][k][j][i + 1]);
-    //fprintf(stderr, "j = %d \t", j-1);
     fprintf(stderr, "%12.5g %12.5g %12.5g\n",
       prim[ip][k][j - 1][i - 1], prim[ip][k][j - 1][i],
       prim[ip][k][j - 1][i + 1]);
@@ -237,24 +231,16 @@ void area_map(int i, int j, int k, GridPrim prim)
 
 void area_map_pflag(int i, int j, int k)
 {
-  //fprintf(stderr, "*** AREA MAP ***\n");
-
   fprintf(stderr, "pflag: \n");
-  //fprintf(stderr, "i = \t %12d %12d %12d\n", i - 1, i, i + 1);
-  //fprintf(stderr, "j = %d \t", j+1);
   fprintf(stderr, "%d %d %d\n",
     pflag[k][j + 1][i - 1], pflag[k][j + 1][i],
     pflag[k][j + 1][i + 1]);
-  //fprintf(stderr, "j = %d \t", j);
   fprintf(stderr, "%d %d %d\n",
     pflag[k][j][i - 1], pflag[k][j][i],
     pflag[k][j][i + 1]);
-  //fprintf(stderr, "j = %d \t", j-1);
   fprintf(stderr, "%d %d %d\n",
     pflag[k][j - 1][i - 1], pflag[k][j - 1][i],
     pflag[k][j - 1][i + 1]);
-
-  //fprintf(stderr, "****************\n");
 }
 
 // TODO this function is useful but slow: it doesn't parllelize under intel 18.0.2

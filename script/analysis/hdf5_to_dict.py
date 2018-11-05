@@ -1,15 +1,22 @@
+################################################################################
+#                                                                              # 
+#  READ HARM OUTPUT                                                            #
+#                                                                              # 
+################################################################################
+
+import units
+
 import sys; sys.dont_write_bytecode = True
 import numpy as np
 import h5py
-import units
+
 import os
 import glob
-units = units.get_dict()
 
-def get_dumps_reduced(path):
-  return np.sort(glob.glob(os.path.join(path, "dump*.h5")))
+def get_dumps_list(path):
+  return np.sort(glob.glob(os.path.join(path, "dump_*.h5")))
 
-def get_dumps_full(folder):
+def get_full_dumps_list(folder):
   alldumps = np.sort(glob.glob(folder+'dump_*.h5'))
   fulldumps = []
 
@@ -19,6 +26,14 @@ def get_dumps_full(folder):
       fulldumps.append(fname)
     dfile.close()
   return np.sort(fulldumps)
+
+# For single plotting scripts
+def load_all(fname, **kwargs):
+  hdr = load_hdr(fname)
+  path = os.path.dirname(fname)
+  geom = load_geom(hdr, path)
+  dump = load_dump(fname, hdr, geom, **kwargs)
+  return hdr, geom, dump
 
 def load_hdr(fname):
   dfile = h5py.File(fname, 'r')
@@ -61,19 +76,16 @@ def load_hdr(fname):
 
   return hdr
 
-def load_geom(hdr, fname):
+def load_geom(hdr, path):
+  fname = os.path.join(path, hdr['gridfile'])
   gfile = h5py.File(fname, 'r')
 
   geom = {}
   for key in gfile['/'].keys():
     geom[key] = gfile[key][()]
-
-  # Cart around the header inside both geom and dump
-  # this lacks grace, but is surprisingly efficient
-  geom['hdr'] = hdr
   
-  # Useful stuff for direct access: more likely to stay
-  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
+  # Useful stuff for direct access in geom
+  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim', 'Reh']:
     geom[key] = hdr[key]
 
   # these get used interchangeably and I don't care
@@ -92,12 +104,14 @@ def load_geom(hdr, fname):
 
   return geom
 
-def load_dump(fname, geom, hdr, derived_vars=True):
-  dfile = h5py.File(fname)
+def load_dump(fname, hdr, geom, derived_vars=True, extras=True):
+  dfile = h5py.File(fname, 'r')
   
   dump = {}
-  # See geom note on carrying header along with things
+  
+  # Carry pointers to necessary external data, and hope it doesn't get copied...
   dump['hdr'] = hdr
+  dump['geom'] = geom
 
   # TODO this necessarily grabs the /whole/ primitives array
   for key in [key for key in dfile['/'].keys() if key not in ['header', 'extras', 'prims'] ]:
@@ -106,30 +120,34 @@ def load_dump(fname, geom, hdr, derived_vars=True):
   for name, num in zip(hdr['prim_names'], range(hdr['n_prim'])):
     dump[name] = dfile['prims'][:,:,:,num]
 
-  # Load the extras. TODO option for this
-  for key in dfile['extras'].keys():
-    dump[key] = dfile['extras/' + key][()]
+  if extras:
+    # Load the extras.
+    for key in dfile['extras'].keys():
+      dump[key] = dfile['extras/' + key][()]
   
   dfile.close()
 
   # Recalculate all the derived variables, if we need to
   if derived_vars:
-    dump['ucon'], dump['ucov'], dump['bcon'], dump['bcov'] = get_state(dump, geom)
+    dump['ucon'], dump['ucov'], dump['bcon'], dump['bcov'] = get_state(hdr, geom, dump)
     dump['bsq'] = (dump['bcon']*dump['bcov']).sum(axis=-1)
     dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
 
     if hdr['has_electrons']:
-      dump['Thetae'] = units['MP']/units['ME']*dump['KEL']*dump['RHO']**(hdr['gam_e']-1.)
+      ref = units.get_dict()
+      dump['Thetae'] = ref['MP']/ref['ME']*dump['KEL']*dump['RHO']**(hdr['gam_e']-1.)
       dump['ue'] = dump['KEL']*dump['RHO']**(hdr['gam_e'])/(hdr['gam_e']-1.)
       dump['up'] = dump['UU'] - dump['ue']
       dump['TpTe'] = (hdr['gam_p']-1.)*dump['up']/((hdr['gam_e']-1.)*dump['ue'])
 
   return dump
 
-def load_log(hdr, logfile):
-  dfile = np.loadtxt(logfile).transpose()
+def load_log(path):
+  # TODO specify log name in dumps, like grid
+  logfname = os.path.join(path,"log.out")
+  dfile = np.loadtxt(logfname).transpose()
   
-  # TODO include/split on log's own header rather than tying it to dumps
+  # TODO log should probably have a header
   diag = {}
   diag['t'] = dfile[0]
   diag['rmed'] = dfile[1]
@@ -153,6 +171,7 @@ def load_log(hdr, logfile):
 
   return diag
 
+# For adding contents of the log to dumps
 def log_time(diag, var, t):
   if len(diag['t'].shape) < 1:
     return diag[var]
@@ -162,20 +181,16 @@ def log_time(diag, var, t):
       i += 1
     return diag[var][i-1]
 
-# Include vectors with dumps.  This may change in the future
-def get_state(dump, geom):
-  hdr = dump['hdr']
-  N1 = hdr['n1']
-  N2 = hdr['n2']
-  N3 = hdr['n3']
-  NDIM = hdr['n_dim']
+# Include vectors with dumps
+def get_state(hdr, geom, dump):
+  N1, N2, N3, NDIM = hdr['n1'], hdr['n2'], hdr['n3'], hdr['n_dim']
 
-  ucon = np.zeros([N1,N2,N3,4])
+  ucon = np.zeros([N1,N2,N3,NDIM])
   ucov = np.zeros_like(ucon)
   bcon = np.zeros_like(ucon)
   bcov = np.zeros_like(ucon)
 
-  # Aliases to make the below remotely readable
+  # Aliases to make the below more readable
   gcov = geom['gcov']
   gcon = geom['gcon']
 
@@ -198,6 +213,8 @@ def get_state(dump, geom):
   ucon[:,:,:,2] = U2 - gamma*alpha*gcon[:,:,None,0,2]
   ucon[:,:,:,3] = U3 - gamma*alpha*gcon[:,:,None,0,3]
 
+  # TODO get the einsums working. Probably faster
+  #ucov = np.einsum("ijka,ijkba->ijkb", ucon, gcov)
   for mu in range(NDIM):
     ucov[:,:,:,mu] = (ucon[:,:,:,:]*gcov[:,:,None,mu,:]).sum(axis=-1)
 
@@ -206,6 +223,7 @@ def get_state(dump, geom):
   bcon[:,:,:,2] = (B2 + bcon[:,:,:,0]*ucon[:,:,:,2])/ucon[:,:,:,0]
   bcon[:,:,:,3] = (B3 + bcon[:,:,:,0]*ucon[:,:,:,3])/ucon[:,:,:,0]
 
+  #bcov = np.einsum("ijka,ijkba->ijkb", bcon, gcov)
   for mu in range(NDIM):
     bcov[:,:,:,mu] = (bcon[:,:,:,:]*gcov[:,:,None,mu,:]).sum(axis=-1)
 

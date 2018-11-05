@@ -15,6 +15,11 @@ double ndt_min(GridVector *ctop);
 double ndt_min(GridVector *ctop) {
   timer_start(TIMER_CMAX);
   double ndt_min = 1e20;
+
+#if DEBUG
+  int min_x1, min_x2, min_x3;
+#endif
+
 #pragma omp parallel for collapse(3) reduction(min:ndt_min)
   ZLOOP {
     double ndt_zone = 0;
@@ -23,8 +28,18 @@ double ndt_min(GridVector *ctop) {
     }
     ndt_zone = 1/ndt_zone;
 
-    if(ndt_zone < ndt_min) ndt_min = ndt_zone;
+    if(ndt_zone < ndt_min) {
+      ndt_min = ndt_zone;
+#if DEBUG
+      min_x1 = i; min_x2 = j; min_x3 = k;
+#endif
+    }
   }
+
+#if DEBUG
+  fprintf(stderr, "Timestep set by %d %d %d\n",min_x1,min_x2,min_x3);
+#endif
+
   timer_stop(TIMER_CMAX);
   return ndt_min;
 }

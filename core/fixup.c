@@ -104,6 +104,7 @@ inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j
   // 2. Limit KTOT
 #if ELECTRONS
     // Keep to KTOTMAX by controlling u, to avoid anomalous cooling from funnel wall
+    // Note: This operates on last iteration's KTOT, meaning the effective value can escape the ceiling
     if (S->P[KTOT][k][j][i] > KTOTMAX) {
       fflag[k][j][i] |= HIT_FLOOR_KTOT;
 
@@ -160,8 +161,8 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
   // Take floors on U into account
   double rhoflr_temp = MY_MAX(S->P[UU][k][j][i] / UORHOMAX, uflr_max / UORHOMAX);
 
-  // Record temp floor hit
-  if (rhoflr_temp > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_TEMP;
+  // Record hitting temperature ceiling
+  if (rhoflr_temp > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_TEMP; // Misnomer for consistency
 
   // Evaluate highest RHO floor
   double rhoflr_max = MY_MAX(MY_MAX(rhoflr_geom, rhoflr_b), rhoflr_temp);
@@ -201,10 +202,6 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
     // Reset entropy after floors
     S->P[KTOT][k][j][i] = (gam - 1.)*S->P[UU][k][j][i]/pow(S->P[RHO][k][j][i],gam);
 #endif
-
-  // Leave a consistent state if we changed anything
-  // TODO I think this call can be eliminated with some bugfixing...
-  //if (fflag[k][j][i] != 0) get_state(G, S, i, j, k, CENT);
 
 }
 
