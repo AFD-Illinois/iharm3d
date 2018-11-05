@@ -228,7 +228,7 @@ void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
   timer_start(TIMER_RECON);
   if (dir == 1) {
-#pragma omp parallel for simd collapse(3)
+#pragma omp parallel for collapse(3)
     PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
@@ -241,7 +241,7 @@ void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
       }
     }
   } else if (dir == 2) {
-#pragma omp parallel for simd collapse(3)
+#pragma omp parallel for collapse(3)
     PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {
@@ -254,7 +254,7 @@ void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
       }
     }
   } else if (dir == 3) {
-#pragma omp parallel for simd collapse(3)
+#pragma omp parallel for collapse(3)
     PLOOP {
       KSLOOP(-1, N3) {
         JSLOOP(-1, N2) {

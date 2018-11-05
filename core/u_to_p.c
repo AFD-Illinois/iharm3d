@@ -108,31 +108,48 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   double dedW = (errp - errm)/(Wpp - Wpm);
   double dedW2 = (errp - 2.*err + errm)/(h*h);
   double f = 0.5*err*dedW2/(dedW*dedW);
-
   // Limit size of 2nd derivative correction
-  double dW = -err/dedW/(1. - MY_MIN(MY_MAX(-0.3, f), 0.3));
+  if (f < -0.3) f = -0.3;
+  if (f > 0.3) f = 0.3;
+
+  double dW = -err/dedW/(1. - f);
   double Wp1 = Wp;
   double err1 = err;
   // Limit size of step
-  Wp += MY_MAX( MY_MIN(dW, 2.0*Wp), -0.5*Wp);
+  if (dW < -0.5*Wp) dW = -0.5*Wp;
+  if (dW > 2.0*Wp) dW = 2.0*Wp;
+
+  Wp += dW;
   err = err_eqn(Bsq, D, Ep, QdB, Qtsq, Wp, &eflag);
 
   // Not good enough?  apply secant method
   int iter = 0;
-  for (iter = 0; (iter < ITERMAX) && (fabs(err/Wp) >= ERRTOL); iter++) {
+  for (iter = 0; iter < ITERMAX; iter++) {
     dW = (Wp1 - Wp)*err/(err - err1);
 
+    // TODO should this have limit applied?
     Wp1 = Wp;
     err1 = err;
 
     // Normal secant increment is dW. Also limit guess to between 0.5 and 2
     // times the current value
-    Wp += MY_MAX( MY_MIN(dW, 2.0*Wp), -0.5*Wp);
+    if (dW < -0.5*Wp) dW = -0.5*Wp;
+    if (dW > 2.0*Wp) dW = 2.0*Wp;
 
-    if (fabs(dW/Wp) < ERRTOL)
+    Wp += dW;
+
+    if (fabs(dW/Wp) < ERRTOL) {
+      //fprintf(stderr, "Breaking!\n");
       break;
+    }
 
     err = err_eqn(Bsq, D, Ep, QdB, Qtsq, Wp, &eflag);
+    //fprintf(stderr, "%.15f ", err);
+
+    if (fabs(err/Wp) < ERRTOL) {
+      //fprintf(stderr, "Breaking!\n");
+      break;
+    }
   }
   // Failure to converge; do not set primitives other than B
   if(iter == ITERMAX) {
