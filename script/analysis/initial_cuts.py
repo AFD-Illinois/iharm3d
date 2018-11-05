@@ -14,12 +14,8 @@ import os
 COMPARE = False
 
 dump_dir = sys.argv[1]
-
-init_file = np.sort(glob.glob(os.path.join(dump_dir,"dump*.h5")))[0]
-
-hdr = io.load_hdr(init_file)
-geom = io.load_geom(hdr, os.path.join(dump_dir,"grid.h5"))
-dump = io.load_dump(init_file, hdr, geom)
+init_file = io.get_dumps_list(dump_dir)[0]
+hdr, geom, dump = io.load_all(init_file, extras=False)
 
 N2 = hdr['n2']
 r = geom['r'][:, N2/2, 0]

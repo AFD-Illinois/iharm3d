@@ -7,7 +7,52 @@
 import subprocess
 import glob
 import os
+
+import signal
+import multiprocessing
+import psutil
+
 import numpy as np
+
+# TODO fns to process arguments
+
+# Run a function in parallel with Python's multiprocessing
+# 'function' must take only a number
+def run_parallel(function, nmax, nthreads, debug=False):
+  #original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+  pool = multiprocessing.Pool(nthreads)
+  #signal.signal(signal.SIGINT, original_sigint_handler)
+  try:
+    pool.map_async(function, range(nmax)).get(720000)
+  except KeyboardInterrupt:
+    print 'Caught interrupt!'
+    pool.terminate()
+    exit(1)
+  else:
+    pool.close()
+  pool.join()
+
+# Calculate ideal # threads
+def calc_nthreads(hdr, n_mkl=4):
+  # Limit threads for 192^3+ problem due to memory
+  if hdr['n1'] * hdr['n2'] * hdr['n3'] >= 192 * 192 * 192:
+    # Try to add some parallelism MKL
+    try:
+      import ctypes
+    
+      mkl_rt = ctypes.CDLL('libmkl_rt.so')
+      mkl_set_num_threads = mkl_rt.MKL_Set_Num_Threads
+      mkl_get_max_threads = mkl_rt.MKL_Get_Max_Threads
+      mkl_set_num_threads(n_mkl)
+      print "Using", mkl_get_max_threads(), "MKL threads"
+    except Error as e:
+      print(e)
+    
+    # Roughly compute memory and leave some generous padding for multiple copies and Python games
+    # TODO depend on success above?
+    return int(0.11 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
+  else:
+    return psutil.cpu_count(logical=False)
 
 # COLORIZED OUTPUT
 class color:

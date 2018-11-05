@@ -30,20 +30,23 @@ fname_out = sys.argv[-1]
 fig = plt.figure(figsize=(FIGX, FIGY))
 
 # For time plots.  Also take MAD/SANE for axes?
-tf = 1e4
+ti = avgs[0]['t'][0]
+tf = avgs[0]['t'][-1]
 
-styles = ['k','r--','g-.','b:'][:len(sys.argv)-2] # TODO extend
+# Default styles
+styles = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9']
+# TODO allow other label sets.  Take on command line?
+labels = ["a = -0.94", "a = -0.5", "a = 0.0", "a = +0.5", "a = +0.94"]
+
+
 def plot_all(ax, iname, varname, timelabels=False):
   for i,avg in enumerate(avgs):
-    ax.plot(avg[iname], avg[varname], styles[i])
+    ax.plot(avg[iname], avg[varname], styles[i], label=labels[i])
   if iname == 't':
-    ax.set_xlim([0,tf])
+    ax.set_xlim([ti,tf])
     if not timelabels:
       ax.set_xticklabels([])
     
-  # TODO legend?
-
-
 ax = plt.subplot(2,3,1)
 plot_all(ax, 'r', 'rho_r')
 ax.set_yscale('log')
@@ -61,6 +64,7 @@ plot_all(ax, 'r', 'B_r')
 ax.set_yscale('log')
 ax.set_ylabel('<|B|>')
 ax.set_ylim([1.e-4, 1.e-1])
+ax.legend(loc=1)
 
 ax = plt.subplot(2,3,4)
 plot_all(ax, 'r', 'uphi_r')
@@ -103,6 +107,7 @@ ax.set_ylim([-1,2])
 ax.set_ylabel("omega (EH, time/hemi only)")
 ax.set_xlabel("theta")
 ax.axhline(0.5, linestyle='--', color='k')
+ax.legend(loc=3)
 
 ax = plt.subplot(2,2,2)
 plot_all(ax, 'th', 'omega_th_av')
@@ -119,6 +124,7 @@ fig = plt.figure(figsize=(FIGX, FIGY))
 ax = plt.subplot(5,1,1)
 plot_all(ax,'t','Mdot')
 ax.set_ylabel('|Mdot|')
+ax.legend(loc=2)
 
 ax = plt.subplot(5,1,2)
 for avg in avgs:
@@ -153,6 +159,7 @@ fig = plt.figure(figsize=(FIGX, FIGY))
 ax = plt.subplot(5,1,1)
 plot_all(ax,'t','Mdot')
 ax.set_ylabel('|Mdot|')
+ax.legend(loc=2)
 
 ax = plt.subplot(5,1,2)
 for avg in avgs:

@@ -4,140 +4,122 @@
 #                                                                              #
 ################################################################################
 
-import matplotlib
-matplotlib.use('Agg')
-
+# Local
+import hdf5_to_dict as io
 import plot as bplt
 from analysis_fns import *
+import util
 
+# System
 import sys; sys.dont_write_bytecode = True
 import numpy as np
-import hdf5_to_dict as io
+
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import util
-import glob
+
 import os
 import pickle
 
-import multiprocessing
-import signal
-import psutil
-
 # Movie size in ~inches. Keep 16/9 for standard-size movies
-FIGX = 12
-FIGY = 27/4
-# For plotting debug, "array-space" plots
-# Default for all plots, can be overridden below
-USEARRSPACE = False
-
-MAD = False
-LOG_MDOT = False
-LOG_PHI = False
+FIGX = 10
+FIGY = 8
+#FIGY = FIGX*9/16
 
 # Choose between several predefined layouts below
-# For keeping around lots of possible movies with same infrastructure
 movie_type = "simplest"
 
-# ARGUMENTS
-path1 = sys.argv[1]
-path2 = sys.argv[2]
-
-# LOAD FILES
-files1 = np.sort(glob.glob(os.path.join(path1, "dump*.h5")))
-files2 = np.sort(glob.glob(os.path.join(path2, "dump*.h5")))
-
-if len(files1) == 0 or len(files2) == 0:
-    util.warn("INVALID PATH TO DUMP FOLDER")
-    sys.exit(1)
-
-FRAMEDIR = 'FRAMES'
-util.make_dir(FRAMEDIR)
-
-# TODO TODO support different shapes/geoms
-hdr = io.load_hdr(files1[0])
-gridfile = os.path.join(path1,"grid.h5")
-geom = io.load_geom(hdr, gridfile)
-
-bplt.init_plotting(hdr, geom)
-init_analysis(hdr, geom)
-
-# DECIDE THREADS
-if hdr['n1'] * hdr['n2'] * hdr['n3'] >= 192*192*192:
-  #Roughly compute memory and leave some generous padding for multiple copies and Python games
-  nthreads = int(0.05 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
-else:
-  nthreads = psutil.cpu_count(logical=False)
-
-print 'Number of threads: %i' % nthreads
-
-diag_post = True
-if diag_post:
-  # Load fluxes from post-analysis: more flexible
-  diag = pickle.load(open("eht_out.p", 'rb'))
-else:
-  # Load diagnostics from HARM itself
-  diag = io.load_log(hdr, os.path.join(path, "log.out"))
+FRAMEDIR = "FRAMES"
 
 def plot(n):
-  imname = 'frame_%08d.png' % n
-  imname = os.path.join(FRAMEDIR, imname)
-  print '%08d / ' % (n+1) + '%08d' % len(files)
+  imname = os.path.join(FRAMEDIR, 'frame_%08d.png' % n)
+  print '%08d / ' % (n+1) + '%08d' % len(files1)
 
   # Don't calculate b/ucon/cov/e- stuff unless we need it below
-  dump1 = io.load_dump(files1[n], hdr, geom, derived_vars = False, extras = False)
-  dump2 = io.load_dump(files2[n], hdr, geom, derived_vars = False, extras = False) 
+  dump1 = io.load_dump(files1[n], hdr1, geom1, derived_vars = False, extras = False)
+  dump2 = io.load_dump(files2[n], hdr2, geom2, derived_vars = False, extras = False)
 
   fig = plt.figure(figsize=(FIGX, FIGY))
 
-  # Zoom in for SANEs
-  if MAD:
-    window = [-40,40,-40,40]
-    nlines = 20
-    rho_l, rho_h = -3, 2
-  else:
-    window = [-20,20,-20,20]
-    nlines = 10
-    rho_l, rho_h = -3, 0
+  # Keep same parameters betwen plots
+  rho_l, rho_h = -3, 2
+  window = [-20,20,-20,20]
+  nlines1 = 20
+  nlines2 = 5
 
   if movie_type == "simplest":
     # Simplest movie: just RHO
-    gs = gridspec.GridSpec(1, 2, width_ratios=[16,17])
+    gs = gridspec.GridSpec(1, 2)
     ax_slc = [plt.subplot(gs[0]), plt.subplot(gs[1])]
-    bplt.plot_xz(ax_slc[0], np.log10(dump1['RHO']), label=r"$\log_{10}(\rho)$, MAD", vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
-    bplt.plot_xz(ax_slc[1], np.log10(dump2['RHO']), label=r"$\log_{10}(\rho)$, SANE", vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
+    bplt.plot_xz(ax_slc[0], dump1, np.log10(dump1['RHO']), label=r"$\log_{10}(\rho)$, MAD",
+                 ylabel=False, vmin=rho_l, vmax=rho_h, window=window, half_cut=True, cmap='jet')
+    bplt.overlay_field(ax_slc[0], dump1, nlines1)
+    bplt.plot_xz(ax_slc[1], dump2, np.log10(dump2['RHO']), label=r"$\log_{10}(\rho)$, SANE",
+                 ylabel=False, vmin=rho_l, vmax=rho_h, window=window, half_cut=True, cmap='jet')
+    bplt.overlay_field(ax_slc[1], dump2, nlines2)
   elif movie_type == "simpler":
     # Simpler movie: RHO and phi
-    gs = gridspec.GridSpec(2, 3, height_ratios=[6, 1, 1], width_ratios=[16,17])
+    gs = gridspec.GridSpec(2, 2, height_ratios=[5, 1])
     ax_slc = [plt.subplot(gs[0,0]), plt.subplot(gs[0,1])]
-    ax_flux = [plt.subplot(gs[1,:]), plt.subplot(gs[2,:])]
-    bplt.plot_xz(ax_slc[0], np.log10(dump1['RHO']), label=r"$\log_{10}(\rho)$, MAD", vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
-    bplt.plot_xz(ax_slc[1], np.log10(dump2['RHO']), label=r"$\log_{10}(\rho)$, SANE", vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
-    bplt.diag_plot(ax_flux[0], diag, dump, 'phi', r"$\phi_{BH}$ MAD", logy=LOG_PHI, xlabel=False)
-    bplt.diag_plot(ax_flux[1], diag, dump, 'phi', r"$\phi_{BH}$ SANE", logy=LOG_PHI, xlabel=False)
+    ax_flux = [plt.subplot(gs[1,:])]
+    
+    bplt.plot_xz(ax_slc[0], dump1, np.log10(dump1['RHO']), label=r"$\log_{10}(\rho)$, MAD",
+                 ylabel=False, vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
+    bplt.overlay_field(ax_slc[0], dump1, nlines1)
+    bplt.plot_xz(ax_slc[1], dump2, np.log10(dump2['RHO']), label=r"$\log_{10}(\rho)$, SANE",
+                 ylabel=False, vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
+    bplt.overlay_field(ax_slc[1], dump2, nlines2)
+
+    # This is way too custom
+    ax = ax_flux[0]; ylim=[0,80]
+    slc1 = np.where((diag1['phi'] > ylim[0]) & (diag1['phi'] < ylim[1]))
+    slc2 = np.where((diag2['phi'] > ylim[0]) & (diag2['phi'] < ylim[1]))
+    ax.plot(diag1['t'][slc1], diag1['phi'][slc1], 'r', label="MAD")
+    ax.plot(diag2['t'][slc2], diag2['phi'][slc2], 'b', label="SANE")
+    ax.set_xlim([diag1['t'][0], diag1['t'][-1]])
+    ax.axvline(dump1['t'], color='r')
+    ax.set_ylim(ylim)
+    ax.set_ylabel(r"$\phi_{BH}$")
+    ax.legend(loc=2)
 
   pad = 0.05
-  plt.subplots_adjust(left=2*pad, right=1-2*pad, bottom=pad, top=1-pad) # Avoid crowding
-  #plt.tight_layout()
-
-  plt.savefig(imname, dpi=1920/FIGX) #, bbox_inches='tight')
+  plt.subplots_adjust(left=pad, right=1-pad, bottom=2*pad, top=1-pad)
+  plt.savefig(imname, dpi=1920/FIGX)
   plt.close(fig)
 
-# Test-run a couple plots directly so that backtraces work
-if debug:
-    plot(0)
-    plot(100)
-    exit(0)
+if __name__ == "__main__":
+  # PROCESS ARGUMENTS
+  if sys.argv[1] == '-d':
+    debug = True
+    path1 = sys.argv[2]
+    path2 = sys.argv[3]
+  else:
+    debug = False
+    path1 = sys.argv[1]
+    path2 = sys.argv[2]
+  
+  # LOAD FILES
+  files1 = io.get_dumps_list(path1)
+  files2 = io.get_dumps_list(path2)
+  
+  if len(files1) == 0 or len(files2) == 0:
+      util.warn("INVALID PATH TO DUMP FOLDER")
+      sys.exit(1)
 
-#original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-pool = multiprocessing.Pool(nthreads)
-#signal.signal(signal.SIGINT, original_sigint_handler)
-try:
-  pool.map_async(plot, range(len(files))).get(720000)
-except KeyboardInterrupt:
-  print 'Caught interrupt!'
-  pool.terminate()
-  exit(1)
-else:
-  pool.close()
-pool.join()
+  util.make_dir(FRAMEDIR)
+
+  hdr1 = io.load_hdr(files1[0])
+  hdr2 = io.load_hdr(files2[0])
+  geom1 = io.load_geom(hdr1, path1)
+  geom2 = io.load_geom(hdr2, path2)
+  # TODO diags from post?
+  # Load diagnostics from HARM itself
+  diag1 = io.load_log(path1)
+  diag2 = io.load_log(path2)
+
+  nthreads = util.calc_nthreads(hdr1)
+  if debug:
+    for i in range(len(files1)):
+      plot(i)
+  else:
+    util.run_parallel(plot, len(files1), nthreads)
