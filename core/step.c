@@ -183,7 +183,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 //  update_f(F, dU);
 //  FLAG("Fixed flux. Got Si->U");
 
-#pragma omp parallel for simd collapse(3)
+#pragma omp parallel for collapse(3)
   PLOOP ZLOOP {
     Sf->U[ip][k][j][i] = Si->U[ip][k][j][i] +
       Dt*((F->X1[ip][k][j][i] - F->X1[ip][k][j][i+1])/dx[1] +
