@@ -47,6 +47,6 @@ make_harm_here () {
 # Usage: run_harm $OUT_DIR name 
 run_harm() {
   # TODO if stampede...
-  mpirun -n $HARM_NPROC ./harm -p param.dat -o $1 > $1/out_$2.txt 2> $1/err_$2.txt
-  #ibrun ./harm -p param.dat -o $1 > $1/out_$2.txt 2> $1/err_$2.txt
+  #mpirun -n $HARM_NPROC ./harm -p param.dat -o $1 > $1/out_$2.txt 2> $1/err_$2.txt
+  ibrun ./harm -p param.dat -o $1 2>&1 > $1/out_$2.txt
 }

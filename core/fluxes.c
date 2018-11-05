@@ -62,8 +62,12 @@ double get_flux(struct GridGeom *G, struct FluidState *S, struct FluidFlux *F)
     firstc = 0;
   }
 
+  //FLAG("First get_flux");
+
   // reconstruct X1
   reconstruct(S, Sl->P, Sr->P, 1);
+
+  //FLAG("After Reconstruct");
 
   // lr_to_flux X1
   lr_to_flux(G, Sl, Sr, 1, FACE1, &(F->X1), ctop);
@@ -108,6 +112,8 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     firstc = 0;
   }
 
+  //FLAG("First LR");
+
   // Properly offset left face
   // These are un-macro'd to bundle OpenMP thread tasks rather than memory accesses
   PLOOP {
@@ -134,12 +140,16 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     }
   }
 
+  //FLAG("Left Face Offset");
+
   timer_start(TIMER_LR_STATE);
 
   get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
   get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
 
   timer_stop(TIMER_LR_STATE);
+
+  //FLAG("Left Face Offset");
 
   timer_start(TIMER_LR_PTOF);
 
@@ -151,14 +161,14 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
 
   timer_stop(TIMER_LR_PTOF);
 
+#pragma omp parallel for simd collapse(3)
   PLOOP ZLOOP {
     preserve_F.X1[ip][k][j][i] = (*fluxL)[ip][k][j][i];
     preserve_F.X2[ip][k][j][i] = (*fluxR)[ip][k][j][i];
     preserve_F.X3[ip][k][j][i] = 0;
     preserve_dU[ip][k][j][i] = 0;
   }
-
-  FLAG("State, flux");
+  //FLAG("State, flux");
 
   timer_start(TIMER_LR_VCHAR);
   // TODO vectorizing these loops fails for some reason

@@ -18,7 +18,7 @@
 //GridDouble *omega;
 
 #define OUT_TYPE float
-#define OUT_H5_TYPE H5T_IEEE_F32LE
+#define OUT_H5_TYPE H5T_IEEE_F64LE
 
 #define HDF_STR_LEN 20
 

@@ -34,40 +34,54 @@ void step(struct GridGeom *G, struct FluidState *S)
   PLOOP ZLOOPALL Ssave->P[ip][k][j][i] = S->P[ip][k][j][i];
 #endif
   LOGN("Step %d",nstep);
-  //FLAG("Start step");
+  FLAG("Start step");
   // TODO add back well-named flags /after/ events
 
   // Predictor setup
   advance_fluid(G, S, S, Stmp, 0.5*dt);
+  FLAG("Advance Fluid Tmp");
 
 #if ELECTRONS
   heat_electrons(G, S, Stmp);
+  FLAG("Heat Electrons Tmp");
 #endif
 
   // Fixup routines: smooth over outlier zones
   fixup(G, Stmp);
+  FLAG("Fixup Tmp");
 #if ELECTRONS
   fixup_electrons(Stmp);
+  FLAG("Fixup e- Tmp");
 #endif
   // Need an MPI call _before_ fixup_utop to obtain correct pflags
   set_bounds(G, Stmp);
+  FLAG("First bounds Tmp");
   fixup_utoprim(G, Stmp);
-  set_bounds(G, Stmp); // TODO still need one after?
+//  FLAG("Fixup U_to_P Tmp");
+  set_bounds(G, Stmp); // TODO eliminate at least the pflag call here
+  FLAG("Second bounds Tmp");
 
   // Corrector step
   double ndt = advance_fluid(G, S, Stmp, S, dt);
+  FLAG("Advance Fluid Full");
 
 #if ELECTRONS
   heat_electrons(G, Stmp, S);
+  FLAG("Heat Electrons Full");
 #endif
 
   fixup(G, S);
+  FLAG("Fixup Full");
 #if ELECTRONS
   fixup_electrons(S);
+  FLAG("Fixup e- Full");
 #endif
   set_bounds(G, S);
+  FLAG("First bounds Full");
   fixup_utoprim(G, S);
+  FLAG("Fixup U_to_P Full");
   set_bounds(G, S);
+  FLAG("Second bounds Full");
 
   // Increment time
   t += dt;
@@ -134,28 +148,28 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 
   double ndt = get_flux(G, Ss, F);
 
-  //update_f(F, dU);
-  //FLAG("Got initial fluxes");
+//  update_f(F, dU);
+//  FLAG("Got initial fluxes");
 
 #if METRIC == MKS
   fix_flux(F);
 #endif
 
-  //update_f(F, dU);
-  //FLAG("Fixed Flux");
+//  update_f(F, dU);
+//  FLAG("Fixed Flux");
 
   //Constrained transport for B
   flux_ct(F);
 
-  //update_f(F, dU);
-  //FLAG("CT Step");
+//  update_f(F, dU);
+//  FLAG("CT Step");
 
   // Flux diagnostic globals
   // TODO don't compute every step, only for logs?
   diag_flux(F);
 
-  //update_f(F, dU);
-  //FLAG("Flux Diags");
+//  update_f(F, dU);
+//  FLAG("Flux Diags");
 
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);
@@ -166,8 +180,8 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);
 
-  //update_f(F, dU);
-  //FLAG("Fixed flux. Got Si->U");
+//  update_f(F, dU);
+//  FLAG("Fixed flux. Got Si->U");
 
 #pragma omp parallel for simd collapse(3)
   PLOOP ZLOOP {

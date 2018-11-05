@@ -89,29 +89,3 @@ plt.tight_layout()
 
 plt.savefig(imname+"_xz.png", dpi=100)
 plt.close(fig)
-
-if 'U' in hdr.keys():
-  fig = plt.figure(figsize=(FIGX, FIGY))
-  for i in range(hdr['n_prim']):
-    ax = plt.subplot(nyplot, nxplot, i+1)
-    plot_diff_xy(ax, str(i))
-    ax.set_xlabel('')
-    ax.set_ylabel('')
-
-  plt.tight_layout()  
-
-  plt.savefig(imname+"_U_xy.png", dpi=100)
-  plt.close(fig)
-
-  fig = plt.figure(figsize=(FIGX, FIGY))
-  for i in range(hdr['n_prim']):
-    ax = plt.subplot(nyplot, nxplot, i+1)
-    plot_diff_xz(ax, str(i))
-    ax.set_xlabel('')
-    ax.set_ylabel('')
-
-  plt.tight_layout()
-
-  plt.savefig(imname+"_U_xz.png", dpi=100)
-  plt.close(fig)
-

@@ -69,9 +69,9 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
 {
   //Only collapse over first two dimensions, to preserve vectorization
   // TODO try pragma simd for last loop only
-#pragma omp parallel
+//#pragma omp parallel
 {
-#pragma omp for collapse(3) nowait
+//#pragma omp for collapse(3) nowait
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     double mhd[NDIM];
 
@@ -86,7 +86,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
     flux[U3][k][j][i] = mhd[3] * G->gdet[loc][j][i];
   }
 
-#pragma omp for simd collapse(2) nowait
+//#pragma omp for simd collapse(2) nowait
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     // Dual of Maxwell tensor
     flux[B1][k][j][i] = (S->bcon[1][k][j][i] * S->ucon[dir][k][j][i]
@@ -99,7 +99,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
   }
 
 #if ELECTRONS
-#pragma omp for simd collapse(2)
+//#pragma omp for simd collapse(2)
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     // RHO already includes a factor of gdet!
     flux[KEL][k][j][i] = flux[RHO][k][j][i]*S->P[KEL][k][j][i];
@@ -183,27 +183,27 @@ inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, in
 void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
   int kstart, int kstop, int jstart, int jstop, int istart, int istop)
 {
-#pragma omp parallel
+//#pragma omp parallel
   {
-#pragma omp for simd collapse(2)
+//#pragma omp for simd collapse(2)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       ucon_calc(G, S, i, j, k, loc);
       //lower_grid(S->ucon, S->ucov, G, i, j, k, loc);
     }
 
-#pragma omp for simd collapse(2)
+//#pragma omp for simd collapse(2)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       lower_grid(S->ucon, S->ucov, G, i, j, k, loc);
     }
     //lower_grid_vec(S->ucon, S->ucov, G, kstart, kstop, jstart, jstop, istart, istop, loc);
 
-#pragma omp for simd collapse(2)
+//#pragma omp for simd collapse(2)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       bcon_calc(S, i, j, k);
       //lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
     }
 
-#pragma omp for simd collapse(2)
+//#pragma omp for simd collapse(2)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
     }

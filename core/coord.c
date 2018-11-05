@@ -262,7 +262,7 @@ void set_grid(struct GridGeom *G)
   // Following stolen from bhlight's dt_light calculation
   double dt_light_min = 1e20;
 #if !INTEL_WORKAROUND
-#pragma omp parallel for collapse(2) recuction(min:dt_light_min)
+#pragma omp parallel for collapse(2) reduction(min:dt_light_min)
 #endif
   JSLOOP(-NG, N2 - 1 + NG) {
     ISLOOP(-NG, N1 - 1 + NG) {
