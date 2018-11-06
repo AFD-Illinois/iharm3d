@@ -131,8 +131,8 @@ void fixup_electrons(struct FluidState *S)
 
 inline void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k)
 {
-  double kelmax = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam-game)/(tptemin + (gam-1.)/(game-1.));
-  double kelmin = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam-game)/(tptemax + (gam-1.)/(game-1.));
+  double kelmax = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam-game)/(tptemin*(gam-1.)/(gamp-1.) + (gam-1.)/(game-1.));
+  double kelmin = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam-game)/(tptemax*(gam-1.)/(gamp-1.) + (gam-1.)/(game-1.));
 
   // Replace NANs with cold electrons
   if (isnan(S->P[KEL][k][j][i])) S->P[KEL][k][j][i] = kelmin;
