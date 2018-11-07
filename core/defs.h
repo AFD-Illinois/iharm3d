@@ -6,10 +6,6 @@
  *                                                                            *
  ******************************************************************************/
 
-/*******************************************************************************
-    GLOBAL VARIABLES
-*******************************************************************************/
-
 #pragma once
 
 // Zone flags.  TODO move these to the heap
@@ -25,7 +21,7 @@ double Rhor;
 double tp_over_te;
 
 // geometry
-double Rin, Rout, hslope, R0;
+double Rin, Rout, hslope;
 double poly_norm, poly_xt, poly_alpha, mks_smooth;
 double cour;
 double dV, dx[NDIM], startx[NDIM];

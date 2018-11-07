@@ -135,9 +135,14 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_make_directory("mks");
   hdf5_set_directory("/header/geom/mks/");
 #endif
-  hdf5_write_single_val(&Rin, "Rin", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&Rout, "Rout", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&Rhor, "Reh", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&Rin, "r_in", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&Rout, "r_out", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&Rhor, "r_eh", H5T_IEEE_F64LE);
+  // I don't need this in code but it's in the spec to output it
+  double z1 = 1 + pow(1 - a*a,1./3.)*(pow(1+a,1./3.) + pow(1-a,1./3.));
+  double z2 = sqrt(3*a*a + z1*z1);
+  double Risco = 3 + z2 - sqrt((3-z1)*(3 + z1 + 2*z2));
+  hdf5_write_single_val(&Risco, "r_isco", H5T_IEEE_F64LE);
   hdf5_write_single_val(&hslope, "hslope", H5T_IEEE_F64LE);
   hdf5_write_single_val(&a, "a", H5T_IEEE_F64LE);
 #endif
@@ -179,6 +184,13 @@ void dump(struct GridGeom *G, struct FluidState *S)
   // Space for any extra items
   hdf5_make_directory("extras");
   hdf5_set_directory("/extras/");
+  // Preserve git commit or tag of the run -- see Makefile
+#ifdef GIT_VERSION
+  hdf5_write_single_val(QUOTE(GIT_VERSION), "git_version", string_type);
+#else
+#error "No git version!!"
+#endif
+  // Preserve notion of what floors were hit
   if (is_full_dump) {
     pack_write_int(fflag, "fixup");
   }
