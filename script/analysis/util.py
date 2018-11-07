@@ -23,9 +23,9 @@ def run_parallel(function, nmax, nthreads, debug=False):
   pool = multiprocessing.Pool(nthreads)
   #signal.signal(signal.SIGINT, original_sigint_handler)
   try:
-    pool.map_async(function, range(nmax)).get(720000)
+    pool.map_async(function, list(range(nmax))).get(720000)
   except KeyboardInterrupt:
-    print 'Caught interrupt!'
+    print('Caught interrupt!')
     pool.terminate()
     exit(1)
   else:
@@ -44,7 +44,7 @@ def calc_nthreads(hdr, n_mkl=4):
       mkl_set_num_threads = mkl_rt.MKL_Set_Num_Threads
       mkl_get_max_threads = mkl_rt.MKL_Get_Max_Threads
       mkl_set_num_threads(n_mkl)
-      print "Using", mkl_get_max_threads(), "MKL threads"
+      print("Using", mkl_get_max_threads(), "MKL threads")
     except Error as e:
       print(e)
     
@@ -66,7 +66,7 @@ def get_files(PATH, NAME):
 
 # PRINT ERROR MESSAGE
 def warn(mesg):
-  print(color.WARNING + "\n  ERROR: " + color.NORMAL + mesg + "\n")
+  print((color.WARNING + "\n  ERROR: " + color.NORMAL + mesg + "\n"))
 
 # APPEND '/' TO PATH IF MISSING
 def sanitize_path(path):

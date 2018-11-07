@@ -53,14 +53,14 @@ for i in range(N1):
     if (dt_light_local < dt_light_min):
       dt_light_min = dt_light_local
 
-print "bhlight min is", dt_light_min
+print("bhlight min is", dt_light_min)
 #print "directional min is", np.min(dt_light)
 tstep = 0.9*dt_light_min
-print "timestep is then", tstep
+print("timestep is then", tstep)
 
 size = N1*N2*N3/nnodes
 zcps = 813609*np.log(size) - 6327477
-print "zcps per node is", zcps, ", total is", zcps*nnodes
+print("zcps per node is", zcps, ", total is", zcps*nnodes)
 wall_per_step = (N1*N2*N3)/(zcps*nnodes)
-print "walltime per step is", wall_per_step
-print "total time is", tf/tstep*wall_per_step/3600, " hours"
+print("walltime per step is", wall_per_step)
+print("total time is", tf/tstep*wall_per_step/3600, " hours")

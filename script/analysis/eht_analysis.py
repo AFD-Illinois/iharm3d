@@ -4,6 +4,8 @@
 #                                                                              # 
 ################################################################################
 
+from __future__ import print_function, division
+
 from analysis_fns import *
 import hdf5_to_dict as io
 import util
@@ -46,7 +48,7 @@ geom = io.load_geom(hdr, path)
 
 # If the time after which to average wasn't given, just use the back half of dumps
 if tavg is None:
-  tavg = io.load_dump(dumps[ND/2], hdr, geom, derived_vars=False, extras=False)['t'] - 1.0
+  tavg = io.load_dump(dumps[ND//2], hdr, geom, derived_vars=False, extras=False)['t'] - 1.0
 
 # Decide where to measure fluxes
 def i_of(rcoord):
@@ -72,11 +74,11 @@ iEH = 5
 
 # Calculate jmin, jmax for EHT radial profiles
 ths = geom['th'][-1,:,0]
-for n in xrange(len(ths)):
+for n in range(len(ths)):
   if ths[n] > THMIN:
     jmin = n
     break
-for n in xrange(len(ths)):
+for n in range(len(ths)):
   if ths[n] > THMAX:
     jmax = n
     break
@@ -91,7 +93,7 @@ def avg_dump(n):
   dump = io.load_dump(dumps[n], hdr, geom, extras=False)
   
   out['t'] = dump['t']
-  print "Loaded ",(n+1),"/",len(dumps),": ",out['t']
+  print("Loaded {} / {}: {}".format((n+1), len(dumps), out['t']))
 
   # SHELL AVERAGES (only for t > tavg usu. tmax/2)
   if out['t'] > tavg:
@@ -131,7 +133,7 @@ def avg_dump(n):
       if '_r' in key or '_SADW' in key:
         out[key] = np.zeros((hdr['n1']))
       elif '_th' in key:
-        out[key] = np.zeros((hdr['n2']/2))
+        out[key] = np.zeros((hdr['n2']//2))
 
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
@@ -198,7 +200,7 @@ else:
   pool = multiprocessing.Pool(NTHREADS)
   try:
     # Map the above function to the dump numbers, returning a list of 'out' dicts
-    out_list = pool.map_async(avg_dump, range(len(dumps))).get(99999999)
+    out_list = pool.map_async(avg_dump, list(range(len(dumps)))).get(99999999)
     #print out_list[0].keys()
   except KeyboardInterrupt:
     pool.terminate()
@@ -208,7 +210,7 @@ else:
     pool.join()
 
 # Merge the output dicts
-for key in out_list[0].keys():
+for key in list(out_list[0].keys()):
   if key in avg_keys:
     out_full[key] = np.zeros((ND,out_list[0][key].size))
     for n in range(len(out_list)):
@@ -220,16 +222,16 @@ for key in out_list[0].keys():
 
 # Toss in the common geom lists
 N2 = hdr['n2']
-out_full['r'] = geom['r'][:,N2/2,0]
-out_full['th'] = geom['th'][0,:N2/2,0]
+out_full['r'] = geom['r'][:,N2//2,0]
+out_full['th'] = geom['th'][0,:N2//2,0]
 
 # Time average the radial profiles
 n = 0
-for n in xrange(ND):
+for n in range(ND):
   if out_full['t'][n] >= tavg:
     break
 
-print "nmin = ",n
+print("nmin = ",n)
 
 # Todo specify radial or profile in key name?
 for key in avg_keys:

@@ -4,6 +4,8 @@
 #                                                                              # 
 ################################################################################
 
+from __future__ import print_function, division
+
 import units
 
 import sys; sys.dont_write_bytecode = True
@@ -12,6 +14,7 @@ import h5py
 
 import os
 import glob
+from pkg_resources import parse_version
 
 def get_dumps_list(path):
   return np.sort(glob.glob(os.path.join(path, "dump_*.h5")))
@@ -35,44 +38,61 @@ def load_all(fname, **kwargs):
   dump = load_dump(fname, hdr, geom, **kwargs)
   return hdr, geom, dump
 
+# Function to recursively un-bytes all the dumb HDF5 strings
+def decode_all(dict):
+    for key in dict:
+      # Decode bytes
+      if type(dict[key]) == np.bytes_:
+        dict[key] = dict[key].decode('UTF-8')
+      # Split ndarray of bytes into list of strings
+      elif type(dict[key]) == np.ndarray:
+        if dict[key].dtype.kind == 'S':
+          dict[key] = [el.decode('UTF-8') for el in dict[key]]
+      # Recurse for any subfolders
+      elif type(dict[key]) in [list, dict]:
+        decode_all(dict[key])
+
 def load_hdr(fname):
   dfile = h5py.File(fname, 'r')
 
   hdr = {}
   try:
     # Scoop all the keys that are not folders
-    for key in [key for key in dfile['header'].keys() if not key == 'geom']:
+    for key in [key for key in list(dfile['header'].keys()) if not key == 'geom']:
       hdr[key] = dfile['header/' + key][()]
       
     # TODO load these from grid.h5? Or is the header actually the place for them?
-    for key in [key for key in dfile['header/geom'].keys() if not key in ['mks', 'mmks'] ]:
+    for key in [key for key in list(dfile['header/geom'].keys()) if not key in ['mks', 'mmks'] ]:
       hdr[key] = dfile['header/geom/' + key][()]
-    if 'mks' in dfile['header/geom'].keys():
+    if 'mks' in list(dfile['header/geom'].keys()):
       for key in dfile['header/geom/mks']:
         hdr[key] = dfile['header/geom/mks/' + key][()]
-    if 'mmks' in dfile['header/geom'].keys():
+    if 'mmks' in list(dfile['header/geom'].keys()):
       for key in dfile['header/geom/mmks']:
         hdr[key] = dfile['header/geom/mmks/' + key][()]
 
-  except KeyError, e:
-    print "File is older than supported by this library. Use hdf5_to_dict_old.py"
+  except KeyError as e:
+    print("File is older than supported by this library. Use hdf5_to_dict_old.py")
 
   dfile.close()
+
+  decode_all(hdr)
 
   # Turn the version string into components
   hdr['codename'], hdr['codestatus'], hdr['vnum'] = hdr['version'].split("-")
   hdr['vnum'] = [int(x) for x in hdr['vnum'].split(".")]
 
   # Work around naming bug in old versions of iharm
-  if hdr['vnum'][0] <= 3 and hdr['vnum'][1] <= 3:
+  # This may have broken with HDF5 strings above
+  if hdr['vnum'] < [3,3]:
     names = []
     for name in hdr['prim_names'][0]:
       names.append( name )
     hdr['prim_names'] = names
-
-  print "Loading from version ", hdr['version']
-  print "Size:", hdr['n1'], hdr['n2'], hdr['n3']
-  print "Resolution:", hdr['startx1'], hdr['dx1'], hdr['startx2'], hdr['dx2'], hdr['startx3'], hdr['dx3']
+  
+  print("Loaded header from code {}".format(hdr['version']))
+  #print("Size: {} {} {}".format(hdr['n1'], hdr['n2'], hdr['n3']))
+  #print("Resolution: {} {} {} {} {} {}".format(hdr['startx1'], hdr['dx1'], hdr['startx2'], hdr['dx2'], hdr['startx3'], hdr['dx3']))
 
   return hdr
 
@@ -81,7 +101,7 @@ def load_geom(hdr, path):
   gfile = h5py.File(fname, 'r')
 
   geom = {}
-  for key in gfile['/'].keys():
+  for key in list(gfile['/'].keys()):
     geom[key] = gfile[key][()]
   
   # Useful stuff for direct access in geom
@@ -114,15 +134,15 @@ def load_dump(fname, hdr, geom, derived_vars=True, extras=True):
   dump['geom'] = geom
 
   # TODO this necessarily grabs the /whole/ primitives array
-  for key in [key for key in dfile['/'].keys() if key not in ['header', 'extras', 'prims'] ]:
+  for key in [key for key in list(dfile['/'].keys()) if key not in ['header', 'extras', 'prims'] ]:
     dump[key] = dfile[key][()]
 
-  for name, num in zip(hdr['prim_names'], range(hdr['n_prim'])):
+  for name, num in zip(hdr['prim_names'], list(range(hdr['n_prim']))):
     dump[name] = dfile['prims'][:,:,:,num]
 
   if extras:
     # Load the extras.
-    for key in dfile['extras'].keys():
+    for key in list(dfile['extras'].keys()):
       dump[key] = dfile['extras/' + key][()]
   
   dfile.close()

@@ -1,15 +1,16 @@
 ## Initial conditions cuts
 
-import sys; sys.dont_write_bytecode = True
-import numpy as np
-import hdf5_to_dict as io
+from __future__ import print_function, division
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from pylab import *
-import util
-import glob
-import os
+
+import hdf5_to_dict as io
+
+import sys; sys.dont_write_bytecode = True
+import numpy as np
 
 COMPARE = False
 

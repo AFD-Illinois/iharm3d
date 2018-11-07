@@ -43,7 +43,7 @@ diag_post = True
 
 def plot(n):
   imname = os.path.join(FRAMEDIR, 'frame_%08d.png' % n)
-  print '%08d / ' % (n+1) + '%08d' % len(files)
+  print('%08d / ' % (n+1) + '%08d' % len(files))
 
   fig = plt.figure(figsize=(FIGX, FIGY))
 

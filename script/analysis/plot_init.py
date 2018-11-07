@@ -4,17 +4,16 @@
 #                                                                              #
 ################################################################################
 
-import matplotlib
-matplotlib.use('Agg')
+from __future__ import print_function, division
 
-import sys; sys.dont_write_bytecode = True
+import sys
+
 import numpy as np
-import hdf5_to_dict as io
 import matplotlib.pyplot as plt
+
 import util
-import glob
-import os
 import plot as bplt
+import hdf5_to_dict as io
 
 NLINES = 20
 SIZE = 600
@@ -65,9 +64,9 @@ bplt.radial_plot(ax, dump, 'RHO', ylabel=r"$\rho$", n2=N2/2, n3=N3/2,
 #flux = np.sum(dump['B2'][:,N2/2,:]*geom['gdet'][:,N2/2,None]*hdr['dx1']*hdr['dx3'],axis=-1)
 
 flux_in = np.zeros((N1,))
-flux_in[0] = np.sum(dump['B2'][0,N2/2,:]*geom['gdet'][0,N2/2,None]*hdr['dx1']*hdr['dx3'])
+flux_in[0] = np.sum(dump['B2'][0,N2//2,:]*geom['gdet'][0,N2//2,None]*hdr['dx1']*hdr['dx3'])
 for n in range(1,N1):
-  flux_in[n] = flux_in[n-1] + np.sum(dump['B2'][n,N2/2,:]*geom['gdet'][n,N2/2,None]*hdr['dx1']*hdr['dx3'])
+  flux_in[n] = flux_in[n-1] + np.sum(dump['B2'][n,N2//2,:]*geom['gdet'][n,N2//2,None]*hdr['dx1']*hdr['dx3'])
 
 ax = plt.subplot(NPLOTSY,NPLOTSX,2)
 bplt.radial_plot(ax, dump, flux_in, ylabel=r"Flux in r", rlim=[0, SIZE])

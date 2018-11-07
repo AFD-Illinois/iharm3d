@@ -33,7 +33,7 @@ FRAMEDIR = "FRAMES"
 
 def plot(n):
   imname = os.path.join(FRAMEDIR, 'frame_%08d.png' % n)
-  print '%08d / ' % (n+1) + '%08d' % len(files1)
+  print('%08d / ' % (n+1) + '%08d' % len(files1))
 
   # Don't calculate b/ucon/cov/e- stuff unless we need it below
   dump1 = io.load_dump(files1[n], hdr1, geom1, derived_vars = False, extras = False)

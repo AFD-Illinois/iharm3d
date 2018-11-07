@@ -182,8 +182,8 @@ def overlay_field(ax, dump, nlines=10):
   gdet = geom['gdet'][:,:].transpose()
   B1 = dump['B1'].mean(axis=-1).transpose()
   B2 = dump['B2'].mean(axis=-1).transpose()
-  for j in xrange(N2):
-    for i in xrange(N1):
+  for j in range(N2):
+    for i in range(N1):
       A_phi[j,N1-1-i] = (trapz(gdet[j,:i]*B2[j,:i], dx=hdr['dx1']) -
                          trapz(gdet[:j,i]*B1[:j,i], dx=hdr['dx2']))
       A_phi[j,i+N1] = (trapz(gdet[j,:i]*B2[j,:i], dx=hdr['dx1']) -
@@ -209,7 +209,7 @@ def plot_slices(ax1, ax2, dump, var, field_overlay=True, nlines=10, **kwargs):
 #    nlines = kwargs['nlines']
 #    del kwargs['nlines']
     
-  if 'arrspace' in kwargs.keys():
+  if 'arrspace' in list(kwargs.keys()):
     arrspace = kwargs['arrspace']
   else:
     arrspace = False
@@ -240,7 +240,7 @@ def radial_plot(ax, dump, var, n2=0, n3=0, average=False,
       data = var[:,n2,n3]
 
   if arrayspace:
-    ax.plot(range(geom['n1']), data, style)
+    ax.plot(list(range(geom['n1'])), data, style)
   else:
     ax.plot(r,data, style)
 

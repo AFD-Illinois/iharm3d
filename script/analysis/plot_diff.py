@@ -4,16 +4,13 @@
 #                                                                              #
 ################################################################################
 
-import matplotlib
-matplotlib.use('Agg')
+import sys
 
-import sys; sys.dont_write_bytecode = True
 import numpy as np
-import hdf5_to_dict as io
 import matplotlib.pyplot as plt
+
 import util
-import glob
-import os
+import hdf5_to_dict as io
 import plot as bplt
 
 USEARRSPACE=True

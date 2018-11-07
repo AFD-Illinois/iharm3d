@@ -82,7 +82,7 @@ def eht_profile(geom, var, jmin, jmax):
 def theta_av(var, start, av):
   # Sum theta from each pole to equator and take overall mean. N2 hack is a hack
   N2 = var.shape[1]
-  return (var[start:start+av,:N2/2,:].mean(axis=-1).mean(axis=0) + var[start:start+av,:N2/2-1:-1,:].mean(axis=-1).mean(axis=0)) / 2
+  return (var[start:start+av,:N2//2,:].mean(axis=-1).mean(axis=0) + var[start:start+av,:N2//2-1:-1,:].mean(axis=-1).mean(axis=0)) / 2
 
 ## Internal functions ##
 
