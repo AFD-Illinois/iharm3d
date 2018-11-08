@@ -6,15 +6,14 @@
 
 from __future__ import print_function, division
 
-import units
+import os, sys
+from pkg_resources import parse_version
 
-import sys; sys.dont_write_bytecode = True
 import numpy as np
 import h5py
-
-import os
 import glob
-from pkg_resources import parse_version
+
+import units
 
 def get_dumps_list(path):
   return np.sort(glob.glob(os.path.join(path, "dump_*.h5")))

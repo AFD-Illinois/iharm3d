@@ -23,7 +23,7 @@ def flatten_xz(array, patch_pole=False, average=False):
       flat[i+N1,:] = np.mean(array[i,:,:], axis=-1)
   else:
     for i in range(N1):
-      flat[i,:] = array[N1 - 1 - i,:,N3/2]
+      flat[i,:] = array[N1 - 1 - i,:,N3//2]
       flat[i+N1,:] = array[i,:,0]
 
   # Theta is technically [small,pi/2-small]
@@ -39,7 +39,7 @@ def flatten_xy(array, average=False, loop=True):
   if average:
     slice = np.mean(array, axis=1)
   else:
-    slice = array[:,array.shape[1]/2,:]
+    slice = array[:,array.shape[1]//2,:]
   
   if loop:
     return np.vstack((slice.transpose(),slice.transpose()[0])).transpose()
@@ -188,7 +188,7 @@ def overlay_field(ax, dump, nlines=10):
                          trapz(gdet[:j,i]*B1[:j,i], dx=hdr['dx2']))
       A_phi[j,i+N1] = (trapz(gdet[j,:i]*B2[j,:i], dx=hdr['dx1']) -
                          trapz(gdet[:j,i]*B1[:j,i], dx=hdr['dx2']))
-  A_phi -= (A_phi[N2/2-1,-1] + A_phi[N2/2,-1])/2.
+  A_phi -= (A_phi[N2//2-1,-1] + A_phi[N2//2,-1])/2.
   Apm = np.fabs(A_phi).max()
   if np.fabs(A_phi.min()) > A_phi.max():
     A_phi *= -1.

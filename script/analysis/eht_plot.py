@@ -7,11 +7,14 @@
 import matplotlib
 matplotlib.use('Agg')
 
-import sys; sys.dont_write_bytecode=True
+import util
+
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
-import util
 import pickle
+
+import util
 
 FIGX = 14
 FIGY = 14

@@ -9,15 +9,13 @@ import plot as bplt
 from analysis_fns import *
 import util
 
-import sys; sys.dont_write_bytecode = True
-import numpy as np
-
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-import os
+import os, sys
 import pickle
+import numpy as np
 
 # Movie size in inches. Keep 16/9 for standard-size movies
 FIGX = 16

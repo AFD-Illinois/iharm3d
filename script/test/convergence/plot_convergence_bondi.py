@@ -4,26 +4,15 @@
 #                                                                              #
 ################################################################################
 
-import os
-import sys; sys.dont_write_bytecode = True
-from subprocess import call
-from shutil import copyfile
-import glob
-import numpy as np
-#import h5py
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import pylab as pl
+from __future__ import print_function, division
 
-sys.path.insert(0, '../../../../analysis-scripts/')
+import plot as bplt
 import util
 import hdf5_to_dict as io
 
-AUTO = False
-for arg in sys.argv:
-  if arg == '-auto':
-    AUTO = True
+import os,sys
+import numpy as np
+import matplotlib.pyplot as plt
 
 RES = [32, 64, 128, 256]
 
@@ -35,19 +24,18 @@ L1 = np.zeros(len(RES))
 for m in xrange(len(RES)):
   os.chdir('../dumps_' + str(RES[m]))
 
-  dfiles = np.sort(glob.glob('dump*.h5'))
-  hdr = io.load_hdr(dfiles[0])
-  geom = io.load_geom(hdr, "grid.h5")
-  dump0 = io.load_dump(dfiles[0], geom, hdr)
+  dfiles = io.get_dumps_list(".")
+  hdr, geom, dump0 = io.load_all(dfiles[0])
   dump1 = io.load_dump(dfiles[-1], geom, hdr)
   
-  r = geom['r'][:,hdr['n2']/2,0]
+  r = geom['r'][:,hdr['n2']//2,0]
   
-#   print "Reh is ", str(hdr['Reh'])
+#   print("r_eh is {}".format(hdr['r_eh']))
 
   imin = 0
   while r[imin] < hdr['Reh']:
     imin += 1
+
   rho0 = np.mean(dump0['RHO'][imin:,:,0], axis=1)
   rho1 = np.mean(dump1['RHO'][imin:,:,0], axis=1)
 
@@ -70,28 +58,20 @@ print "Powerfit: ", powerfit, "L1: ", L1
 
 os.chdir('../plots/')
 
-if not AUTO:
-  # MAKE PLOTS
-  fig = plt.figure(figsize=(16.18,10))
+# MAKE PLOTS
+fig = plt.figure(figsize=(16.18,10))
 
-  ax = fig.add_subplot(1,1,1)
-  ax.plot(RES, L1, marker='s', label='RHO')
+ax = fig.add_subplot(1,1,1)
+ax.plot(RES, L1, marker='s', label='RHO')
 
-  amp = 1.0e-3
-  ax.plot([RES[0]/2., RES[-1]*2.], 
-    10.*amp*np.asarray([RES[0]/2., RES[-1]*2.])**-2.,
-    color='k', linestyle='--', label='N^-2')
-  plt.xscale('log', basex=2); plt.yscale('log')
-  plt.xlim([RES[0]/np.sqrt(2.), RES[-1]*np.sqrt(2.)])
-  plt.xlabel('N'); plt.ylabel('L1')
-  plt.title("BONDI")
-  plt.legend(loc=1)
-  plt.savefig('bondi.png', bbox_inches='tight')
-
-if AUTO:
-  data = {}
-  #data['SOL'] = -2.*np.zeros([len(MODES), NVAR])  
-  data['CODE'] = powerfit
-  import pickle
-  pickle.dump(data, open('data.p', 'wb'))
+amp = 1.0e-3
+ax.plot([RES[0]/2., RES[-1]*2.], 
+  10.*amp*np.asarray([RES[0]/2., RES[-1]*2.])**-2.,
+  color='k', linestyle='--', label='N^-2')
+plt.xscale('log', basex=2); plt.yscale('log')
+plt.xlim([RES[0]/np.sqrt(2.), RES[-1]*np.sqrt(2.)])
+plt.xlabel('N'); plt.ylabel('L1')
+plt.title("BONDI")
+plt.legend(loc=1)
+plt.savefig('bondi.png', bbox_inches='tight')
 

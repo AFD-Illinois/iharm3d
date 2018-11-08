@@ -7,27 +7,42 @@
 import matplotlib
 matplotlib.use('Agg')
 
-import sys; sys.dont_write_bytecode=True
+import util
+
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
-import util
 import pickle
 
+# For radials
 FIGX = 14
 FIGY = 10
+# For flux plots
+PLOTY = 3
 SIZE = 40
 
-if len(sys.argv) < 4:
-  util.warn('Format: python overplot.py [averages] [output name]')
+RADS = True
+OMEGA = True
+FLUXES = True
+EXTRAS = True
+DIAGS = True
+
+if len(sys.argv) < 3:
+  util.warn('Format: python eht_plot.py analysis_output [analysis_output ...] [labels_list] image_name')
   sys.exit()
 
 # All interior arguments are files to overplot
 avgs = []
-for filename in sys.argv[1:-1]:
+for filename in sys.argv[1:-2]:
   avgs.append(pickle.load(open(filename,'rb')))
 
+labels = sys.argv[-2].split(",")
+
+if len(labels) < len(avgs):
+  util.warn("Too few labels!")
+  sys.exit()
+
 fname_out = sys.argv[-1]
-fig = plt.figure(figsize=(FIGX, FIGY))
 
 # For time plots.  Also take MAD/SANE for axes?
 ti = avgs[0]['t'][0]
@@ -35,156 +50,126 @@ tf = avgs[0]['t'][-1]
 
 # Default styles
 styles = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9']
-# TODO allow other label sets.  Take on command line?
-labels = ["a = -0.94", "a = -0.5", "a = 0.0", "a = +0.5", "a = +0.94"]
 
-
-def plot_all(ax, iname, varname, timelabels=False):
+def plot_all(ax, iname, varname, varname_pretty, logx=False, logy=False, ylim=None, timelabels=False):
   for i,avg in enumerate(avgs):
     ax.plot(avg[iname], avg[varname], styles[i], label=labels[i])
+  if logx: ax.set_xscale('log')
+  if logx: ax.set_yscale('log')
+  if ylim is not None: ax.set_ylim(ylim)
+  ax.grid()
   if iname == 't':
     ax.set_xlim([ti,tf])
-    if not timelabels:
+    if timelabels:
+      ax.set_xlabel('t/M')
+    else:
       ax.set_xticklabels([])
+  elif iname == 'th':
+    ax.set_xlabel(r"$\theta$")
+  elif iname == 'r':
+    ax.set_xlabel("r")
     
-ax = plt.subplot(2,3,1)
-plot_all(ax, 'r', 'rho_r')
-ax.set_yscale('log')
-ax.set_ylabel('<rho>')
-ax.set_ylim([1.e-2, 1.e0])
 
-ax = plt.subplot(2,3,2)
-plot_all(ax, 'r', 'Pg_r')
-ax.set_yscale('log')
-ax.set_ylabel('<Pg>')
-ax.set_ylim([1.e-6, 1.e-2])
+if RADS:
+  fig, ax = plt.subplots(2,3, figsize=(FIGX, FIGY))
+  plot_all(ax[0], 'r', 'rho_r', r"$<\rho>$", logy=True, ylim=[1.e-2, 1.e0])
+  plot_all(ax, 'r', 'Pg_r', '<Pg>', logy=True, ylim=[1.e-6, 1.e-2])
+  plot_all(ax, 'r', 'B_r', '<|B|>', logy=True, ylim=[1.e-4, 1.e-1])
+  if len(avgs) > 1: ax.legend(loc=1)
+  plot_all(ax, 'r', 'uphi_r', '<u^phi>', logy=True, ylim=[1.e-3, 1.e1)
+  plot_all(ax, 'r', 'Ptot_r', '<Ptot>', logy=True, ylim=[1.e-6, 1.e-2])
+  plot_all(ax, 'r', 'betainv_r', '<beta^-1>', logy=True, ylim=[1.e-2, 1.e1])
 
-ax = plt.subplot(2,3,3)
-plot_all(ax, 'r', 'B_r')
-ax.set_yscale('log')
-ax.set_ylabel('<|B|>')
-ax.set_ylim([1.e-4, 1.e-1])
-ax.legend(loc=1)
+  plt.savefig(fname_out + '_ravgs.png')
+  plt.close(fig)
 
-ax = plt.subplot(2,3,4)
-plot_all(ax, 'r', 'uphi_r')
-ax.set_yscale('log')
-ax.set_ylabel('<u^phi>')
-ax.set_ylim([1.e-3, 1.e1])
+if OMEGA:
+  # Omega
+  fig, ax = plt.subplots(2,2, figsize=(FIGX, FIGY))
+  # Renormalize omega to omega/Omega_H for plotting
+  for avg in avgs:
+    avg['omega_th'] *= 4/avg['a']
+    avg['omega_th_av'] *= 4/avg['a']
+  plot_all(ax[0], 'th', 'omega_th', r"$\omega_f$ (EH, single shell)", ylim=[-1,2])
+  if len(avgs) > 1: ax[0].legend(loc=3)
+  
+  plot_all(ax[1], 'th', 'omega_th_av', r"$\omega_f$ (EH, 5-zone average)")
+  
+  # Horizontal guidelines
+  for a in ax:
+    a.axhline(0.5, linestyle='--', color='k')
+  
+  plt.savefig(fname_out + '_omega.png')
+  plt.close(fig)
 
-ax = plt.subplot(2,3,5)
-plot_all(ax, 'r', 'Ptot_r')
-ax.set_yscale('log')
-ax.set_ylabel('<Ptot>')
-ax.set_ylim([1.e-6, 1.e-2])
+if FLUXES:
+  fig,ax = plt.subplots(5,1, figsize=(FIGX, 5*PLOTY))
+  
+  plot_all(ax[0],'t','Mdot', r"$|\dot{M}|$")
+  if len(avgs) > 1: ax.legend(loc=2)
+  
+  plot_all(ax[1],'t','Phi', r"$\Phi$")
+  
+  for avg in avgs:
+    avg['abs_Ldot'] = np.abs(avg['Ldot'])
+  plot_all(ax[2],'t','abs_Ldot', r"$|\dot{L}|$")
+  
+  for avg in avgs:
+    avg['EmM'] = np.fabs(np.fabs(avg['Edot']) - np.fabs(avg['Mdot']))
+  plot_all(ax[3], 't', 'EmM', r"$|\dot{E} - \dot{M}|$")
+  
+  plot_all(ax[4], 't', 'Lum', "Lum", timelabels=True)
+  
+  plt.savefig(fname_out + '_fluxes.png')
+  plt.close(fig)
 
-ax = plt.subplot(2,3,6)
-plot_all(ax, 'r', 'betainv_r')
-ax.set_yscale('log')
-ax.set_ylabel('<beta^-1>')
-ax.set_ylim([1.e-2, 1.e1])
+  fig, ax = plt.subplots(5,1, figsize=(FIGX, 5*PLOTY))
+  plot_all(ax[0], 't', 'Mdot', r"$|\dot{M}|$")
+  if len(avgs) > 1: ax.legend(loc=2)
+  
+  for avg in avgs:
+    avg['Phi_norm'] = avg['Phi']/np.sqrt(np.fabs(avg['Mdot']))
+  plot_all(ax[1], 't', 'Phi_norm', r"$\frac{\Phi}{\sqrt{|\dot{M}|}}$")
+  
+  for avg in avgs:
+    avg['Ldot_norm'] = np.fabs(avg['Ldot'])/np.fabs(avg['Mdot'])
+  plot_all(ax[2], 't', 'Ldot_norm', r"$\frac{|Ldot|}{|\dot{M}|}$")
+  
+  for avg in avgs:
+    avg['Edot_norm'] = np.fabs(np.fabs(avg['Edot']) - np.fabs(avg['Mdot']))/(np.fabs(avg['Mdot']))
+  plot_all(ax[3], 't', 'Edot_norm', r"$\frac{|\dot{E} - \dot{M}|}{|\dot{M}|}$")
+  
+  for avg in avgs:
+    avg['Lum_norm'] = np.fabs(avg['Lum'])/np.fabs(avg['Mdot'])
+  plot_all(ax[4], 't', 'Lum_norm', r"$\frac{Lum}{|\dot{M}|}$", timelabels=True)
+  
+  plt.savefig(fname_out + '_normfluxes.png')
+  plt.close(fig)
 
-plt.savefig(fname_out + '_ravgs.png')
-plt.close(fig)
+if EXTRAS:
+  fig, ax = plt.subplots(3,1, figsize=(FIGX, 3*PLOTY))
+  
+  # Efficiency over mean mdot: just use the back half as <>
+  for avg in avgs:
+    mdot_mean = np.mean(avg['Mdot'][len(avg['Mdot'])/2:])
+    avg['Eff'] = (avg['Mdot'] - avg['Edot'])/mdot_mean*100
+  plot_all(ax[0], 't', 'Eff', "Efficiency (%)", ylim=[-10,200])
 
-# SADW
-fig = plt.figure(figsize=(FIGX, FIGY))
-ax = plt.subplot(2,3,1)
-plot_all(ax, 'r', 'rho_SADW')
-ax.set_yscale('log')
-plt.savefig(fname_out + '_sadw.png')
-plt.close(fig)
+  ax.plot(ax[1], 't', 'Edot', r"\dot{E}")
+  
+  for avg in avgs:
+    avg['aLBZ'] = np.abs(avg['LBZ'])
+  ax.plot(ax[2], 't', 'aLBZ', "BZ Luminosity")
 
-# Omega
-fig = plt.figure(figsize=(FIGX, FIGY))
-ax = plt.subplot(2,2,1)
-# Renormalize omega to omega/Omega_H for plotting
-for avg in avgs:
-  avg['omega_th'] *= 4/avg['a']
-  avg['omega_th_av'] *= 4/avg['a']
-plot_all(ax, 'th', 'omega_th')
-ax.set_ylim([-1,2])
-ax.set_ylabel("omega (EH, time/hemi only)")
-ax.set_xlabel("theta")
-ax.axhline(0.5, linestyle='--', color='k')
-ax.legend(loc=3)
+  plt.savefig(fout + '_extras.png')
+  plt.close(fig)
 
-ax = plt.subplot(2,2,2)
-plot_all(ax, 'th', 'omega_th_av')
-ax.set_ylim([-1,2])
-ax.set_ylabel("omega (EH, 5-zone average in R)")
-ax.set_xlabel("theta")
-ax.axhline(0.5, linestyle='--', color='k')
+if DIAGS:
+  fig, ax = plt.subplots(3,1, figsize=(FIGX, FIGY/2))
 
-plt.savefig(fname_out + '_omega.png')
-plt.close(fig)
+  plot_all(ax[0], 't', 'Etot', "Total E")
+  plot_all(ax[1], 't', 'sigma_max', r"$\sigma_{max}$")
+  plot_all(ax[2], 't_d', 'divbmax_d', "max divB")
 
-fig = plt.figure(figsize=(FIGX, FIGY))
-
-ax = plt.subplot(5,1,1)
-plot_all(ax,'t','Mdot')
-ax.set_ylabel('|Mdot|')
-ax.legend(loc=2)
-
-ax = plt.subplot(5,1,2)
-for avg in avgs:
-  if np.max(avg['Phi']) < 2:
-    avg['Phi'] *= np.sqrt(4*np.pi)
-plot_all(ax,'t','Phi')
-ax.set_ylabel('Phi')
-
-ax = plt.subplot(5,1,3)
-for avg in avgs:
-  avg['abs_Ldot'] = np.abs(avg['Ldot'])
-plot_all(ax,'t','abs_Ldot')
-ax.set_ylabel('|Ldot|')
-
-ax = plt.subplot(5,1,4)
-for avg in avgs:
-  avg['EmM'] = np.fabs(np.fabs(avg['Edot']) - np.fabs(avg['Mdot']))
-plot_all(ax, 't', 'EmM')
-ax.set_ylabel('|Edot - Mdot|')
-
-ax = plt.subplot(5,1,5)
-plot_all(ax, 't', 'Lum', timelabels=True)
-ax.set_xlabel('t/M')
-ax.set_ylabel('Lum')
-
-plt.savefig(fname_out + '_fluxes.png')
-plt.close(fig)
-
-
-fig = plt.figure(figsize=(FIGX, FIGY))
-
-ax = plt.subplot(5,1,1)
-plot_all(ax,'t','Mdot')
-ax.set_ylabel('|Mdot|')
-ax.legend(loc=2)
-
-ax = plt.subplot(5,1,2)
-for avg in avgs:
-  avg['Phi_norm'] = avg['Phi']/np.sqrt(np.fabs(avg['Mdot']))
-plot_all(ax, 't', 'Phi_norm')
-ax.set_ylabel('Phi/sqrt(|Mdot|)')
-
-ax = plt.subplot(5,1,3)
-for avg in avgs:
-  avg['Ldot_norm'] = np.fabs(avg['Ldot'])/np.fabs(avg['Mdot'])
-plot_all(ax, 't', 'Ldot_norm')
-ax.set_ylabel('|Ldot|/|Mdot|')
-
-ax = plt.subplot(5,1,4)
-for avg in avgs:
-  avg['Edot_norm'] = np.fabs(np.fabs(avg['Edot']) - np.fabs(avg['Mdot']))/(np.fabs(avg['Mdot']))
-plot_all(ax, 't', 'Edot_norm')
-ax.set_ylabel('|Edot - Mdot|/|Mdot|')
-
-ax = plt.subplot(5,1,5)
-for avg in avgs:
-  avg['Lum_norm'] = np.fabs(avg['Lum'])/np.fabs(avg['Mdot'])
-plot_all(ax, 't', 'Lum_norm', timelabels=True)
-ax.set_xlabel('t/M')
-ax.set_ylabel('Lum/|Mdot|')
-
-plt.savefig(fname_out + '_normfluxes.png')
-plt.close(fig)
+  plt.savefig(fout + '_diagnostics.png')
+  plt.close(fig)

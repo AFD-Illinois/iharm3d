@@ -10,11 +10,11 @@ from analysis_fns import *
 import hdf5_to_dict as io
 import util
 
-import numpy as np
 import sys
-
 import multiprocessing
 import psutil
+
+import numpy as np
 
 # Option to calculate fluxes at (just inside) r = 5
 # This reduces interference from floors
@@ -97,8 +97,6 @@ def avg_dump(n):
 
   # SHELL AVERAGES (only for t > tavg usu. tmax/2)
   if out['t'] > tavg:
-
-    out['rho_SADW'] = WAVG(geom, dump['RHO'], dump['RHO'])
 
     out['rho_r'] = eht_profile(geom, dump['RHO'], jmin, jmax)
     

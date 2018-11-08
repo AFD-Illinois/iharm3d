@@ -56,9 +56,6 @@ def Fcov(dump, i, j):
   return Fcovij
 
 ## Sums and Averages ##
-
-def WAVG(geom, var, w):
-  return sum_shell(geom, w*var)/sum_shell(geom, w)
   
 # Var must be a 3D array i.e. a grid scalar
 def sum_shell(geom, var, at_zone=None):

@@ -4,14 +4,16 @@
 #                                                                              #
 ################################################################################
 
-import sys
+from __future__ import print_function, division
 
+import plot as bplt
+import util
+import hdf5_to_dict as io
+
+import os,sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-import util
-import hdf5_to_dict as io
-import plot as bplt
 
 USEARRSPACE=True
 NLINES = 20
@@ -22,8 +24,7 @@ FIGY = 16
 
 dump1file = sys.argv[1]
 dump2file = sys.argv[2]
-gridfile = sys.argv[3]
-imname = sys.argv[4]
+imname = sys.argv[3]
 
 hdr, geom, dump1 = io.load_all(dump1file, derived_vars=False)
 #Hopefully this fails for dumps that shouldn't be compared

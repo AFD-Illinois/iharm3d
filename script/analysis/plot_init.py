@@ -6,14 +6,13 @@
 
 from __future__ import print_function, division
 
-import sys
+import plot as bplt
+import util
+import hdf5_to_dict as io
 
+import os,sys
 import numpy as np
 import matplotlib.pyplot as plt
-
-import util
-import plot as bplt
-import hdf5_to_dict as io
 
 NLINES = 20
 SIZE = 600
@@ -57,7 +56,7 @@ if SIZE > geom['r'][-1,0,0]:
 fig = plt.figure(figsize=(FIGX, FIGY))
 # Density profile
 ax = plt.subplot(NPLOTSY,NPLOTSX,1)
-bplt.radial_plot(ax, dump, 'RHO', ylabel=r"$\rho$", n2=N2/2, n3=N3/2,
+bplt.radial_plot(ax, dump, 'RHO', ylabel=r"$\rho$", n2=N2//2, n3=N3//2,
                  rlim=[8, 2*10**3], ylim=[10**(-4), 2], logr=True, logy=True)
 
 # B-flux thru midplane inside radius

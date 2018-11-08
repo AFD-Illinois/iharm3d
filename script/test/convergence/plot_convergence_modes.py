@@ -4,27 +4,15 @@
 #                                                                              #
 ################################################################################
 
-import os
-import sys; sys.dont_write_bytecode = True
-from subprocess import call
-from shutil import copyfile
-import glob
-import numpy as np
-#import h5py
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import pylab as pl
+from __future__ import print_function, division
 
-sys.path.insert(0, '../../../../analysis-scripts/')
-
+import plot as bplt
 import util
 import hdf5_to_dict as io
 
-AUTO = False
-for arg in sys.argv:
-  if arg == '-auto':
-    AUTO = True
+import os,sys
+import numpy as np
+import matplotlib.pyplot as plt
 
 RES = [16,32,64] #,128]
 
@@ -81,17 +69,14 @@ for n in xrange(len(MODES)):
     dvar[7]   =  -0.203190272838;
   dvar *= amp
 
-
   # USE DUMPS IN FOLDERS OF GIVEN FORMAT
   for m in xrange(len(RES)):
     print '../dumps_' + str(RES[m]) + '_' + str(MODES[n])
     os.chdir('../dumps_' + str(RES[m]) + '_' + str(MODES[n]))
 
-    dfile = np.sort(glob.glob('dump*.h5'))[-1]
+    dfile = io.get_dumps_list(".")[-1]
 
-    hdr = io.load_hdr(dfile)
-    geom = io.load_geom(hdr, "grid.h5")
-    dump = io.load_dump(dfile, geom, hdr)
+    hdr, geom, dump = io.load_all(dfile)
 
     X1 = geom['x']
     X2 = geom['y']
@@ -114,46 +99,6 @@ for n in xrange(len(MODES)):
 
     mid = RES[m]/2
 
-    # Plot slice at each timestep
-#     for fnum in xrange(len(np.sort(glob.glob('dump*.h5')))):
-#       dfile = np.sort(glob.glob('dump*.h5'))[fnum]
-# 
-#       hdr = io.load_hdr(dfile)
-#       geom = io.load_geom(hdr, dfile)
-#       dump = io.load_dump(hdr, geom, dfile)
-# 
-#       X1 = dump['x']
-#       X2 = dump['y']
-#       X3 = dump['z']
-# 
-#       dvar_code = []
-#       dvar_code.append(dump['RHO'] - var0[0])
-#       dvar_code.append(dump['UU'] - var0[1])
-#       dvar_code.append(dump['U1'] - var0[2])
-#       dvar_code.append(dump['U2'] - var0[3])
-#       dvar_code.append(dump['U3'] - var0[4])
-#       dvar_code.append(dump['B1'] - var0[5])
-#       dvar_code.append(dump['B2'] - var0[6])
-#       dvar_code.append(dump['B3'] - var0[7])
-# 
-#       dvar_plane = []
-#       for k in xrange(NVAR):
-#         dvar_plane.append(np.zeros((dump['N1'], dump['N2'])))
-#         for i in xrange(dump['N1']):
-#           for j in xrange(dump['N2']):
-#             dvar_plane[k][i,j] = dvar_code[k][i,j,int(i/2 + j/2)]
-# 
-#       # Plot dvar
-#       for k in xrange(NVAR):
-#         if abs(dvar[k]) != 0.:
-#           fig = plt.figure(figsize=(16.18,10))
-#           ax = fig.add_subplot(1,1,1)
-#           ax.pcolormesh(X1[:,:,mid], X2[:,:,mid], dvar_code[k][:,:,mid], label=VARS[k])
-#           #ax.plot(X1[:,mid,mid], dvar_sol[k][:,mid,mid], marker='s', label=(VARS[k] + " analytic"))
-#           plt.title(NAMES[MODES[n]] + ' ' + VARS[k] + ' ' + str(RES[m]))
-#           plt.legend(loc=1)
-#           plt.savefig('../test/modes_' + NAMES[MODES[n]] + '_' + VARS[k] + '_' + str(RES[m]) + '_' + str(fnum) + '.png', bbox_inches='tight')
-
   # MEASURE CONVERGENCE
   for k in xrange(NVAR):
     if abs(dvar[k]) != 0.:
@@ -161,29 +106,21 @@ for n in xrange(len(MODES)):
 
   os.chdir('../plots')
 
-  if not AUTO:
-    # MAKE PLOTS
-    fig = plt.figure(figsize=(16.18,10))
+  # MAKE PLOTS
+  fig = plt.figure(figsize=(16.18,10))
 
-    ax = fig.add_subplot(1,1,1)
-    for k in xrange(NVAR):
-      if abs(dvar[k]) != 0.:
-        ax.plot(RES, L1[n,:,k], marker='s', label=VARS[k])
+  ax = fig.add_subplot(1,1,1)
+  for k in xrange(NVAR):
+    if abs(dvar[k]) != 0.:
+      ax.plot(RES, L1[n,:,k], marker='s', label=VARS[k])
 
-    ax.plot([RES[0]/2., RES[-1]*2.],
-      10.*amp*np.asarray([RES[0]/2., RES[-1]*2.])**-2.,
-      color='k', linestyle='--', label='N^-2')
-    plt.xscale('log', basex=2); plt.yscale('log')
-    plt.xlim([RES[0]/np.sqrt(2.), RES[-1]*np.sqrt(2.)])
-    plt.xlabel('N'); plt.ylabel('L1')
-    plt.title(NAMES[MODES[n]])
-    plt.legend(loc=1)
-    plt.savefig('mhdmodes3d_' + NAMES[MODES[n]] + '.png', bbox_inches='tight')
-
-if AUTO:
-  data = {}
-  data['SOL'] = -2.*np.zeros([len(MODES), NVAR])
-  data['CODE'] = powerfits
-  import pickle
-  pickle.dump(data, open('data.p', 'wb'))
+  ax.plot([RES[0]/2., RES[-1]*2.],
+    10.*amp*np.asarray([RES[0]/2., RES[-1]*2.])**-2.,
+    color='k', linestyle='--', label='N^-2')
+  plt.xscale('log', basex=2); plt.yscale('log')
+  plt.xlim([RES[0]/np.sqrt(2.), RES[-1]*np.sqrt(2.)])
+  plt.xlabel('N'); plt.ylabel('L1')
+  plt.title(NAMES[MODES[n]])
+  plt.legend(loc=1)
+  plt.savefig('mhdmodes3d_' + NAMES[MODES[n]] + '.png', bbox_inches='tight')
 

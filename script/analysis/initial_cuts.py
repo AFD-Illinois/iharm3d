@@ -2,15 +2,14 @@
 
 from __future__ import print_function, division
 
+import hdf5_to_dict as io
+
+import sys
+import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from pylab import *
-
-import hdf5_to_dict as io
-
-import sys; sys.dont_write_bytecode = True
-import numpy as np
 
 COMPARE = False
 
@@ -19,13 +18,13 @@ init_file = io.get_dumps_list(dump_dir)[0]
 hdr, geom, dump = io.load_all(init_file, extras=False)
 
 N2 = hdr['n2']
-r = geom['r'][:, N2/2, 0]
-rho = dump['RHO'][:, N2/2, 0]
-uu = dump['UU'][:, N2/2, 0]
+r = geom['r'][:, N2//2, 0]
+rho = dump['RHO'][:, N2//2, 0]
+uu = dump['UU'][:, N2//2, 0]
 p = (hdr['gam']-1)*uu
-b2 = dump['bsq'][:, N2/2, 0]
-beta = dump['beta'][:, N2/2, 0]
-gamma = dump['gamma'][:, N2/2, 0]
+b2 = dump['bsq'][:, N2//2, 0]
+beta = dump['beta'][:, N2//2, 0]
+gamma = dump['gamma'][:, N2//2, 0]
 
 figname = 'initial-cuts.pdf'
 
