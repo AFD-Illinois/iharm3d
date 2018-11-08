@@ -142,8 +142,7 @@ inline double mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, in
       fprintf(stderr,
         "v[1-3] = %28.18e %28.18e %28.18e  \n",
         S->P[U1][k][j][i], S->P[U2][k][j][i], S->P[U3][k][j][i]);
-      *gamma = 1.;
-      return 1;
+      return 1.0;
     } else {
       qsq = 1.E-10; // Set floor
     }

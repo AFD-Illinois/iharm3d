@@ -359,6 +359,7 @@ void check_fluid(struct GridGeom *G, struct FluidState *S)
 //    fail(G, S, FAIL_VCHAR_DISCR, i, j, k);
 //    discr = 0.;
 //  }
+  }
 }
 
 #endif
