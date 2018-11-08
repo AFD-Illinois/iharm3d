@@ -84,7 +84,7 @@ for n in range(len(ths)):
     break
 
 # Variables which should be averaged
-avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'FE_r', 'FM_r', 'rho_SADW', 'omega_th', 'omega_th_av' ] #, 'omega_th_alt', 'omega_th_alt_av']
+avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'FE_r', 'FM_r', 'omega_th', 'omega_th_av' ] #, 'omega_th_alt', 'omega_th_alt_av']
 
 def avg_dump(n):
   out = {}
@@ -128,7 +128,7 @@ def avg_dump(n):
 
   else:
     for key in avg_keys:
-      if '_r' in key or '_SADW' in key:
+      if '_r' in key:
         out[key] = np.zeros((hdr['n1']))
       elif '_th' in key:
         out[key] = np.zeros((hdr['n2']//2))

@@ -114,12 +114,11 @@ def load_geom(hdr, path):
   for key in list(gfile['/'].keys()):
     geom[key] = gfile[key][()]
   
-  # Useful stuff for direct access in geom
+  # Useful stuff for direct access in geom. TODO r_isco if available
   for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
     geom[key] = hdr[key]
-  
   if hdr['metric'] in ["MKS", "MMKS"]:
-    for key in ['r_eh', 'r_in', 'r_max', 'r_out']:
+    for key in ['r_eh', 'r_in', 'r_out']:
       geom[key] = hdr[key]
 
   # these get used interchangeably and I don't care
