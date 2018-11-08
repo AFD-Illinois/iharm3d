@@ -13,6 +13,7 @@ import util
 import sys
 import multiprocessing
 import psutil
+import pickle
 
 import numpy as np
 
@@ -252,6 +253,4 @@ out_full['Lum_d'] = diag['lum_eht']
 out_full['divbmax_d'] = diag['divbmax']
 
 # OUTPUT
-import pickle
-
-pickle.dump(out_full, open('eht_out.p', 'w'))
+pickle.dump(out_full, open("eht_out.p", "wb"))

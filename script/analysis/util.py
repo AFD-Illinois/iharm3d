@@ -44,15 +44,19 @@ def calc_nthreads(hdr, n_mkl=4):
       mkl_set_num_threads = mkl_rt.MKL_Set_Num_Threads
       mkl_get_max_threads = mkl_rt.MKL_Get_Max_Threads
       mkl_set_num_threads(n_mkl)
-      print("Using", mkl_get_max_threads(), "MKL threads")
+      print("Using {} MKL threads".format(mkl_get_max_threads()))
     except Error as e:
       print(e)
     
     # Roughly compute memory and leave some generous padding for multiple copies and Python games
     # TODO depend on success above?
-    return int(0.11 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
+    nproc = int(0.05 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
+    print("Using {} Python processes".format(nproc))
+    return nproc
   else:
-    return psutil.cpu_count(logical=False)
+    nproc = psutil.cpu_count(logical=False)
+    print("Using {} Python processes".format(nproc))
+    return nproc
 
 # COLORIZED OUTPUT
 class color:

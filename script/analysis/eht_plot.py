@@ -76,7 +76,7 @@ if RADS:
   plot_all(ax, 'r', 'Pg_r', '<Pg>', logy=True, ylim=[1.e-6, 1.e-2])
   plot_all(ax, 'r', 'B_r', '<|B|>', logy=True, ylim=[1.e-4, 1.e-1])
   if len(avgs) > 1: ax.legend(loc=1)
-  plot_all(ax, 'r', 'uphi_r', '<u^phi>', logy=True, ylim=[1.e-3, 1.e1)
+  plot_all(ax, 'r', 'uphi_r', '<u^phi>', logy=True, ylim=[1.e-3, 1.e1])
   plot_all(ax, 'r', 'Ptot_r', '<Ptot>', logy=True, ylim=[1.e-6, 1.e-2])
   plot_all(ax, 'r', 'betainv_r', '<beta^-1>', logy=True, ylim=[1.e-2, 1.e1])
 

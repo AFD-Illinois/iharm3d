@@ -41,7 +41,10 @@ make_harm_here () {
   [ -z ${HARM_MAKE_JOBS+x} ] && HARM_MAKE_JOBS=$(nproc --all)
   make -f $HARM_BASE_DIR/makefile -j$HARM_MAKE_JOBS PROB=$1 debug
   # Use default param.dat if none is present in test dir
-  [ ! -f param.dat ] && cp $HARM_BASE_DIR/prob/$1/param.dat .
+  if [ ! -f param.dat ]; then
+    [ -f $HARM_BASE_DIR/prob/$1/param.dat ] && cp $HARM_BASE_DIR/prob/$1/param.dat .
+    [ -f $HARM_BASE_DIR/prob/$1/param_sane.dat ] && cp $HARM_BASE_DIR/prob/$1/param_sane.dat ./param.dat
+  fi
 }
 
 # Usage: run_harm $OUT_DIR name 
@@ -66,7 +69,7 @@ verify() {
   fi
 
   cp ../../../analysis/*.py .
-  python plot_diff.py last_dump_gold.h5 $LAST_DUMP dumps/grid.h5 differences_$PROB
+  python3 plot_diff.py $LAST_DUMP last_dump_gold.h5 differences_$PROB
 
   # Print verification to file
   exec > verification_$PROB.txt 2>&1
