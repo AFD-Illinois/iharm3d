@@ -40,7 +40,7 @@ make_harm_here torus
 sleep 1
 
 echo "Restarting with 1 proc..."
-./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
+run_harm $OUT_DIR firsttime
 echo "Done!"
 
 # Save output dump.  Might be whatever number so we save it the dumb way
@@ -59,11 +59,11 @@ set_cpu_topo 2 2 4
 make_harm_here torus
 
 echo "Restarting with 4 procs..."
-mpirun -n 16 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
+run_harm $OUT_DIR secondtime
 echo "Done!"
 
 # Ensure naming and grid for analysis
 cp $GRID $OUT_DIR/dumps/grid.h5
 mv $OUT_DIR/dumps/dump_*.h5 $OUT_DIR/dumps/dump_00000001.h5
 
-../verify.sh torus_$SZ
+verify torus_$SZ

@@ -68,7 +68,7 @@ do
   run_harm $OUT_DIR secondtime
   echo "Done!"
 
-  ../verify.sh $PROB
+  verify $PROB
 
   if [ $PROB == "torus" ]
   then
