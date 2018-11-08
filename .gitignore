@@ -89,6 +89,7 @@ restarts/
 ###########
 script/test/*/param.dat
 results_*/
+test-results/
 *.png
 test_output.txt
 vtune_*

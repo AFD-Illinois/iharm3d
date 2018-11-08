@@ -38,7 +38,7 @@ var0[7] = 0.
 L1 = np.zeros([len(MODES), len(RES), NVAR])
 powerfits = np.zeros([len(MODES), NVAR])
 
-for n in xrange(len(MODES)):
+for n in range(len(MODES)):
 
   # EIGENMODES
   dvar = np.zeros(NVAR)
@@ -70,8 +70,7 @@ for n in xrange(len(MODES)):
   dvar *= amp
 
   # USE DUMPS IN FOLDERS OF GIVEN FORMAT
-  for m in xrange(len(RES)):
-    print '../dumps_' + str(RES[m]) + '_' + str(MODES[n])
+  for m in range(len(RES)):
     os.chdir('../dumps_' + str(RES[m]) + '_' + str(MODES[n]))
 
     dfile = io.get_dumps_list(".")[-1]
@@ -93,14 +92,14 @@ for n in xrange(len(MODES)):
     dvar_code.append(dump['B3'] - var0[7])
 
     dvar_sol = []
-    for k in xrange(NVAR):
+    for k in range(NVAR):
       dvar_sol.append(np.real(dvar[k])*np.cos(k1*X1 + k2*X2 + k3*X3))
       L1[n][m][k] = np.mean(np.fabs(dvar_code[k] - dvar_sol[k]))
 
     mid = RES[m]/2
 
   # MEASURE CONVERGENCE
-  for k in xrange(NVAR):
+  for k in range(NVAR):
     if abs(dvar[k]) != 0.:
       powerfits[n,k] = np.polyfit(np.log(RES), np.log(L1[n,:,k]), 1)[0]
 
@@ -110,7 +109,7 @@ for n in xrange(len(MODES)):
   fig = plt.figure(figsize=(16.18,10))
 
   ax = fig.add_subplot(1,1,1)
-  for k in xrange(NVAR):
+  for k in range(NVAR):
     if abs(dvar[k]) != 0.:
       ax.plot(RES, L1[n,:,k], marker='s', label=VARS[k])
 

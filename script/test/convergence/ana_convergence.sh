@@ -15,5 +15,5 @@ cp $BASEDIR/script/analysis/*.py $PLOT_DIR
 # CD and run script
 cd $PLOT_DIR
 
-python plot_convergence_$1.py
+python3 plot_convergence_$1.py
 

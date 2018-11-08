@@ -4,16 +4,15 @@
 #                                                                              #
 ################################################################################
 
-import sys
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-import units
-import util
 import hdf5_to_dict as io
 import plot as bplt
 from analysis_fns import *
+
+import matplotlib
+import matplotlib.pyplot as plt
+
+import sys
+import numpy as np
 
 USEARRSPACE=False
 UNITS=True

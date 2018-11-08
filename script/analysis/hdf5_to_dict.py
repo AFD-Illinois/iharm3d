@@ -71,9 +71,8 @@ def load_hdr(fname):
         hdr[key] = dfile['header/geom/mmks/' + key][()]
 
   except KeyError as e:
-    print("File is older than supported by this library. Use hdf5_to_dict_old.py")
-
-  dfile.close()
+    util.warn("File is older than supported by this library. Use hdf5_to_dict_old.py")
+    exit(-1)
 
   decode_all(hdr)
 
@@ -81,17 +80,29 @@ def load_hdr(fname):
   hdr['codename'], hdr['codestatus'], hdr['vnum'] = hdr['version'].split("-")
   hdr['vnum'] = [int(x) for x in hdr['vnum'].split(".")]
 
-  # Work around naming bug in old versions of iharm
-  # This may have broken with HDF5 strings above
-  if hdr['vnum'] < [3,3]:
-    names = []
-    for name in hdr['prim_names'][0]:
-      names.append( name )
-    hdr['prim_names'] = names
+  # HARM-specific workarounds:
+  if hdr['codename'] == "iharm":
+    # Work around naming bug before output v3.4
+    if hdr['vnum'] < [3,4]:
+      names = []
+      for name in hdr['prim_names'][0]:
+        names.append( name )
+      hdr['prim_names'] = names
+    
+    # Work around bad radius names before output v3.6
+    if hdr['vnum'] < [3,6]:
+      hdr['r_in'], hdr['r_out'], hdr['r_eh'] = hdr['Rin'], hdr['Rout'], hdr['Reh']
+    
+    # Grab the git revision if that's something we output
+    if hdr['vnum'] >= [3,6]:
+      hdr['git_version'] = dfile['/extras/git_version'][()]
   
-  print("Loaded header from code {}".format(hdr['version']))
-  #print("Size: {} {} {}".format(hdr['n1'], hdr['n2'], hdr['n3']))
-  #print("Resolution: {} {} {} {} {} {}".format(hdr['startx1'], hdr['dx1'], hdr['startx2'], hdr['dx2'], hdr['startx3'], hdr['dx3']))
+  dfile.close()
+  
+  if 'git_version' in hdr.keys():
+    print("Loaded header from code {}, git rev {}".format(hdr['version'], hdr['git_version']))
+  else:
+    print("Loaded header from code {}".format(hdr['version']))
 
   return hdr
 
@@ -104,8 +115,12 @@ def load_geom(hdr, path):
     geom[key] = gfile[key][()]
   
   # Useful stuff for direct access in geom
-  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim', 'Reh']:
+  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
     geom[key] = hdr[key]
+  
+  if hdr['metric'] in ["MKS", "MMKS"]:
+    for key in ['r_eh', 'r_in', 'r_max', 'r_out']:
+      geom[key] = hdr[key]
 
   # these get used interchangeably and I don't care
   geom['x'] = geom['X']
