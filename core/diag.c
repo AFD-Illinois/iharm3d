@@ -165,110 +165,6 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
 }
 
 // Diagnostic routines
-void fail(struct GridGeom *G, struct FluidState *S, int fail_type, int i, int j, int k)
-{
-
-  fprintf(stderr, "\n\n[%d %d %d] FAIL: %d\n", i, j, k, fail_type);
-
-  area_map(i, j, k, S->P);
-
-  diag(G, S, DIAG_FINAL);
-
-  exit(-1);
-}
-
-// Some quick one-off functions for debugging
-int i_have(int iglobal, int jglobal, int kglobal) {
-  int have_i = (global_start[0] <= iglobal) && (global_stop[0] > iglobal);
-  int have_j = (global_start[1] <= jglobal) && (global_stop[1] > jglobal);
-  int have_k = (global_start[2] <= kglobal) && (global_stop[2] > kglobal);
-  return have_i && have_j && have_k;
-}
-
-void global_map(int iglobal, int jglobal, int kglobal, GridPrim prim) {
-  if(i_have(iglobal, jglobal, kglobal)){
-    area_map(iglobal-global_start[0]+NG, jglobal-global_start[1]+NG, kglobal-global_start[2]+NG, prim);
-    area_map_pflag(iglobal-global_start[0]+NG, jglobal-global_start[1]+NG, kglobal-global_start[2]+NG);
-  }
-}
-
-double sigma_max (struct GridGeom *G, struct FluidState *S)
-{
-
-	double sigma_max = 0;
-#if !INTEL_WORKAROUND
-#pragma omp parallel for simd collapse(3) reduction(max:sigma_max)
-#endif
-	ZLOOP {
-		get_state(G, S, i, j, k, CENT);
-		double bsq = bsq_calc(S, i, j, k);
-
-		if (bsq/S->P[RHO][k][j][i] > sigma_max)
-			sigma_max = bsq/S->P[RHO][k][j][i];
-	}
-
-	return sigma_max;
-}
-
-// Map out region around failure point (local index)
-void area_map(int i, int j, int k, GridPrim prim)
-{
-  PLOOP {
-    fprintf(stderr, "variable %d \n", ip);
-    fprintf(stderr, "%12.5g %12.5g %12.5g\n",
-      prim[ip][k][j + 1][i - 1], prim[ip][k][j + 1][i],
-      prim[ip][k][j + 1][i + 1]);
-    fprintf(stderr, "%12.5g %12.5g %12.5g\n",
-      prim[ip][k][j][i - 1], prim[ip][k][j][i],
-      prim[ip][k][j][i + 1]);
-    fprintf(stderr, "%12.5g %12.5g %12.5g\n",
-      prim[ip][k][j - 1][i - 1], prim[ip][k][j - 1][i],
-      prim[ip][k][j - 1][i + 1]);
-  }
-
-  //fprintf(stderr, "****************\n");
-}
-
-void area_map_pflag(int i, int j, int k)
-{
-  fprintf(stderr, "pflag: \n");
-  fprintf(stderr, "%d %d %d\n",
-    pflag[k][j + 1][i - 1], pflag[k][j + 1][i],
-    pflag[k][j + 1][i + 1]);
-  fprintf(stderr, "%d %d %d\n",
-    pflag[k][j][i - 1], pflag[k][j][i],
-    pflag[k][j][i + 1]);
-  fprintf(stderr, "%d %d %d\n",
-    pflag[k][j - 1][i - 1], pflag[k][j - 1][i],
-    pflag[k][j - 1][i + 1]);
-}
-
-// TODO this function is useful but slow: it doesn't parllelize under intel 18.0.2
-// Check the whole fluid state for NaN values
-inline void check_nan(struct FluidState *S, const char* flag)
-{
-#if DEBUG
-#if !INTEL_WORKAROUND
-#pragma omp parallel for collapse(3)
-#endif
-  PLOOP ZLOOPALL {
-    if (isnan(S->P[ip][k][j][i])) {
-      fprintf(stderr, "NaN in prims[%d]: %d, %d, %d as of position %s\n",ip,i,j,k,flag);
-      exit(-1);
-    }
-  }
-#if !INTEL_WORKAROUND
-#pragma omp parallel for collapse(3)
-#endif
-  DLOOP1 ZLOOPALL {
-    if (isnan(S->ucon[mu][k][j][i]) || isnan(S->ucov[mu][k][j][i]) || isnan(S->bcon[mu][k][j][i]) || isnan(S->bcov[mu][k][j][i])){
-      fprintf(stderr, "NaN in derived: %d, %d, %d at %s\n",i,j,k,flag);
-      exit(-1);
-    }
-  }
-#endif
-}
-
 double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
   #if N3 > 1
@@ -317,3 +213,152 @@ double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j, int 
     return 0.;
   }
 }
+
+// Some quick one-off functions for debugging
+#if DEBUG
+
+int i_have(int iglobal, int jglobal, int kglobal)
+{
+  int have_i = (global_start[0] <= iglobal) && (global_stop[0] > iglobal);
+  int have_j = (global_start[1] <= jglobal) && (global_stop[1] > jglobal);
+  int have_k = (global_start[2] <= kglobal) && (global_stop[2] > kglobal);
+  return have_i && have_j && have_k;
+}
+
+void global_map(int iglobal, int jglobal, int kglobal, GridPrim prim)
+{
+  if(i_have(iglobal, jglobal, kglobal)){
+    area_map(iglobal-global_start[0]+NG, jglobal-global_start[1]+NG, kglobal-global_start[2]+NG, prim);
+    area_map_pflag(iglobal-global_start[0]+NG, jglobal-global_start[1]+NG, kglobal-global_start[2]+NG);
+  }
+}
+
+double sigma_max (struct GridGeom *G, struct FluidState *S)
+{
+
+  double sigma_max = 0;
+#if !INTEL_WORKAROUND
+#pragma omp parallel for simd collapse(3) reduction(max:sigma_max)
+#endif
+  ZLOOP {
+    get_state(G, S, i, j, k, CENT);
+    double bsq = bsq_calc(S, i, j, k);
+
+    if (bsq/S->P[RHO][k][j][i] > sigma_max)
+      sigma_max = bsq/S->P[RHO][k][j][i];
+  }
+
+  return sigma_max;
+}
+
+// Map out region around failure point (local index)
+void area_map(int i, int j, int k, GridPrim prim)
+{
+  PLOOP {
+    fprintf(stderr, "variable %d \n", ip);
+    fprintf(stderr, "%12.5g %12.5g %12.5g\n",
+      prim[ip][k][j + 1][i - 1], prim[ip][k][j + 1][i],
+      prim[ip][k][j + 1][i + 1]);
+    fprintf(stderr, "%12.5g %12.5g %12.5g\n",
+      prim[ip][k][j][i - 1], prim[ip][k][j][i],
+      prim[ip][k][j][i + 1]);
+    fprintf(stderr, "%12.5g %12.5g %12.5g\n",
+      prim[ip][k][j - 1][i - 1], prim[ip][k][j - 1][i],
+      prim[ip][k][j - 1][i + 1]);
+  }
+}
+
+void area_map_pflag(int i, int j, int k)
+{
+  fprintf(stderr, "pflag: \n");
+  fprintf(stderr, "%d %d %d\n",
+    pflag[k][j + 1][i - 1], pflag[k][j + 1][i],
+    pflag[k][j + 1][i + 1]);
+  fprintf(stderr, "%d %d %d\n",
+    pflag[k][j][i - 1], pflag[k][j][i],
+    pflag[k][j][i + 1]);
+  fprintf(stderr, "%d %d %d\n",
+    pflag[k][j - 1][i - 1], pflag[k][j - 1][i],
+    pflag[k][j - 1][i + 1]);
+}
+
+// TODO this function is useful but slow: it doesn't parllelize under intel 18.0.2
+// Check the whole fluid state for NaN values
+inline void check_nan(struct FluidState *S, const char* flag)
+{
+#if !INTEL_WORKAROUND
+#pragma omp parallel for collapse(3)
+#endif
+  PLOOP ZLOOPALL {
+    if (isnan(S->P[ip][k][j][i])) {
+      fprintf(stderr, "NaN in prims[%d]: %d, %d, %d as of position %s\n",ip,i,j,k,flag);
+      exit(-1);
+    }
+  }
+#if !INTEL_WORKAROUND
+#pragma omp parallel for collapse(3)
+#endif
+  DLOOP1 ZLOOPALL {
+    if (isnan(S->ucon[mu][k][j][i]) || isnan(S->ucov[mu][k][j][i]) || isnan(S->bcon[mu][k][j][i]) || isnan(S->bcov[mu][k][j][i])){
+      fprintf(stderr, "NaN in derived: %d, %d, %d at %s\n",i,j,k,flag);
+      exit(-1);
+    }
+  }
+}
+
+inline void update_f(struct FluidFlux *F, GridPrim *dU)
+{
+#pragma omp parallel for simd collapse(3)
+  PLOOP ZLOOP {
+    preserve_F.X1[ip][k][j][i] = F->X1[ip][k][j][i];
+    preserve_F.X2[ip][k][j][i] = F->X2[ip][k][j][i];
+    preserve_F.X3[ip][k][j][i] = F->X3[ip][k][j][i];
+    preserve_dU[ip][k][j][i] = (*dU)[ip][k][j][i];
+  }
+}
+
+// TODO reintroduce this? Just fails the fluid on certain conditions
+void check_fluid(struct GridGeom *G, struct FluidState *S)
+{
+#pragma omp parallel for collapse(3)
+  ZLOOP {
+    // Find fast magnetosonic speed
+    double bsq = bsq_calc(S, i, j, k);
+    double rho = fabs(S->P[RHO][k][j][i]);
+    double u = fabs(S->P[UU][k][j][i]);
+    double ef = rho + gam*u;
+    double ee = bsq + ef;
+    double va2 = bsq/ee;
+    double cs2 = gam*(gam - 1.)*u/ef;
+
+    double cms2 = cs2 + va2 - cs2*va2;
+
+//    // Sanity checks
+//    if (cms2 < 0.) {
+//      fprintf(stderr, "\n\ncms2: %g %g %g\n\n", gam, u, ef);
+//      fail(G, S, FAIL_COEFF_NEG, i, j, k);
+//    }
+//    if (cms2 > 1.) {
+//      fail(G, S, FAIL_COEFF_SUP, i, j, k);
+//    }
+//  }
+
+//  // This one requires a lot of context Acon/cov Bcon/cov -> A,B,C -> discr
+//  if ((discr < 0.0) && (discr > -1.e-10)) {
+//    discr = 0.0;
+//  } else if (discr < -1.e-10) {
+//    fprintf(stderr, "\n\t %g %g %g %g %g\n", A, B, C, discr, cms2);
+//    fprintf(stderr, "\n\t S->ucon: %g %g %g %g\n", S->ucon[0][k][j][i],
+//      S->ucon[1][k][j][i], S->ucon[2][k][j][i], S->ucon[3][k][j][i]);
+//    fprintf(stderr, "\n\t S->bcon: %g %g %g %g\n", S->bcon[0][k][j][i],
+//      S->bcon[1][k][j][i], S->bcon[2][k][j][i], S->bcon[3][k][j][i]);
+//    fprintf(stderr, "\n\t Acon: %g %g %g %g\n", Acon[0], Acon[1], Acon[2],
+//      Acon[3]);
+//    fprintf(stderr, "\n\t Bcon: %g %g %g %g\n", Bcon[0], Bcon[1], Bcon[2],
+//      Bcon[3]);
+//    fail(G, S, FAIL_VCHAR_DISCR, i, j, k);
+//    discr = 0.;
+//  }
+}
+
+#endif

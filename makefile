@@ -27,14 +27,18 @@ EXE = harm
 # Override these defaults if we know the machine we're working with
 # Once you know what compiles, add it as a machine def here
 MAKEFILE_PATH := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
-HOST = $(shell hostname)
+HOST := $(shell hostname)
 ifneq (,$(findstring stampede2,$(HOST)))
 	-include $(MAKEFILE_PATH)/machines/stampede2.make
 endif
 -include $(MAKEFILE_PATH)/machines/$(HOST).make
 
-## LINKING PARAMETERS ##
 # Everything below this should be static
+
+## VERSION PRESERVATION ##
+GIT_VERSION := $(shell cd $(MAKEFILE_PATH); git describe --dirty --always --tags)
+
+## LINKING PARAMETERS ##
 
 LINK = $(CC)
 LDFLAGS = $(CFLAGS)
@@ -119,7 +123,7 @@ $(ARC_DIR)/$(EXE): $(OBJ)
 
 $(ARC_DIR)/%.o: $(ARC_DIR)/%.c $(HEAD_ARC)
 	@echo -e "\tCompiling $(notdir $<)"
-	@$(CC) $(CFLAGS) $(INC) -c $< -o $@
+	@$(CC) $(CFLAGS) $(INC) -DGIT_VERSION=$(GIT_VERSION) -c $< -o $@
 
 $(ARC_DIR)/%: % | $(ARC_DIR)
 	@cp $< $(ARC_DIR)

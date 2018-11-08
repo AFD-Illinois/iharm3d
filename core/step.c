@@ -57,8 +57,8 @@ void step(struct GridGeom *G, struct FluidState *S)
   set_bounds(G, Stmp);
   FLAG("First bounds Tmp");
   fixup_utoprim(G, Stmp);
-//  FLAG("Fixup U_to_P Tmp");
-  set_bounds(G, Stmp); // TODO eliminate at least the pflag call here
+  FLAG("Fixup U_to_P Tmp");
+  set_bounds(G, Stmp);
   FLAG("Second bounds Tmp");
 
   // Corrector step
@@ -110,18 +110,6 @@ void step(struct GridGeom *G, struct FluidState *S)
 
   LOGN("dt would have been %f",fake_dt);
   LOGN("Instead it is %f",dt);
-
-}
-
-inline void update_f(struct FluidFlux *F, GridPrim *dU) {
-
-#pragma omp parallel for simd collapse(3)
-  PLOOP ZLOOP {
-    preserve_F.X1[ip][k][j][i] = F->X1[ip][k][j][i];
-    preserve_F.X2[ip][k][j][i] = F->X2[ip][k][j][i];
-    preserve_F.X3[ip][k][j][i] = F->X3[ip][k][j][i];
-    preserve_dU[ip][k][j][i] = (*dU)[ip][k][j][i];
-  }
 
 }
 

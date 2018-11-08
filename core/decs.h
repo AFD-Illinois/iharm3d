@@ -36,7 +36,7 @@
       COMPILE-TIME PARAMETERS :
 *******************************************************************************/
 
-#define VERSION "iharm-alpha-3.5"
+#define VERSION "iharm-alpha-3.6"
 
 // Number of active zones on each MPI process
 #define N1       (N1TOT/N1CPU)
@@ -248,8 +248,10 @@ extern GridInt fail_save;
 extern GridInt fflag;
 //};
 
+#if DEBUG
 extern struct FluidFlux preserve_F;
 extern GridPrim preserve_dU;
+#endif
 
 /*******************************************************************************
     GLOBAL VARIABLES SECTION
@@ -262,7 +264,7 @@ extern double Rhor;
 extern double tp_over_te;
 
 // Numerical parameters
-extern double Rin, Rout, hslope, R0;  // TODO use or ditch R0
+extern double Rin, Rout, hslope;
 extern double cour;
 extern double dV, dx[NDIM], startx[NDIM];
 extern double x1Min, x1Max, x2Min, x2Max, x3Min, x3Max;
@@ -355,21 +357,28 @@ extern int global_stop[3];
 // Loop over spacetime indices
 #define DLOOP1 for (int mu = 0; mu < NDIM; mu++)
 #define DLOOP2 for (int mu = 0; mu < NDIM; mu++)	\
-		for (int nu = 0; nu < NDIM; nu++)
+               for (int nu = 0; nu < NDIM; nu++)
 
+// For adding quotes to passed arguments e.g. git commit #0
+#define HASH(x) #x
+#define QUOTE(x) HASH(x)
+
+// Math functions commonly mistyped
 #define MY_MIN(fval1,fval2) ( ((fval1) < (fval2)) ? (fval1) : (fval2))
 #define MY_MAX(fval1,fval2) ( ((fval1) > (fval2)) ? (fval1) : (fval2))
 #define MY_SIGN(fval) ( ((fval) <0.) ? -1. : 1. )
-
 #define delta(i,j) ((i == j) ? 1. : 0.)
 
+// Convenience macros for logging under MPI
 #define LOG(msg) if(DEBUG && mpi_io_proc()) {fprintf(stderr,msg); fprintf(stderr,"\n");}
-// Can add custom code to run at each FLAG
-// eg double sig_max = mpi_max(sigma_max(G, Stmp)); if(mpi_io_proc()) fprintf(stderr,"sig_max = %f\n",sig_max);
-#define FLAG(msg) if(DEBUG) { LOG(msg); mpi_barrier(); diag(G, Stmp, DIAG_DUMP); diag(G, S, DIAG_DUMP); }
 #define LOGN(fmt,x) if(DEBUG && mpi_io_proc()) {fprintf(stderr,fmt,x); fprintf(stderr,"\n");}
 // TODO bring the whole MPI ship down too
 #define ERROR(msg) {if (mpi_io_proc()) {fprintf(stderr, msg); fprintf(stderr,"\n");} exit(-1);}
+
+// FLAG macros are scattered through the code.  One can place a crude "watch" on a var
+// by printing it here -- it will be printed several times during a step.
+// eg add double sig_max = mpi_max(sigma_max(G, Stmp)); if(mpi_io_proc()) fprintf(stderr,"sig_max = %f\n",sig_max);
+#define FLAG(msg) if(DEBUG) { LOG(msg); mpi_barrier(); }
 
 /*******************************************************************************
     FUNCTION DECLARATIONS
@@ -398,16 +407,18 @@ void omega_calc(struct GridGeom *G, struct FluidState *S, GridDouble *omega);
 
 // diag.c
 void reset_log_variables();
+void diag_flux(struct FluidFlux *F);
 void diag(struct GridGeom *G, struct FluidState *S, int call_code);
-void fail(struct GridGeom *G, struct FluidState *S, int fail_type, int i, int j, int k);
+double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
+  int k);
+#if DEBUG
 void global_map(int iglobal, int jglobal, int kglobal, GridPrim prim);
 void area_map(int i, int j, int k, GridPrim prim);
 void area_map_pflag(int i, int j, int k);
-void diag_flux(struct FluidFlux *F);
-double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k);
 void check_nan(struct FluidState *S, const char* flag);
 double sigma_max(struct GridGeom *G, struct FluidState *S);
+void update_f(struct FluidFlux *F, GridPrim *dU);
+#endif
 
 // electrons.c
 #if ELECTRONS

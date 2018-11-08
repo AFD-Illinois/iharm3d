@@ -6,18 +6,17 @@
  *                                                                            *
  ******************************************************************************/
 
-/*******************************************************************************
-    GLOBAL VARIABLES
-*******************************************************************************/
-
 #pragma once
 
 // Zone flags.  TODO move these to the heap
 GridInt pflag;
 GridInt fail_save;
 GridInt fflag;
+
+#if DEBUG
 struct FluidFlux preserve_F;
 GridPrim preserve_dU;
+#endif
 
 // Parameters
 // physical
@@ -27,7 +26,7 @@ double Rhor;
 double tp_over_te;
 
 // geometry
-double Rin, Rout, hslope, R0;
+double Rin, Rout, hslope;
 double poly_norm, poly_xt, poly_alpha, mks_smooth;
 double cour;
 double dV, dx[NDIM], startx[NDIM];

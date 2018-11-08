@@ -13,19 +13,17 @@
 #include <sys/stat.h>
 #include <ctype.h>
 
-// Variables kept for output only
-// Currently this calculation is done in post
-//GridDouble *omega;
+// TODO move bsq to this scope?
 
-#define OUT_TYPE float
+#if DEBUG
 #define OUT_H5_TYPE H5T_IEEE_F64LE
+#define OUT_TYPE double
+#else
+#define OUT_H5_TYPE H5T_IEEE_F32LE
+#define OUT_TYPE float
+#endif
 
 #define HDF_STR_LEN 20
-
-void init_io()
-{
-  //omega = calloc(1,sizeof(GridDouble));
-}
 
 void dump(struct GridGeom *G, struct FluidState *S)
 {
@@ -135,9 +133,14 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_make_directory("mks");
   hdf5_set_directory("/header/geom/mks/");
 #endif
-  hdf5_write_single_val(&Rin, "Rin", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&Rout, "Rout", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&Rhor, "Reh", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&Rin, "r_in", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&Rout, "r_out", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&Rhor, "r_eh", H5T_IEEE_F64LE);
+  // I don't need this in code but it's in the spec to output it
+  double z1 = 1 + pow(1 - a*a,1./3.)*(pow(1+a,1./3.) + pow(1-a,1./3.));
+  double z2 = sqrt(3*a*a + z1*z1);
+  double Risco = 3 + z2 - sqrt((3-z1)*(3 + z1 + 2*z2));
+  hdf5_write_single_val(&Risco, "r_isco", H5T_IEEE_F64LE);
   hdf5_write_single_val(&hslope, "hslope", H5T_IEEE_F64LE);
   hdf5_write_single_val(&a, "a", H5T_IEEE_F64LE);
 #endif
@@ -167,37 +170,43 @@ void dump(struct GridGeom *G, struct FluidState *S)
   ZLOOP (*data)[k][j][i] = mhd_gamma_calc(G, S, i, j, k, CENT);
   pack_write_scalar((*data), "gamma", OUT_H5_TYPE);
 
-  // Write divB and fail diagnostics only to full dumps
+  // Space for any extra items
+  // Currently debug/diagnostic output, on full dumps only
+  hdf5_make_directory("extras");
+  hdf5_set_directory("/extras/");
+
+  // Preserve git commit or tag of the run -- see Makefile
+#ifdef GIT_VERSION
+  hdf5_write_single_val(QUOTE(GIT_VERSION), "git_version", string_type);
+#endif
+
   if (is_full_dump) {
+    // TODO need sync here for consistent output?
     ZLOOP (*data)[k][j][i] = flux_ct_divb(G, S, i, j, k);
     pack_write_scalar((*data), "divB", OUT_H5_TYPE);
 
     pack_write_int(fail_save, "fail");
     ZLOOP fail_save[k][j][i] = 0;
+
+    pack_write_int(fflag, "fixup");
   }
 
-  // Space for any extra items
-  hdf5_make_directory("extras");
-  hdf5_set_directory("/extras/");
-  if (is_full_dump) {
-    pack_write_int(fflag, "fixup");
-
+#if DEBUG
     pack_write_vector(S->U, NVAR, "U", OUT_H5_TYPE);
 
     pack_write_vector(preserve_F.X1, NVAR, "X1", OUT_H5_TYPE);
     pack_write_vector(preserve_F.X2, NVAR, "X2", OUT_H5_TYPE);
     pack_write_vector(preserve_F.X3, NVAR, "X3", OUT_H5_TYPE);
     pack_write_vector(preserve_dU, NVAR, "dU", OUT_H5_TYPE);
-  }
+#endif
 
+    // Extra physical variables.  These are just recalculated in post
 //  ZLOOP (*data)[k][j][i] = bsq_calc(G, S, i, j, k);
 //  pack_write_scalar((*data), "bsq", OUT_H5_TYPE);
 
   // Could write extra vectors here, but they take up too much space
 //  pack_write_vector(S->bcon, NDIM, "bcon", OUT_H5_TYPE);
 //  hdf5_add_units("bcon", "code");
-
-  // Omega would be output here
 
   hdf5_close();
 

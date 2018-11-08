@@ -67,7 +67,6 @@ void restart_write(struct FluidState *S)
   hdf5_write_single_val(&Rout, "Rout", H5T_IEEE_F64LE);
   hdf5_write_single_val(&a, "a", H5T_IEEE_F64LE);
   hdf5_write_single_val(&hslope, "hslope", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&R0, "R0", H5T_IEEE_F64LE);
   hdf5_write_single_val(&Rhor, "Rhor", H5T_IEEE_F64LE);
 #else
   hdf5_write_single_val(&x1Min, "x1Min", H5T_IEEE_F64LE);
@@ -163,7 +162,6 @@ if (METRIC != MKS) {
   hdf5_read_single_val(&Rout, "Rout", H5T_IEEE_F64LE);
   hdf5_read_single_val(&a, "a", H5T_IEEE_F64LE);
   hdf5_read_single_val(&hslope, "hslope", H5T_IEEE_F64LE);
-  hdf5_read_single_val(&R0, "R0", H5T_IEEE_F64LE);
   hdf5_read_single_val(&Rhor, "Rhor", H5T_IEEE_F64LE);
 #else
   hdf5_read_single_val(&x1Min, "x1Min", H5T_IEEE_F64LE);

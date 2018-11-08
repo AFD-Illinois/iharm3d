@@ -82,9 +82,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  // Initialize global variables and arrays
-  init_io();
-  // TODO centralize allocations here with safe, aligned _mm_malloc
+  // TODO centralize more allocations here with safe, aligned _mm_malloc
   struct GridGeom *G = calloc(1,sizeof(struct GridGeom));
   struct FluidState *S = calloc(1,sizeof(struct FluidState));
 
