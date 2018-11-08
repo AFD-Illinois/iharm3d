@@ -248,6 +248,11 @@ extern GridInt fail_save;
 extern GridInt fflag;
 //};
 
+#if DEBUG
+extern struct FluidFlux preserve_F;
+extern GridPrim preserve_dU;
+#endif
+
 /*******************************************************************************
     GLOBAL VARIABLES SECTION
 *******************************************************************************/
@@ -402,16 +407,18 @@ void omega_calc(struct GridGeom *G, struct FluidState *S, GridDouble *omega);
 
 // diag.c
 void reset_log_variables();
+void diag_flux(struct FluidFlux *F);
 void diag(struct GridGeom *G, struct FluidState *S, int call_code);
-void fail(struct GridGeom *G, struct FluidState *S, int fail_type, int i, int j, int k);
+double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
+  int k);
+#if DEBUG
 void global_map(int iglobal, int jglobal, int kglobal, GridPrim prim);
 void area_map(int i, int j, int k, GridPrim prim);
 void area_map_pflag(int i, int j, int k);
-void diag_flux(struct FluidFlux *F);
-double flux_ct_divb(struct GridGeom *G, struct FluidState *S, int i, int j,
-  int k);
 void check_nan(struct FluidState *S, const char* flag);
 double sigma_max(struct GridGeom *G, struct FluidState *S);
+void update_f(struct FluidFlux *F, GridPrim *dU);
+#endif
 
 // electrons.c
 #if ELECTRONS

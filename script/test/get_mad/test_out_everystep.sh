@@ -41,7 +41,7 @@ echo "Restarting with 1 proc..."
 
 sleep 1
 
-./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_firsttime.txt
+run_harm $OUT_DIR firsttime
 echo "Done!"
 
 # Save dumps
@@ -57,5 +57,5 @@ set_cpu_topo 2 2 1
 make_harm_here torus
 
 echo "Restarting with 4 procs..."
-mpirun -n 4 ./harm -p param.dat -o $OUT_DIR > $OUT_DIR/out_secondtime.txt
+run_harm $OUT_DIR secondtime
 echo "Done!"

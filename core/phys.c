@@ -67,11 +67,10 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
   int kstart, int kstop, int jstart, int jstop, int istart, int istop,
   GridPrim flux)
 {
-  //Only collapse over first two dimensions, to preserve vectorization
-  // TODO try pragma simd for last loop only
+  // TODO reintroduce simd pragma to see where it messes things up
 #pragma omp parallel
 {
-#pragma omp for collapse(2) nowait
+#pragma omp for collapse(3) nowait
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     double mhd[NDIM];
 
@@ -86,7 +85,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
     flux[U3][k][j][i] = mhd[3] * G->gdet[loc][j][i];
   }
 
-#pragma omp for collapse(2) nowait
+#pragma omp for collapse(3) nowait
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     // Dual of Maxwell tensor
     flux[B1][k][j][i] = (S->bcon[1][k][j][i] * S->ucon[dir][k][j][i]
@@ -99,7 +98,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
   }
 
 #if ELECTRONS
-#pragma omp for collapse(2)
+#pragma omp for collapse(3)
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     // RHO already includes a factor of gdet!
     flux[KEL][k][j][i] = flux[RHO][k][j][i]*S->P[KEL][k][j][i];
@@ -134,7 +133,8 @@ inline double mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, in
           + G->gcov[loc][2][3][j][i]*S->P[U2][k][j][i]*S->P[U3][k][j][i]);
 
 
-  /*if (qsq < 0.) {
+#if DEBUG
+  if (qsq < 0.) {
     if (fabs(qsq) > 1.E-10) { // Then assume not just machine precision
       fprintf(stderr,
         "gamma_calc():  failed: [%i %i %i] qsq = %28.18e \n",
@@ -142,12 +142,12 @@ inline double mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, in
       fprintf(stderr,
         "v[1-3] = %28.18e %28.18e %28.18e  \n",
         S->P[U1][k][j][i], S->P[U2][k][j][i], S->P[U3][k][j][i]);
-      *gamma = 1.;
-      return 1;
+      return 1.0;
     } else {
       qsq = 1.E-10; // Set floor
     }
-  }*/
+  }
+#endif
 
   return sqrt(1. + qsq);
 
@@ -185,75 +185,31 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
 {
 #pragma omp parallel
   {
-#pragma omp for collapse(2)
+#pragma omp for collapse(3)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       ucon_calc(G, S, i, j, k, loc);
       //lower_grid(S->ucon, S->ucov, G, i, j, k, loc);
     }
 
-#pragma omp for collapse(2)
+#pragma omp for collapse(3)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       lower_grid(S->ucon, S->ucov, G, i, j, k, loc);
     }
     //lower_grid_vec(S->ucon, S->ucov, G, kstart, kstop, jstart, jstop, istart, istop, loc);
 
-#pragma omp for collapse(2)
+#pragma omp for collapse(3)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       bcon_calc(S, i, j, k);
       //lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
     }
 
-#pragma omp for collapse(2)
+#pragma omp for collapse(3)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
     }
   }
 
     //lower_grid_vec(S->bcon, S->bcov, G, kstart, kstop, jstart, jstop, istart, istop, loc);
-}
-
-// TODO reintroduce this? Just fails the fluid on certain conditions
-inline void check_speeds(struct GridGeom *G, struct FluidState *S)
-{
-#pragma omp parallel for collapse(3)
-  ZLOOP {
-    // Find fast magnetosonic speed
-    double bsq = bsq_calc(S, i, j, k);
-    double rho = fabs(S->P[RHO][k][j][i]);
-    double u = fabs(S->P[UU][k][j][i]);
-    double ef = rho + gam*u;
-    double ee = bsq + ef;
-    double va2 = bsq/ee;
-    double cs2 = gam*(gam - 1.)*u/ef;
-
-    double cms2 = cs2 + va2 - cs2*va2;
-
-    // Sanity checks
-    if (cms2 < 0.) {
-      fprintf(stderr, "\n\ncms2: %g %g %g\n\n", gam, u, ef);
-      fail(G, S, FAIL_COEFF_NEG, i, j, k);
-    }
-    if (cms2 > 1.) {
-      fail(G, S, FAIL_COEFF_SUP, i, j, k);
-    }
-  }
-
-//  // This one requires a lot of context Acon/cov Bcon/cov -> A,B,C -> discr
-//  if ((discr < 0.0) && (discr > -1.e-10)) {
-//    discr = 0.0;
-//  } else if (discr < -1.e-10) {
-//    fprintf(stderr, "\n\t %g %g %g %g %g\n", A, B, C, discr, cms2);
-//    fprintf(stderr, "\n\t S->ucon: %g %g %g %g\n", S->ucon[0][k][j][i],
-//      S->ucon[1][k][j][i], S->ucon[2][k][j][i], S->ucon[3][k][j][i]);
-//    fprintf(stderr, "\n\t S->bcon: %g %g %g %g\n", S->bcon[0][k][j][i],
-//      S->bcon[1][k][j][i], S->bcon[2][k][j][i], S->bcon[3][k][j][i]);
-//    fprintf(stderr, "\n\t Acon: %g %g %g %g\n", Acon[0], Acon[1], Acon[2],
-//      Acon[3]);
-//    fprintf(stderr, "\n\t Bcon: %g %g %g %g\n", Bcon[0], Bcon[1], Bcon[2],
-//      Bcon[3]);
-//    fail(G, S, FAIL_VCHAR_DISCR, i, j, k);
-//    discr = 0.;
-//  }
 }
 
 // Calculate components of magnetosonic velocity from primitive variables

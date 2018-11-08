@@ -13,6 +13,11 @@ GridInt pflag;
 GridInt fail_save;
 GridInt fflag;
 
+#if DEBUG
+struct FluidFlux preserve_F;
+GridPrim preserve_dU;
+#endif
+
 // Parameters
 // physical
 double a;

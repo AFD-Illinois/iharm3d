@@ -13,19 +13,17 @@
 #include <sys/stat.h>
 #include <ctype.h>
 
-// Variables kept for output only
-// Currently this calculation is done in post
-//GridDouble *omega;
+// TODO move bsq to this scope?
 
-#define OUT_TYPE float
+#if DEBUG
+#define OUT_H5_TYPE H5T_IEEE_F64LE
+#define OUT_TYPE double
+#else
 #define OUT_H5_TYPE H5T_IEEE_F32LE
+#define OUT_TYPE float
+#endif
 
 #define HDF_STR_LEN 20
-
-void init_io()
-{
-  //omega = calloc(1,sizeof(GridDouble));
-}
 
 void dump(struct GridGeom *G, struct FluidState *S)
 {
@@ -172,37 +170,43 @@ void dump(struct GridGeom *G, struct FluidState *S)
   ZLOOP (*data)[k][j][i] = mhd_gamma_calc(G, S, i, j, k, CENT);
   pack_write_scalar((*data), "gamma", OUT_H5_TYPE);
 
-  // Write divB and fail diagnostics only to full dumps
+  // Space for any extra items
+  // Currently debug/diagnostic output, on full dumps only
+  hdf5_make_directory("extras");
+  hdf5_set_directory("/extras/");
+
+  // Preserve git commit or tag of the run -- see Makefile
+#ifdef GIT_VERSION
+  hdf5_write_single_val(QUOTE(GIT_VERSION), "git_version", string_type);
+#endif
+
   if (is_full_dump) {
+    // TODO need sync here for consistent output?
     ZLOOP (*data)[k][j][i] = flux_ct_divb(G, S, i, j, k);
     pack_write_scalar((*data), "divB", OUT_H5_TYPE);
 
     pack_write_int(fail_save, "fail");
     ZLOOP fail_save[k][j][i] = 0;
-  }
 
-  // Space for any extra items
-  hdf5_make_directory("extras");
-  hdf5_set_directory("/extras/");
-  // Preserve git commit or tag of the run -- see Makefile
-#ifdef GIT_VERSION
-  hdf5_write_single_val(QUOTE(GIT_VERSION), "git_version", string_type);
-#else
-#error "No git version!!"
-#endif
-  // Preserve notion of what floors were hit
-  if (is_full_dump) {
     pack_write_int(fflag, "fixup");
   }
 
+#if DEBUG
+    pack_write_vector(S->U, NVAR, "U", OUT_H5_TYPE);
+
+    pack_write_vector(preserve_F.X1, NVAR, "X1", OUT_H5_TYPE);
+    pack_write_vector(preserve_F.X2, NVAR, "X2", OUT_H5_TYPE);
+    pack_write_vector(preserve_F.X3, NVAR, "X3", OUT_H5_TYPE);
+    pack_write_vector(preserve_dU, NVAR, "dU", OUT_H5_TYPE);
+#endif
+
+    // Extra physical variables.  These are just recalculated in post
 //  ZLOOP (*data)[k][j][i] = bsq_calc(G, S, i, j, k);
 //  pack_write_scalar((*data), "bsq", OUT_H5_TYPE);
 
   // Could write extra vectors here, but they take up too much space
 //  pack_write_vector(S->bcon, NDIM, "bcon", OUT_H5_TYPE);
 //  hdf5_add_units("bcon", "code");
-
-  // Omega would be output here
 
   hdf5_close();
 
