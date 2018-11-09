@@ -14,6 +14,7 @@ import h5py
 import glob
 
 import units
+from analysis_fns import *
 
 def get_dumps_list(path):
   return np.sort(glob.glob(os.path.join(path, "dump_*.h5")))
@@ -213,51 +214,3 @@ def log_time(diag, var, t):
     while i < len(diag['t']) and diag['t'][i] < t:
       i += 1
     return diag[var][i-1]
-
-# Include vectors with dumps
-def get_state(hdr, geom, dump):
-  N1, N2, N3, NDIM = hdr['n1'], hdr['n2'], hdr['n3'], hdr['n_dim']
-
-  ucon = np.zeros([N1,N2,N3,NDIM])
-  ucov = np.zeros_like(ucon)
-  bcon = np.zeros_like(ucon)
-  bcov = np.zeros_like(ucon)
-
-  # Aliases to make the below more readable
-  gcov = geom['gcov']
-  gcon = geom['gcon']
-
-  U1 = dump['U1']
-  U2 = dump['U2']
-  U3 = dump['U3']
-  B1 = dump['B1']
-  B2 = dump['B2']
-  B3 = dump['B3']
-
-  alpha = geom['lapse']
-  qsq = (gcov[:,:,None,1,1]*U1**2 + gcov[:,:,None,2,2]*U2**2 +
-         gcov[:,:,None,3,3]*U3**2 + 2.*(gcov[:,:,None,1,2]*U1*U2 +
-                                        gcov[:,:,None,1,3]*U1*U3 +
-                                        gcov[:,:,None,2,3]*U2*U3))
-  gamma = np.sqrt(1. + qsq)
-
-  ucon[:,:,:,0] = gamma/alpha
-  ucon[:,:,:,1] = U1 - gamma*alpha*gcon[:,:,None,0,1]
-  ucon[:,:,:,2] = U2 - gamma*alpha*gcon[:,:,None,0,2]
-  ucon[:,:,:,3] = U3 - gamma*alpha*gcon[:,:,None,0,3]
-
-  # TODO get the einsums working as a lower() or raise() fn
-  #ucov = np.einsum("ijka,ijkba->ijkb", ucon, gcov)
-  for mu in range(NDIM):
-    ucov[:,:,:,mu] = (ucon[:,:,:,:]*gcov[:,:,None,mu,:]).sum(axis=-1)
-
-  bcon[:,:,:,0] = B1*ucov[:,:,:,1] + B2*ucov[:,:,:,2] + B3*ucov[:,:,:,3]
-  bcon[:,:,:,1] = (B1 + bcon[:,:,:,0]*ucon[:,:,:,1])/ucon[:,:,:,0]
-  bcon[:,:,:,2] = (B2 + bcon[:,:,:,0]*ucon[:,:,:,2])/ucon[:,:,:,0]
-  bcon[:,:,:,3] = (B3 + bcon[:,:,:,0]*ucon[:,:,:,3])/ucon[:,:,:,0]
-
-  #bcov = np.einsum("ijka,ijkba->ijkb", bcon, gcov)
-  for mu in range(NDIM):
-    bcov[:,:,:,mu] = (bcon[:,:,:,:]*gcov[:,:,None,mu,:]).sum(axis=-1)
-
-  return ucon, ucov, bcon, bcov

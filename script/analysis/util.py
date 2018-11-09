@@ -49,8 +49,8 @@ def calc_nthreads(hdr, n_mkl=4):
       print(e)
     
     # Roughly compute memory and leave some generous padding for multiple copies and Python games
-    # TODO depend on success above?
-    nproc = int(0.11 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
+    # TODO depend on success above? Save memory elsewhere?
+    nproc = int(0.05 * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*10*8))
     print("Using {} Python processes".format(nproc))
     return nproc
   else:

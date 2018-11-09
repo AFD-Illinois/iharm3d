@@ -71,7 +71,6 @@ if UNITS:
     dump[var] = unit['Thetae_unit'] * dump['UU']/dump['RHO']
   # TODO the others
 
-
 # Plot XY differently for vectors, scalars
 if var in ['jcon','ucon','ucov','bcon','bcov']:
   for n in range(4):

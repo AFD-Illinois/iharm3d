@@ -204,7 +204,7 @@ def plot_slices(ax1, ax2, geom, dump, var, field_overlay=True, nlines=10, **kwar
   
   plot_xz(ax1, geom, dump, var, **kwargs)
   if field_overlay and not arrspace:
-    overlay_field(ax1, dump, nlines=nlines)
+    overlay_field(ax1, geom, dump, nlines=nlines)
 
   plot_xy(ax2, geom, dump, var, **kwargs)
 
