@@ -107,16 +107,23 @@ def sum_shell(geom, var, at_zone=None):
   else:
     return np.sum(var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3'], axis=(1,2))
 
+# TODO just pass slices here & below?
 def sum_vol(geom, var, within=None):
   if within is not None:
     return np.sum(var[:within,:,:] * geom['gdet'][:within,:,None]*geom['dx1']*geom['dx2']*geom['dx3'])
   else:
     return np.sum(var * geom['gdet'][:,:,None]*geom['dx1']*geom['dx2']*geom['dx3'])
 
+def eht_vol(geom, var, jmin, jmax, outside=None):
+  if outside is not None:
+    return np.sum(var[outside:,jmin:jmax,:] * geom['gdet'][outside:,jmin:jmax,None]*geom['dx1']*geom['dx2']*geom['dx3'])
+  else:
+    return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx1']*geom['dx2']*geom['dx3'])
+
 # TODO can I cache the volume here without a global or object?
 def eht_profile(geom, var, jmin, jmax):
   return ( np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3'], axis=(1,2)) /
-           (geom['dx2']*2.*np.pi*geom['gdet'][:,jmin:jmax]).sum(axis=-1) )
+           (geom['dx2'] * 2.*np.pi * geom['gdet'][:,jmin:jmax]).sum(axis=-1) )
 
 def theta_av(geom, var, start, av):
   # Sum theta from each pole to equator and take overall mean

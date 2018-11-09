@@ -179,7 +179,7 @@ def avg_dump(n):
   B = np.sqrt(dump['bsq'])
   C = 0.2
   j = rho**3 * P**(-2) * np.exp(-C*(rho**2 / (B*P**2))**(1./3.))
-  out['Lum'] = sum_vol(geom, j)
+  out['Lum'] = eht_vol(geom, j, jmin, jmax, outside=iEH)
 
   T00 = Tmixed(geom, dump, 0,0)
   out['Etot'] = sum_vol(geom, T00, within=iEmax)
