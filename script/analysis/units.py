@@ -1,4 +1,6 @@
-units = {
+## Handle adding units to quantities.  Work in progress
+
+cgs = {
 'CL' : 2.99792458e10,
 'QE' : 4.80320680e-10,
 'ME' : 9.1093826e-28,
@@ -20,7 +22,29 @@ units = {
 }
 
 def get_cgs():
-  return units
+  return cgs
+
+# Get M87 units. Pass tp_over_te=None to get non-constant-frac units
+def get_units_M87(M_unit, tp_over_te=3):
+  L_unit = 9.15766e+14
+  T_unit = 30546.6
+  return _get_all_units(M_unit, L_unit, T_unit, tp_over_te)
+
+# Internal method for all the well-defined units
+def _get_all_units(M_unit, L_unit, T_unit, tp_over_te):
+  out['M_unit'] = M_unit
+  out['L_unit'] = L_unit
+  out['T_unit'] = T_unit
+
+  RHO_unit = M_unit / (L_unit ** 3)
+  out['RHO_unit'] = RHO_unit
+  out['U_unit'] = RHO_unit*cgs['CL']**2;
+  out['B_unit'] = cgs['CL']*np.sqrt(4. * np.pi * RHO_unit)
+  out['Ne_unit'] = RHO_unit/(cgs['MP'] + cgs['ME'])
   
-def get_dict():
-  return units
+  if tp_over_te is not None:
+    out['Thetae_unit'] = (hdr['gam']-1.)*cgs['MP']/cgs['ME']/(1. + tp_over_te)
+  else:
+    out['Thetae_unit'] = cgs['MP']/cgs['ME']
+
+  return out

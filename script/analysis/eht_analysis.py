@@ -120,8 +120,9 @@ def avg_dump(n):
     out['uphi_r'] = eht_profile(geom, uphi, jmin, jmax)
   
     # THETA AVERAGES
-    out['omega_th'] = theta_av(Fcov(dump, 0, 1), iEH, 1) / theta_av(Fcov(dump, 1, 3), iEH, 1)
-    out['omega_th_av'] = theta_av(Fcov(dump, 0, 1), iEH-2, 5) / theta_av(Fcov(dump, 1, 3), iEH-2, 5)
+    Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
+    out['omega_th'] = theta_av(geom, Fcov01, iEH, 1) / theta_av(geom, Fcov13, iEH, 1)
+    out['omega_th_av'] = theta_av(geom, Fcov01, iEH-2, 5) / theta_av(geom, Fcov13, iEH-2, 5)
 
     # This produces much worse results
     #out['omega_th_alt'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
@@ -141,7 +142,7 @@ def avg_dump(n):
 
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
-  out['FE_r'] = sum_shell(geom, Tmixed(dump, 1,0))
+  out['FE_r'] = sum_shell(geom, Tmixed(geom, dump, 1,0))
   out['Edot'] = out['FE_r'][iF]
 
   out['FM_r'] = -sum_shell(geom, dump['RHO']*dump['ucon'][:,:,:,1])
@@ -152,7 +153,7 @@ def avg_dump(n):
   else:
     out['Mdot'] = out['FM_r'][iF]
 
-  out['Ldot'] = sum_shell(geom, Tmixed(dump, 1,3), at_zone=iF)
+  out['Ldot'] = sum_shell(geom, Tmixed(geom, dump, 1,3), at_zone=iF)
 
   # Maximum magnetization (and allow re-use of the variable)
   sigma = dump['bsq']/dump['RHO']
@@ -180,11 +181,12 @@ def avg_dump(n):
   j = rho**3 * P**(-2) * np.exp(-C*(rho**2 / (B*P**2))**(1./3.))
   out['Lum'] = sum_vol(geom, j)
 
-  out['Etot'] = sum_vol(geom, Tmixed(dump, 0, 0), within=iEmax)
+  T00 = Tmixed(geom, dump, 0,0)
+  out['Etot'] = sum_vol(geom, T00, within=iEmax)
   #print "Energy on grid: ",out['Etot']
 
   # For an averaged energy profile
-  #out['E_r'] = radial_sum(Tmixed(dump, 0,0))
+  #out['E_r'] = radial_sum(geom, T00)
 
   return out
 

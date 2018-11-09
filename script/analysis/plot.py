@@ -51,14 +51,13 @@ def flatten_xy(array, average=False, loop=True):
 # Also note label convention:
 # * "known labels" are assigned true or false,
 # * "unknown labels" are assigned None or a string
-def plot_xz(ax, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
+def plot_xz(ax, geom, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
             cbar=True, cbar_ticks=None, label=None, xlabel=True, ylabel=True,
             arrayspace=False, average=False, integrate=False, bh=True, half_cut=False):
 
   if isinstance(var, str):
     var = dump[var]
 
-  geom = dump['geom']
   if integrate:
     var *= geom['n3']
     average = True
@@ -113,14 +112,13 @@ def plot_xz(ax, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
   if label is not None:
     ax.set_title(label)
 
-def plot_xy(ax, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
+def plot_xy(ax, geom, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
             cbar=True, label=None, xlabel=True, ylabel=True,
             ticks=None, arrayspace=False, average=False, integrate=False, bh=True):
 
   if isinstance(var, str):
     var = dump[var]
 
-  geom = dump['geom']
   if integrate:
     var *= geom['n2']
     average = True
@@ -166,15 +164,15 @@ def plot_xy(ax, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
   if label:
     ax.set_title(label)
 
-def overlay_contour(ax, dump, var, levels):
+def overlay_contours(ax, geom, dump, var, levels):
   if isinstance(var, str): var = dump[var]
-  x = flatten_xz(dump['geom']['x'])
-  z = flatten_xz(dump['geom']['z'])
+  x = flatten_xz(geom['x'])
+  z = flatten_xz(geom['z'])
   var = flatten_xz(var, average=True)
   ax.contour(x, z, var, levels=levels, colors='k')
 
-def overlay_field(ax, dump, nlines=10):
-  geom = dump['geom']; hdr = dump['hdr']
+def overlay_field(ax, geom, dump, nlines=10):
+  hdr = dump['hdr']
   N1 = geom['n1']; N2 = geom['n2']
   x = flatten_xz(geom['x']).transpose()
   z = flatten_xz(geom['z']).transpose()
@@ -197,38 +195,28 @@ def overlay_field(ax, dump, nlines=10):
   ax.contour(x, z, A_phi, levels=levels, colors='k')
 
 # Plot two slices together without duplicating everything in the caller
-def plot_slices(ax1, ax2, dump, var, field_overlay=True, nlines=10, **kwargs):
-  # Pull out some arguments manually so we can dump the rest into plot fns
-  # TODO can python do more of this for us?
-#  if 'field_overlay' in kwargs.keys():
-#    field_overlay = kwargs['field_overlay']
-#    del kwargs['field_overlay']
-#  else:
-#    field_overlay=True
-#  if 'nlines' in kwargs.keys():
-#    nlines = kwargs['nlines']
-#    del kwargs['nlines']
-    
+def plot_slices(ax1, ax2, geom, dump, var, field_overlay=True, nlines=10, **kwargs):
+
   if 'arrspace' in list(kwargs.keys()):
     arrspace = kwargs['arrspace']
   else:
     arrspace = False
   
-  plot_xz(ax1, dump, var, **kwargs)
+  plot_xz(ax1, geom, dump, var, **kwargs)
   if field_overlay and not arrspace:
     overlay_field(ax1, dump, nlines=nlines)
 
-  plot_xy(ax2, dump, var, **kwargs)
+  plot_xy(ax2, geom, dump, var, **kwargs)
 
 # TODO Consistent idea of plane/average in x2,x3
-def radial_plot(ax, dump, var, n2=0, n3=0, average=False, 
+def radial_plot(ax, geom, dump, var, n2=0, n3=0, average=False, 
                 logr=False, logy=False, rlim=None, ylim=None, arrayspace=False,
                 ylabel=None, style='k-'):
 
   if isinstance(var, str):
     var = dump[var]
 
-  r = dump['geom']['r'][:,0,0]
+  r = geom['r'][:,0,0]
   if var.ndim == 1:
     data = var
   elif var.ndim == 2:

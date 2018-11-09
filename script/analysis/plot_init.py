@@ -56,7 +56,7 @@ if SIZE > geom['r'][-1,0,0]:
 fig = plt.figure(figsize=(FIGX, FIGY))
 # Density profile
 ax = plt.subplot(NPLOTSY,NPLOTSX,1)
-bplt.radial_plot(ax, dump, 'RHO', ylabel=r"$\rho$", n2=N2//2, n3=N3//2,
+bplt.radial_plot(ax, geom, dump, 'RHO', ylabel=r"$\rho$", n2=N2//2, n3=N3//2,
                  rlim=[8, 2*10**3], ylim=[10**(-4), 2], logr=True, logy=True)
 
 # B-flux thru midplane inside radius
@@ -68,31 +68,31 @@ for n in range(1,N1):
   flux_in[n] = flux_in[n-1] + np.sum(dump['B2'][n,N2//2,:]*geom['gdet'][n,N2//2,None]*hdr['dx1']*hdr['dx3'])
 
 ax = plt.subplot(NPLOTSY,NPLOTSX,2)
-bplt.radial_plot(ax, dump, flux_in, ylabel=r"Flux in r", rlim=[0, SIZE])
+bplt.radial_plot(ax, geom, dump, flux_in, ylabel=r"Flux in r", rlim=[0, SIZE])
 
 # Density 2D
 ax = plt.subplot(NPLOTSY,NPLOTSX,3)
-bplt.plot_xz(ax, dump, np.log10(dump['RHO']),
+bplt.plot_xz(ax, geom, dump, np.log10(dump['RHO']),
              vmin=-4, vmax = 0, label=r"$\log_{10}(\rho)$", window=[0,SIZE,-SIZE/2,SIZE/2])
 
 # Beta 2D
 ax = plt.subplot(NPLOTSY,NPLOTSX,4)
-bplt.plot_xz(ax, dump, np.log10(dump['beta']),
+bplt.plot_xz(ax, geom, dump, np.log10(dump['beta']),
              label=r"$\beta$", cmap='RdBu_r', vmin=1, vmax=4,
              window=[0,SIZE,-SIZE/2,SIZE/2])
-bplt.overlay_field(ax, dump, NLINES)
+bplt.overlay_field(ax, geom, dump, NLINES)
 
 if PLOT_EXTRA:
   ax = plt.subplot(NPLOTSY,NPLOTSX,5)
-  bplt.plot_xz(ax, dump, np.log10(dump['UU']),
+  bplt.plot_xz(ax, geom, dump, np.log10(dump['UU']),
                vmin=-4, vmax = 0, label=r"$\log_{10}(U)$",
                window=[0,SIZE,-SIZE/2,SIZE/2])
   
   ax = plt.subplot(NPLOTSY,NPLOTSX,6)
-  bplt.plot_xz(ax, dump, np.log10(dump['bsq']),
+  bplt.plot_xz(ax, geom, dump, np.log10(dump['bsq']),
                label=r"$\log_{10}(b^2)$", cmap='RdBu_r', vmin=-8, vmax=2,
                window=[0,SIZE,-SIZE/2,SIZE/2])
-  bplt.overlay_field(ax, dump, NLINES)
+  bplt.overlay_field(ax, geom, dump, NLINES)
 
 plt.tight_layout()
 

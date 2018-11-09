@@ -95,7 +95,7 @@ def load_hdr(fname):
     
     # Grab the git revision if that's something we output
     if hdr['vnum'] >= [3,6]:
-      hdr['git_version'] = dfile['/extras/git_version'][()]
+      hdr['git_version'] = dfile['/extras/git_version'][()].decode('UTF-8')
   
   dfile.close()
   
@@ -113,7 +113,7 @@ def load_geom(hdr, path):
   geom = {}
   for key in list(gfile['/'].keys()):
     geom[key] = gfile[key][()]
-  
+
   # Useful stuff for direct access in geom. TODO r_isco if available
   for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
     geom[key] = hdr[key]
@@ -125,7 +125,7 @@ def load_geom(hdr, path):
   geom['x'] = geom['X']
   geom['y'] = geom['Y']
   geom['z'] = geom['Z']
-  
+
   # Compress geom in phi for normal use
   #geom['gdet_full'] = geom['gdet']
   geom['gdet'] = geom['gdet'][:,:,0]
@@ -142,9 +142,9 @@ def load_dump(fname, hdr, geom, derived_vars=True, extras=True):
   
   dump = {}
   
-  # Carry pointers to necessary external data, and hope it doesn't get copied...
+  # Carry pointers to header. Saves some pain getting shapes/parameters for plots
+  # Geometry, however, _must be carried separately_ due to size in memory
   dump['hdr'] = hdr
-  dump['geom'] = geom
 
   # TODO this necessarily grabs the /whole/ primitives array
   for key in [key for key in list(dfile['/'].keys()) if key not in ['header', 'extras', 'prims'] ]:
@@ -167,9 +167,9 @@ def load_dump(fname, hdr, geom, derived_vars=True, extras=True):
     dump['beta'] = 2.*(hdr['gam']-1.)*dump['UU']/(dump['bsq'])
 
     if hdr['has_electrons']:
-      ref = units.get_dict()
+      ref = units.get_cgs()
       dump['Thetae'] = ref['MP']/ref['ME']*dump['KEL']*dump['RHO']**(hdr['gam_e']-1.)
-      dump['ue'] = dump['KEL']*dump['RHO']**(hdr['gam_e'])/(hdr['gam_e']-1.)
+      dump['ue'] = dump['KEL']*dump['RHO']**(hdr['gam_e']) / (hdr['gam_e']-1.)
       dump['up'] = dump['UU'] - dump['ue']
       dump['TpTe'] = (hdr['gam_p']-1.)*dump['up']/((hdr['gam_e']-1.)*dump['ue'])
 
@@ -246,7 +246,7 @@ def get_state(hdr, geom, dump):
   ucon[:,:,:,2] = U2 - gamma*alpha*gcon[:,:,None,0,2]
   ucon[:,:,:,3] = U3 - gamma*alpha*gcon[:,:,None,0,3]
 
-  # TODO get the einsums working. Probably faster
+  # TODO get the einsums working as a lower() or raise() fn
   #ucov = np.einsum("ijka,ijkba->ijkb", ucon, gcov)
   for mu in range(NDIM):
     ucov[:,:,:,mu] = (ucon[:,:,:,:]*gcov[:,:,None,mu,:]).sum(axis=-1)

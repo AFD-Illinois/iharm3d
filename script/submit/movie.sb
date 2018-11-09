@@ -26,6 +26,8 @@
 TYPE=$1
 PROBS="${@:2}"
 
+module restore i18
+
 for PROB in $PROBS
 do
 
@@ -76,7 +78,7 @@ if [[ $TYPE != "init" ]]; then
     # Plot EHT analysis
     python3 eht_analysis.py $DUMP_DIR $AVG_AFTER
   fi
-  python eht_plot.py eht_out.p $(basename $PROB)
+  python3 eht_plot.py eht_out.p $(basename $PROB)
 fi
 
 if [[ $TYPE == "eht" || $TYPE == "ana-movie" || $TYPE == "movie" ]]; then

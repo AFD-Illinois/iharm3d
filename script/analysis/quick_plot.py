@@ -41,7 +41,8 @@ nplotsy = 2
 
 fig = plt.figure(figsize=(FIGX, FIGY))
 
-if var == 'jcov':
+# If we're plotting a derived variable, calculate + add it
+if var in ['jcov', 'jsq']:
   dump['jcov'] = np.zeros_like(dump['jcon'])
   for n in range(hdr['n_dim']):
     dump['jcov'][:,:,:,n] = np.sum(dump['jcon']*geom['gcov'][:,:,None,:,n], axis=3)
@@ -54,30 +55,20 @@ elif var == 'B':
   dump['B'] = np.sqrt(dump['bsq'])
 
 # Add units after all calculations, manually
-# M87
 if UNITS:
-  L_unit = 9.15766e+14
-  T_unit = 30546.6
-
-  ref = units.get_cgs()
-  RHO_unit = M_unit / (L_unit ** 3)
-  U_unit = RHO_unit*ref['CL']**2;
-  B_unit = ref['CL']*np.sqrt(4. * np.pi * RHO_unit)
-  Ne_unit = RHO_unit/(ref['MP'] + ref['ME'])
-  # TODO option for const
-  tp_over_te = 3
-  Thetae_unit = (hdr['gam']-1.)*ref['MP']/ref['ME']/(1. + tp_over_te)
+  unit = units.get_units_M87(M_unit, tp_over_te=3)
 
   if var in ['bsq']:
-    dump[var] *= B_unit**2
+    dump[var] *= unit['B_unit']**2
   elif var in ['B']:
-    dump[var] *= B_unit
-  elif var in ['Ne']: # Meaningless w/o units
-    dump[var] = dump['RHO'] * Ne_unit
+    dump[var] *= unit['B_unit']
+  elif var in ['Ne']:
+    dump[var] = dump['RHO'] * unit['Ne_unit']
   elif var in ['Te']:
-    dump[var] = ref['ME'] * ref['CL']**2 * Thetae_unit * dump['UU']/dump['RHO']
+    dump[var] = ref['ME'] * ref['CL']**2 * unit['Thetae_unit'] * dump['UU']/dump['RHO']
   elif var in ['Thetae']:
-    dump[var] = Thetae_unit * dump['UU']/dump['RHO']
+    # TODO non-const te
+    dump[var] = unit['Thetae_unit'] * dump['UU']/dump['RHO']
   # TODO the others
 
 
@@ -111,7 +102,7 @@ elif var in ['sigma']:
 elif var in ['bernoulli']:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, dump[var], arrayspace=USEARRSPACE, average=True)
-  bplt.overlay_contour(ax, dump[var], [0.05])
+  bplt.overlay_contours(ax, dump[var], [0.05])
 else:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, dump[var], arrayspace=USEARRSPACE)

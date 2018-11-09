@@ -9,21 +9,18 @@ THMAX = 2.*np.pi/3.
 
 ## Physics functions ##
 
-def Tcon(dump,i,j):
+def Tcon(geom, dump,i,j):
   gam = dump['hdr']['gam']
-  geom = dump['geom']
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucon'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcon'][:,:,None,i,j] - dump['bcon'][:,:,:,i]*dump['bcon'][:,:,:,j] )
 
-def Tcov(dump,i,j):
+def Tcov(geom, dump,i,j):
   gam = dump['hdr']['gam']
-  geom = dump['geom']
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucov'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcov'][:,:,None,i,j] - dump['bcov'][:,:,:,i]*dump['bcov'][:,:,:,j] )
 
-def Tmixed(dump,i,j):
+def Tmixed(geom, dump,i,j):
   gam = dump['hdr']['gam']
-  geom = dump['geom']
   gmixedij = (i == j)
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*gmixedij - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
@@ -32,7 +29,7 @@ def Tmixed(dump,i,j):
 # TODO there's a computationally easier way to do this:
 # Pre-populate an antisym ndarray and einsum
 # Same below
-def Fcon(dump, i, j):
+def Fcon(geom, dump, i, j):
   NDIM = dump['hdr']['n_dim']
   
   Fconij = np.zeros_like(dump['RHO'])
@@ -42,11 +39,10 @@ def Fcon(dump, i, j):
         Fconij[:,:,:] += _antisym(i,j,mu,nu) * dump['ucov'][:,:,:,mu] * dump['bcov'][:,:,:,nu]
 
   # TODO is normalization correct?
-  return Fconij*dump['geom']['gdet'][:,:,None]
+  return Fconij*geom['gdet'][:,:,None]
 
-def Fcov(dump, i, j):
+def Fcov(geom, dump, i, j):
   NDIM = dump['hdr']['n_dim']
-  geom = dump['geom']
 
   Fcovij = np.zeros_like(dump['RHO'])
   for mu in range(NDIM):
@@ -74,11 +70,11 @@ def sum_vol(geom, var, within=None):
 # TODO can I cache the volume here without a global or object?
 def eht_profile(geom, var, jmin, jmax):
   return ( np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3'], axis=(1,2)) /
-           (geom['dx2']*2.*np.pi*geom['gdet'][:,:]).sum(axis=-1) )
+           (geom['dx2']*2.*np.pi*geom['gdet'][:,jmin:jmax]).sum(axis=-1) )
 
-def theta_av(var, start, av):
-  # Sum theta from each pole to equator and take overall mean. N2 hack is a hack
-  N2 = var.shape[1]
+def theta_av(geom, var, start, av):
+  # Sum theta from each pole to equator and take overall mean
+  N2 = geom['n2']
   return (var[start:start+av,:N2//2,:].mean(axis=-1).mean(axis=0) + var[start:start+av,:N2//2-1:-1,:].mean(axis=-1).mean(axis=0)) / 2
 
 ## Internal functions ##
