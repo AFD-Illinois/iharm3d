@@ -32,7 +32,7 @@ LOG_PHI = False
 # Choose between several predefined layouts below
 # For keeping around lots of possible movies with same infrastructure
 # simplest simpler simple traditional e_ratio conservation floors
-movie_type = "traditional"
+movie_type = "radial"
 
 FRAMEDIR = "FRAMES"
 
@@ -84,6 +84,30 @@ def plot(n):
                      label=r"$\log_{10}(\rho)$", vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
     bplt.diag_plot(ax_flux[0], diag, 'mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
     bplt.diag_plot(ax_flux[1], diag, 'phi', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
+  elif movie_type == "radial":
+    
+    rho_r = eht_profile(geom, dump['RHO'], jmin, jmax)
+    Theta = (hdr['gam']-1.)*dump['UU']/dump['RHO']
+    Theta_r = eht_profile(geom, Theta, jmin, jmax)
+    B = np.sqrt(dump['bsq'])
+    B_r = eht_profile(geom, B, jmin, jmax)
+    Pg = (hdr['gam']-1.)*dump['UU']
+    Pg_r = eht_profile(geom, Pg, jmin, jmax)
+    Ptot = Pg + dump['bsq']/2
+    Ptot_r = eht_profile(geom, Ptot, jmin, jmax)
+    betainv = (dump['bsq']/2)/Pg
+    betainv_r = eht_profile(geom, betainv, jmin, jmax)
+    uphi = (dump['ucon'][:,:,:,3])
+    uphi_r = eht_profile(geom, uphi, jmin, jmax)
+    
+    ax_slc = lambda i: plt.subplot(2, 3, i)
+    bplt.radial_plot(ax_slc(1), geom, rho_r, r"$<\rho>$", logy=True, ylim=[1.e-2, 1.e0])
+    bplt.radial_plot(ax_slc(2), geom, Pg_r, '$<P_g>$', logy=True, ylim=[1.e-6, 1.e-2])
+    bplt.radial_plot(ax_slc(3), geom, B_r, '$<|B|>$', logy=True, ylim=[1.e-4, 1.e-1])
+    bplt.radial_plot(ax_slc(4), geom, uphi_r, '$<u^{\phi}>$', logy=True, ylim=[1.e-3, 1.e1])
+    bplt.radial_plot(ax_slc(5), geom, Ptot_r, '$<P_{tot}>$', logy=True, ylim=[1.e-6, 1.e-2])
+    bplt.radial_plot(ax_slc(6), geom, betainv_r, '$<\beta^{-1}>$', logy=True, ylim=[1.e-2, 1.e1])
+    
   else: # All other movie types share a layout
     ax_slc = lambda i: plt.subplot(2, 4, i)
     ax_flux = lambda i: plt.subplot(4, 2, i)
@@ -115,13 +139,13 @@ def plot(n):
 #       bplt.diag_plot(ax_flux[1], diag, dump, 'edot', r"\dot{E}", logy=LOG_PHI)
     elif movie_type == "e_ratio":
       # Energy ratios: difficult places to integrate, with failures
-      bplt.plot_slices(ax_slc[0], ax_slc[1], geom, dump, np.log10(dump['UU']/dump['RHO']),
+      bplt.plot_slices(ax_slc(0), ax_slc(1), geom, dump, np.log10(dump['UU']/dump['RHO']),
                        label=r"$\log_{10}(U / \rho)$", vmin=-3, vmax=3, average=True)
-      bplt.plot_slices(ax_slc[2], ax_slc[3], geom, dump, np.log10(dump['bsq']/dump['RHO']),
+      bplt.plot_slices(ax_slc(2), ax_slc(3), geom, dump, np.log10(dump['bsq']/dump['RHO']),
                        label=r"$\log_{10}(b^2 / \rho)$", vmin=-3, vmax=3, average=True)
-      bplt.plot_slices(ax_slc[4], ax_slc[5], geom, dump, np.log10(1/dump['beta']),
+      bplt.plot_slices(ax_slc(4), ax_slc(5), geom, dump, np.log10(1/dump['beta']),
                        label=r"$\beta^{-1}$", vmin=-3, vmax=3, average=True)
-      bplt.plot_slices(ax_slc[6], ax_slc[7], geom, dump, dump['fail'] != 0,
+      bplt.plot_slices(ax_slc(6), ax_slc(7), geom, dump, dump['fail'] != 0,
                        label="Failures", vmin=0, vmax=20, cmap='Reds', int=True) #, arrspace=True)
     elif movie_type == "conservation":
       # Continuity plots to verify local conservation of energy, angular + linear momentum
@@ -158,6 +182,7 @@ def plot(n):
       bplt.plot_slices(ax_flux[0], ax_flux[1], geom, dump['bsq']/dump['RHO'] - 100,
                        vmin=-100, vmax=100, cmap='RdBu_r')
       bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
+      
 
   # TODO enlarge plots w/o messing up even pixel count
   pad = 0.05
@@ -185,6 +210,20 @@ if __name__ == "__main__":
 
   hdr = io.load_hdr(files[0])
   geom = io.load_geom(hdr, path)
+  
+  # TODO put this in analysis_fns
+  THMIN = np.pi/3.
+  THMAX = 2.*np.pi/3.
+  # Calculate jmin, jmax for EHT radial profiles
+  ths = geom['th'][-1,:,0]
+  for n in range(len(ths)):
+    if ths[n] > THMIN:
+      jmin = n
+      break
+  for n in range(len(ths)):
+    if ths[n] > THMAX:
+      jmax = n
+      break
 
   if diag_post:
     # Load fluxes from post-analysis: more flexible

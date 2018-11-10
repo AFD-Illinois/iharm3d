@@ -4,9 +4,6 @@
 
 import numpy as np
 
-THMIN = np.pi/3.
-THMAX = 2.*np.pi/3.
-
 ## Physics functions ##
 
 def Tcon(geom, dump,i,j):
@@ -123,7 +120,7 @@ def eht_vol(geom, var, jmin, jmax, outside=None):
 # TODO can I cache the volume here without a global or object?
 def eht_profile(geom, var, jmin, jmax):
   return ( np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3'], axis=(1,2)) /
-           (geom['dx2'] * 2.*np.pi * geom['gdet'][:,jmin:jmax]).sum(axis=-1) )
+           np.sum(geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3'], axis=(1,2)) )
 
 def theta_av(geom, var, start, av):
   # Sum theta from each pole to equator and take overall mean

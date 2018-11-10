@@ -73,6 +73,8 @@ iBZ = i_of(10) # TODO is there a standard measuring spot?
 # Some variables (Phi) should only be computed at EH=zone 5
 iEH = 5
 
+THMIN = np.pi/3.
+THMAX = 2.*np.pi/3.
 # Calculate jmin, jmax for EHT radial profiles
 ths = geom['th'][-1,:,0]
 for n in range(len(ths)):
@@ -142,7 +144,8 @@ def avg_dump(n):
 
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
-  out['FE_r'] = sum_shell(geom, Tmixed(geom, dump, 1,0))
+  # EHT normalization has both these values positive
+  out['FE_r'] = -sum_shell(geom, Tmixed(geom, dump, 1,0))
   out['Edot'] = out['FE_r'][iF]
 
   out['FM_r'] = -sum_shell(geom, dump['RHO']*dump['ucon'][:,:,:,1])
