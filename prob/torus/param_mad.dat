@@ -7,8 +7,8 @@
 
 # FLUID
 [dbl] gam = 1.444444
-[dbl] cour = 0.9
-[dbl] u_jitter = 4.0e-02
+[dbl] cour = 0.5
+[dbl] u_jitter = 0.10
 
 # OUTPUT
 [dbl] DTd = 5.0
