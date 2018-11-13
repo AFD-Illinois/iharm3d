@@ -209,7 +209,7 @@ def plot_slices(ax1, ax2, geom, dump, var, field_overlay=True, nlines=10, **kwar
   plot_xy(ax2, geom, dump, var, **kwargs)
 
 # TODO Consistent idea of plane/average in x2,x3
-def radial_plot(ax, geom, var, n2=0, n3=0, average=False, 
+def radial_plot(ax, geom, var, n2=0, n3=0, average=False,
                 logr=False, logy=False, rlim=None, ylim=None, arrayspace=False,
                 ylabel=None, style='k-'):
 
@@ -241,10 +241,6 @@ def radial_plot(ax, geom, var, n2=0, n3=0, average=False,
 def diag_plot(ax, diag, varname, t=0, ylabel=None, ylim=None, logy=False, xlabel=True, style='k-'):
   var = diag[varname]
 
-  if ylim is not None:
-    slc = np.where((var > ylim[0]) & (var < ylim[1]))
-  else:
-    slc = np.nonzero(var)
   ax.plot(diag['t'][slc], var[slc], style)
 
   ax.set_xlim([diag['t'][0], diag['t'][-1]])

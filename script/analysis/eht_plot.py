@@ -153,7 +153,7 @@ def plot_extras():
   for avg in avgs:
     if 'LBZ' in avg.keys():
       avg['aLBZ'] = np.abs(avg['LBZ'])
-  plot_multi(ax[2], 't', 'aLBZ', "BZ Luminosity")
+  plot_multi(ax[2], 't', 'aLBZ', "BZ Luminosity", timelabels=True)
 
   plt.savefig(fname_out + '_extras.png')
   plt.close(fig)
@@ -164,7 +164,7 @@ def plot_diags():
 
   plot_multi(ax[0], 't', 'Etot', "Total E")
   plot_multi(ax[1], 't', 'sigma_max', r"$\sigma_{max}$")
-  plot_multi(ax[2], 't_d', 'divbmax_d', "max divB")
+  plot_multi(ax[2], 't_d', 'divbmax_d', "max divB", timelabels=True)
 
   plt.savefig(fname_out + '_diagnostics.png')
   plt.close(fig)

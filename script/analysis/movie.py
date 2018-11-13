@@ -85,7 +85,7 @@ def plot(n):
     bplt.diag_plot(ax_flux[0], diag, 'mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
     bplt.diag_plot(ax_flux[1], diag, 'phi', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
   elif movie_type == "radial":
-    
+
     rho_r = eht_profile(geom, dump['RHO'], jmin, jmax)
     Theta = (hdr['gam']-1.)*dump['UU']/dump['RHO']
     Theta_r = eht_profile(geom, Theta, jmin, jmax)
@@ -101,12 +101,12 @@ def plot(n):
     uphi_r = eht_profile(geom, uphi, jmin, jmax)
     
     ax_slc = lambda i: plt.subplot(2, 3, i)
-    bplt.radial_plot(ax_slc(1), geom, rho_r, r"$<\rho>$", logy=True, ylim=[1.e-2, 1.e0])
-    bplt.radial_plot(ax_slc(2), geom, Pg_r, '$<P_g>$', logy=True, ylim=[1.e-6, 1.e-2])
-    bplt.radial_plot(ax_slc(3), geom, B_r, '$<|B|>$', logy=True, ylim=[1.e-4, 1.e-1])
-    bplt.radial_plot(ax_slc(4), geom, uphi_r, '$<u^{\phi}>$', logy=True, ylim=[1.e-3, 1.e1])
-    bplt.radial_plot(ax_slc(5), geom, Ptot_r, '$<P_{tot}>$', logy=True, ylim=[1.e-6, 1.e-2])
-    bplt.radial_plot(ax_slc(6), geom, betainv_r, '$<\beta^{-1}>$', logy=True, ylim=[1.e-2, 1.e1])
+    bplt.radial_plot(ax_slc(1), geom, rho_r, ylabel=r"$<\rho>$", logy=True, ylim=[1.e-2, 1.e0])
+    bplt.radial_plot(ax_slc(2), geom, Pg_r, ylabel=r"$<P_g>$", logy=True, ylim=[1.e-6, 1.e-2])
+    bplt.radial_plot(ax_slc(3), geom, B_r, ylabel=r"$<|B|>$", logy=True, ylim=[1.e-4, 1.e-1])
+    bplt.radial_plot(ax_slc(4), geom, uphi_r, ylabel=r"$<u^{\phi}>$", logy=True, ylim=[1.e-3, 1.e1])
+    bplt.radial_plot(ax_slc(5), geom, Ptot_r, ylabel=r"$<P_{tot}>$", logy=True, ylim=[1.e-6, 1.e-2])
+    bplt.radial_plot(ax_slc(6), geom, betainv_r, ylabel=r"$<\beta^{-1}>$", logy=True, ylim=[1.e-2, 1.e1])
     
   else: # All other movie types share a layout
     ax_slc = lambda i: plt.subplot(2, 4, i)
@@ -134,7 +134,7 @@ def plot(n):
       # 2D histograms
 #       bplt.hist_2d(ax_slc[6], np.log10(dump['RHO']), np.log10(dump['UU']),r"$\log_{10}(\rho)$", r"$\log_{10}(U)$", logcolor=True)
 #       bplt.hist_2d(ax_slc[7], np.log10(dump['UU']), np.log10(dump['bsq']),r"$\log_{10}(U)$", r"$b^2$", logcolor=True)
-      
+
       # Extra fluxes:
 #       bplt.diag_plot(ax_flux[1], diag, dump, 'edot', r"\dot{E}", logy=LOG_PHI)
     elif movie_type == "e_ratio":

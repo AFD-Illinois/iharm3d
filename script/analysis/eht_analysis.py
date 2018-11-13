@@ -94,7 +94,7 @@ def avg_dump(n):
 
   # We obviously need the derived variables, but not the extras
   dump = io.load_dump(dumps[n], hdr, geom, extras=False)
-  
+
   out['t'] = dump['t']
   print("Loaded {} / {}: {}".format((n+1), len(dumps), out['t']))
 
@@ -102,25 +102,25 @@ def avg_dump(n):
   if out['t'] > tavg:
 
     out['rho_r'] = eht_profile(geom, dump['RHO'], jmin, jmax)
-    
+
     Theta = (hdr['gam']-1.)*dump['UU']/dump['RHO']
     out['Theta_r'] = eht_profile(geom, Theta, jmin, jmax)
-    
+
     B = np.sqrt(dump['bsq'])
     out['B_r'] = eht_profile(geom, B, jmin, jmax)
-  
+
     Pg = (hdr['gam']-1.)*dump['UU']
     out['Pg_r'] = eht_profile(geom, Pg, jmin, jmax)
-  
+
     Ptot = Pg + dump['bsq']/2
     out['Ptot_r'] = eht_profile(geom, Ptot, jmin, jmax)
-  
+
     betainv = (dump['bsq']/2)/Pg
     out['betainv_r'] = eht_profile(geom, betainv, jmin, jmax)
-  
+
     uphi = (dump['ucon'][:,:,:,3])
     out['uphi_r'] = eht_profile(geom, uphi, jmin, jmax)
-  
+
     # THETA AVERAGES
     Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
     out['omega_th'] = theta_av(geom, Fcov01, iEH, 1) / theta_av(geom, Fcov13, iEH, 1)
