@@ -51,12 +51,9 @@ def flatten_xy(array, average=False, loop=True):
 # Also note label convention:
 # * "known labels" are assigned true or false,
 # * "unknown labels" are assigned None or a string
-def plot_xz(ax, geom, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
+def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
             cbar=True, cbar_ticks=None, label=None, xlabel=True, ylabel=True,
             arrayspace=False, average=False, integrate=False, bh=True, half_cut=False):
-
-  if isinstance(var, str):
-    var = dump[var]
 
   if integrate:
     var *= geom['n3']
@@ -98,7 +95,7 @@ def plot_xz(ax, geom, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,4
 
     if bh:
       # BH silhouette
-      circle1=plt.Circle((0,0), dump['hdr']['Reh'], color='k');
+      circle1=plt.Circle((0,0), geom['r_eh'], color='k');
       ax.add_artist(circle1)
 
   if not half_cut:
@@ -112,12 +109,9 @@ def plot_xz(ax, geom, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,4
   if label is not None:
     ax.set_title(label)
 
-def plot_xy(ax, geom, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
+def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
             cbar=True, label=None, xlabel=True, ylabel=True,
             ticks=None, arrayspace=False, average=False, integrate=False, bh=True):
-
-  if isinstance(var, str):
-    var = dump[var]
 
   if integrate:
     var *= geom['n2']
@@ -151,7 +145,7 @@ def plot_xy(ax, geom, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,4
 
     if bh:
       # BH silhouette
-      circle1=plt.Circle((0,0), dump['hdr']['Reh'], color='k');
+      circle1=plt.Circle((0,0), geom['r_eh'], color='k');
       ax.add_artist(circle1)
 
   ax.set_aspect('equal')
@@ -164,8 +158,7 @@ def plot_xy(ax, geom, dump, var, cmap='jet', vmin=None, vmax=None, window=[-40,4
   if label:
     ax.set_title(label)
 
-def overlay_contours(ax, geom, dump, var, levels):
-  if isinstance(var, str): var = dump[var]
+def overlay_contours(ax, geom, var, levels):
   x = flatten_xz(geom['x'])
   z = flatten_xz(geom['z'])
   var = flatten_xz(var, average=True)
@@ -202,18 +195,18 @@ def plot_slices(ax1, ax2, geom, dump, var, field_overlay=True, nlines=10, **kwar
   else:
     arrspace = False
   
-  plot_xz(ax1, geom, dump, var, **kwargs)
+  plot_xz(ax1, geom, var, **kwargs)
   if field_overlay and not arrspace:
     overlay_field(ax1, geom, dump, nlines=nlines)
 
-  plot_xy(ax2, geom, dump, var, **kwargs)
+  plot_xy(ax2, geom, var, **kwargs)
 
 # TODO Consistent idea of plane/average in x2,x3
 def radial_plot(ax, geom, var, n2=0, n3=0, average=False,
                 logr=False, logy=False, rlim=None, ylim=None, arrayspace=False,
                 ylabel=None, style='k-'):
 
-  r = geom['r'][:,0,0]
+  r = geom['r'][:, geom['n2']//2, 0]
   if var.ndim == 1:
     data = var
   elif var.ndim == 2:

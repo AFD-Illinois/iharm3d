@@ -72,24 +72,24 @@ bplt.radial_plot(ax, geom, flux_in, ylabel=r"Flux in r", rlim=[0, SIZE])
 
 # Density 2D
 ax = plt.subplot(NPLOTSY,NPLOTSX,3)
-bplt.plot_xz(ax, geom, dump, np.log10(dump['RHO']),
+bplt.plot_xz(ax, geom, np.log10(dump['RHO']),
              vmin=-4, vmax = 0, label=r"$\log_{10}(\rho)$", window=[0,SIZE,-SIZE/2,SIZE/2])
 
 # Beta 2D
 ax = plt.subplot(NPLOTSY,NPLOTSX,4)
-bplt.plot_xz(ax, geom, dump, np.log10(dump['beta']),
+bplt.plot_xz(ax, geom, np.log10(dump['beta']),
              label=r"$\beta$", cmap='RdBu_r', vmin=1, vmax=4,
              window=[0,SIZE,-SIZE/2,SIZE/2])
 bplt.overlay_field(ax, geom, dump, NLINES)
 
 if PLOT_EXTRA:
   ax = plt.subplot(NPLOTSY,NPLOTSX,5)
-  bplt.plot_xz(ax, geom, dump, np.log10(dump['UU']),
+  bplt.plot_xz(ax, geom, np.log10(dump['UU']),
                vmin=-4, vmax = 0, label=r"$\log_{10}(U)$",
                window=[0,SIZE,-SIZE/2,SIZE/2])
   
   ax = plt.subplot(NPLOTSY,NPLOTSX,6)
-  bplt.plot_xz(ax, geom, dump, np.log10(dump['bsq']),
+  bplt.plot_xz(ax, geom, np.log10(dump['bsq']),
                label=r"$\log_{10}(b^2)$", cmap='RdBu_r', vmin=-8, vmax=2,
                window=[0,SIZE,-SIZE/2,SIZE/2])
   bplt.overlay_field(ax, geom, dump, NLINES)

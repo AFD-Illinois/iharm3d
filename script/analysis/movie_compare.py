@@ -51,10 +51,10 @@ def plot(n):
     # Simplest movie: just RHO
     gs = gridspec.GridSpec(1, 2)
     ax_slc = [plt.subplot(gs[0]), plt.subplot(gs[1])]
-    bplt.plot_xz(ax_slc[0], geom, dump1, np.log10(dump1['RHO']), label=r"$\log_{10}(\rho)$, MAD",
+    bplt.plot_xz(ax_slc[0], geom, np.log10(dump1['RHO']), label=r"$\log_{10}(\rho)$, MAD",
                  ylabel=False, vmin=rho_l, vmax=rho_h, window=window, half_cut=True, cmap='jet')
     bplt.overlay_field(ax_slc[0], geom, dump1, nlines1)
-    bplt.plot_xz(ax_slc[1], geom, dump2, np.log10(dump2['RHO']), label=r"$\log_{10}(\rho)$, SANE",
+    bplt.plot_xz(ax_slc[1], geom, np.log10(dump2['RHO']), label=r"$\log_{10}(\rho)$, SANE",
                  ylabel=False, vmin=rho_l, vmax=rho_h, window=window, half_cut=True, cmap='jet')
     bplt.overlay_field(ax_slc[1], geom, dump2, nlines2)
   elif movie_type == "simpler":
@@ -63,10 +63,10 @@ def plot(n):
     ax_slc = [plt.subplot(gs[0,0]), plt.subplot(gs[0,1])]
     ax_flux = [plt.subplot(gs[1,:])]
     
-    bplt.plot_xz(ax_slc[0], geom, dump1, np.log10(dump1['RHO']), label=r"$\log_{10}(\rho)$, MAD",
+    bplt.plot_xz(ax_slc[0], geom, np.log10(dump1['RHO']), label=r"$\log_{10}(\rho)$, MAD",
                  ylabel=False, vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
     bplt.overlay_field(ax_slc[0], geom, dump1, nlines1)
-    bplt.plot_xz(ax_slc[1], geom, dump2, np.log10(dump2['RHO']), label=r"$\log_{10}(\rho)$, SANE",
+    bplt.plot_xz(ax_slc[1], geom, np.log10(dump2['RHO']), label=r"$\log_{10}(\rho)$, SANE",
                  ylabel=False, vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
     bplt.overlay_field(ax_slc[1], geom, dump2, nlines2)
 

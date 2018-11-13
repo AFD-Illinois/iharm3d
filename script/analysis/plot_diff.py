@@ -38,26 +38,26 @@ log_floor = -60
 def plot_diff_xy(ax, var, rel=False, lim=None):
     if rel:
         if lim is not None:
-            bplt.plot_xy(ax, dump1, np.abs((dump1[var] - dump2[var])/dump1[var]), vmin=0, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
+            bplt.plot_xy(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), vmin=0, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
         else:
-            bplt.plot_xy(ax, dump1, np.abs((dump1[var] - dump2[var])/dump1[var]), label=var, cbar=False, arrayspace=USEARRSPACE)
+            bplt.plot_xy(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), label=var, cbar=False, arrayspace=USEARRSPACE)
     else:
         if lim is not None:
-            bplt.plot_xy(ax, dump1, np.log10(np.abs(dump1[var] - dump2[var])), vmin=log_floor, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
+            bplt.plot_xy(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), vmin=log_floor, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
         else:
-            bplt.plot_xy(ax, dump1, np.log10(np.abs(dump1[var] - dump2[var])), vmin=log_floor, vmax=0, label=var, cbar=False, arrayspace=USEARRSPACE)
+            bplt.plot_xy(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), vmin=log_floor, vmax=0, label=var, cbar=False, arrayspace=USEARRSPACE)
 
 def plot_diff_xz(ax, var, rel=False, lim=None):
     if rel:
         if lim is not None:
-            bplt.plot_xz(ax, dump1, np.abs((dump1[var] - dump2[var])/dump1[var]), vmin=0, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
+            bplt.plot_xz(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), vmin=0, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
         else:
-            bplt.plot_xz(ax, dump1, np.abs((dump1[var] - dump2[var])/dump1[var]), label=var, cbar=False, arrayspace=USEARRSPACE)
+            bplt.plot_xz(ax, geom, np.abs((dump1[var] - dump2[var])/dump1[var]), label=var, cbar=False, arrayspace=USEARRSPACE)
     else:
         if lim is not None:
-            bplt.plot_xz(ax, dump1, np.log10(np.abs(dump1[var] - dump2[var])), vmin=log_floor, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
+            bplt.plot_xz(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), vmin=log_floor, vmax=lim, label=var, cbar=False, arrayspace=USEARRSPACE)
         else:
-            bplt.plot_xz(ax, dump1, np.log10(np.abs(dump1[var] - dump2[var])), vmin=log_floor, vmax=0, label=var, cbar=False, arrayspace=USEARRSPACE)
+            bplt.plot_xz(ax, geom, np.log10(np.abs(dump1[var] - dump2[var])), vmin=log_floor, vmax=0, label=var, cbar=False, arrayspace=USEARRSPACE)
 
 # Plot the difference
 nxplot = 4

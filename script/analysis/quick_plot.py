@@ -27,14 +27,10 @@ var = sys.argv[3]
 if UNITS:
   M_unit = float(sys.argv[4])
 
-hdr = io.load_hdr(dumpfile)
-geom = io.load_geom(hdr, gridfile)
-dump = io.load_dump(dumpfile, hdr, geom)
+hdr, geom, dump = io.load_all(dumpfile)
 
 init_analysis(hdr, geom)
 bplt.init_plotting(hdr, geom)
-
-N1 = hdr['n1']; N2 = hdr['n2']; N3 = hdr['n3']
 
 nplotsx = 2
 nplotsy = 2
@@ -75,13 +71,13 @@ if UNITS:
 if var in ['jcon','ucon','ucov','bcon','bcov']:
   for n in range(4):
     ax = plt.subplot(nplotsy, nplotsx, n+1)
-    bplt.plot_xy(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), dump, arrayspace=USEARRSPACE)
+    bplt.plot_xy(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), arrayspace=USEARRSPACE)
 elif var in ['sigma']:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xy(ax, dump[var], vmin=0, vmax=10, arrayspace=USEARRSPACE)
+  bplt.plot_xy(ax, geom, dump[var], vmin=0, vmax=10, arrayspace=USEARRSPACE)
 else:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xy(ax, dump[var], arrayspace=USEARRSPACE) 
+  bplt.plot_xy(ax, geom, dump[var], arrayspace=USEARRSPACE) 
 
 plt.tight_layout()
 
@@ -94,17 +90,17 @@ fig = plt.figure(figsize=(FIGX, FIGY))
 if var in ['jcon','ucon','ucov','bcon','bcov']:
   for n in range(4):
     ax = plt.subplot(nplotsx, nplotsy, n+1)
-    bplt.plot_xz(ax, np.log10(np.abs(dump[var][:,:,:,n])), arrayspace=USEARRSPACE)
+    bplt.plot_xz(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), arrayspace=USEARRSPACE)
 elif var in ['sigma']:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xz(ax, dump[var], vmin=0, vmax=10, arrayspace=USEARRSPACE)
+  bplt.plot_xz(ax, geom, dump[var], vmin=0, vmax=10, arrayspace=USEARRSPACE)
 elif var in ['bernoulli']:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xz(ax, dump[var], arrayspace=USEARRSPACE, average=True)
+  bplt.plot_xz(ax, geom, dump[var], arrayspace=USEARRSPACE, average=True)
   bplt.overlay_contours(ax, dump[var], [0.05])
 else:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xz(ax, dump[var], arrayspace=USEARRSPACE)
+  bplt.plot_xz(ax, geom, dump[var], arrayspace=USEARRSPACE)
 
 plt.tight_layout()
 
