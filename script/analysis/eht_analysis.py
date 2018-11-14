@@ -54,7 +54,7 @@ if tavg is None:
 # Decide where to measure fluxes
 def i_of(rcoord):
   i = 0
-  while geom['r'][i,0,0] < rcoord:
+  while geom['r'][i,hdr['n2']//2,0] < rcoord:
     i += 1
   i -= 1
   return i
@@ -73,18 +73,7 @@ iBZ = i_of(10) # TODO is there a standard measuring spot?
 # Some variables (Phi) should only be computed at EH=zone 5
 iEH = 5
 
-THMIN = np.pi/3.
-THMAX = 2.*np.pi/3.
-# Calculate jmin, jmax for EHT radial profiles
-ths = geom['th'][-1,:,0]
-for n in range(len(ths)):
-  if ths[n] > THMIN:
-    jmin = n
-    break
-for n in range(len(ths)):
-  if ths[n] > THMAX:
-    jmax = n
-    break
+jmin, jmax = get_j_vals(geom)
 
 # Variables which should be averaged
 avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'FE_r', 'FM_r', 'omega_th', 'omega_th_av' ] #, 'omega_th_alt', 'omega_th_alt_av']
@@ -102,24 +91,16 @@ def avg_dump(n):
   if out['t'] > tavg:
 
     out['rho_r'] = eht_profile(geom, dump['RHO'], jmin, jmax)
-
-    Theta = (hdr['gam']-1.)*dump['UU']/dump['RHO']
-    out['Theta_r'] = eht_profile(geom, Theta, jmin, jmax)
-
-    B = np.sqrt(dump['bsq'])
-    out['B_r'] = eht_profile(geom, B, jmin, jmax)
+    out['Theta_r'] = eht_profile(geom, (hdr['gam']-1.)*dump['UU']/dump['RHO'], jmin, jmax)
+    out['B_r'] = eht_profile(geom, np.sqrt(dump['bsq']), jmin, jmax)
 
     Pg = (hdr['gam']-1.)*dump['UU']
+    Pb = dump['bsq']/2
     out['Pg_r'] = eht_profile(geom, Pg, jmin, jmax)
+    out['Ptot_r'] = eht_profile(geom, Pg + Pb, jmin, jmax)
+    out['betainv_r'] = eht_profile(geom, Pb/Pg, jmin, jmax)
 
-    Ptot = Pg + dump['bsq']/2
-    out['Ptot_r'] = eht_profile(geom, Ptot, jmin, jmax)
-
-    betainv = (dump['bsq']/2)/Pg
-    out['betainv_r'] = eht_profile(geom, betainv, jmin, jmax)
-
-    uphi = (dump['ucon'][:,:,:,3])
-    out['uphi_r'] = eht_profile(geom, uphi, jmin, jmax)
+    out['uphi_r'] = eht_profile(geom, dump['ucon'][:,:,:,3], jmin, jmax)
 
     # THETA AVERAGES
     Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)

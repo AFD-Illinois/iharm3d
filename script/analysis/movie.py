@@ -47,7 +47,7 @@ def plot(n):
 
   if movie_type not in ["simplest", "simpler", "simple"]:
     dump = io.load_dump(files[n], hdr, geom, derived_vars=True, extras=False)
-    fig.suptitle("t = %d"%dump['t']) # TODO put this at the bottom somehow?
+    #fig.suptitle("t = %d"%dump['t']) # TODO put this at the bottom somehow?
   else:
     # Simple movies don't need derived vars
     dump = io.load_dump(files[n], hdr, geom, derived_vars=False, extras=False)
@@ -87,18 +87,15 @@ def plot(n):
   elif movie_type == "radial":
 
     rho_r = eht_profile(geom, dump['RHO'], jmin, jmax)
-    Theta = (hdr['gam']-1.)*dump['UU']/dump['RHO']
-    Theta_r = eht_profile(geom, Theta, jmin, jmax)
-    B = np.sqrt(dump['bsq'])
-    B_r = eht_profile(geom, B, jmin, jmax)
+    B_r = eht_profile(geom, np.sqrt(dump['bsq']), jmin, jmax)
+    uphi_r = eht_profile(geom, dump['ucon'][:,:,:,3], jmin, jmax)
+    
     Pg = (hdr['gam']-1.)*dump['UU']
+    Pb = dump['bsq']/2
+    
     Pg_r = eht_profile(geom, Pg, jmin, jmax)
-    Ptot = Pg + dump['bsq']/2
-    Ptot_r = eht_profile(geom, Ptot, jmin, jmax)
-    betainv = (dump['bsq']/2)/Pg
-    betainv_r = eht_profile(geom, betainv, jmin, jmax)
-    uphi = (dump['ucon'][:,:,:,3])
-    uphi_r = eht_profile(geom, uphi, jmin, jmax)
+    Ptot_r = eht_profile(geom, Pg + Pb, jmin, jmax)
+    betainv_r = eht_profile(geom, Pb/Pg, jmin, jmax)
     
     ax_slc = lambda i: plt.subplot(2, 3, i)
     bplt.radial_plot(ax_slc(1), geom, rho_r, ylabel=r"$<\rho>$", logy=True, ylim=[1.e-2, 1.e0])
@@ -211,19 +208,8 @@ if __name__ == "__main__":
   hdr = io.load_hdr(files[0])
   geom = io.load_geom(hdr, path)
   
-  # TODO put this in analysis_fns
-  THMIN = np.pi/3.
-  THMAX = 2.*np.pi/3.
-  # Calculate jmin, jmax for EHT radial profiles
-  ths = geom['th'][-1,:,0]
-  for n in range(len(ths)):
-    if ths[n] > THMIN:
-      jmin = n
-      break
-  for n in range(len(ths)):
-    if ths[n] > THMAX:
-      jmax = n
-      break
+  jmin, jmax = get_j_vals(geom)
+  print("jmin: {} jmax: {}".format(jmin, jmax))
 
   if diag_post:
     # Load fluxes from post-analysis: more flexible

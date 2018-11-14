@@ -117,15 +117,33 @@ def eht_vol(geom, var, jmin, jmax, outside=None):
   else:
     return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx1']*geom['dx2']*geom['dx3'])
 
-# TODO can I cache the volume here without a global or object?
+# TODO can I cache the volume instead of passing these?
+def get_j_vals(geom):
+  THMIN = np.pi/3.
+  THMAX = 2.*np.pi/3.
+  # Calculate jmin, jmax for EHT radial profiles
+  ths = geom['th'][-1,:,0]
+  for n in range(len(ths)):
+    if ths[n] > THMIN:
+      jmin = n
+      break
+  
+  for n in range(len(ths)):
+    if ths[n] > THMAX:
+      jmax = n
+      break
+
+  return jmin, jmax
+
+# TODO can I cache the volume instead of passing these?
 def eht_profile(geom, var, jmin, jmax):
-  return ( np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3'], axis=(1,2)) /
-           np.sum(geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3'], axis=(1,2)) )
+  return ( ((var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]).sum(axis=(1,2))*geom['dx2']*geom['dx3']) /
+           (geom['gdet'][:,jmin:jmax].sum(axis=1)*geom['dx2']*2*np.pi) )
 
 def theta_av(geom, var, start, av):
   # Sum theta from each pole to equator and take overall mean
   N2 = geom['n2']
-  return (var[start:start+av,:N2//2,:].mean(axis=-1).mean(axis=0) + var[start:start+av,:N2//2-1:-1,:].mean(axis=-1).mean(axis=0)) / 2
+  return (var[start:start+av,:N2//2,:].mean(axis=(0,2)) + var[start:start+av,:N2//2-1:-1,:].mean(axis=(0,2))) / 2
 
 ## Internal functions ##
 
