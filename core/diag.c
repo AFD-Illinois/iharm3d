@@ -318,6 +318,7 @@ inline void update_f(struct FluidFlux *F, GridPrim *dU)
 }
 
 // TODO reintroduce this? Just fails the fluid on certain conditions
+#if 0
 void check_fluid(struct GridGeom *G, struct FluidState *S)
 {
 #pragma omp parallel for collapse(3)
@@ -333,33 +334,34 @@ void check_fluid(struct GridGeom *G, struct FluidState *S)
 
     double cms2 = cs2 + va2 - cs2*va2;
 
-//    // Sanity checks
-//    if (cms2 < 0.) {
-//      fprintf(stderr, "\n\ncms2: %g %g %g\n\n", gam, u, ef);
-//      fail(G, S, FAIL_COEFF_NEG, i, j, k);
-//    }
-//    if (cms2 > 1.) {
-//      fail(G, S, FAIL_COEFF_SUP, i, j, k);
-//    }
-//  }
+    // Sanity checks
+    if (cms2 < 0.) {
+      fprintf(stderr, "\n\ncms2: %g %g %g\n\n", gam, u, ef);
+      fail(G, S, FAIL_COEFF_NEG, i, j, k);
+    }
+    if (cms2 > 1.) {
+      fail(G, S, FAIL_COEFF_SUP, i, j, k);
+    }
 
-//  // This one requires a lot of context Acon/cov Bcon/cov -> A,B,C -> discr
-//  if ((discr < 0.0) && (discr > -1.e-10)) {
-//    discr = 0.0;
-//  } else if (discr < -1.e-10) {
-//    fprintf(stderr, "\n\t %g %g %g %g %g\n", A, B, C, discr, cms2);
-//    fprintf(stderr, "\n\t S->ucon: %g %g %g %g\n", S->ucon[0][k][j][i],
-//      S->ucon[1][k][j][i], S->ucon[2][k][j][i], S->ucon[3][k][j][i]);
-//    fprintf(stderr, "\n\t S->bcon: %g %g %g %g\n", S->bcon[0][k][j][i],
-//      S->bcon[1][k][j][i], S->bcon[2][k][j][i], S->bcon[3][k][j][i]);
-//    fprintf(stderr, "\n\t Acon: %g %g %g %g\n", Acon[0], Acon[1], Acon[2],
-//      Acon[3]);
-//    fprintf(stderr, "\n\t Bcon: %g %g %g %g\n", Bcon[0], Bcon[1], Bcon[2],
-//      Bcon[3]);
-//    fail(G, S, FAIL_VCHAR_DISCR, i, j, k);
-//    discr = 0.;
-//  }
+    // This one requires a lot of context Acon/cov Bcon/cov -> A,B,C -> discr
+    if ((discr < 0.0) && (discr > -1.e-10)) {
+      discr = 0.0;
+    } else if (discr < -1.e-10) {
+      fprintf(stderr, "\n\t %g %g %g %g %g\n", A, B, C, discr, cms2);
+      fprintf(stderr, "\n\t S->ucon: %g %g %g %g\n", S->ucon[0][k][j][i],
+        S->ucon[1][k][j][i], S->ucon[2][k][j][i], S->ucon[3][k][j][i]);
+      fprintf(stderr, "\n\t S->bcon: %g %g %g %g\n", S->bcon[0][k][j][i],
+        S->bcon[1][k][j][i], S->bcon[2][k][j][i], S->bcon[3][k][j][i]);
+      fprintf(stderr, "\n\t Acon: %g %g %g %g\n", Acon[0], Acon[1], Acon[2],
+        Acon[3]);
+      fprintf(stderr, "\n\t Bcon: %g %g %g %g\n", Bcon[0], Bcon[1], Bcon[2],
+        Bcon[3]);
+      fail(G, S, FAIL_VCHAR_DISCR, i, j, k);
+      discr = 0.;
+    }
   }
 }
-
 #endif
+
+
+#endif // DEBUG
