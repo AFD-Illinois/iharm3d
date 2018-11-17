@@ -18,7 +18,7 @@ import pickle
 import numpy as np
 
 # Movie size in inches. Keep 16/9 for standard-size movies
-FIGX = 16
+FIGX = 24
 FIGY = FIGX*9/16
 
 # For plotting debug, "array-space" plots
@@ -32,7 +32,7 @@ LOG_PHI = False
 # Choose between several predefined layouts below
 # For keeping around lots of possible movies with same infrastructure
 # simplest simpler simple traditional e_ratio conservation floors
-movie_type = "radial"
+movie_type = "traditional"
 
 FRAMEDIR = "FRAMES"
 

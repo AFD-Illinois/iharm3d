@@ -234,7 +234,7 @@ def radial_plot(ax, geom, var, n2=0, n3=0, average=False,
 def diag_plot(ax, diag, varname, t=0, ylabel=None, ylim=None, logy=False, xlabel=True, style='k-'):
   var = diag[varname]
 
-  ax.plot(diag['t'][slc], var[slc], style)
+  ax.plot(diag['t'], var, style)
 
   ax.set_xlim([diag['t'][0], diag['t'][-1]])
 

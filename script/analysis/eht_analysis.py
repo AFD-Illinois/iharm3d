@@ -126,7 +126,7 @@ def avg_dump(n):
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
   # EHT normalization has both these values positive
-  out['FE_r'] = -sum_shell(geom, Tmixed(geom, dump, 1,0))
+  out['FE_r'] = sum_shell(geom, Tmixed(geom, dump, 1,0))
   out['Edot'] = out['FE_r'][iF]
 
   out['FM_r'] = -sum_shell(geom, dump['RHO']*dump['ucon'][:,:,:,1])
@@ -224,7 +224,7 @@ for key in avg_keys:
 
 # Names for compatibility with hdf5_to_dict
 out_full['mdot'] = out_full['Mdot']
-out_full['phi'] = out_full['Phi']/np.sqrt(np.abs(out_full['Mdot']))
+out_full['phi'] = out_full['Phi']/np.sqrt(out_full['Mdot'])
 
 # Pass along HARM's own diagnostics for comparison
 diag = io.load_log(path)
