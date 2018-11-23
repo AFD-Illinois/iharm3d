@@ -33,7 +33,7 @@ def run_parallel(function, nmax, nthreads, debug=False):
   pool.join()
 
 # Calculate ideal # threads
-def calc_nthreads(hdr, n_mkl=8):
+def calc_nthreads(hdr, n_mkl=8, pad=0.25):
   # Limit threads for 192^3+ problem due to memory
   if hdr['n1'] * hdr['n2'] * hdr['n3'] >= 288 * 128 * 128:
     # Try to add some parallelism MKL
@@ -52,7 +52,6 @@ def calc_nthreads(hdr, n_mkl=8):
     # (N1*N2*N3*8)*(NPRIM + 4*4 + 6) = size of "dump," (N1*N2*N3*8)*(2*4*4 + 6) = size of "geom"
     # TODO get a better model for this, and save memory in general
     ncopies = hdr['n_prim'] + 4*4 + 6
-    pad = 0.15 # Generous padding for Python games
     nproc = int(pad * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*8*ncopies))
     if nproc < 1: nproc = 1
     print("Using {} Python processes".format(nproc))

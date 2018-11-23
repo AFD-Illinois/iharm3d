@@ -181,7 +181,7 @@ if debug:
   out_list = [avg_dump(n) for n in range(len(dumps))]
 else:
   # PARALLEL
-  NTHREADS = util.calc_nthreads(hdr)
+  NTHREADS = util.calc_nthreads(hdr, pad=0.3)
   pool = multiprocessing.Pool(NTHREADS)
   try:
     # Map the above function to the dump numbers, returning a list of 'out' dicts

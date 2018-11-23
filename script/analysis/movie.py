@@ -207,9 +207,9 @@ if __name__ == "__main__":
 
   hdr = io.load_hdr(files[0])
   geom = io.load_geom(hdr, path)
-  
+
   jmin, jmax = get_j_vals(geom)
-  print("jmin: {} jmax: {}".format(jmin, jmax))
+  #print("jmin: {} jmax: {}".format(jmin, jmax))
 
   if diag_post:
     # Load fluxes from post-analysis: more flexible
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     # Load diagnostics from HARM itself
     diag = io.load_log(path)
 
-  nthreads = util.calc_nthreads(hdr)
+  nthreads = util.calc_nthreads(hdr, pad=0.4)
   if debug:
     # Run sequentially to make backtraces work
     for i in range(len(files)):
