@@ -99,7 +99,6 @@ def get_state(hdr, geom, dump):
 # Var must be a 3D array i.e. a grid scalar
 def sum_shell(geom, var, at_zone=None):
   if at_zone is not None:
-
     return np.sum(var[at_zone,:,:] * geom['gdet'][at_zone,:,None]*geom['dx2']*geom['dx3'], axis=(0,1))
   else:
     return np.sum(var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3'], axis=(1,2))

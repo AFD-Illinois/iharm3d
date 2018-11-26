@@ -218,7 +218,7 @@ if __name__ == "__main__":
     # Load diagnostics from HARM itself
     diag = io.load_log(path)
 
-  nthreads = util.calc_nthreads(hdr, pad=0.4)
+  nthreads = util.calc_nthreads(hdr, pad=0.25)
   if debug:
     # Run sequentially to make backtraces work
     for i in range(len(files)):
