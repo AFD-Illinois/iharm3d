@@ -1,5 +1,7 @@
 ## Handle adding units to quantities.  Work in progress
 
+import numpy as np
+
 cgs = {
 'CL' : 2.99792458e10,
 'QE' : 4.80320680e-10,
@@ -27,11 +29,12 @@ def get_cgs():
 # Get M87 units. Pass tp_over_te=None to get non-constant-frac units
 def get_units_M87(M_unit, tp_over_te=3):
   L_unit = 9.15766e+14
-  T_unit = 30546.6
+  T_unit = L_unit / cgs['CL']
   return _get_all_units(M_unit, L_unit, T_unit, tp_over_te)
 
 # Internal method for all the well-defined units
-def _get_all_units(M_unit, L_unit, T_unit, tp_over_te):
+def _get_all_units(M_unit, L_unit, T_unit, tp_over_te, gam=4/3):
+  out = {}
   out['M_unit'] = M_unit
   out['L_unit'] = L_unit
   out['T_unit'] = T_unit
@@ -43,7 +46,7 @@ def _get_all_units(M_unit, L_unit, T_unit, tp_over_te):
   out['Ne_unit'] = RHO_unit/(cgs['MP'] + cgs['ME'])
   
   if tp_over_te is not None:
-    out['Thetae_unit'] = (hdr['gam']-1.)*cgs['MP']/cgs['ME']/(1. + tp_over_te)
+    out['Thetae_unit'] = (gam-1.)*cgs['MP']/cgs['ME']/(1. + tp_over_te)
   else:
     out['Thetae_unit'] = cgs['MP']/cgs['ME']
 
