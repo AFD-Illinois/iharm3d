@@ -3,7 +3,7 @@
 # This can be used as either a submit script or a bash script from a dev job (bash movie.sb [etc])
 # Usage:
 # sbatch movie.sb type prob [prob ...]
-# Where type in {init, ana, plots, movie, eht}
+# Where type in {init, ana, plots, movie, ana-movie, eht}
 
 # Increasing order of worst-case runtime:
 # init: dump-0 stuff only
@@ -41,6 +41,8 @@ elif [ -d $SCRATCH/pharm_dumps/M87SimulationLibrary/GRMHD/$PROB/dumps ]; then
   DUMP_DIR=$SCRATCH/pharm_dumps/M87SimulationLibrary/GRMHD/$PROB/dumps
 elif [ -d /scratch/05181/gnwong/runs/iharm3d/$PROB/dumps ]; then
   DUMP_DIR=/scratch/05181/gnwong/runs/iharm3d/$PROB/dumps
+elif [ -d /scratch/05181/gnwong/runs/iharm3d/M87SimulationLibrary/GRMHD/$PROB/dumps ]; then
+  DUMP_DIR=/scratch/05181/gnwong/runs/iharm3d/M87SimulationLibrary/GRMHD/$PROB/dumps
 else
   echo "Dumps directory not present!"
 fi
@@ -88,6 +90,6 @@ fi
 
 #Pack everything for easier scp
 cd $MOVIE_DIR
-tar -czf ${PROB}.tar.gz ${PROB}
+tar -czf ${PROB////_}.tar.gz ${PROB}
 
 done

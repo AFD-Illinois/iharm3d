@@ -96,13 +96,14 @@ if var in ['jcon','ucon','ucov','bcon','bcov']:
 elif var in ['sigma']:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, dump[var], vmin=0, vmax=10, arrayspace=USEARRSPACE)
+  bplt.overlay_contours(ax, geom, dump[var], [1])
 elif var in ['gamma']:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, dump[var], vmin=0, vmax=5, arrayspace=USEARRSPACE, average=True)
 elif var in ['bernoulli']:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, dump[var], arrayspace=USEARRSPACE, average=True)
-  bplt.overlay_contours(ax, dump[var], [0.05])
+  bplt.overlay_contours(ax, geom, dump[var], [0.05])
 else:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, dump[var], arrayspace=USEARRSPACE)

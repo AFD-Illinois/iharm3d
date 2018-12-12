@@ -126,7 +126,7 @@ def avg_dump(n):
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
   # EHT normalization has both these values positive
-  out['FE_r'] = sum_shell(geom, Tmixed(geom, dump, 1,0))
+  out['FE_r'] = sum_shell(geom, T_mixed(dump, 1,0))
   out['Edot'] = out['FE_r'][iF]
 
   out['FM_r'] = -sum_shell(geom, dump['RHO']*dump['ucon'][:,:,:,1])
@@ -137,15 +137,16 @@ def avg_dump(n):
   else:
     out['Mdot'] = out['FM_r'][iF]
 
-  out['Ldot'] = sum_shell(geom, Tmixed(geom, dump, 1,3), at_zone=iF)
+  out['Ldot'] = sum_shell(geom, T_mixed(dump, 1,3), at_zone=iF)
 
   # Maximum magnetization (and allow re-use of the variable)
   sigma = dump['bsq']/dump['RHO']
   out['sigma_max'] = np.max(sigma)
 
   # Blandford-Znajek Luminosity L_BZ
-  # TODO define T_EM, and use sum_shell_at function
-  LBZ = lambda i: (hdr['dx2']*hdr['dx3']*geom['gdet'][i,:,None]*(dump['bsq'][i,:,:]*dump['ucon'][i,:,:,1]*dump['ucov'][i,:,:,0] - dump['bcon'][i,:,:,1]*dump['bcov'][i,:,:,0])[np.where(sigma[i,:,:]>1)] ).sum()
+  temm = TEM_mixed(dump, 1,0)
+  LBZ = lambda i: sum_shell(geom, temm, at_zone=i, mask=(sigma > 1))
+  #LBZ = lambda i: (hdr['dx2']*hdr['dx3']*geom['gdet'][i,:,None]*(dump['bsq'][i,:,:]*dump['ucon'][i,:,:,1]*dump['ucov'][i,:,:,0] - dump['bcon'][i,:,:,1]*dump['bcov'][i,:,:,0])[np.where(sigma[i,:,:]>1)] ).sum()
 
   out['LBZ'] = LBZ(iBZ)
 
@@ -165,7 +166,7 @@ def avg_dump(n):
   j = rho**3 * P**(-2) * np.exp(-C*(rho**2 / (B*P**2))**(1./3.))
   out['Lum'] = eht_vol(geom, j, jmin, jmax, outside=iEH)
 
-  T00 = Tmixed(geom, dump, 0,0)
+  T00 = T_mixed(dump, 0,0)
   out['Etot'] = sum_vol(geom, T00, within=iEmax)
   #print "Energy on grid: ",out['Etot']
 

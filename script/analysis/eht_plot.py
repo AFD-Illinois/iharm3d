@@ -58,7 +58,7 @@ def plot_rads():
   plot_multi(ax[1,1], 'r', 'Ptot_r', r"$<P_{tot}>$", logy=True, ylim=[1.e-6, 1.e-2])
   plot_multi(ax[1,2], 'r', 'betainv_r', r"$<\beta^{-1}>$", logy=True, ylim=[1.e-2, 1.e1])
 
-  if len(avgs) > 1: ax[0,2].legend(loc=1)
+  ax[0,2].legend(loc='lower left')
 
   plt.savefig(fname_out + '_ravgs.png')
   plt.close(fig)
@@ -75,7 +75,7 @@ def plot_omega():
   plot_multi(ax[0,1], 'th', 'omega_th_av', r"$\omega_f$ (EH, 5-zone average)", ylim=[-1,2])
 
   # Legend
-  if len(avgs) > 1: ax[0,0].legend(loc=3)
+  ax[0,0].legend(loc='lower left')
 
   # Horizontal guidelines
   for a in ax.flatten():
@@ -102,7 +102,7 @@ def plot_fluxes():
 
   plot_multi(ax[4], 't', 'Lum', "Lum", timelabels=True)
 
-  if len(avgs) > 1: ax[0].legend(loc=2)
+  ax[0].legend(loc='upper left')
 
   plt.savefig(fname_out + '_fluxes.png')
   plt.close(fig)
@@ -113,7 +113,6 @@ def plot_fluxes():
 
   fig, ax = plt.subplots(5,1, figsize=(FIGX, 5*PLOTY))
   plot_multi(ax[0], 't', 'Mdot', r"$|\dot{M}|$")
-  if len(avgs) > 1: ax[0].legend(loc=2)
 
   for avg in avgs:
     if 'Phi' in avg.keys():
@@ -134,12 +133,14 @@ def plot_fluxes():
     if 'Lum' in avg.keys():
       avg['lum'] = np.fabs(avg['Lum'])/np.fabs(avg['Mdot'])
   plot_multi(ax[4], 't', 'lum', r"$\frac{Lum}{|\dot{M}|}$", timelabels=True)
+  
+  ax[0].legend(loc='upper left')
 
   plt.savefig(fname_out + '_normfluxes.png')
   plt.close(fig)
 
 def plot_extras():
-  fig, ax = plt.subplots(3,1, figsize=(FIGX, 3*PLOTY))
+  fig, ax = plt.subplots(4,1, figsize=(FIGX, 4*PLOTY))
 
   # Efficiency over mean mdot: just use the back half as <>
   for avg in avgs:
@@ -155,6 +156,13 @@ def plot_extras():
       avg['aLBZ'] = np.abs(avg['LBZ'])
   plot_multi(ax[2], 't', 'aLBZ', "BZ Luminosity", timelabels=True)
 
+  for avg in avgs:
+    if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
+      avg['alBZ'] = avg['aLBZ']/np.fabs(avg['Mdot'])
+  plot_multi(ax[3], 't', 'alBZ', r"$\frac{L_{BZ}}{\dot{M}}$", timelabels=True)
+  
+  ax[0].legend(loc='upper left')
+
   plt.savefig(fname_out + '_extras.png')
   plt.close(fig)
 
@@ -165,6 +173,8 @@ def plot_diags():
   plot_multi(ax[0], 't', 'Etot', "Total E")
   plot_multi(ax[1], 't', 'sigma_max', r"$\sigma_{max}$")
   plot_multi(ax[2], 't_d', 'divbmax_d', "max divB", timelabels=True)
+  
+  ax[0].legend(loc='lower left')
 
   plt.savefig(fname_out + '_diagnostics.png')
   plt.close(fig)
@@ -183,7 +193,8 @@ if __name__ == "__main__":
 
   avgs = []
   for filename in sys.argv[1:last_file]:
-    avgs.append(pickle.load(open(filename,'rb')))
+    # Encoding arg is for python2 numpy bytestrings
+    avgs.append(pickle.load(open(filename,'rb'), encoding = 'latin1'))
 
   # Split the labels, or use the filename as a label
   labels = [ lab.replace("/",",") for lab in sys.argv[-2].split(",") ]

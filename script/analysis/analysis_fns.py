@@ -6,21 +6,26 @@ import numpy as np
 
 ## Physics functions ##
 
-def Tcon(geom, dump,i,j):
+def T_con(geom, dump,i,j):
   gam = dump['hdr']['gam']
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucon'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcon'][:,:,None,i,j] - dump['bcon'][:,:,:,i]*dump['bcon'][:,:,:,j] )
 
-def Tcov(geom, dump,i,j):
+def T_cov(geom, dump,i,j):
   gam = dump['hdr']['gam']
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucov'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcov'][:,:,None,i,j] - dump['bcov'][:,:,:,i]*dump['bcov'][:,:,:,j] )
 
-def Tmixed(geom, dump,i,j):
+def T_mixed(dump,i,j):
   gam = dump['hdr']['gam']
   gmixedij = (i == j)
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*gmixedij - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
+
+# TODO Only works for i != j
+def TEM_mixed(dump, i, j):
+  if i == j: raise ValueError("TEM Not implemented for i==j.")
+  return dump['bsq'][:,:,:]*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j]
 
 # Return mu, nu component of contravarient Maxwell tensor
 # TODO there's a computationally easier way to do this:
@@ -100,11 +105,17 @@ def get_state(hdr, geom, dump, return_gamma=False):
 ## Sums and Averages ##
   
 # Var must be a 3D array i.e. a grid scalar
-def sum_shell(geom, var, at_zone=None):
-  if at_zone is not None:
-    return np.sum(var[at_zone,:,:] * geom['gdet'][at_zone,:,None]*geom['dx2']*geom['dx3'], axis=(0,1))
+# TODO could maybe be made faster with 'where' but also harder to get right
+def sum_shell(geom, var, at_zone=None, mask=None):
+  if mask is not None:
+    integrand = (var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3'])*(mask)
   else:
-    return np.sum(var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3'], axis=(1,2))
+    integrand = var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3']
+
+  if at_zone is not None:
+    return np.sum(integrand[at_zone,:,:], axis=(0,1))
+  else:
+    return np.sum(integrand, axis=(1,2))
 
 # TODO just pass slices here & below?
 def sum_vol(geom, var, within=None):
