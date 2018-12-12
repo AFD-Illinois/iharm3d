@@ -52,7 +52,7 @@ def lower(geom, var):
   return np.einsum('...j,...ij',var,geom['gcov'][:,:,None,:,:])
 
 # Include vectors with dumps
-def get_state(hdr, geom, dump):
+def get_state(hdr, geom, dump, return_gamma=False):
   N1, N2, N3, NDIM = hdr['n1'], hdr['n2'], hdr['n3'], hdr['n_dim']
 
   ucon = np.zeros([N1,N2,N3,NDIM])
@@ -92,7 +92,10 @@ def get_state(hdr, geom, dump):
 
   bcov = lower(geom, bcon)
 
-  return ucon, ucov, bcon, bcov
+  if return_gamma:
+    return ucon, ucov, bcon, bcov, gamma
+  else:
+    return ucon, ucov, bcon, bcov
 
 ## Sums and Averages ##
   

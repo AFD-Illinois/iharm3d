@@ -62,14 +62,18 @@ def load_hdr(fname):
       hdr[key] = dfile['header/' + key][()]
       
     # TODO load these from grid.h5? Or is the header actually the place for them?
-    for key in [key for key in list(dfile['header/geom'].keys()) if not key in ['mks', 'mmks'] ]:
+    for key in [key for key in list(dfile['header/geom'].keys()) if not key in ['mks', 'mmks', 'mks3'] ]:
       hdr[key] = dfile['header/geom/' + key][()]
+    # TODO there must be a shorter/more compat way to do the following
     if 'mks' in list(dfile['header/geom'].keys()):
       for key in dfile['header/geom/mks']:
         hdr[key] = dfile['header/geom/mks/' + key][()]
     if 'mmks' in list(dfile['header/geom'].keys()):
       for key in dfile['header/geom/mmks']:
         hdr[key] = dfile['header/geom/mmks/' + key][()]
+    if 'mks3' in list(dfile['header/geom'].keys()):
+      for key in dfile['header/geom/mks3']:
+        hdr[key] = dfile['header/geom/mks3/' + key][()]
 
   except KeyError as e:
     util.warn("File is older than supported by this library. Use hdf5_to_dict_old.py")
@@ -78,6 +82,10 @@ def load_hdr(fname):
   decode_all(hdr)
 
   # Turn the version string into components
+  if 'version' not in hdr.keys():
+    hdr['version'] = "iharm-alpha-3.6"
+    print("Unknown version: defaulting to {}".format(hdr['version']))
+
   hdr['codename'], hdr['codestatus'], hdr['vnum'] = hdr['version'].split("-")
   hdr['vnum'] = [int(x) for x in hdr['vnum'].split(".")]
 
@@ -95,12 +103,29 @@ def load_hdr(fname):
       hdr['r_in'], hdr['r_out'], hdr['r_eh'] = hdr['Rin'], hdr['Rout'], hdr['Reh']
     
     # Grab the git revision if that's something we output
-    if hdr['vnum'] >= [3,6]:
+    if 'extras' in dfile.keys() and 'git_version' in dfile['extras'].keys():
       hdr['git_version'] = dfile['/extras/git_version'][()].decode('UTF-8')
   
   dfile.close()
+
+  # Patch things that sometimes people forget to put in the header
+  if 'n_dim' not in hdr:
+    hdr['n_dim'] = 4
+  if 'prim_names' not in hdr:
+    if hdr['n_prim'] == 10:
+      hdr['prim_names'] = ["RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3", "KEL", "KTOT"]
+    else:
+      hdr['prim_names'] = ["RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"]
+  if 'has_electrons' not in hdr:
+    if hdr['n_prim'] == 10:
+      hdr['has_electrons'] = True
+    else:
+      hdr['has_electrons'] = False
+  # TODO this is KS
+  if 'r_eh' not in hdr:
+    hdr['r_eh'] = (1. + np.sqrt(1. - hdr['a']**2))
   
-  if 'git_version' in hdr.keys():
+  if 'git_version' in hdr:
     print("Loaded header from code {}, git rev {}".format(hdr['version'], hdr['git_version']))
   else:
     print("Loaded header from code {}".format(hdr['version']))
@@ -108,7 +133,11 @@ def load_hdr(fname):
   return hdr
 
 def load_geom(hdr, path):
-  fname = os.path.join(path, hdr['gridfile'])
+  # Sensible defaults
+  if 'gridfile' in hdr:
+    fname = os.path.join(path, hdr['gridfile'])
+  else:
+    fname = os.path.join(path, "grid.h5")
   gfile = h5py.File(fname, 'r')
 
   geom = {}
@@ -118,8 +147,12 @@ def load_geom(hdr, path):
   # Useful stuff for direct access in geom. TODO r_isco if available
   for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
     geom[key] = hdr[key]
-  if hdr['metric'] in ["MKS", "MMKS"]:
+  # TODO not all non-cart metrics are KS
+  if hdr['metric'] in ["MKS", "MMKS", "FMKS"]:
     for key in ['r_eh', 'r_in', 'r_out']:
+      geom[key] = hdr[key]
+  elif hdr['metric'] in ["MKS3"]:
+    for key in ['r_eh']:
       geom[key] = hdr[key]
 
   # these get used interchangeably and I don't care
@@ -154,7 +187,7 @@ def load_dump(fname, hdr, geom, derived_vars=True, extras=True):
   for name, num in zip(hdr['prim_names'], list(range(hdr['n_prim']))):
     dump[name] = dfile['prims'][:,:,:,num]
 
-  if extras:
+  if extras and 'extras' in dfile.keys():
     # Load the extras.
     for key in list(dfile['extras'].keys()):
       dump[key] = dfile['extras/' + key][()]

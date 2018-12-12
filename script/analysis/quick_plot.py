@@ -15,7 +15,7 @@ import sys
 import numpy as np
 
 USEARRSPACE=False
-UNITS=True
+UNITS=False
 SIZE = 40
 
 FIGX = 20
@@ -28,9 +28,6 @@ if UNITS:
   M_unit = float(sys.argv[4])
 
 hdr, geom, dump = io.load_all(dumpfile)
-
-init_analysis(hdr, geom)
-bplt.init_plotting(hdr, geom)
 
 nplotsx = 2
 nplotsy = 2
@@ -49,6 +46,8 @@ elif var == 'bernoulli':
   dump['bernoulli'] = -Tmixed(dump,0,0) /(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
 elif var == 'B':
   dump['B'] = np.sqrt(dump['bsq'])
+elif var == 'gamma':
+  _,_,_,_,dump['gamma'] = get_state(hdr, geom, dump, return_gamma=True)
 
 # Add units after all calculations, manually
 if UNITS:
@@ -75,6 +74,9 @@ if var in ['jcon','ucon','ucov','bcon','bcov']:
 elif var in ['sigma']:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xy(ax, geom, dump[var], vmin=0, vmax=10, arrayspace=USEARRSPACE)
+elif var in ['gamma']:
+  ax = plt.subplot(1, 1, 1)
+  bplt.plot_xy(ax, geom, dump[var], vmin=0, vmax=5, arrayspace=USEARRSPACE, average=True)
 else:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xy(ax, geom, dump[var], arrayspace=USEARRSPACE) 
@@ -94,6 +96,9 @@ if var in ['jcon','ucon','ucov','bcon','bcov']:
 elif var in ['sigma']:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, dump[var], vmin=0, vmax=10, arrayspace=USEARRSPACE)
+elif var in ['gamma']:
+  ax = plt.subplot(1, 1, 1)
+  bplt.plot_xz(ax, geom, dump[var], vmin=0, vmax=5, arrayspace=USEARRSPACE, average=True)
 elif var in ['bernoulli']:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, dump[var], arrayspace=USEARRSPACE, average=True)
