@@ -17,10 +17,14 @@ import units
 from analysis_fns import *
 
 def get_dumps_list(path):
-  return np.sort(glob.glob(os.path.join(path, "dump_*.h5")))
+  # Funny how many names output has
+  files_harm = [file for file in glob.glob(path+"*dump*.h5")]
+  files_koral = [file for file in glob.glob(path+"*sim*.h5")]
+  files_bhac = [file for file in glob.glob(path+"*data*.h5")]
+  return np.sort(files_harm + files_koral + files_bhac)
 
-def get_full_dumps_list(folder):
-  alldumps = np.sort(glob.glob(folder+'dump_*.h5'))
+def get_full_dumps_list(path):
+  alldumps = get_dumps_list(path)
   fulldumps = []
 
   for fname in alldumps:
@@ -99,8 +103,8 @@ def load_hdr(fname):
       hdr['prim_names'] = names
     
     # Work around bad radius names before output v3.6
-    if hdr['vnum'] < [3,6]:
-      hdr['r_in'], hdr['r_out'], hdr['r_eh'] = hdr['Rin'], hdr['Rout'], hdr['Reh']
+    if 'r_in' not in hdr:
+      hdr['r_in'], hdr['r_out'] = hdr['Rin'], hdr['Rout']
     
     # Grab the git revision if that's something we output
     if 'extras' in dfile.keys() and 'git_version' in dfile['extras'].keys():
@@ -121,7 +125,7 @@ def load_hdr(fname):
       hdr['has_electrons'] = True
     else:
       hdr['has_electrons'] = False
-  # TODO this is KS
+  # TODO this is KS-specific
   if 'r_eh' not in hdr:
     hdr['r_eh'] = (1. + np.sqrt(1. - hdr['a']**2))
   
@@ -183,6 +187,10 @@ def load_dump(fname, hdr, geom, derived_vars=True, extras=True):
   # TODO this necessarily grabs the /whole/ primitives array
   for key in [key for key in list(dfile['/'].keys()) if key not in ['header', 'extras', 'prims'] ]:
     dump[key] = dfile[key][()]
+
+  # TODO should probably error at this one
+  if 't' not in dump:
+    dump['t'] = 0.
 
   for name, num in zip(hdr['prim_names'], list(range(hdr['n_prim']))):
     dump[name] = dfile['prims'][:,:,:,num]

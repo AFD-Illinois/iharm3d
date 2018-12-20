@@ -51,6 +51,10 @@ geom = io.load_geom(hdr, path)
 if tavg is None:
   tavg = io.load_dump(dumps[ND//2], hdr, geom, derived_vars=False, extras=False)['t'] - 1.0
 
+# Sometimes we don't know times but want averages
+if tavg < 0:
+  tavg = ND//2
+
 # Decide where to measure fluxes
 def i_of(rcoord):
   i = 0
@@ -59,9 +63,11 @@ def i_of(rcoord):
   i -= 1
   return i
 
-iF = 5 # Zone 5 = rEH
+iEH = i_of(hdr['r_eh'])+2
 if floor_workaround_flux:
   iF = i_of(5) # Measure fluxes at r=5M
+else:
+  iF = iEH
 
 # Max radius when computing "total" energy
 iEmax = i_of(40)
@@ -69,9 +75,6 @@ iEmax = i_of(40)
 # BZ luminosity
 debug_lbz = False
 iBZ = i_of(10) # TODO is there a standard measuring spot?
-
-# Some variables (Phi) should only be computed at EH=zone 5
-iEH = 5
 
 jmin, jmax = get_j_vals(geom)
 
@@ -85,6 +88,10 @@ def avg_dump(n):
   dump = io.load_dump(dumps[n], hdr, geom, extras=False)
 
   out['t'] = dump['t']
+  # When we don't know times, fudge
+  if out['t'] == 0 and n != 0:
+    out['t'] = n
+
   print("Loaded {} / {}: {}".format((n+1), len(dumps), out['t']))
 
   # SHELL AVERAGES (only for t > tavg usu. tmax/2)
@@ -199,11 +206,11 @@ else:
 for key in list(out_list[0].keys()):
   if key in avg_keys:
     out_full[key] = np.zeros((ND,out_list[0][key].size))
-    for n in range(len(out_list)):
+    for n in range(ND):
       out_full[key][n,:] = out_list[n][key]
   else:
     out_full[key] = np.zeros(ND)
-    for n in range(len(out_list)):
+    for n in range(ND):
       out_full[key][n] = out_list[n][key]
 
 # Toss in the common geom lists
@@ -223,21 +230,22 @@ print("nmin = ",n)
 for key in avg_keys:
   out_full[key] = (out_full[key][n:,:]).mean(axis=0)
 
-# Names for compatibility with hdf5_to_dict
+# Compat/completeness stuff
 out_full['mdot'] = out_full['Mdot']
 out_full['phi'] = out_full['Phi']/np.sqrt(out_full['Mdot'])
+out_full['a'] = hdr['a']
 
 # Pass along HARM's own diagnostics for comparison
-diag = io.load_log(path)
+# TODO implement this separately for HARM pipeline, for new overplotting semantics
+#diag = io.load_log(path)
 
-out_full['a'] = hdr['a']
-out_full['t_d'] = diag['t']
-out_full['Mdot_d'] = diag['mdot']
-out_full['Phi_d'] = diag['Phi']
-out_full['Ldot_d'] = diag['ldot']
-out_full['Edot_d'] = diag['edot']
-out_full['Lum_d'] = diag['lum_eht']
-out_full['divbmax_d'] = diag['divbmax']
+#out_full['t_d'] = diag['t']
+#out_full['Mdot_d'] = diag['mdot']
+#out_full['Phi_d'] = diag['Phi']
+#out_full['Ldot_d'] = diag['ldot']
+#out_full['Edot_d'] = diag['edot']
+#out_full['Lum_d'] = diag['lum_eht']
+#out_full['divbmax_d'] = diag['divbmax']
 
 # OUTPUT
 pickle.dump(out_full, open("eht_out.p", "wb"))
