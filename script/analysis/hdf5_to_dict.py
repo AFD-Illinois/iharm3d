@@ -103,7 +103,7 @@ def load_hdr(fname):
       hdr['prim_names'] = names
     
     # Work around bad radius names before output v3.6
-    if 'r_in' not in hdr:
+    if ('r_in' not in hdr) and ('Rin' in hdr):
       hdr['r_in'], hdr['r_out'] = hdr['Rin'], hdr['Rout']
     
     # Grab the git revision if that's something we output
@@ -164,14 +164,24 @@ def load_geom(hdr, path):
   geom['y'] = geom['Y']
   geom['z'] = geom['Z']
 
+  # Sometimes the vectors and zones use different coordinate systems
+  if 'gdet_zone' in geom:
+    # If we laoded them, put them in the right places
+    geom['gdet_vec'] = geom['gdet']
+    geom['gdet'] = geom.pop('gdet_zone',None)
+  else:
+    # Otherwise define the names so I can use them
+    geom['gcon_zone'] = geom['gcon']
+    geom['gcov_zone'] = geom['gcov']
+    geom['gdet_vec'] = geom['gdet']
+    geom['lapse_zone'] = geom['lapse']
+
   # Compress geom in phi for normal use
-  #geom['gdet_full'] = geom['gdet']
-  geom['gdet'] = geom['gdet'][:,:,0]
-  
-  #geom['gcon_full'] = geom['gcon']
-  geom['gcon'] = geom['gcon'][:,:,0,:,:]
-  #geom['gcov_full'] = geom['gcov']
-  geom['gcov'] = geom['gcov'][:,:,0,:,:]
+  for key in ['gdet', 'lapse', 'gdet_vec', 'lapse_zone']:
+    geom[key] = geom[key][:,:,0]
+
+  for key in ['gcon','gcov','gcon_zone','gcov_zone']:
+    geom[key] = geom[key][:,:,0,:,:]
 
   return geom
 

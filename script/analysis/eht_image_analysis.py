@@ -13,9 +13,12 @@ import util
 import sys
 import pickle
 
+import psutil,multiprocessing
+
 import numpy as np
 
 impath = sys.argv[1]
+debug = 0
 
 # M87 parameters
 Msun = 1.989e33
@@ -132,9 +135,24 @@ def process(n):
   return out
 
 if __name__ == "__main__":
-
-  # TODO can parallellize.  But why bother?
-  out_list = [process(n) for n in range(len(files))]
+  if debug:
+    # SERIAL (very slow)
+    out_list = [process(n) for n in range(len(files))]
+  else:
+    # PARALLEL
+    #NTHREADS = util.calc_nthreads(hdr, pad=0.3)
+    NTHREADS = psutil.cpu_count(logical=False)
+    pool = multiprocessing.Pool(NTHREADS)
+    try:
+      # Map the above function to the dump numbers, returning a list of 'out' dicts
+      out_list = pool.map_async(process, list(range(len(files)))).get(99999999)
+      #print out_list[0].keys()
+    except KeyboardInterrupt:
+      pool.terminate()
+      pool.join()
+    else:
+      pool.close()
+      pool.join()
 
   out_list = [x for x in out_list if x is not None]
 

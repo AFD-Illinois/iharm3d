@@ -40,8 +40,9 @@ def Fcon(geom, dump, i, j):
       for nu in range(NDIM):
         Fconij[:,:,:] += _antisym(i,j,mu,nu) * dump['ucov'][:,:,:,mu] * dump['bcov'][:,:,:,nu]
 
+  # Specify we want gdet in the vectors' coordinate system (this matters for KORAL dump files)
   # TODO is normalization correct?
-  return Fconij*geom['gdet'][:,:,None]
+  return Fconij*geom['gdet_vec'][:,:,None]
 
 def Fcov(geom, dump, i, j):
   NDIM = dump['hdr']['n_dim']
@@ -83,10 +84,10 @@ def get_state(hdr, geom, dump, return_gamma=False):
                                         gcov[:,:,None,2,3]*U2*U3))
   gamma = np.sqrt(1. + qsq)
 
-  ucon[:,:,:,0] = gamma/alpha
-  ucon[:,:,:,1] = U1 - gamma*alpha*gcon[:,:,None,0,1]
-  ucon[:,:,:,2] = U2 - gamma*alpha*gcon[:,:,None,0,2]
-  ucon[:,:,:,3] = U3 - gamma*alpha*gcon[:,:,None,0,3]
+  ucon[:,:,:,0] = gamma/(alpha[:,:,None])
+  ucon[:,:,:,1] = U1 - gamma*alpha[:,:,None]*gcon[:,:,None,0,1]
+  ucon[:,:,:,2] = U2 - gamma*alpha[:,:,None]*gcon[:,:,None,0,2]
+  ucon[:,:,:,3] = U3 - gamma*alpha[:,:,None]*gcon[:,:,None,0,3]
 
   ucov = lower(geom, ucon)
 
