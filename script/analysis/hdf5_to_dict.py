@@ -137,11 +137,16 @@ def load_hdr(fname):
   return hdr
 
 def load_geom(hdr, path):
-  # Sensible defaults
-  if 'gridfile' in hdr:
-    fname = os.path.join(path, hdr['gridfile'])
+  # Allow override by making path a filename
+  if ".h5" in path:
+    fname = path
   else:
-    fname = os.path.join(path, "grid.h5")
+    # Otherwise use encoded or default info
+    if 'gridfile' in hdr:
+      fname = os.path.join(path, hdr['gridfile'])
+    else:
+      fname = os.path.join(path, "grid.h5")
+    
   gfile = h5py.File(fname, 'r')
 
   geom = {}

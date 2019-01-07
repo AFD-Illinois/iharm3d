@@ -27,7 +27,9 @@ var = sys.argv[3]
 if UNITS:
   M_unit = float(sys.argv[4])
 
-hdr, geom, dump = io.load_all(dumpfile)
+hdr = io.load_hdr(dumpfile)
+geom = io.load_geom(hdr, gridfile)
+dump = io.load_dump(dumpfile, hdr, geom)
 
 nplotsx = 2
 nplotsy = 2
