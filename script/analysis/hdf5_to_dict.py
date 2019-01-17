@@ -195,11 +195,12 @@ def load_geom(hdr, path):
     geom[key] = geom[key][:,:,0,:,:]
   
   if geom['mixed_metrics']:
+    # Get all Kerr-Schild coordinates for generating transformation matrices
     Xgeom = np.zeros((4,geom['n1'],geom['n2']))
-    Xgeom[1] = geom['X1'][:,:,0]
-    Xgeom[2] = geom['X2'][:,:,0]
+    Xgeom[1] = geom['r'][:,:,0]
+    Xgeom[2] = geom['th'][:,:,0]
     # TODO add all metric params to the geom dict
-    geom['vec_to_grid'] = np.einsum("ij...,jk...->ik...", dxdX_to_KS(Xgeom, Met.EKS, hdr, koral_rad=hdr['has_electrons']), dxdX_KS_to(Xgeom, Met[geom['metric'].upper()], hdr)).transpose((2,3,0,1))
+    geom['vec_to_grid'] = np.einsum("ij...,jk...->ik...", dxdX_to_KS(Xgeom, Met.EKS, hdr), dxdX_KS_to(Xgeom, Met[geom['metric'].upper()], hdr, koral_rad=hdr['has_electrons'])).transpose((2,3,0,1))
 
   return geom
 

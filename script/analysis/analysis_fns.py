@@ -99,9 +99,12 @@ def get_state(hdr, geom, dump, return_gamma=False):
 
   bcov = lower(geom, bcon)
 
-  if 'vec_to_grid' in geom:
-    for vec in (ucon,ucov,bcon,bcov):
-      vec = np.sum(vec[:,:,:,None,:]*geom['vec_to_grid'][:,:,None,:,:],axis=-1)
+  if geom['mixed_metrics']:
+    to_grid = lambda vec : np.einsum("...i,...ij->...j", vec, geom['vec_to_grid'][:,:,None,:,:])
+    ucon = to_grid(ucon)
+    ucov = to_grid(ucov)
+    bcon = to_grid(bcon)
+    bcov = to_grid(bcov)
 
   ret = (ucon, ucov, bcon, bcov)
   if return_gamma:
@@ -157,7 +160,7 @@ def get_j_vals(geom):
 
 # TODO can I cache the volume instead of passing these?
 def eht_profile(geom, var, jmin, jmax):
-  return ( (var[:,jmin:jmax,:] * geom['gdet']*geom['dx2']*geom['dx3']).sum(axis=(1,2)) /
+  return ( (var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3']).sum(axis=(1,2)) /
            ((geom['gdet'][:,jmin:jmax]*geom['dx2']).sum(axis=1)*2*np.pi) )
 
 def theta_av(geom, var, start, av):
