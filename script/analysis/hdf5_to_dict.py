@@ -18,14 +18,13 @@ from analysis_fns import *
 
 # New infra
 from defs import Loci, Met
-from geometry import Grid
-from metrics import dxdX_to_KS
+from coordinates import dxdX_to_KS, dxdX_KS_to
 
 def get_dumps_list(path):
   # Funny how many names output has
-  files_harm = [file for file in glob.glob(path+"*dump*.h5")]
-  files_koral = [file for file in glob.glob(path+"*sim*.h5")]
-  files_bhac = [file for file in glob.glob(path+"*data*.h5")]
+  files_harm = [file for file in glob.glob(os.path.join(path,"*dump*.h5"))]
+  files_koral = [file for file in glob.glob(os.path.join(path,"*sim*.h5"))]
+  files_bhac = [file for file in glob.glob(os.path.join(path,"*data*.h5"))]
   return np.sort(files_harm + files_koral + files_bhac)
 
 def get_full_dumps_list(path):
@@ -159,7 +158,7 @@ def load_geom(hdr, path):
     geom[key] = gfile[key][()]
 
   # Useful stuff for direct access in geom. TODO r_isco if available
-  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
+  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim', 'metric']:
     geom[key] = hdr[key]
   # TODO not all non-cart metrics are KS
   if hdr['metric'] in ["MKS", "MMKS", "FMKS"]:
@@ -180,6 +179,7 @@ def load_geom(hdr, path):
     # If we laoded them, put them in the right places
     geom['gdet_vec'] = geom['gdet']
     geom['gdet'] = geom.pop('gdet_zone',None)
+    geom['mixed_metrics'] = True
   else:
     # Otherwise define the names so I can use them
     geom['gcon_zone'] = geom['gcon']
@@ -194,8 +194,12 @@ def load_geom(hdr, path):
   for key in ['gcon', 'gcov', 'gcon_zone', 'gcov_zone']:
     geom[key] = geom[key][:,:,0,:,:]
   
-  Xgeom = [0,geom['X1'][:,:,0],geom['X2'][:,:,0],0]
-  geom['vec_to_grid'] = np.einsum("ij...,jk...->ik...", dxdX_to_KS(Xgeom, Met.EKS), dxdX_KS_to(Xgeom, Met[geom['metric'].upper()])).transpose((2,3,0,1)
+  if geom['mixed_metrics']:
+    Xgeom = np.zeros((4,geom['n1'],geom['n2']))
+    Xgeom[1] = geom['X1'][:,:,0]
+    Xgeom[2] = geom['X2'][:,:,0]
+    # TODO add all metric params to the geom dict
+    geom['vec_to_grid'] = np.einsum("ij...,jk...->ik...", dxdX_to_KS(Xgeom, Met.EKS, hdr, koral_rad=hdr['has_electrons']), dxdX_KS_to(Xgeom, Met[geom['metric'].upper()], hdr)).transpose((2,3,0,1))
 
   return geom
 

@@ -115,9 +115,9 @@ def get_state(hdr, geom, dump, return_gamma=False):
 # TODO could maybe be made faster with 'where' but also harder to get right
 def sum_shell(geom, var, at_zone=None, mask=None):
   if mask is not None:
-    integrand = (var * geom['gdet'][:,:,None]*geom['dx2'][:,:,None]*geom['dx3'])*(mask)
+    integrand = (var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3'])*(mask)
   else:
-    integrand = var * geom['gdet'][:,:,None]*geom['dx2'][:,:,None]*geom['dx3']
+    integrand = var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3']
 
   if at_zone is not None:
     return np.sum(integrand[at_zone,:,:], axis=(0,1))
@@ -127,15 +127,15 @@ def sum_shell(geom, var, at_zone=None, mask=None):
 # TODO just pass slices here & below?
 def sum_vol(geom, var, within=None):
   if within is not None:
-    return np.sum(var[:within,:,:] * geom['gdet'][:within,:,None]*geom['dx1'][:within,:,None]*geom['dx2'][:within,:,None]*geom['dx3'])
+    return np.sum(var[:within,:,:] * geom['gdet'][:within,:,None]*geom['dx1']*geom['dx2']*geom['dx3'])
   else:
-    return np.sum(var * geom['gdet'][:,:,None]*geom['dx1'][:,:,None]*geom['dx2'][:,:,None]*geom['dx3'])
+    return np.sum(var * geom['gdet'][:,:,None]*geom['dx1']*geom['dx2']*geom['dx3'])
 
 def eht_vol(geom, var, jmin, jmax, outside=None):
   if outside is not None:
-    return np.sum(var[outside:,jmin:jmax,:] * geom['gdet'][outside:,jmin:jmax,None]*geom['dx1'][:,:,None]*geom['dx2'][:,:,None]*geom['dx3'])
+    return np.sum(var[outside:,jmin:jmax,:] * geom['gdet'][outside:,jmin:jmax,None]*geom['dx1']*geom['dx2']*geom['dx3'])
   else:
-    return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx1'][:,jmin:jmax,None]*geom['dx2'][:,jmin:jmax,None]*geom['dx3'])
+    return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx1']*geom['dx2']*geom['dx3'])
 
 # TODO can I cache the volume instead of passing these?
 def get_j_vals(geom):
@@ -157,8 +157,8 @@ def get_j_vals(geom):
 
 # TODO can I cache the volume instead of passing these?
 def eht_profile(geom, var, jmin, jmax):
-  return ( (var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2'][:,jmin:jmax,None]*geom['dx3'][:,jmin:jmax,None]).sum(axis=(1,2)) /
-           ((geom['gdet'][:,jmin:jmax]*geom['dx2'][:,jmin:jmax]).sum(axis=1)*2*np.pi) )
+  return ( (var[:,jmin:jmax,:] * geom['gdet']*geom['dx2']*geom['dx3']).sum(axis=(1,2)) /
+           ((geom['gdet'][:,jmin:jmax]*geom['dx2']).sum(axis=1)*2*np.pi) )
 
 def theta_av(geom, var, start, av):
   # Sum theta from each pole to equator and take overall mean
