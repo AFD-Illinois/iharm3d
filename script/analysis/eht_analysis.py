@@ -45,7 +45,8 @@ dumps = io.get_dumps_list(path)
 ND = len(dumps)
 
 hdr = io.load_hdr(dumps[0])
-geom = io.load_geom(hdr, path)
+#geom = io.load_geom(hdr, path)
+geom = io.construct_geom(hdr)
 
 # If the time after which to average wasn't given, just use the back half of dumps
 if tavg is None:

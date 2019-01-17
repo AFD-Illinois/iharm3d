@@ -4,19 +4,20 @@
 
 import numpy as np
 
+
 ## Physics functions ##
 
-def T_con(geom, dump,i,j):
+def T_con(geom, dump, i, j):
   gam = dump['hdr']['gam']
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucon'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcon'][:,:,None,i,j] - dump['bcon'][:,:,:,i]*dump['bcon'][:,:,:,j] )
 
-def T_cov(geom, dump,i,j):
+def T_cov(geom, dump, i, j):
   gam = dump['hdr']['gam']
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucov'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcov'][:,:,None,i,j] - dump['bcov'][:,:,:,i]*dump['bcov'][:,:,:,j] )
 
-def T_mixed(dump,i,j):
+def T_mixed(dump, i, j):
   gam = dump['hdr']['gam']
   gmixedij = (i == j)
   return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
@@ -27,13 +28,13 @@ def TEM_mixed(dump, i, j):
   if i == j: raise ValueError("TEM Not implemented for i==j.")
   return dump['bsq'][:,:,:]*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j]
 
-# Return mu, nu component of contravarient Maxwell tensor
+# Return the i,j component of contravarient Maxwell tensor
 # TODO there's a computationally easier way to do this:
 # Pre-populate an antisym ndarray and einsum
 # Same below
 def Fcon(geom, dump, i, j):
   NDIM = dump['hdr']['n_dim']
-  
+
   Fconij = np.zeros_like(dump['RHO'])
   if i != j:
     for mu in range(NDIM):
@@ -55,7 +56,7 @@ def Fcov(geom, dump, i, j):
   return Fcovij
 
 def lower(geom, var):
-  return np.einsum('...j,...ij',var,geom['gcov'][:,:,None,:,:])
+  return np.einsum("...j,...ij",var,geom['gcov'][:,:,None,:,:])
 
 # Include vectors with dumps
 def get_state(hdr, geom, dump, return_gamma=False):
@@ -98,10 +99,15 @@ def get_state(hdr, geom, dump, return_gamma=False):
 
   bcov = lower(geom, bcon)
 
+  if 'vec_to_grid' in geom:
+    for vec in (ucon,ucov,bcon,bcov):
+      vec = np.sum(vec[:,:,:,None,:]*geom['vec_to_grid'][:,:,None,:,:],axis=-1)
+
+  ret = (ucon, ucov, bcon, bcov)
   if return_gamma:
-    return ucon, ucov, bcon, bcov, gamma
-  else:
-    return ucon, ucov, bcon, bcov
+    ret += gamma
+
+  return ret
 
 ## Sums and Averages ##
   
@@ -109,9 +115,9 @@ def get_state(hdr, geom, dump, return_gamma=False):
 # TODO could maybe be made faster with 'where' but also harder to get right
 def sum_shell(geom, var, at_zone=None, mask=None):
   if mask is not None:
-    integrand = (var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3'])*(mask)
+    integrand = (var * geom['gdet'][:,:,None]*geom['dx2'][:,:,None]*geom['dx3'])*(mask)
   else:
-    integrand = var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3']
+    integrand = var * geom['gdet'][:,:,None]*geom['dx2'][:,:,None]*geom['dx3']
 
   if at_zone is not None:
     return np.sum(integrand[at_zone,:,:], axis=(0,1))
@@ -121,15 +127,15 @@ def sum_shell(geom, var, at_zone=None, mask=None):
 # TODO just pass slices here & below?
 def sum_vol(geom, var, within=None):
   if within is not None:
-    return np.sum(var[:within,:,:] * geom['gdet'][:within,:,None]*geom['dx1']*geom['dx2']*geom['dx3'])
+    return np.sum(var[:within,:,:] * geom['gdet'][:within,:,None]*geom['dx1'][:within,:,None]*geom['dx2'][:within,:,None]*geom['dx3'])
   else:
-    return np.sum(var * geom['gdet'][:,:,None]*geom['dx1']*geom['dx2']*geom['dx3'])
+    return np.sum(var * geom['gdet'][:,:,None]*geom['dx1'][:,:,None]*geom['dx2'][:,:,None]*geom['dx3'])
 
 def eht_vol(geom, var, jmin, jmax, outside=None):
   if outside is not None:
-    return np.sum(var[outside:,jmin:jmax,:] * geom['gdet'][outside:,jmin:jmax,None]*geom['dx1']*geom['dx2']*geom['dx3'])
+    return np.sum(var[outside:,jmin:jmax,:] * geom['gdet'][outside:,jmin:jmax,None]*geom['dx1'][:,:,None]*geom['dx2'][:,:,None]*geom['dx3'])
   else:
-    return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx1']*geom['dx2']*geom['dx3'])
+    return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx1'][:,jmin:jmax,None]*geom['dx2'][:,jmin:jmax,None]*geom['dx3'])
 
 # TODO can I cache the volume instead of passing these?
 def get_j_vals(geom):
@@ -151,8 +157,8 @@ def get_j_vals(geom):
 
 # TODO can I cache the volume instead of passing these?
 def eht_profile(geom, var, jmin, jmax):
-  return ( ((var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]).sum(axis=(1,2))*geom['dx2']*geom['dx3']) /
-           (geom['gdet'][:,jmin:jmax].sum(axis=1)*geom['dx2']*2*np.pi) )
+  return ( (var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2'][:,jmin:jmax,None]*geom['dx3'][:,jmin:jmax,None]).sum(axis=(1,2)) /
+           ((geom['gdet'][:,jmin:jmax]*geom['dx2'][:,jmin:jmax]).sum(axis=1)*2*np.pi) )
 
 def theta_av(geom, var, start, av):
   # Sum theta from each pole to equator and take overall mean

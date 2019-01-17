@@ -16,6 +16,11 @@ import glob
 import units
 from analysis_fns import *
 
+# New infra
+from defs import Loci, Met
+from geometry import Grid
+from metrics import dxdX_to_KS
+
 def get_dumps_list(path):
   # Funny how many names output has
   files_harm = [file for file in glob.glob(path+"*dump*.h5")]
@@ -126,7 +131,7 @@ def load_hdr(fname):
     else:
       hdr['has_electrons'] = False
   # TODO this is KS-specific
-  if 'r_eh' not in hdr:
+  if 'r_eh' not in hdr and hdr['metric'] != "MINKOWSKI":
     hdr['r_eh'] = (1. + np.sqrt(1. - hdr['a']**2))
   
   if 'git_version' in hdr:
@@ -170,6 +175,7 @@ def load_geom(hdr, path):
   geom['z'] = geom['Z']
 
   # Sometimes the vectors and zones use different coordinate systems
+  # TODO allow specifying both systems
   if 'gdet_zone' in geom:
     # If we laoded them, put them in the right places
     geom['gdet_vec'] = geom['gdet']
@@ -185,9 +191,52 @@ def load_geom(hdr, path):
   for key in ['gdet', 'lapse', 'gdet_vec', 'lapse_zone']:
     geom[key] = geom[key][:,:,0]
 
-  for key in ['gcon','gcov','gcon_zone','gcov_zone']:
+  for key in ['gcon', 'gcov', 'gcon_zone', 'gcov_zone']:
     geom[key] = geom[key][:,:,0,:,:]
+  
+  Xgeom = [0,geom['X1'][:,:,0],geom['X2'][:,:,0],0]
+  geom['vec_to_grid'] = np.einsum("ij...,jk...->ik...", dxdX_to_KS(Xgeom, Met.EKS), dxdX_KS_to(Xgeom, Met[geom['metric'].upper()])).transpose((2,3,0,1)
 
+  return geom
+
+def construct_geom(hdr):
+  geom = {}
+  # Usual ones for scripts
+  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
+    geom[key] = hdr[key]
+  # Extra ones for Grid
+  if hdr['metric'] == "MMKS":
+    geom['metric'] = "fmks"
+  else:
+    geom['metric'] = hdr['metric'].lower()
+  for key in ['a', 'hslope', 'poly_xt', 'poly_alpha', 'mks_smooth', 'r_out']:
+     geom[key] = hdr[key]
+
+  geom['ndim'], geom['n1tot'], geom['n2tot'], geom['n3tot'] = geom['n_dim'], geom['n1'], geom['n2'], geom['n3']
+  geom['ng'] = 3
+  
+  G = Grid(geom)
+  X = G.coord_bulk(Loci.CENT)
+  geom['x'] = geom['X'] = G.r(X)*np.sin(G.th(X))*np.cos(G.phi(X))
+  geom['y'] = geom['Y'] = G.r(X)*np.sin(G.th(X))*np.sin(G.phi(X))
+  geom['z'] = geom['Z'] = G.r(X)*np.cos(G.th(X))
+  geom['r'] = G.r(X)
+  geom['th'] = G.th(X)
+  geom['phi'] = G.phi(X)
+  geom['X1'] = X[1]
+  geom['X2'] = X[2]
+  geom['X3'] = X[3]
+  
+  geom['vec_to_grid'] = dxdX_to_KS(G, X[:,:,0], Met[geom['metric'].upper()]).transpose((2,3,0,1))
+
+  b = slice(G.NG,-G.NG)
+  geom['gcon'] = G.gcon[Loci.CENT.value,:,:,b,b].transpose((2,3,0,1))
+  geom['gcov'] = G.gcov[Loci.CENT.value,:,:,b,b].transpose((2,3,0,1))
+  geom['gdet'] = G.gdet[Loci.CENT.value,b,b]
+  geom['lapse'] = G.lapse[Loci.CENT.value,b,b]
+  
+  geom['dx1'], geom['dx2'], geom['dx3'] = fix_dx(hdr, geom, X)
+  
   return geom
 
 def load_dump(fname, hdr, geom, derived_vars=True, extras=True):

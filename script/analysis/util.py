@@ -36,7 +36,7 @@ def run_parallel(function, nmax, nthreads, debug=False):
 def calc_nthreads(hdr, n_mkl=8, pad=0.25):
   # Limit threads for 192^3+ problem due to memory
   if hdr['n1'] * hdr['n2'] * hdr['n3'] >= 288 * 128 * 128:
-    # Try to add some parallelism MKL
+    # Try to add some parallelism w/MKL.  Don't freak if it doesn't work
     try:
       import ctypes
     
@@ -45,7 +45,7 @@ def calc_nthreads(hdr, n_mkl=8, pad=0.25):
       mkl_get_max_threads = mkl_rt.MKL_Get_Max_Threads
       mkl_set_num_threads(n_mkl)
       print("Using {} MKL threads".format(mkl_get_max_threads()))
-    except Error as e:
+    except Exception as e:
       print(e)
     
     # Roughly compute memory and leave some generous padding for multiple copies and Python games
