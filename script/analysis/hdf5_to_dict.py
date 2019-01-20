@@ -140,6 +140,7 @@ def load_hdr(fname):
 
   return hdr
 
+# TODO construct this instead someday
 def load_geom(hdr, path):
   # Allow override by making path a filename
   if ".h5" in path:
@@ -176,23 +177,29 @@ def load_geom(hdr, path):
   # Sometimes the vectors and zones use different coordinate systems
   # TODO allow specifying both systems
   if 'gdet_zone' in geom:
-    # If we laoded them, put them in the right places
+    # Preserve 
+    geom['gcon_vec'] = geom['gcon']
+    geom['gcov_vec'] = geom['gcov']
     geom['gdet_vec'] = geom['gdet']
+    geom['lapse_vec'] = geom['lapse']
+    # But default to the grid metric.  Lots of integrals and later manipulation with this
+    geom['gcon'] = geom.pop('gcon_zone',None)
+    geom['gcov'] = geom.pop('gcov_zone',None)
     geom['gdet'] = geom.pop('gdet_zone',None)
+    geom['lapse'] = geom.pop('lapse_zone',None)
+
     geom['mixed_metrics'] = True
   else:
-    # Otherwise define the names so I can use them
-    geom['gcon_zone'] = geom['gcon']
-    geom['gcov_zone'] = geom['gcov']
-    geom['gdet_vec'] = geom['gdet']
-    geom['lapse_zone'] = geom['lapse']
+    geom['mixed_metrics'] = False
 
   # Compress geom in phi for normal use
-  for key in ['gdet', 'lapse', 'gdet_vec', 'lapse_zone']:
-    geom[key] = geom[key][:,:,0]
+  for key in ['gdet', 'lapse', 'gdet_vec', 'lapse_vec']:
+    if key in geom:
+      geom[key] = geom[key][:,:,0]
 
-  for key in ['gcon', 'gcov', 'gcon_zone', 'gcov_zone']:
-    geom[key] = geom[key][:,:,0,:,:]
+  for key in ['gcon', 'gcov', 'gcon_vec', 'gcov_vec']:
+    if key in geom:
+      geom[key] = geom[key][:,:,0,:,:]
   
   if geom['mixed_metrics']:
     # Get all Kerr-Schild coordinates for generating transformation matrices
@@ -200,48 +207,11 @@ def load_geom(hdr, path):
     Xgeom[1] = geom['r'][:,:,0]
     Xgeom[2] = geom['th'][:,:,0]
     # TODO add all metric params to the geom dict
-    geom['vec_to_grid'] = np.einsum("ij...,jk...->ik...", dxdX_to_KS(Xgeom, Met.EKS, hdr), dxdX_KS_to(Xgeom, Met[geom['metric'].upper()], hdr, koral_rad=hdr['has_electrons'])).transpose((2,3,0,1))
+    eks2ks = dxdX_to_KS(Xgeom, Met.EKS, hdr, koral_rad=hdr['has_electrons'])
+    ks2mks3 = dxdX_KS_to(Xgeom, Met[geom['metric']], hdr, koral_rad=hdr['has_electrons'])
+    print("Will convert vectors in EKS to zone metric {}".format(geom['metric']))
+    geom['vec_to_grid'] = np.einsum("ij...,jk...->...ik", eks2ks, ks2mks3)
 
-  return geom
-
-def construct_geom(hdr):
-  geom = {}
-  # Usual ones for scripts
-  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
-    geom[key] = hdr[key]
-  # Extra ones for Grid
-  if hdr['metric'] == "MMKS":
-    geom['metric'] = "fmks"
-  else:
-    geom['metric'] = hdr['metric'].lower()
-  for key in ['a', 'hslope', 'poly_xt', 'poly_alpha', 'mks_smooth', 'r_out']:
-     geom[key] = hdr[key]
-
-  geom['ndim'], geom['n1tot'], geom['n2tot'], geom['n3tot'] = geom['n_dim'], geom['n1'], geom['n2'], geom['n3']
-  geom['ng'] = 3
-  
-  G = Grid(geom)
-  X = G.coord_bulk(Loci.CENT)
-  geom['x'] = geom['X'] = G.r(X)*np.sin(G.th(X))*np.cos(G.phi(X))
-  geom['y'] = geom['Y'] = G.r(X)*np.sin(G.th(X))*np.sin(G.phi(X))
-  geom['z'] = geom['Z'] = G.r(X)*np.cos(G.th(X))
-  geom['r'] = G.r(X)
-  geom['th'] = G.th(X)
-  geom['phi'] = G.phi(X)
-  geom['X1'] = X[1]
-  geom['X2'] = X[2]
-  geom['X3'] = X[3]
-  
-  geom['vec_to_grid'] = dxdX_to_KS(G, X[:,:,0], Met[geom['metric'].upper()]).transpose((2,3,0,1))
-
-  b = slice(G.NG,-G.NG)
-  geom['gcon'] = G.gcon[Loci.CENT.value,:,:,b,b].transpose((2,3,0,1))
-  geom['gcov'] = G.gcov[Loci.CENT.value,:,:,b,b].transpose((2,3,0,1))
-  geom['gdet'] = G.gdet[Loci.CENT.value,b,b]
-  geom['lapse'] = G.lapse[Loci.CENT.value,b,b]
-  
-  geom['dx1'], geom['dx2'], geom['dx3'] = fix_dx(hdr, geom, X)
-  
   return geom
 
 def load_dump(fname, hdr, geom, derived_vars=True, extras=True):

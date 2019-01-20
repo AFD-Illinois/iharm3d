@@ -63,7 +63,12 @@ def i_of(rcoord):
   i -= 1
   return i
 
-iEH = i_of(hdr['r_eh'])+2
+# Leave several extra zones if using MKS3 coordinates
+if geom['metric'] == "MKS3":
+  iEH = i_of(hdr['r_eh'])+2
+else:
+  iEH = i_of(hdr['r_eh'])
+
 if floor_workaround_flux:
   iF = i_of(5) # Measure fluxes at r=5M
 else:
@@ -73,13 +78,13 @@ else:
 iEmax = i_of(40)
 
 # BZ luminosity
-debug_lbz = False
-iBZ = i_of(10) # TODO is there a standard measuring spot?
+# 100M seems like the standard measuring spot (or at least, BHAC does it that way)
+# L_BZ seems constant* after that, but much higher within ~50M
+iBZ = i_of(100)
 
 jmin, jmax = get_j_vals(geom)
 
-# Variables which should be averaged
-avg_keys = ['rho_r', 'Theta_r', 'B_r', 'Pg_r', 'Ptot_r', 'betainv_r', 'uphi_r', 'FE_r', 'FM_r', 'omega_th', 'omega_th_av' ] #, 'omega_th_alt', 'omega_th_alt_av']
+print("Using EH at zone {}, Fluxes at zone {}, Emax within zone {}, L_BZ at zone {}".format(iEH, iF, iEmax, iBZ))
 
 def avg_dump(n):
   out = {}
@@ -94,8 +99,8 @@ def avg_dump(n):
 
   print("Loaded {} / {}: {}".format((n+1), len(dumps), out['t']))
 
-  # SHELL AVERAGES (only for t > tavg usu. tmax/2)
-  if out['t'] > tavg:
+  # SHELL AVERAGES (only for t >= tavg usu. tmax/2)
+  if out['t'] >= tavg:
 
     out['rho_r'] = eht_profile(geom, dump['RHO'], jmin, jmax)
     out['Theta_r'] = eht_profile(geom, (hdr['gam']-1.)*dump['UU']/dump['RHO'], jmin, jmax)
@@ -112,59 +117,76 @@ def avg_dump(n):
     # THETA AVERAGES
     Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
     out['omega_th'] = theta_av(geom, Fcov01, iEH, 1) / theta_av(geom, Fcov13, iEH, 1)
-    out['omega_th_av'] = theta_av(geom, Fcov01, iEH-2, 5) / theta_av(geom, Fcov13, iEH-2, 5)
+    out['omega_av_th'] = theta_av(geom, Fcov01, iEH-2, 5) / theta_av(geom, Fcov13, iEH-2, 5)
 
     # This produces much worse results
-    #out['omega_th_alt'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
-    #out['omega_th_alt_av'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
-
-  else:
-    for key in avg_keys:
-      if '_r' in key:
-        out[key] = np.zeros((hdr['n1']))
-      elif '_th' in key:
-        out[key] = np.zeros((hdr['n2']//2))
+    #out['omega_alt_th'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
+    #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
   norm = 1 # This is what the EHT comparison uses?
-  out['Phi'] = 0.5*norm*sum_shell(geom, np.fabs(dump['B1']), at_zone=iEH)
+  
+  if geom['mixed_metrics']:
+    # B1 will be in the _vector_ coordinates.  Must perform the integral in those instead of zone coords
+    # Some gymnastics were done to keep in-memory size small
+    dxEH = np.einsum("i,...ij->...j", np.array([0, geom['dx1'], geom['dx2'], geom['dx3']]), np.linalg.inv(geom['vec_to_grid'][iEH,:,:,:]))
+    out['Phi'] = 0.5*norm * np.sum( np.fabs(dump['B1'][iEH,:,:]) * geom['gdet_vec'][iEH,:,None]*dxEH[:,None,2]*dxEH[:,None,3], axis=(0,1) )
+  else:
+    out['Phi'] = 0.5*norm*sum_shell(geom, np.fabs(dump['B1']), at_zone=iEH)
 
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
   # EHT normalization has both these values positive
-  out['FE_r'] = sum_shell(geom, T_mixed(dump, 1,0))
-  out['Edot'] = out['FE_r'][iF]
+  if out['t'] >= tavg:
+    out['FE_r'] = sum_shell(geom, T_mixed(dump, 1,0))
+    out['Edot'] = out['FE_r'][iF]
+  else:
+    out['Edot'] = sum_shell(geom, T_mixed(dump, 1,0), at_zone=iF)
 
-  out['FM_r'] = -sum_shell(geom, dump['RHO']*dump['ucon'][:,:,:,1])
+  # Variable useful in several contexts below
+  rho_ur = dump['RHO']*dump['ucon'][:,:,:,1]
+  sigma = dump['bsq']/dump['RHO']
+  
   if floor_workaround_funnel:
-    mdot_full = dump['RHO'][iF,:,:]*dump['ucon'][iF,:,:,1]*geom['gdet'][iF,:,None]*hdr['dx2']*hdr['dx3']
+    # TODO implement all of this with 'mask='?
+    mdot_full = rho_ur[iF,:,:]*geom['gdet'][iF,:,None]*hdr['dx2']*hdr['dx3']
     sigma_shaped = dump['bsq'][iF,:,:]/dump['RHO'][iF,:,:]
     out['Mdot'] = (mdot_full[np.where(sigma_shaped < 10)]).sum()
+    if out['t'] >= tavg:
+      out['FM_r'] = -sum_shell(geom, rho_ur, mask=(sigma_shaped < 10))
   else:
-    out['Mdot'] = out['FM_r'][iF]
+    if out['t'] >= tavg:
+      out['FM_r'] = -sum_shell(geom, rho_ur)
+      out['Mdot'] = out['FM_r'][iF]
+    else:
+      out['Mdot'] = -sum_shell(geom, rho_ur, at_zone=iF)
 
   out['Ldot'] = sum_shell(geom, T_mixed(dump, 1,3), at_zone=iF)
 
-  # Maximum magnetization (and allow re-use of the variable)
-  sigma = dump['bsq']/dump['RHO']
   out['sigma_max'] = np.max(sigma)
 
   # Blandford-Znajek Luminosity L_BZ
-  temm = TEM_mixed(dump, 1,0)
-  LBZ = lambda i: sum_shell(geom, temm, at_zone=i, mask=(sigma > 1))
-  #LBZ = lambda i: (hdr['dx2']*hdr['dx3']*geom['gdet'][i,:,None]*(dump['bsq'][i,:,:]*dump['ucon'][i,:,:,1]*dump['ucov'][i,:,:,0] - dump['bcon'][i,:,:,1]*dump['bcov'][i,:,:,0])[np.where(sigma[i,:,:]>1)] ).sum()
-
-  out['LBZ'] = LBZ(iBZ)
-
-  if debug_lbz:
-    out['LBZ_10'] = LBZ(10)
-    out['LBZ_30'] = LBZ(30)
-    out['LBZ_50'] = LBZ(50)
-    if N1 > 80:
-      out['LBZ_80'] = LBZ(80)
-
-    #print "L_BZ at ",out['t']," is ",[LBZ(i) for i in range(10,100,10)]
+  temm = TEM_mixed(dump, 1, 0)
+  tfull = T_mixed(dump, 1, 0)
+  if debug:
+    # A bunch of radial profiles to test consistency
+    out['LBZ_r'] = sum_shell(geom, temm, mask=(sigma > 1))
+    out['LBZ'] = out['LBZ_r'][iBZ]
+    
+    mu = (-tfull + rho_ur) / rho_ur
+    out['LBZ_mu2_r'] = sum_shell(geom, temm, mask=np.logical_or(sigma > 1, mu > 2))
+    out['LBZ_mu3_r'] = sum_shell(geom, temm, mask=np.logical_or(sigma > 1, mu > 3))
+    out['LBZ_mu4_r'] = sum_shell(geom, temm, mask=np.logical_or(sigma > 1, mu > 4))
+  else:
+    if out['t'] >= tavg:
+      out['LBZ_r'] = sum_shell(geom, temm, mask=(sigma > 1))
+      out['Ltot_r'] = sum_shell(geom, tfull, mask=(sigma > 1))
+      out['LBZ'] = out['LBZ_r'][iBZ]
+      out['Ltot'] = out['Ltot_r'][iBZ]
+    else:
+      out['LBZ'] = sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
+      out['Ltot'] = sum_shell(geom, tfull, at_zone=iBZ, mask=(sigma > 1))
 
   rho = dump['RHO']
   P = (hdr['gam']-1.)*dump['UU']
@@ -181,8 +203,6 @@ def avg_dump(n):
   #out['E_r'] = radial_sum(geom, T00)
 
   return out
-
-out_full = {}
 
 if debug:
   # SERIAL (very slow)
@@ -202,33 +222,41 @@ else:
     pool.close()
     pool.join()
 
+# Compute minimum dump for the radial averages
+nmin = 0
+for n in range(ND):
+  if out_list[n]['t'] >= tavg:
+    nmin = n
+    break
+
+print("nmin = ",nmin)
+
+# Make a dict for merged variables
+out_full = {}
+# Toss in the common geom lists
+N2 = hdr['n2']
+out_full['r'] = geom['r'][:,N2//2,0]
+out_full['th'] = geom['th'][0,:N2//2,0]
+
 # Merge the output dicts
-for key in list(out_list[0].keys()):
-  if key in avg_keys:
-    out_full[key] = np.zeros((ND,out_list[0][key].size))
-    for n in range(ND):
+for key in list(out_list[-1].keys()):
+  if key[-2:] == '_r':
+    out_full[key] = np.zeros((ND, out_full['r'].size)) # 1D only trick
+    for n in range(nmin,ND):
+      out_full[key][n,:] = out_list[n][key]
+  elif key[-3:] == '_th':
+    out_full[key] = np.zeros((ND, out_full['th'].size))
+    for n in range(nmin,ND):
       out_full[key][n,:] = out_list[n][key]
   else:
     out_full[key] = np.zeros(ND)
     for n in range(ND):
       out_full[key][n] = out_list[n][key]
 
-# Toss in the common geom lists
-N2 = hdr['n2']
-out_full['r'] = geom['r'][:,N2//2,0]
-out_full['th'] = geom['th'][0,:N2//2,0]
-
-# Time average the radial profiles
-n = 0
-for n in range(ND):
-  if out_full['t'][n] >= tavg:
-    break
-
-print("nmin = ",n)
-
 # Todo specify radial or profile in key name?
-for key in avg_keys:
-  out_full[key] = (out_full[key][n:,:]).mean(axis=0)
+for key in out_full:
+  if key[-2:] == '_r' or key[-3:] == '_th':
+    out_full[key] = (out_full[key][nmin:,:]).mean(axis=0)
 
 # Compat/completeness stuff
 out_full['mdot'] = out_full['Mdot']
