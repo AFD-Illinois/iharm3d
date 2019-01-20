@@ -94,7 +94,7 @@ fig = plt.figure(figsize=(FIGX, FIGY))
 if var in ['jcon','ucon','ucov','bcon','bcov']:
   for n in range(4):
     ax = plt.subplot(nplotsx, nplotsy, n+1)
-    bplt.plot_xz(ax, geom, np.log10(np.abs(dump[var][:,:,:,n])), arrayspace=USEARRSPACE)
+    bplt.plot_xz(ax, geom, dump[var][:,:,:,n], arrayspace=USEARRSPACE)
 elif var in ['sigma']:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, dump[var], vmin=0, vmax=10, arrayspace=USEARRSPACE)
