@@ -123,6 +123,9 @@ def avg_dump(n):
     #out['omega_alt_th'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
     #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
+    # For demonstrating jet stuff
+    out['Ltot_th'] = theta_av(geom, -T_mixed(dump, 1, 0) - dump['RHO']*dump['ucon'][:,:,:,1], iBZ, 11)
+
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
   norm = 1 # This is what the EHT comparison uses?
