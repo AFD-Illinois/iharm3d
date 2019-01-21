@@ -80,7 +80,7 @@ iEmax = i_of(40)
 # BZ luminosity
 # 100M seems like the standard measuring spot (or at least, BHAC does it that way)
 # L_BZ seems constant* after that, but much higher within ~50M
-iBZ = i_of(100)
+iBZ = i_of(40)
 
 jmin, jmax = get_j_vals(geom)
 
@@ -172,6 +172,7 @@ def avg_dump(n):
   # Blandford-Znajek Luminosity L_BZ
   temm = TEM_mixed(dump, 1, 0)
   tfull = T_mixed(dump, 1, 0)
+  bernoulli = -T_mixed(dump,0,0) /(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
   if debug:
     # A bunch of radial profiles to test consistency
     out['LBZ_r'] = sum_shell(geom, temm, mask=(sigma > 1))
@@ -183,16 +184,24 @@ def avg_dump(n):
     out['LBZ_mu4_r'] = sum_shell(geom, temm, mask=np.logical_or(sigma > 1, mu > 4))
   else:
     if out['t'] >= tavg:
-      out['LBZ_r'] = sum_shell(geom, temm, mask=(sigma > 1))
-      out['LBZ'] = out['LBZ_r'][iBZ]
+      out['LBZ_sigma_r'] = sum_shell(geom, temm, mask=(sigma > 1))
+      out['LBZ_sigma'] = out['LBZ_r'][iBZ]
+      out['Ltot_sigma_r'] = sum_shell(geom, tfull+rho_ur, mask=(sigma > 1))
+      out['Ltot_bernoulli'] = out['Ltot_r'][iBZ]
 
-      ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
-      out['Ltot_r'] = sum_shell(geom, tfull+rho_ur, mask=( (ucon_mean > 0)[:,:,None] ))
-      out['Ltot'] = out['Ltot_r'][iBZ]
+      #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
+      #out['Ltot_r'] = sum_shell(geom, tfull+rho_ur, mask=( (ucon_mean > 0)[:,:,None] ))
+      out['Ltot_bernoulli_r'] = sum_shell(geom, tfull+rho_ur, mask=(bernoulli > 0.02))
+      out['Ltot_bernoulli'] = out['Ltot_r'][iBZ]
+      out['LBZ_bernoulli_r'] = sum_shell(geom, temm, mask=(sigma > 1))
+      out['LBZ_bernoulli'] = out['LBZ_r'][iBZ]
     else:
-      out['LBZ'] = sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
-      ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
-      out['Ltot'] = sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
+      out['LBZ_sigma'] = sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
+      out['Ltot_sigma'] = sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=(sigma > 1))
+      #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
+      #out['Ltot'] = sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
+      out['Ltot_bernoulli'] = sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=(bernoulli > 0.02))
+      out['LBZ_bernoulli'] = sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
 
   rho = dump['RHO']
   P = (hdr['gam']-1.)*dump['UU']

@@ -42,13 +42,13 @@ fig = plt.figure(figsize=(FIGX, FIGY))
 
 # If we're plotting a derived variable, calculate + add it
 if var in ['jcov', 'jsq']:
-  dump['jcov'] = np.zeros_like(dump['jcon'])
+  dump['jcov'] = np.einsum("...i,...ij->...j", dump['jcon'], geom['gcov'][:,:,None,:,n]
   for n in range(hdr['n_dim']):
     dump['jcov'][:,:,:,n] = np.sum(dump['jcon']*geom['gcov'][:,:,None,:,n], axis=3)
   dump['jsq'] = np.sum(dump['jcon']*dump['jcov'], axis=-1)
 if var in ['sigma', 'Trt', 'TEMrt']:
   dump['sigma'] = dump['bsq']/dump['RHO']
-if var == 'bernoulli':
+if var in ['bernoulli', 'Trt', 'TEMrt']:
   dump['bernoulli'] = -T_mixed(dump,0,0) /(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
 if var == 'B':
   dump['B'] = np.sqrt(dump['bsq'])
@@ -128,6 +128,8 @@ elif var in ['TEMrt']:
   bplt.overlay_contours(ax, geom, geom['r']*dump['ucon'][:,:,:,1], [1.0], color='k')
   bplt.overlay_contours(ax, geom, dump['sigma'], [1.0], color='b')
   bplt.overlay_contours(ax, geom, dump['gamma'], [1.5], color='tab:purple')
+  bplt.overlay_contours(ax, geom, dump['bernoulli'], [1.02], color='g')
+  bplt.overlay_contours(ax, geom, dump['bernoulli'], [0.02], color='c')
 else:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, dump[var], arrayspace=USEARRSPACE, window=window)
