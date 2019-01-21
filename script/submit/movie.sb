@@ -46,6 +46,7 @@ elif [ -d /scratch/05181/gnwong/runs/iharm3d/M87SimulationLibrary/GRMHD/$PROB/du
 else
   echo "Dumps directory not present!"
 fi
+echo "Using dumps dir $DUMP_DIR"
 
 # Nuke directories when replacing things
 if [[ $TYPE == "eht" || $TYPE == "ana-movie" ]]; then

@@ -80,7 +80,10 @@ iEmax = i_of(40)
 # BZ luminosity
 # 100M seems like the standard measuring spot (or at least, BHAC does it that way)
 # L_BZ seems constant* after that, but much higher within ~50M
-iBZ = i_of(40)
+if hdr['r_out'] < 100:
+  iBZ = i_of(40) # most SANEs
+else:
+  iBZ = i_of(100) # most MADs
 
 jmin, jmax = get_j_vals(geom)
 
@@ -124,6 +127,7 @@ def avg_dump(n):
     #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
     # For demonstrating jet stuff
+    out['Ltot_th'] = theta_av(geom, -T_mixed(dump, 1, 0) - dump['RHO']*dump['ucon'][:,:,:,1], iBZ, 11)
     out['Ltot_th'] = theta_av(geom, -T_mixed(dump, 1, 0) - dump['RHO']*dump['ucon'][:,:,:,1], iBZ, 11)
 
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
@@ -183,25 +187,30 @@ def avg_dump(n):
     out['LBZ_mu3_r'] = sum_shell(geom, temm, mask=np.logical_or(sigma > 1, mu > 3))
     out['LBZ_mu4_r'] = sum_shell(geom, temm, mask=np.logical_or(sigma > 1, mu > 4))
   else:
+    out['LBZ_sigma_rt'] = sum_shell(geom, temm, mask=(sigma > 1))
+    out['Ltot_sigma_rt'] = sum_shell(geom, tfull+rho_ur, mask=(sigma > 1))
+    out['LBZ_bernoulli_rt'] = sum_shell(geom, temm, mask=(bernoulli > 0.02))
+    out['Ltot_bernoulli_rt'] = sum_shell(geom, tfull+rho_ur, mask=(bernoulli > 0.02))
     if out['t'] >= tavg:
-      out['LBZ_sigma_r'] = sum_shell(geom, temm, mask=(sigma > 1))
-      out['LBZ_sigma'] = out['LBZ_r'][iBZ]
-      out['Ltot_sigma_r'] = sum_shell(geom, tfull+rho_ur, mask=(sigma > 1))
-      out['Ltot_bernoulli'] = out['Ltot_r'][iBZ]
+      out['LBZ_sigma_r'] = out['LBZ_sigma_rt'] #sum_shell(geom, temm, mask=(sigma > 1))
+      out['LBZ_sigma'] = out['LBZ_sigma_r'][iBZ]
+      out['Ltot_sigma_r'] = out['Ltot_sigma_rt'] #sum_shell(geom, tfull+rho_ur, mask=(sigma > 1))
+      out['Ltot_sigma'] = out['Ltot_sigma_r'][iBZ]
 
       #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
       #out['Ltot_r'] = sum_shell(geom, tfull+rho_ur, mask=( (ucon_mean > 0)[:,:,None] ))
-      out['Ltot_bernoulli_r'] = sum_shell(geom, tfull+rho_ur, mask=(bernoulli > 0.02))
-      out['Ltot_bernoulli'] = out['Ltot_r'][iBZ]
-      out['LBZ_bernoulli_r'] = sum_shell(geom, temm, mask=(sigma > 1))
-      out['LBZ_bernoulli'] = out['LBZ_r'][iBZ]
+
+      out['LBZ_bernoulli_r'] = out['LBZ_bernoulli_rt'] #sum_shell(geom, temm, mask=(sigma > 1))
+      out['LBZ_bernoulli'] = out['LBZ_bernoulli_r'][iBZ]
+      out['Ltot_bernoulli_r'] = out['Ltot_bernoulli_rt'] #sum_shell(geom, tfull+rho_ur, mask=(bernoulli > 0.02))
+      out['Ltot_bernoulli'] = out['Ltot_bernoulli_r'][iBZ]
     else:
-      out['LBZ_sigma'] = sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
-      out['Ltot_sigma'] = sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=(sigma > 1))
+      out['LBZ_sigma'] = out['LBZ_sigma_rt'][iBZ] #sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
+      out['Ltot_sigma'] = out['Ltot_sigma_rt'][iBZ] #sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=(sigma > 1))
       #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
       #out['Ltot'] = sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
-      out['Ltot_bernoulli'] = sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=(bernoulli > 0.02))
-      out['LBZ_bernoulli'] = sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
+      out['LBZ_bernoulli'] = out['LBZ_bernoulli_rt'][iBZ] #sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
+      out['Ltot_bernoulli'] = out['Ltot_bernoulli_rt'][iBZ] #sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=(bernoulli > 0.02))
 
   rho = dump['RHO']
   P = (hdr['gam']-1.)*dump['UU']
@@ -255,7 +264,7 @@ out_full['th'] = geom['th'][0,:N2//2,0]
 
 # Merge the output dicts
 for key in list(out_list[-1].keys()):
-  if key[-2:] == '_r':
+  if key[-2:] == '_r' or key[-3:] == '_rt':
     out_full[key] = np.zeros((ND, out_full['r'].size)) # 1D only trick
     for n in range(nmin,ND):
       out_full[key][n,:] = out_list[n][key]
