@@ -183,13 +183,13 @@ def avg_dump(n):
       out['LBZ_r'] = sum_shell(geom, temm, mask=(sigma > 1))
       out['LBZ'] = out['LBZ_r'][iBZ]
 
-      ucon_mean = np.mean(ucon[:,:,:,1], axis=-1).repeat(hdr['n3'], axis=-1)
-      out['Ltot_r'] = sum_shell(geom, tfull+rho_ur, mask=(ucon_mean > 0))
+      ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
+      out['Ltot_r'] = sum_shell(geom, tfull+rho_ur, mask=( (ucon_mean > 0)[:,:,None] ))
       out['Ltot'] = out['Ltot_r'][iBZ]
     else:
       out['LBZ'] = sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
-      ucon_mean = np.mean(ucon[:,:,:,1], axis=-1).repeat(hdr['n3'], axis=-1)
-      out['Ltot'] = sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=(ucon_mean > 1))
+      ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
+      out['Ltot'] = sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
 
   rho = dump['RHO']
   P = (hdr['gam']-1.)*dump['UU']

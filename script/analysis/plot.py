@@ -158,11 +158,11 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
   if label:
     ax.set_title(label)
 
-def overlay_contours(ax, geom, var, levels):
+def overlay_contours(ax, geom, var, levels, color='k'):
   x = flatten_xz(geom['x'])
   z = flatten_xz(geom['z'])
   var = flatten_xz(var, average=True)
-  ax.contour(x, z, var, levels=levels, colors='k')
+  ax.contour(x, z, var, levels=levels, colors=color)
 
 def overlay_field(ax, geom, dump, nlines=10):
   hdr = dump['hdr']

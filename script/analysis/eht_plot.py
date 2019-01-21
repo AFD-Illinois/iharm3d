@@ -70,9 +70,9 @@ def plot_omega():
   for avg in avgs:
     if 'omega_th' in avg.keys(): #Then both are
       avg['omega_th'] *= 4/avg['a']
-      avg['omega_th_av'] *= 4/avg['a']
+      avg['omega_av_th'] *= 4/avg['a']
   plot_multi(ax[0,0], 'th', 'omega_th', r"$\omega_f$ (EH, single shell)", ylim=[-1,2])
-  plot_multi(ax[0,1], 'th', 'omega_th_av', r"$\omega_f$ (EH, 5-zone average)", ylim=[-1,2])
+  plot_multi(ax[0,1], 'th', 'omega_av_th', r"$\omega_f$ (EH, 5-zone average)", ylim=[-1,2])
 
   # Legend
   ax[0,0].legend(loc='lower left')
