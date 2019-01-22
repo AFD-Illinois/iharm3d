@@ -102,6 +102,14 @@ def avg_dump(n):
 
   print("Loaded {} / {}: {}".format((n+1), len(dumps), out['t']))
 
+  # Variables that will be referenced a bunch
+  temm_rt = TEM_mixed(dump, 1, 0)
+  tfull_rt = T_mixed(dump, 1, 0)
+  bernoulli = -T_mixed(dump,0,0) /(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
+
+  rho_ur = dump['RHO']*dump['ucon'][:,:,:,1]
+  sigma = dump['bsq']/dump['RHO']
+
   # SHELL AVERAGES (only for t >= tavg usu. tmax/2)
   if out['t'] >= tavg:
 
@@ -127,13 +135,12 @@ def avg_dump(n):
     #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
     # For demonstrating jet stuff
-    out['Ltot_th'] = theta_av(geom, -T_mixed(dump, 1, 0) - dump['RHO']*dump['ucon'][:,:,:,1], iBZ, 11)
-    out['Ltot_th'] = theta_av(geom, -T_mixed(dump, 1, 0) - dump['RHO']*dump['ucon'][:,:,:,1], iBZ, 11)
+    out['LBZ_th'] = theta_av(geom, temm_rt, iBZ, 11)
+    out['Ltot_th'] = theta_av(geom, -tfull_rt - rho_ur, iBZ, 11)
 
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
-  norm = 1 # This is what the EHT comparison uses?
-  
+  norm = 1 # This is what the EHT comparison uses?  
   if geom['mixed_metrics']:
     # B1 will be in the _vector_ coordinates.  Must perform the integral in those instead of zone coords
     # Some gymnastics were done to keep in-memory size small
@@ -146,15 +153,11 @@ def avg_dump(n):
   # Radial profiles of Mdot and Edot, and their particular values
   # EHT normalization has both these values positive
   if out['t'] >= tavg:
-    out['FE_r'] = sum_shell(geom, T_mixed(dump, 1,0))
+    out['FE_r'] = sum_shell(geom, tfull_rt)
     out['Edot'] = out['FE_r'][iF]
   else:
-    out['Edot'] = sum_shell(geom, T_mixed(dump, 1,0), at_zone=iF)
+    out['Edot'] = sum_shell(geom, tfull_rt, at_zone=iF)
 
-  # Variable useful in several contexts below
-  rho_ur = dump['RHO']*dump['ucon'][:,:,:,1]
-  sigma = dump['bsq']/dump['RHO']
-  
   if floor_workaround_funnel:
     # TODO implement all of this with 'mask='?
     mdot_full = rho_ur[iF,:,:]*geom['gdet'][iF,:,None]*hdr['dx2']*hdr['dx3']
@@ -174,43 +177,40 @@ def avg_dump(n):
   out['sigma_max'] = np.max(sigma)
 
   # Blandford-Znajek Luminosity L_BZ
-  temm = TEM_mixed(dump, 1, 0)
-  tfull = T_mixed(dump, 1, 0)
-  bernoulli = -T_mixed(dump,0,0) /(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
   if debug:
     # A bunch of radial profiles to test consistency
-    out['LBZ_r'] = sum_shell(geom, temm, mask=(sigma > 1))
+    out['LBZ_r'] = sum_shell(geom, -temm_rt, mask=(sigma > 1))
     out['LBZ'] = out['LBZ_r'][iBZ]
     
-    mu = (-tfull + rho_ur) / rho_ur
-    out['LBZ_mu2_r'] = sum_shell(geom, temm, mask=np.logical_or(sigma > 1, mu > 2))
-    out['LBZ_mu3_r'] = sum_shell(geom, temm, mask=np.logical_or(sigma > 1, mu > 3))
-    out['LBZ_mu4_r'] = sum_shell(geom, temm, mask=np.logical_or(sigma > 1, mu > 4))
+    mu = (-tfull_rt + rho_ur) / rho_ur
+    out['LBZ_mu2_r'] = sum_shell(geom, -temm_rt, mask=np.logical_or(sigma > 1, mu > 2))
+    out['LBZ_mu3_r'] = sum_shell(geom, -temm_rt, mask=np.logical_or(sigma > 1, mu > 3))
+    out['LBZ_mu4_r'] = sum_shell(geom, -temm_rt, mask=np.logical_or(sigma > 1, mu > 4))
   else:
-    out['LBZ_sigma_rt'] = sum_shell(geom, temm, mask=(sigma > 1))
-    out['Ltot_sigma_rt'] = sum_shell(geom, tfull+rho_ur, mask=(sigma > 1))
-    out['LBZ_bernoulli_rt'] = sum_shell(geom, temm, mask=(bernoulli > 0.02))
-    out['Ltot_bernoulli_rt'] = sum_shell(geom, tfull+rho_ur, mask=(bernoulli > 0.02))
+    out['LBZ_sigma_rt'] = sum_shell(geom, -temm_rt, mask=(sigma > 1))
+    out['Ltot_sigma_rt'] = sum_shell(geom, -tfull_rt - rho_ur, mask=(sigma > 1))
+    out['LBZ_bernoulli_rt'] = sum_shell(geom, -temm_rt, mask=(bernoulli > 1.02))
+    out['Ltot_bernoulli_rt'] = sum_shell(geom, -tfull_rt - rho_ur, mask=(bernoulli > 1.02))
     if out['t'] >= tavg:
-      out['LBZ_sigma_r'] = out['LBZ_sigma_rt'] #sum_shell(geom, temm, mask=(sigma > 1))
+      out['LBZ_sigma_r'] = out['LBZ_sigma_rt'] #sum_shell(geom, temm_rt, mask=(sigma > 1))
       out['LBZ_sigma'] = out['LBZ_sigma_r'][iBZ]
-      out['Ltot_sigma_r'] = out['Ltot_sigma_rt'] #sum_shell(geom, tfull+rho_ur, mask=(sigma > 1))
+      out['Ltot_sigma_r'] = out['Ltot_sigma_rt'] #sum_shell(geom, tfull_rt + rho_ur, mask=(sigma > 1))
       out['Ltot_sigma'] = out['Ltot_sigma_r'][iBZ]
 
       #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
-      #out['Ltot_r'] = sum_shell(geom, tfull+rho_ur, mask=( (ucon_mean > 0)[:,:,None] ))
+      #out['Ltot_r'] = sum_shell(geom, tfull_rt + rho_ur, mask=( (ucon_mean > 0)[:,:,None] ))
 
-      out['LBZ_bernoulli_r'] = out['LBZ_bernoulli_rt'] #sum_shell(geom, temm, mask=(sigma > 1))
+      out['LBZ_bernoulli_r'] = out['LBZ_bernoulli_rt'] #sum_shell(geom, temm_rt, mask=(sigma > 1))
       out['LBZ_bernoulli'] = out['LBZ_bernoulli_r'][iBZ]
-      out['Ltot_bernoulli_r'] = out['Ltot_bernoulli_rt'] #sum_shell(geom, tfull+rho_ur, mask=(bernoulli > 0.02))
+      out['Ltot_bernoulli_r'] = out['Ltot_bernoulli_rt'] #sum_shell(geom, tfull_rt + rho_ur, mask=(bernoulli > 0.02))
       out['Ltot_bernoulli'] = out['Ltot_bernoulli_r'][iBZ]
     else:
-      out['LBZ_sigma'] = out['LBZ_sigma_rt'][iBZ] #sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
-      out['Ltot_sigma'] = out['Ltot_sigma_rt'][iBZ] #sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=(sigma > 1))
+      out['LBZ_sigma'] = out['LBZ_sigma_rt'][iBZ] #sum_shell(geom, temm_rt, at_zone=iBZ, mask=(sigma > 1))
+      out['Ltot_sigma'] = out['Ltot_sigma_rt'][iBZ] #sum_shell(geom, tfull_rt + rho_ur, at_zone=iBZ, mask=(sigma > 1))
       #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
-      #out['Ltot'] = sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
-      out['LBZ_bernoulli'] = out['LBZ_bernoulli_rt'][iBZ] #sum_shell(geom, temm, at_zone=iBZ, mask=(sigma > 1))
-      out['Ltot_bernoulli'] = out['Ltot_bernoulli_rt'][iBZ] #sum_shell(geom, tfull+rho_ur, at_zone=iBZ, mask=(bernoulli > 0.02))
+      #out['Ltot'] = sum_shell(geom, tfull_rt + rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
+      out['LBZ_bernoulli'] = out['LBZ_bernoulli_rt'][iBZ] #sum_shell(geom, temm_rt, at_zone=iBZ, mask=(sigma > 1))
+      out['Ltot_bernoulli'] = out['Ltot_bernoulli_rt'][iBZ] #sum_shell(geom, tfull_rt + rho_ur, at_zone=iBZ, mask=(bernoulli > 0.02))
 
   rho = dump['RHO']
   P = (hdr['gam']-1.)*dump['UU']
@@ -219,12 +219,12 @@ def avg_dump(n):
   j = rho**3 * P**(-2) * np.exp(-C*(rho**2 / (B*P**2))**(1./3.))
   out['Lum'] = eht_vol(geom, j, jmin, jmax, outside=iEH)
 
-  T00 = T_mixed(dump, 0,0)
-  out['Etot'] = sum_vol(geom, T00, within=iEmax)
+  tfull_tt = T_mixed(dump, 0,0)
+  out['Etot'] = sum_vol(geom, tfull_tt, within=iEmax)
   #print "Energy on grid: ",out['Etot']
 
   # For an averaged energy profile
-  #out['E_r'] = radial_sum(geom, T00)
+  #out['E_r'] = radial_sum(geom, tfull_tt)
 
   return out
 
