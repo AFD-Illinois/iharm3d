@@ -33,6 +33,7 @@ def run_parallel(function, nmax, nthreads, debug=False):
   pool.join()
 
 # Calculate ideal # threads
+# Lower pad values are safer
 def calc_nthreads(hdr, n_mkl=8, pad=0.25):
   # Limit threads for 192^3+ problem due to memory
   if hdr['n1'] * hdr['n2'] * hdr['n3'] >= 288 * 128 * 128:

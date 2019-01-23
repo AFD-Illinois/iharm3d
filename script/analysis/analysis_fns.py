@@ -65,9 +65,7 @@ def to_zone_coords(geom, vec):
 # Compute 4-vectors given fluid state
 # Always returns vectors in the _grid_ coordinate system, to simplify analysis
 def get_state(hdr, geom, dump, return_gamma=False):
-  N1, N2, N3, NDIM = hdr['n1'], hdr['n2'], hdr['n3'], hdr['n_dim']
-
-  ucon = np.zeros([N1,N2,N3,NDIM])
+  ucon = np.zeros([hdr['n1'],hdr['n2'],hdr['n3'],hdr['n_dim']])
   ucov = np.zeros_like(ucon)
   bcon = np.zeros_like(ucon)
   bcov = np.zeros_like(ucon)
@@ -83,32 +81,22 @@ def get_state(hdr, geom, dump, return_gamma=False):
     gcon = geom['gcon']
     alpha = geom['lapse']
 
-  U1 = dump['U1']
-  U2 = dump['U2']
-  U3 = dump['U3']
   B1 = dump['B1']
   B2 = dump['B2']
   B3 = dump['B3']
 
-  qsq = (gcov[:,:,None,1,1]*U1**2 + gcov[:,:,None,2,2]*U2**2 +
-         gcov[:,:,None,3,3]*U3**2 + 2.*(gcov[:,:,None,1,2]*U1*U2 +
-                                        gcov[:,:,None,1,3]*U1*U3 +
-                                        gcov[:,:,None,2,3]*U2*U3))
-  gamma = np.sqrt(1. + qsq)
+  gamma = get_gamma(geom, dump)
 
   ucon[:,:,:,0] = gamma/(alpha[:,:,None])
-  ucon[:,:,:,1] = U1 - gamma*alpha[:,:,None]*gcon[:,:,None,0,1]
-  ucon[:,:,:,2] = U2 - gamma*alpha[:,:,None]*gcon[:,:,None,0,2]
-  ucon[:,:,:,3] = U3 - gamma*alpha[:,:,None]*gcon[:,:,None,0,3]
+  ucon[:,:,:,1] = dump['U1'] - gamma*alpha[:,:,None]*gcon[:,:,None,0,1]
+  ucon[:,:,:,2] = dump['U2'] - gamma*alpha[:,:,None]*gcon[:,:,None,0,2]
+  ucon[:,:,:,3] = dump['U3'] - gamma*alpha[:,:,None]*gcon[:,:,None,0,3]
 
   ucov = np.einsum("...i,...ij->...j", ucon, gcov[:,:,None,:,:])
-
   bcon[:,:,:,0] = B1*ucov[:,:,:,1] + B2*ucov[:,:,:,2] + B3*ucov[:,:,:,3]
   bcon[:,:,:,1] = (B1 + bcon[:,:,:,0]*ucon[:,:,:,1])/ucon[:,:,:,0]
   bcon[:,:,:,2] = (B2 + bcon[:,:,:,0]*ucon[:,:,:,2])/ucon[:,:,:,0]
   bcon[:,:,:,3] = (B3 + bcon[:,:,:,0]*ucon[:,:,:,3])/ucon[:,:,:,0]
-
-  bcov = np.einsum("...i,...ij->...j", bcon, gcov[:,:,None,:,:])
 
   if geom['mixed_metrics']:
     # Convert all 4-vectors to zone coordinates
@@ -116,11 +104,32 @@ def get_state(hdr, geom, dump, return_gamma=False):
     ucov = np.einsum("...i,...ij->...j", ucon, geom['gcov'][:,:,None,:,:]) # Lower with _zone_ metric
     bcon = np.einsum("...i,...ij->...j", bcon, geom['vec_to_grid'][:,:,None,:,:])
     bcov = np.einsum("...i,...ij->...j", bcon, geom['gcov'][:,:,None,:,:])
+  else:
+    # Already have ucov in this case
+    bcov = np.einsum("...i,...ij->...j", bcon, gcov[:,:,None,:,:])
 
   if return_gamma:
     return ucon, ucov, bcon, bcov, gamma
   else:
     return ucon, ucov, bcon, bcov
+
+def get_gamma(geom, dump):
+  # Aliases to make the below more readable
+  if geom['mixed_metrics']:
+    # Make sure this is in the vector metric if mixing
+    gcov = geom['gcov_vec']
+  else:
+    gcov = geom['gcov']
+
+  U1 = dump['U1']
+  U2 = dump['U2']
+  U3 = dump['U3']
+
+  qsq = (gcov[:,:,None,1,1]*U1**2 + gcov[:,:,None,2,2]*U2**2 +
+         gcov[:,:,None,3,3]*U3**2 + 2.*(gcov[:,:,None,1,2]*U1*U2 +
+                                        gcov[:,:,None,1,3]*U1*U3 +
+                                        gcov[:,:,None,2,3]*U2*U3))
+  return np.sqrt(1. + qsq)
 
 ## Sums and Averages ##
   

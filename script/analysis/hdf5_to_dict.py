@@ -46,6 +46,13 @@ def load_all(fname, **kwargs):
   dump = load_dump(fname, hdr, geom, **kwargs)
   return hdr, geom, dump
 
+# For cutting on time without loading everything
+def get_dump_time(fname):
+  dfile = h5py.File(fname, 'r')
+  t = dfile['t'][()]
+  dfile.close()
+  return t
+
 # Function to recursively un-bytes all the dumb HDF5 strings
 def decode_all(dict):
     for key in dict:

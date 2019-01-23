@@ -24,22 +24,38 @@ floor_workaround_flux = False
 # This also reduces interference from floors
 floor_workaround_funnel = False
 
+# Whether to calculate a couple of the more expensive variables
+calc_lumproxy = False
+calc_etot = False
+
 if len(sys.argv) < 2:
-  util.warn('Format: python eht_analysis.py /path/to/dumps [tavg]')
+  util.warn('Format: python eht_analysis.py /path/to/dumps [start time] [start radial averages] [stop radial averages]')
   sys.exit()
 
 # This doesn't seem like the _right_ way to do optional args
-tavg = None
+# Skips everything before tstart, averages between tavg_start and tavg_end
+# TODO tend?
+tstart = None
+tavg_start = None
+tavg_end = None
 if sys.argv[1] == "-d":
   debug = True
   path = sys.argv[2]
   if len(sys.argv) > 3:
-    tavg = float(sys.argv[3])
+    tstart = float(sys.argv[3])
+  if len(sys.argv) > 4:
+    tavg_start = float(sys.argv[4])
+  if len(sys.argv) > 5:
+    tavg_end = float(sys.argv[5])
 else:
   debug = False
   path = sys.argv[1]
   if len(sys.argv) > 2:
-    tavg = float(sys.argv[2])
+    tstart = float(sys.argv[2])
+  if len(sys.argv) > 3:
+    tavg_start = float(sys.argv[3])
+  if len(sys.argv) > 4:
+    tavg_end = float(sys.argv[4])
 
 dumps = io.get_dumps_list(path)
 ND = len(dumps)
@@ -48,12 +64,20 @@ hdr = io.load_hdr(dumps[0])
 geom = io.load_geom(hdr, path)
 
 # If the time after which to average wasn't given, just use the back half of dumps
-if tavg is None:
-  tavg = io.load_dump(dumps[ND//2], hdr, geom, derived_vars=False, extras=False)['t'] - 1.0
-
+if tavg_start is None:
+  tavg_start = io.load_dump(dumps[ND//2], hdr, geom, derived_vars=False, extras=False)['t'] - 0.1
 # Sometimes we don't know times but want averages
-if tavg < 0:
-  tavg = ND//2
+# This is always when we've converted dumps given only over quiescence, and want averages over all of them
+if tavg_start < 0.:
+  tavg_start = 0.
+
+if tavg_end is None:
+  tavg_end = io.load_dump(dumps[ND-1], hdr, geom, derived_vars=False, extras=False)['t']
+if tavg_end == 0.:
+  tavg_end = float(ND)
+
+if tstart is None:
+  tstart = 0.
 
 # Decide where to measure fluxes
 def i_of(rcoord):
@@ -65,7 +89,7 @@ def i_of(rcoord):
 
 # Leave several extra zones if using MKS3 coordinates
 if geom['metric'] == "MKS3":
-  iEH = i_of(hdr['r_eh'])+2
+  iEH = i_of(hdr['r_eh'])+4
 else:
   iEH = i_of(hdr['r_eh'])
 
@@ -92,32 +116,36 @@ print("Using EH at zone {}, Fluxes at zone {}, Emax within zone {}, L_BZ at zone
 def avg_dump(n):
   out = {}
 
-  # We obviously need the derived variables, but not the extras
-  dump = io.load_dump(dumps[n], hdr, geom, extras=False)
-
-  out['t'] = dump['t']
+  out['t'] = io.get_dump_time(dumps[n])
   # When we don't know times, fudge
   if out['t'] == 0 and n != 0:
     out['t'] = n
 
-  print("Loaded {} / {}: {}".format((n+1), len(dumps), out['t']))
+  if out['t'] < tstart:
+    print("Loaded {} / {}: {} (SKIPPED)".format((n+1), len(dumps), out['t']))
+    return None
+  else:
+    print("Loaded {} / {}: {}".format((n+1), len(dumps), out['t']))
+    dump = io.load_dump(dumps[n], hdr, geom, extras=False)
 
   # Variables that will be referenced a bunch
   temm_rt = TEM_mixed(dump, 1, 0)
   tfull_rt = T_mixed(dump, 1, 0)
   bernoulli = -T_mixed(dump,0,0) /(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
+  
+  Pg = (hdr['gam']-1.)*dump['UU']
+  B = np.sqrt(dump['bsq'])
 
   rho_ur = dump['RHO']*dump['ucon'][:,:,:,1]
   sigma = dump['bsq']/dump['RHO']
 
-  # SHELL AVERAGES (only for t >= tavg usu. tmax/2)
-  if out['t'] >= tavg:
+  # SHELL AVERAGES (only for t >= tavg_start usu. tmax/2 to end)
+  if out['t'] >= tavg_start and out['t'] <= tavg_end:
 
     out['rho_r'] = eht_profile(geom, dump['RHO'], jmin, jmax)
-    out['Theta_r'] = eht_profile(geom, (hdr['gam']-1.)*dump['UU']/dump['RHO'], jmin, jmax)
-    out['B_r'] = eht_profile(geom, np.sqrt(dump['bsq']), jmin, jmax)
+    out['Theta_r'] = eht_profile(geom, Pg/dump['RHO'], jmin, jmax)
+    out['B_r'] = eht_profile(geom, B, jmin, jmax)
 
-    Pg = (hdr['gam']-1.)*dump['UU']
     Pb = dump['bsq']/2
     out['Pg_r'] = eht_profile(geom, Pg, jmin, jmax)
     out['Ptot_r'] = eht_profile(geom, Pg + Pb, jmin, jmax)
@@ -135,8 +163,8 @@ def avg_dump(n):
     #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
     # For demonstrating jet stuff
-    out['LBZ_th'] = theta_av(geom, temm_rt, iBZ, 11)
-    out['Ltot_th'] = theta_av(geom, -tfull_rt - rho_ur, iBZ, 11)
+    out['LBZ_th'] = theta_av(geom, temm_rt, iBZ, 5)
+    out['Ltot_th'] = theta_av(geom, -tfull_rt - rho_ur, iBZ, 5)
 
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
@@ -152,7 +180,7 @@ def avg_dump(n):
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
   # EHT normalization has both these values positive
-  if out['t'] >= tavg:
+  if out['t'] >= tavg_start and out['t'] <= tavg_end:
     out['FE_r'] = sum_shell(geom, tfull_rt)
     out['Edot'] = out['FE_r'][iF]
   else:
@@ -163,10 +191,10 @@ def avg_dump(n):
     mdot_full = rho_ur[iF,:,:]*geom['gdet'][iF,:,None]*hdr['dx2']*hdr['dx3']
     sigma_shaped = dump['bsq'][iF,:,:]/dump['RHO'][iF,:,:]
     out['Mdot'] = (mdot_full[np.where(sigma_shaped < 10)]).sum()
-    if out['t'] >= tavg:
+    if out['t'] >= tavg_start and out['t'] <= tavg_end:
       out['FM_r'] = -sum_shell(geom, rho_ur, mask=(sigma_shaped < 10))
   else:
-    if out['t'] >= tavg:
+    if out['t'] >= tavg_start and out['t'] <= tavg_end:
       out['FM_r'] = -sum_shell(geom, rho_ur)
       out['Mdot'] = out['FM_r'][iF]
     else:
@@ -187,44 +215,51 @@ def avg_dump(n):
     out['LBZ_mu3_r'] = sum_shell(geom, -temm_rt, mask=np.logical_or(sigma > 1, mu > 3))
     out['LBZ_mu4_r'] = sum_shell(geom, -temm_rt, mask=np.logical_or(sigma > 1, mu > 4))
   else:
-    out['LBZ_sigma_rt'] = sum_shell(geom, -temm_rt, mask=(sigma > 1))
-    out['Ltot_sigma_rt'] = sum_shell(geom, -tfull_rt - rho_ur, mask=(sigma > 1))
-    out['LBZ_bernoulli_rt'] = sum_shell(geom, -temm_rt, mask=(bernoulli > 1.02))
-    out['Ltot_bernoulli_rt'] = sum_shell(geom, -tfull_rt - rho_ur, mask=(bernoulli > 1.02))
-    if out['t'] >= tavg:
-      out['LBZ_sigma_r'] = out['LBZ_sigma_rt'] #sum_shell(geom, temm_rt, mask=(sigma > 1))
-      out['LBZ_sigma'] = out['LBZ_sigma_r'][iBZ]
-      out['Ltot_sigma_r'] = out['Ltot_sigma_rt'] #sum_shell(geom, tfull_rt + rho_ur, mask=(sigma > 1))
-      out['Ltot_sigma'] = out['Ltot_sigma_r'][iBZ]
-
-      #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
-      #out['Ltot_r'] = sum_shell(geom, tfull_rt + rho_ur, mask=( (ucon_mean > 0)[:,:,None] ))
-
-      out['LBZ_bernoulli_r'] = out['LBZ_bernoulli_rt'] #sum_shell(geom, temm_rt, mask=(sigma > 1))
-      out['LBZ_bernoulli'] = out['LBZ_bernoulli_r'][iBZ]
-      out['Ltot_bernoulli_r'] = out['Ltot_bernoulli_rt'] #sum_shell(geom, tfull_rt + rho_ur, mask=(bernoulli > 0.02))
-      out['Ltot_bernoulli'] = out['Ltot_bernoulli_r'][iBZ]
+    # This is a lot of luminosities!
+    #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
+    #out['Ltot'] = sum_shell(geom, tfull_rt + rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
+    lbz = -temm_rt
+    ltot = -tfull_rt - rho_ur
+    out['LBZ_sigma1_rt'] = sum_shell(geom, lbz, mask=(sigma > 1))
+    out['Ltot_sigma1_rt'] = sum_shell(geom, ltot, mask=(sigma > 1))
+    out['LBZ_sigma10_rt'] = sum_shell(geom, lbz, mask=(sigma > 10))
+    out['Ltot_sigma10_rt'] = sum_shell(geom, ltot, mask=(sigma > 10))
+    
+    out['LBZ_bernoulli_rt'] = sum_shell(geom, lbz, mask=(bernoulli > 1.02))
+    out['Ltot_bernoulli_rt'] = sum_shell(geom, ltot, mask=(bernoulli > 1.02))
+    
+    rur = geom['r']*dump['ucon'][:,:,:,1]
+    out['LBZ_rur_rt'] = sum_shell(geom, lbz, mask=(rur > 1.))
+    out['Ltot_rur_rt'] = sum_shell(geom, ltot, mask=(rur > 1.))
+    
+    gamma = get_gamma(geom, dump)
+    out['LBZ_gamma_rt'] = sum_shell(geom, lbz, mask=(gamma > 1.5))
+    out['Ltot_gamma_rt'] = sum_shell(geom, ltot, mask=(gamma > 1.5))
+    
+    if out['t'] >= tavg_start and out['t'] <= tavg_end:
+      for tag in ['sigma1', 'sigma10', 'bernoulli', 'rur', 'gamma']:
+        out['LBZ_'+tag+'_r'] = out['LBZ_'+tag+'_rt']
+        out['LBZ_'+tag] = out['LBZ_'+tag+'_r'][iBZ]
+        out['Ltot_'+tag+'_r'] = out['Ltot_'+tag+'_rt']
+        out['Ltot_'+tag] = out['Ltot_'+tag+'_r'][iBZ]
     else:
-      out['LBZ_sigma'] = out['LBZ_sigma_rt'][iBZ] #sum_shell(geom, temm_rt, at_zone=iBZ, mask=(sigma > 1))
-      out['Ltot_sigma'] = out['Ltot_sigma_rt'][iBZ] #sum_shell(geom, tfull_rt + rho_ur, at_zone=iBZ, mask=(sigma > 1))
-      #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
-      #out['Ltot'] = sum_shell(geom, tfull_rt + rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
-      out['LBZ_bernoulli'] = out['LBZ_bernoulli_rt'][iBZ] #sum_shell(geom, temm_rt, at_zone=iBZ, mask=(sigma > 1))
-      out['Ltot_bernoulli'] = out['Ltot_bernoulli_rt'][iBZ] #sum_shell(geom, tfull_rt + rho_ur, at_zone=iBZ, mask=(bernoulli > 0.02))
+      for tag in ['sigma1', 'sigma10', 'bernoulli', 'rur', 'gamma']:
+        out['LBZ_'+tag] = out['LBZ_'+tag+'_rt'][iBZ]
+        out['Ltot_'+tag] = out['Ltot_'+tag+'_rt'][iBZ]
 
-  rho = dump['RHO']
-  P = (hdr['gam']-1.)*dump['UU']
-  B = np.sqrt(dump['bsq'])
-  C = 0.2
-  j = rho**3 * P**(-2) * np.exp(-C*(rho**2 / (B*P**2))**(1./3.))
-  out['Lum'] = eht_vol(geom, j, jmin, jmax, outside=iEH)
+  if calc_lumproxy:
+    rho = dump['RHO']
+    C = 0.2
+    j = rho**3 * Pg**(-2) * np.exp(-C*(rho**2 / (B*Pg**2))**(1./3.))
+    out['Lum'] = eht_vol(geom, j, jmin, jmax, outside=iEH)
 
-  tfull_tt = T_mixed(dump, 0,0)
-  out['Etot'] = sum_vol(geom, tfull_tt, within=iEmax)
-  #print "Energy on grid: ",out['Etot']
+  if calc_etot:
+    tfull_tt = T_mixed(dump, 0,0)
+    out['Etot'] = sum_vol(geom, tfull_tt, within=iEmax)
+    #print "Energy on grid: ",out['Etot']
 
-  # For an averaged energy profile
-  #out['E_r'] = radial_sum(geom, tfull_tt)
+    # For an averaged energy profile
+    #out['E_r'] = radial_sum(geom, tfull_tt)
 
   return out
 
@@ -232,13 +267,12 @@ if debug:
   # SERIAL (very slow)
   out_list = [avg_dump(n) for n in range(len(dumps))]
 else:
-  # PARALLEL
-  NTHREADS = util.calc_nthreads(hdr, pad=0.3)
-  pool = multiprocessing.Pool(NTHREADS)
+  # PARALLEL: TODO put in util.py
+  nthreads = util.calc_nthreads(hdr, pad=0.5)
+  pool = multiprocessing.Pool(nthreads)
   try:
     # Map the above function to the dump numbers, returning a list of 'out' dicts
     out_list = pool.map_async(avg_dump, list(range(len(dumps)))).get(99999999)
-    #print out_list[0].keys()
   except KeyboardInterrupt:
     pool.terminate()
     pool.join()
@@ -246,12 +280,19 @@ else:
     pool.close()
     pool.join()
 
-# Compute minimum dump for the radial averages
+# Compute the indices for averaging time
 nmin = 0
 for n in range(ND):
-  if out_list[n]['t'] >= tavg:
+  if (out_list[n] is not None) and (out_list[n]['t'] >= tavg_start):
     nmin = n
     break
+
+nmax = 0
+for n in range(ND):
+  if (out_list[n] is not None) and (out_list[n]['t'] >= tavg_end):
+    nmax = n
+    break
+
 
 print("nmin = ",nmin)
 
@@ -263,21 +304,22 @@ out_full['r'] = geom['r'][:,N2//2,0]
 out_full['th'] = geom['th'][0,:N2//2,0]
 
 # Merge the output dicts
-for key in list(out_list[-1].keys()):
+for key in list(out_list[nmin].keys()):
   if key[-2:] == '_r' or key[-3:] == '_rt':
     out_full[key] = np.zeros((ND, out_full['r'].size)) # 1D only trick
-    for n in range(nmin,ND):
-      out_full[key][n,:] = out_list[n][key]
-  elif key[-3:] == '_th':
+    for n in range(nmin,nmax):
+        out_full[key][n,:] = out_list[n][key]
+  elif key[-3:] == '_th' or key[-4:] == '_tht':
     out_full[key] = np.zeros((ND, out_full['th'].size))
-    for n in range(nmin,ND):
-      out_full[key][n,:] = out_list[n][key]
+    for n in range(nmin,nmax):
+        out_full[key][n,:] = out_list[n][key]
   else:
     out_full[key] = np.zeros(ND)
     for n in range(ND):
-      out_full[key][n] = out_list[n][key]
+      if out_list[n] is not None:
+        out_full[key][n] = out_list[n][key]
 
-# Todo specify radial or profile in key name?
+# Average items with certain names.  Note suffixing 't' keeps the full NDxN1 or NDxN2/2 array
 for key in out_full:
   if key[-2:] == '_r' or key[-3:] == '_th':
     out_full[key] = (out_full[key][nmin:,:]).mean(axis=0)
@@ -286,18 +328,6 @@ for key in out_full:
 out_full['mdot'] = out_full['Mdot']
 out_full['phi'] = out_full['Phi']/np.sqrt(out_full['Mdot'])
 out_full['a'] = hdr['a']
-
-# Pass along HARM's own diagnostics for comparison
-# TODO implement this separately for HARM pipeline, for new overplotting semantics
-#diag = io.load_log(path)
-
-#out_full['t_d'] = diag['t']
-#out_full['Mdot_d'] = diag['mdot']
-#out_full['Phi_d'] = diag['Phi']
-#out_full['Ldot_d'] = diag['ldot']
-#out_full['Edot_d'] = diag['edot']
-#out_full['Lum_d'] = diag['lum_eht']
-#out_full['divbmax_d'] = diag['divbmax']
 
 # OUTPUT
 pickle.dump(out_full, open("eht_out.p", "wb"))

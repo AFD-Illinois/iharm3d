@@ -53,7 +53,7 @@ if var in ['bernoulli', 'Trt', 'TEMrt']:
 if var == 'B':
   dump['B'] = np.sqrt(dump['bsq'])
 if var in ['gamma', 'Trt', 'TEMrt']:
-  _,_,_,_,dump['gamma'] = get_state(hdr, geom, dump, return_gamma=True)
+  dump['gamma'] = get_gamma(geom, dump)
 if var == 'Trt':
   dump['Trt'] = T_mixed(dump, 1, 0)
 if var == 'TEMrt':
@@ -129,7 +129,6 @@ elif var in ['TEMrt']:
   bplt.overlay_contours(ax, geom, dump['sigma'], [1.0], color='b')
   bplt.overlay_contours(ax, geom, dump['gamma'], [1.5], color='tab:purple')
   bplt.overlay_contours(ax, geom, dump['bernoulli'], [1.02], color='g')
-  bplt.overlay_contours(ax, geom, dump['bernoulli'], [0.02], color='c')
 else:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, dump[var], arrayspace=USEARRSPACE, window=window)
