@@ -137,7 +137,7 @@ ax.axvline(AT_R, color='k')
 
 maxes = [np.max(ab_av(avg['LBZ_'+tag+'_r'])[hdr['n1']//4:]) for tag in ['sigma1', 'be_nob1', 'be_nob0']]
 mins = [np.min(ab_av(avg['LBZ_'+tag+'_r'])[hdr['n1']//4:]) for tag in ['sigma1', 'be_nob1', 'be_nob0']]
-yhi = max(maxes); ylow = min(mins)
+yhi = max(maxes); ylow = max(min(mins),1e-4*yhi)
 print(yhi, ylow)
 ax.set_ylim([ylow ,yhi])
 if "SANE" in run_name:
@@ -164,7 +164,7 @@ ax.axvline(AT_R, color='k')
 
 maxes = [np.max(ab_av(avg['Ltot_'+tag+'_r'])[hdr['n1']//4:]) for tag in  ['sigma1', 'be_nob1', 'be_nob0']]
 mins = [np.min(ab_av(avg['Ltot_'+tag+'_r'])[hdr['n1']//4:]) for tag in  ['sigma1', 'be_nob1', 'be_nob0']]
-yhi = max(maxes); ylow = min(mins)
+yhi = max(maxes); ylow = max(min(mins),1e-4*yhi)
 print(yhi, ylow)
 ax.set_ylim([ylow,yhi])
 if "SANE" in run_name:
