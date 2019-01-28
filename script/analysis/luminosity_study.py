@@ -132,6 +132,7 @@ ax.plot(avg['r'], ab_av(avg['LBZ_be_nob1_r']), label=r"$L_{BZ}$ ($Be > 1.0$ cut)
 
 ax.set_title(r"$L_{BZ} = \int -{{T_{EM}}^r}_t \sqrt{-g} dx^{\theta} dx^{\phi}$")
 ax.set_xlim([0,SIZE])
+ax.set_xlabel("$r$ (M)")
 ax.axvline(AT_R, color='k')
 
 maxes = [np.max(ab_av(avg['LBZ_'+tag+'_r'])[hdr['n1']//4:]) for tag in ['sigma1', 'be_nob1', 'be_nob0']]
@@ -157,6 +158,7 @@ ax.plot(avg['r'], ab_av(avg['Ltot_be_nob1_r']), label=r"$L_{tot}$ ($Be_{gas} > 1
 
 ax.set_title(r"$L_{tot} = \int (-{T^r}_t - \rho u^r) \sqrt{-g} dx^{\theta} dx^{\phi}$")
 ax.set_xlim([0,SIZE])
+ax.set_xlabel("$r$ (M)")
 ax.axvline(AT_R, color='k')
 
 maxes = [np.max(ab_av(avg['Ltot_'+tag+'_r'])[hdr['n1']//4:]) for tag in  ['sigma1', 'be_nob1', 'be_nob0']]

@@ -82,7 +82,7 @@ if __name__ == "__main__":
   # Perform conversion
   for key in avg.keys():
     if "_th" in key:
-      avg[key] *= to_th
+      avg[key] *= to_th*geom['gdet'][iBZ,:hdr['n2']//2]
 
   # L_th
   fig, axes = plt.subplots(2,2, figsize=(FIGX, FIGY))
