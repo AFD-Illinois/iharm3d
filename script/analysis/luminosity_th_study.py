@@ -89,8 +89,6 @@ if __name__ == "__main__":
 
   # Plot Luminosity contribution (incl. KE) as a fn of theta at r=100
   ax = axes[0,0]
-  #ax.plot(avg['th'], avg['Ltot_g_th'], 'C1', label=r"$L_{tot}$ alt (r = "+rstring+")")
-  #ax.plot(avg['th'], avg['LBZ_g_th'], 'C9', label=r"$L_{BZ}$ alt (r = "+rstring+")")
   ax.plot(avg['th'], avg['Ltot_th']*to_th, color='xkcd:pink', label=r"$L_{tot}$ (r = "+rstring+")")
   ax.plot(avg['th'], avg['LBZ_th']*to_th, color='xkcd:cyan', label=r"$L_{BZ}$ (r = "+rstring+")")
   
@@ -113,16 +111,11 @@ if __name__ == "__main__":
   ymin = -0.2*ymax
   #ymax = 0.1
   #ymin = -0.1
-  
-  #ax.vlines(avg['th'][ucon_cut], ymin, ymax, colors='k')
 
-  ax.vlines(avg['th'][sigma_cut1], ymin, ymax, colors='C2')
-  #ax.vlines(avg['th'][sigma_cut10], ymin, ymax, colors='C3')
+  ax.vlines(avg['th'][sigma_cut1], ymin, ymax, colors='C2', label="Sigma > 1 Cut")
 
-  ax.vlines(avg['th'][be_b0_cut], ymin, ymax, colors='C4')
-  ax.vlines(avg['th'][be_b1_cut], ymin, ymax, colors='C5')
-  ax.vlines(avg['th'][be_nob0_cut], ymin, ymax, colors='C6')
-  ax.vlines(avg['th'][be_nob0_cut], ymin, ymax, colors='C7')
+  ax.vlines(avg['th'][be_nob0_cut], ymin, ymax, colors='C6', label="Be > 0.02 Cut")
+  ax.vlines(avg['th'][be_nob1_cut], ymin, ymax, colors='C7', label="Be > 1.0 Cut")
 
   #ax.vlines(avg['th'][rur_cut], ymin, ymax, colors='C8')
 
