@@ -49,7 +49,7 @@ if sys.argv[1] == "-d":
   if len(sys.argv) > 5:
     tavg_end = float(sys.argv[5])
   if len(sys.argv) > 6:
-    tavg_end = float(sys.argv[6])
+    tend = float(sys.argv[6])
 else:
   debug = False
   path = sys.argv[1]
@@ -83,6 +83,9 @@ if tavg_end == 0.:
 
 if tstart is None:
   tstart = 0.
+
+if tend is None:
+  tend = io.get_dump_time(dumps[-1])+1
 
 # Decide where to measure fluxes
 def i_of(rcoord):
