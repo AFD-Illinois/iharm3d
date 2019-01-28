@@ -79,7 +79,7 @@ if [[ $TYPE != "init" ]]; then
   # When forcing re-ana this file simply doesn't exist
   if [ ! -f eht_out.p ]; then
     # Plot EHT analysis
-    python3 eht_analysis.py $DUMP_DIR $AVG_AFTER $AVG_AFTER 10000 # TODO
+    python3 eht_analysis.py $DUMP_DIR 0 $AVG_AFTER 10000 # TODO
   fi
   python3 eht_plot.py eht_out.p $(basename $PROB)
 fi

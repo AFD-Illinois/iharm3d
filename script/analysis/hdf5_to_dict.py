@@ -139,6 +139,9 @@ def load_hdr(fname):
   # TODO this is KS-specific
   if 'r_eh' not in hdr and hdr['metric'] != "MINKOWSKI":
     hdr['r_eh'] = (1. + np.sqrt(1. - hdr['a']**2))
+  if 'poly_norm' not in hdr and hdr['metric'] == "MMKS":
+    hdr['poly_norm'] = 0.5 * np.pi * 1. / (1. + 1. / (hdr['poly_alpha'] + 1.) *
+                                     1. / np.power(hdr['poly_xt'], hdr['poly_alpha']))
   
   if 'git_version' in hdr:
     print("Loaded header from code {}, git rev {}".format(hdr['version'], hdr['git_version']))
@@ -170,8 +173,11 @@ def load_geom(hdr, path):
     geom[key] = hdr[key]
   # TODO not all non-cart metrics are KS
   if hdr['metric'] in ["MKS", "MMKS", "FMKS"]:
-    for key in ['r_eh', 'r_in', 'r_out']:
+    for key in ['r_eh', 'r_in', 'r_out', 'a', 'hslope']:
       geom[key] = hdr[key]
+      if hdr['metric'] == "MMKS": # TODO standardize names !!!
+        for key in ['poly_norm', 'poly_alpha', 'poly_xt', 'mks_smooth']:
+          geom[key] = hdr[key]
   elif hdr['metric'] in ["MKS3"]:
     for key in ['r_eh']:
       geom[key] = hdr[key]

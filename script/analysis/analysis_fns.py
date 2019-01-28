@@ -55,6 +55,12 @@ def Fcov(geom, dump, i, j):
   
   return Fcovij
 
+def bernoulli(dump, with_B=False):
+  if with_B:
+    return -T_mixed(dump,0,0) /(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
+  else:
+    return -(1 + dump['hdr']['gam']*dump['UU']/dump['RHO'])*dump['ucov'][:,:,:,0] - 1
+
 # This is in zone metric!
 def lower(geom, vec):
   return np.einsum("...i,...ij->...j", vec, geom['gcov'][:,:,None,:,:])
@@ -182,10 +188,15 @@ def eht_profile(geom, var, jmin, jmax):
   return ( (var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3']).sum(axis=(1,2)) /
            ((geom['gdet'][:,jmin:jmax]*geom['dx2']).sum(axis=1)*2*np.pi) )
 
-def theta_av(geom, var, start, av):
+def theta_av(geom, var, start, zones_to_av=1, use_gdet=False):
   # Sum theta from each pole to equator and take overall mean
   N2 = geom['n2']
-  return (var[start:start+av,:N2//2,:].mean(axis=(0,2)) + var[start:start+av,:N2//2-1:-1,:].mean(axis=(0,2))) / 2
+  if use_gdet:
+    return (var[start:start+zones_to_av,:N2//2,:] * geom['gdet'][start:start+zones_to_av,:N2//2,None]*geom['dx1']*geom['dx3'] +
+              var[start:start+zones_to_av,:N2//2-1:-1,:] * geom['gdet'][start:start+zones_to_av,:N2//2-1:-1,None]*geom['dx1']*geom['dx3']).sum(axis=(0,2))\
+           /((geom['gdet'][start:start+zones_to_av,:N2//2]*geom['dx1']).sum(axis=0)*2*np.pi)
+  else:
+    return (var[start:start+zones_to_av,:N2//2,:].mean(axis=(0,2)) + var[start:start+zones_to_av,:N2//2-1:-1,:].mean(axis=(0,2))) / 2
 
 ## Internal functions ##
 

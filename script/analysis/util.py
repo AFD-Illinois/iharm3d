@@ -55,6 +55,7 @@ def calc_nthreads(hdr, n_mkl=8, pad=0.25):
     ncopies = hdr['n_prim'] + 4*4 + 6
     nproc = int(pad * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*8*ncopies))
     if nproc < 1: nproc = 1
+    if nproc > psutil.cpu_count(logical=False): nproc = psutil.cpu_count(logical=False)
     print("Using {} Python processes".format(nproc))
     return nproc
   else:
