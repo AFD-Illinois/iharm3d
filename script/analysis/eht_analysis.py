@@ -30,15 +30,15 @@ calc_lumproxy = False
 calc_etot = False
 
 if len(sys.argv) < 2:
-  util.warn('Format: python eht_analysis.py /path/to/dumps [start time] [start radial averages] [stop radial averages]')
+  util.warn('Format: python eht_analysis.py /path/to/dumps [start time] [start radial averages] [stop radial averages] [stop time]')
   sys.exit()
 
 # This doesn't seem like the _right_ way to do optional args
 # Skips everything before tstart, averages between tavg_start and tavg_end
-# TODO tend?
 tstart = None
 tavg_start = None
 tavg_end = None
+tend = None
 if sys.argv[1] == "-d":
   debug = True
   path = sys.argv[2]
@@ -48,6 +48,8 @@ if sys.argv[1] == "-d":
     tavg_start = float(sys.argv[4])
   if len(sys.argv) > 5:
     tavg_end = float(sys.argv[5])
+  if len(sys.argv) > 6:
+    tavg_end = float(sys.argv[6])
 else:
   debug = False
   path = sys.argv[1]
@@ -57,6 +59,8 @@ else:
     tavg_start = float(sys.argv[3])
   if len(sys.argv) > 4:
     tavg_end = float(sys.argv[4])
+  if len(sys.argv) > 5:
+    tend = float(sys.argv[5])
 
 dumps = io.get_dumps_list(path)
 ND = len(dumps)
@@ -122,7 +126,7 @@ def avg_dump(n):
   if out['t'] == 0 and n != 0:
     out['t'] = n
 
-  if out['t'] < tstart:
+  if out['t'] < tstart or out['t'] > tend:
     print("Loaded {} / {}: {} (SKIPPED)".format((n+1), len(dumps), out['t']))
     return None
   else:
@@ -245,7 +249,6 @@ def avg_dump(n):
     #out['Ltot'] = sum_shell(geom, tfull_rt + rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
     lbz = -temm_rt
     ltot = -tfull_rt - rho_ur
-    # TODO 
     out['LBZ_sigma1_rt'] = sum_shell(geom, lbz, mask=(sigma > 1.0))
     out['Ltot_sigma1_rt'] = sum_shell(geom, ltot, mask=(sigma > 1.0))
     out['LBZ_sigma10_rt'] = sum_shell(geom, lbz, mask=(sigma > 10.0))
@@ -269,14 +272,17 @@ def avg_dump(n):
     out['LBZ_gamma_rt'] = sum_shell(geom, lbz, mask=(gamma > 1.5))
     out['Ltot_gamma_rt'] = sum_shell(geom, ltot, mask=(gamma > 1.5))
     
+    out['LBZ_allp_rt'] = sum_shell(geom, lbz, mask=(ltot > 0.0))
+    out['Ltot_allp_rt'] = sum_shell(geom, ltot, mask=(ltot > 0.0))
+    
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      for tag in ['sigma1', 'sigma10', 'be_b0', 'be_b1', 'be_nob0', 'be_nob1', 'rur', 'gamma']:
+      for tag in ['sigma1', 'sigma10', 'be_b0', 'be_b1', 'be_nob0', 'be_nob1', 'rur', 'gamma', 'allp']:
         out['LBZ_'+tag+'_r'] = out['LBZ_'+tag+'_rt']
         out['LBZ_'+tag] = out['LBZ_'+tag+'_r'][iBZ]
         out['Ltot_'+tag+'_r'] = out['Ltot_'+tag+'_rt']
         out['Ltot_'+tag] = out['Ltot_'+tag+'_r'][iBZ]
     else:
-      for tag in ['sigma1', 'sigma10', 'be_b0', 'be_b1', 'be_nob0', 'be_nob1', 'rur', 'gamma']:
+      for tag in ['sigma1', 'sigma10', 'be_b0', 'be_b1', 'be_nob0', 'be_nob1', 'rur', 'gamma', 'allp']:
         out['LBZ_'+tag] = out['LBZ_'+tag+'_rt'][iBZ]
         out['Ltot_'+tag] = out['Ltot_'+tag+'_rt'][iBZ]
 
@@ -365,4 +371,7 @@ out_full['phi'] = out_full['Phi']/np.sqrt(out_full['Mdot'])
 out_full['a'] = hdr['a']
 
 # OUTPUT
-pickle.dump(out_full, open("eht_out.p", "wb"))
+if tstart > 0 or tend < 10000:
+  pickle.dump(out_full, open("eht_out_{}_{}.p".format(tstart,tend), "wb"))
+else:
+  pickle.dump(out_full, open("eht_out.p", "wb"))

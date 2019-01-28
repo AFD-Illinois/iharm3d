@@ -89,14 +89,16 @@ if __name__ == "__main__":
 
   # Plot Luminosity contribution (incl. KE) as a fn of theta at r=100
   ax = axes[0,0]
-  ax.plot(avg['th'], avg['Ltot_th']*to_th, color='xkcd:pink', label=r"$L_{tot}$ (r = "+rstring+")")
-  ax.plot(avg['th'], avg['LBZ_th']*to_th, color='xkcd:cyan', label=r"$L_{BZ}$ (r = "+rstring+")")
+  ax.plot(avg['th'], avg['Ltot_th'], color='xkcd:pink', label=r"$L_{tot}$ (r = "+rstring+")")
+  ax.plot(avg['th'], avg['LBZ_th'], color='xkcd:cyan', label=r"$L_{BZ}$ (r = "+rstring+")")
   
   prop = np.sum(avg['Ltot_th'][np.where(avg['Ltot_th'] > 0)])/np.max(avg['Ltot_th'])
   Ltot_th_acc = [np.sum(avg['Ltot_th'][:n])/prop for n in range(hdr['n2']//2)]
   LBZ_th_acc = [np.sum(avg['LBZ_th'][:n])/prop for n in range(hdr['n2']//2)]
   ax.plot(avg['th'], Ltot_th_acc, 'C3', label=r"Accumulated $L_{tot}$ (r = "+rstring+")")
   ax.plot(avg['th'], LBZ_th_acc, 'C8', label=r"Accumulated $L_{BZ}$ (r = "+rstring+")")
+  
+  ax.axhline(0.0, color='k', linestyle=':')
   
   # Add axis marked with theta
 #   def x2_to_theta(x2): return 180*geom['th'][iBZ,int(x2*hdr['n2']),0]/np.pi

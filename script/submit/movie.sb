@@ -31,6 +31,16 @@ module restore i18
 for PROB in $PROBS
 do
 
+if [[ "${PROB##*:}" != "$PROB" ]]; then
+  RUN_BOUNDS="${PROB##*:}"
+  RUN_START="${RUN_BOUNDS%-*}"
+  RUN_END="${RUN_BOUNDS##*-}"
+  PROB="${PROB%:*}"
+else
+  RUN_START=0
+  RUN_END=
+fi
+
 MOVIE_DIR=$WORK/movies
 OUT_DIR=$MOVIE_DIR/$PROB
 
@@ -69,6 +79,7 @@ export MKL_DYNAMIC=false
 python3 plot_init.py $DUMP_DIR
 python3 initial_cuts.py $DUMP_DIR
 
+# TODO quiescence...
 if [[ $TYPE == "eht" ]]; then
   AVG_AFTER="5000"
 else
@@ -79,8 +90,9 @@ if [[ $TYPE != "init" ]]; then
   # When forcing re-ana this file simply doesn't exist
   if [ ! -f eht_out.p ]; then
     # Plot EHT analysis
-    python3 eht_analysis.py $DUMP_DIR 0 $AVG_AFTER 10000 # TODO
+    python3 eht_analysis.py $DUMP_DIR $RUN_START $AVG_AFTER $RUN_END
   fi
+  python3 eht_unify.py eht_out_*.p
   python3 eht_plot.py eht_out.p $(basename $PROB)
 fi
 

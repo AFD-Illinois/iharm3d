@@ -51,7 +51,7 @@ gs = gridspec.GridSpec(2, 2, width_ratios=[1,2])
 
 ax = plt.subplot(gs[0,0])
 bplt.plot_xz(ax, geom, np.log10(-dump['TEMrt']), arrayspace=USEARRSPACE, average=True, window=window)
-ax.set_title(r"$-{{T_{EM}}^r}_t$")
+ax.set_title(r"$\log_{10}( -{{T_{EM}}^r}_t )$")
 
 bplt.overlay_contours(ax, geom, geom['r'], [AT_R], color='k')
 
@@ -74,7 +74,7 @@ bplt.overlay_contours(ax, geom, dump['be_nob'], [1.0], color='C4')
 
 ax = plt.subplot(gs[1,0])
 bplt.plot_xz(ax, geom, np.log10(-dump['Trt']-dump['RHO']*dump['ucon'][:,:,:,1]), arrayspace=USEARRSPACE, average=True, window=window)
-ax.set_title(r"$-{T^r}_t - \rho u^r$")
+ax.set_title(r"$\log_{10}( -{T^r}_t - \rho u^r )$")
 
 bplt.overlay_contours(ax, geom, geom['r'], [AT_R], color='k')
 
@@ -135,11 +135,11 @@ ax.set_xlim([0,SIZE])
 ax.set_xlabel("$r$ (M)")
 ax.axvline(AT_R, color='k')
 
-maxes = [np.max(ab_av(avg['LBZ_'+tag+'_r'])[hdr['n1']//4:]) for tag in ['sigma1', 'be_nob1', 'be_nob0']]
-mins = [np.min(ab_av(avg['LBZ_'+tag+'_r'])[hdr['n1']//4:]) for tag in ['sigma1', 'be_nob1', 'be_nob0']]
-yhi = max(maxes); ylow = max(min(mins),1e-4*yhi)
-print(yhi, ylow)
-ax.set_ylim([ylow ,yhi])
+#maxes = [np.max(ab_av(avg['LBZ_'+tag+'_r'])[hdr['n1']//4:]) for tag in ['sigma1', 'be_nob1', 'be_nob0']]
+#mins = [np.min(ab_av(avg['LBZ_'+tag+'_r'])[hdr['n1']//4:]) for tag in ['sigma1', 'be_nob1', 'be_nob0']]
+#yhi = max(maxes); ylow = max(min(mins),1e-4*yhi)
+#print(yhi, ylow)
+#ax.set_ylim([ylow ,yhi])
 if "SANE" in run_name:
   ax.set_yscale('log')
 
@@ -151,8 +151,8 @@ ax.plot(avg['r'], ab_av(avg['Ltot_sigma1_r']), label=r"$L_{tot}$ (sigma > 1 cut)
 
 #ax.plot(avg['r'], ab_av(avg['Ltot_be_b0_r']), label=r"$L_{tot}$ ($Be_B > 0.02$ cut)", color='C4')
 #ax.plot(avg['r'], ab_av(avg['Ltot_be_b1_r']), label=r"$L_{tot}$ ($Be_B > 1.0$ cut)", color='C5')
-ax.plot(avg['r'], ab_av(avg['Ltot_be_nob0_r']), label=r"$L_{tot}$ ($Be_{gas} > 0.02$ cut)", color='C3')
-ax.plot(avg['r'], ab_av(avg['Ltot_be_nob1_r']), label=r"$L_{tot}$ ($Be_{gas} > 1.0$ cut)", color='C4')
+ax.plot(avg['r'], ab_av(avg['Ltot_be_nob0_r']), label=r"$L_{tot}$ ($Be > 0.02$ cut)", color='C3')
+ax.plot(avg['r'], ab_av(avg['Ltot_be_nob1_r']), label=r"$L_{tot}$ ($Be > 1.0$ cut)", color='C4')
 
 #ax.plot(avg['r'], ab_av(avg['Ltot_rur_r']), label=r"$L_{tot}$ (r*u^r cut)", color='C8')
 #ax.plot(avg['r'], ab_av(avg['Ltot_gamma_r']), label=r"$L_{tot}$ (gamma cut)", color='C9')
@@ -162,11 +162,11 @@ ax.set_xlim([0,SIZE])
 ax.set_xlabel("$r$ (M)")
 ax.axvline(AT_R, color='k')
 
-maxes = [np.max(ab_av(avg['Ltot_'+tag+'_r'])[hdr['n1']//4:]) for tag in  ['sigma1', 'be_nob1', 'be_nob0']]
-mins = [np.min(ab_av(avg['Ltot_'+tag+'_r'])[hdr['n1']//4:]) for tag in  ['sigma1', 'be_nob1', 'be_nob0']]
-yhi = max(maxes); ylow = max(min(mins),1e-4*yhi)
-print(yhi, ylow)
-ax.set_ylim([ylow,yhi])
+#maxes = [np.max(ab_av(avg['Ltot_'+tag+'_r'])[hdr['n1']//4:]) for tag in  ['sigma1', 'be_nob1', 'be_nob0']]
+#mins = [np.min(ab_av(avg['Ltot_'+tag+'_r'])[hdr['n1']//4:]) for tag in  ['sigma1', 'be_nob1', 'be_nob0']]
+#yhi = max(maxes); ylow = max(min(mins),1e-4*yhi)
+#print(yhi, ylow)
+#ax.set_ylim([ylow,yhi])
 if "SANE" in run_name:
   ax.set_yscale('log')
 

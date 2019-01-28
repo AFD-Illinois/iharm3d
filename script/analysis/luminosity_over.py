@@ -82,10 +82,10 @@ print(geom['r_eh'])
 
 ax.set_title(r"$L_{BZ}$ vs $L_{tot}$ comparison")
 ax.set_xlim([0,100])
-maxes = [np.max(ab_av(avg['LBZ_'+tag+'_rt'])[50:]) for tag in ['sigma1']]
-mins = [np.min(ab_av(avg['LBZ_'+tag+'_rt'])[50:]) for tag in ['sigma1']]
-yhi = max(maxes); ylow = min(mins)
-ax.set_ylim([ylow ,yhi])
+#maxes = [np.max(ab_av(avg['LBZ_'+tag+'_rt'])[50:]) for tag in ['sigma1']]
+#mins = [np.min(ab_av(avg['LBZ_'+tag+'_rt'])[50:]) for tag in ['sigma1']]
+#yhi = max(maxes); ylow = min(mins)
+#ax.set_ylim([ylow ,yhi])
 if "SANE" in run_name:
   ax.set_yscale('log')
 
