@@ -1,5 +1,5 @@
 
-# Convenience functions for physical calculations and averages
+# Convenient analysis functions for physical calculations and averages
 # Meant to be imported "from analysis_fns import *" for convenience
 
 import numpy as np
@@ -9,24 +9,29 @@ import numpy as np
 
 def T_con(geom, dump, i, j):
   gam = dump['hdr']['gam']
-  return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucon'][:,:,:,j] +
+  return ( (dump['RHO'] + gam*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucon'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcon'][:,:,None,i,j] - dump['bcon'][:,:,:,i]*dump['bcon'][:,:,:,j] )
 
 def T_cov(geom, dump, i, j):
   gam = dump['hdr']['gam']
-  return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucov'][:,:,:,i]*dump['ucov'][:,:,:,j] +
+  return ( (dump['RHO'] + gam*dump['UU'] + dump['bsq'])*dump['ucov'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*geom['gcov'][:,:,None,i,j] - dump['bcov'][:,:,:,i]*dump['bcov'][:,:,:,j] )
 
 def T_mixed(dump, i, j):
   gam = dump['hdr']['gam']
   gmixedij = (i == j)
-  return ( (dump['RHO'] + dump['UU'] + (gam-1)*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
+  return ( (dump['RHO'] + gam*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
            ((gam-1)*dump['UU'] + dump['bsq']/2)*gmixedij - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
 
-# TODO Only works for i != j
+# TODO These only works for i != j.  Need new code path to keep speed?
 def TEM_mixed(dump, i, j):
   if i == j: raise ValueError("TEM Not implemented for i==j.")
   return dump['bsq'][:,:,:]*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j]
+
+def TFl_mixed(dump, i, j):
+  gam = dump['hdr']['gam']
+  if i == j: raise ValueError("TEM Not implemented for i==j.")
+  return (dump['RHO'] + dump['hdr']['gam']*dump['UU'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j]
 
 # Return the i,j component of contravarient Maxwell tensor
 # TODO there's a computationally easier way to do this:

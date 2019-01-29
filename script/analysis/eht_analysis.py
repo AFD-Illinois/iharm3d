@@ -137,9 +137,12 @@ def avg_dump(n):
     dump = io.load_dump(dumps[n], hdr, geom, extras=False)
 
   # Variables that will be referenced a bunch
-  temm_rt = TEM_mixed(dump, 1, 0)
+  tem_rt = TEM_mixed(dump, 1, 0)
+  tem_rphi = TEM_mixed(dump, 1, 3)
+  tfl_rt = TFl_mixed(dump, 1, 0)
+  tfl_rphi = TFl_mixed(dump, 1, 3)
   tfull_rt = T_mixed(dump, 1, 0)
-  tfull_rphi = T_mixed(dump, 1,3)
+  tfull_rphi = T_mixed(dump, 1, 3)
   be_b = bernoulli(dump, with_B=True)
   be_nob = bernoulli(dump, with_B=False)
   
@@ -168,35 +171,38 @@ def avg_dump(n):
     Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
     out['omega_th'] = theta_av(geom, Fcov01, iEH, 1) / theta_av(geom, Fcov13, iEH, 1)
     out['omega_av_th'] = theta_av(geom, Fcov01, iEH, 5) / theta_av(geom, Fcov13, iEH, 5)
-    out['omega_g_th'] = theta_av(geom, Fcov01, iEH, 1, use_gdet=True) / theta_av(geom, Fcov13, iEH, 1, use_gdet=True)
-    out['omega_g_av_th'] = theta_av(geom, Fcov01, iEH, 5, use_gdet=True) / theta_av(geom, Fcov13, iEH, 5, use_gdet=True)
 
     # This produces much worse results
     #out['omega_alt_th'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
     #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
-  # For demonstrating jet stuff
+  # Flux profiles for jet power
   zones_av=5
-  out['LBZ_tht'] = theta_av(geom, -temm_rt, iBZ, zones_av)
+  out['LBZ_tht'] = theta_av(geom, -tem_rt, iBZ, zones_av)
   out['Ltot_tht'] = theta_av(geom, -tfull_rt - rho_ur, iBZ, zones_av)
-  out['LBZ_g_tht'] = theta_av(geom, -temm_rt, iBZ, zones_av, use_gdet=False)
-  out['Ltot_g_tht'] = theta_av(geom, -tfull_rt - rho_ur, iBZ, zones_av, use_gdet=False)
 
   out['RHO_tht'] = theta_av(geom, dump['RHO'], iBZ, zones_av)
-  out['RHO_g_tht'] = theta_av(geom, dump['RHO'], iBZ, zones_av, use_gdet=True)
+  out['bsq_tht'] = theta_av(geom, dump['bsq'], iBZ, zones_av)
+  out['U_tht'] = theta_av(geom, dump['UU'], iBZ, zones_av)
+  out['ut_tht'] = theta_av(geom, dump['ucov'][:,:,:,0], iBZ, zones_av)
+  out['uphi_tht'] = theta_av(geom, dump['ucov'][:,:,:,3], iBZ, zones_av)
+  
   out['FM_tht'] = theta_av(geom, rho_ur, iBZ, zones_av)
-  out['FM_g_tht'] = theta_av(geom, rho_ur, iBZ, zones_av, use_gdet=True)
+  
   out['FE_tht'] = theta_av(geom, -tfull_rt, iBZ, zones_av)
-  out['FE_g_tht'] = theta_av(geom, -tfull_rt, iBZ, zones_av, use_gdet=True)
-  # Angular momentum flux
+  out['FE_EM_tht'] = theta_av(geom, -tem_rt, iBZ, zones_av)
+  out['FE_Fl_tht'] = theta_av(geom, -tfl_rt, iBZ, zones_av)
+  
   out['FL_tht'] = theta_av(geom, tfull_rphi, iBZ, zones_av)
-  out['FL_g_tht'] = theta_av(geom, tfull_rphi, iBZ, zones_av, use_gdet=True)
+  out['FL_EM_tht'] = theta_av(geom, tem_rphi, iBZ, zones_av)
+  out['FL_Fl_tht'] = theta_av(geom, tfl_rphi, iBZ, zones_av)
 
-  # Easy way to add averages
-  if out['t'] >= tavg_start and out['t'] <= tavg_end:
-    for tag in [''.join(t) for t in itertools.product(['LBZ_','Ltot_','RHO_','FM_','FE_','FL_'],['th','g_th'])]:
-      if tag+'t' in out:
-        out[tag] = out[tag+'t']
+
+  # Easy way to add the overall averages TODO broken when split into jobs
+#   if out['t'] >= tavg_start and out['t'] <= tavg_end:
+#     for tag in ['LBZ_th','Ltot_th','RHO_th','FM_th','FE_th','FL_th']:
+#       if tag+'t' in out:
+#         out[tag] = out[tag+'t']
 
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
@@ -239,19 +245,20 @@ def avg_dump(n):
   # Blandford-Znajek Luminosity L_BZ
   if debug:
     # A bunch of radial profiles to test consistency
-    out['LBZ_r'] = sum_shell(geom, -temm_rt, mask=(sigma > 1))
+    out['LBZ_r'] = sum_shell(geom, -tem_rt, mask=(sigma > 1))
     out['LBZ'] = out['LBZ_r'][iBZ]
     
     mu = (-tfull_rt + rho_ur) / rho_ur
-    out['LBZ_mu2_r'] = sum_shell(geom, -temm_rt, mask=np.logical_or(sigma > 1, mu > 2))
-    out['LBZ_mu3_r'] = sum_shell(geom, -temm_rt, mask=np.logical_or(sigma > 1, mu > 3))
-    out['LBZ_mu4_r'] = sum_shell(geom, -temm_rt, mask=np.logical_or(sigma > 1, mu > 4))
+    out['LBZ_mu2_r'] = sum_shell(geom, -tem_rt, mask=np.logical_or(sigma > 1, mu > 2))
+    out['LBZ_mu3_r'] = sum_shell(geom, -tem_rt, mask=np.logical_or(sigma > 1, mu > 3))
+    out['LBZ_mu4_r'] = sum_shell(geom, -tem_rt, mask=np.logical_or(sigma > 1, mu > 4))
   else:
     # This is a lot of luminosities!
     #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
     #out['Ltot'] = sum_shell(geom, tfull_rt + rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
-    lbz = -temm_rt
+    lbz = -tem_rt
     ltot = -tfull_rt - rho_ur
+
     out['LBZ_sigma1_rt'] = sum_shell(geom, lbz, mask=(sigma > 1.0))
     out['Ltot_sigma1_rt'] = sum_shell(geom, ltot, mask=(sigma > 1.0))
     out['LBZ_sigma10_rt'] = sum_shell(geom, lbz, mask=(sigma > 10.0))
@@ -341,7 +348,6 @@ out_full = {}
 # Toss in the common geom lists
 N2 = hdr['n2']
 out_full['r'] = geom['r'][:,N2//2,0]
-out_full['th'] = geom['th'][0,:N2//2,0]
 
 # Merge the output dicts
 for key in list(out_list[nmin].keys()):
@@ -352,11 +358,23 @@ for key in list(out_list[nmin].keys()):
         if key in out_list[n]:
           out_full[key][n,:] = out_list[n][key]
   elif key[-3:] == '_th' or key[-4:] == '_tht':
-    out_full[key] = np.zeros((ND, out_full['th'].size))
+    out_full[key] = np.zeros((ND, hdr['n2']))
     for n in range(ND):
       if out_list[n] is not None:
         if key in out_list[n]:
           out_full[key][n,:] = out_list[n][key]
+  elif key[-4:] == '_rth' or key[-5:] == '_rtht':
+    out_full[key] = np.zeros((ND, hdr['n1'], hdr['n2']))
+    for n in range(ND):
+      if out_list[n] is not None:
+        if key in out_list[n]:
+          out_full[key][n,:,:] = out_list[n][key]
+  elif key[-6:] == '_thphi' or key[-7:] == '_thphit':
+    out_full[key] = np.zeros((ND, hdr['n2'], hdr['n3']))
+    for n in range(ND):
+      if out_list[n] is not None:
+        if key in out_list[n]:
+          out_full[key][n,:,:] = out_list[n][key]
   else:
     out_full[key] = np.zeros(ND)
     for n in range(ND):
