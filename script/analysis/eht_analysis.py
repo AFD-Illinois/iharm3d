@@ -323,20 +323,18 @@ else:
     pool.join()
 
 # Compute the indices for averaging time
-nmin = 0
-for n in range(ND):
-  if (out_list[n] is not None) and (out_list[n]['t'] >= tavg_start):
-    nmin = n
-    break
+def n_of(t, default=None):
+  for n in range(ND):
+    # Stop when we hit time or run out of dumps we were assigned
+    if (out_list[n] is not None) and ((out_list[n]['t'] >= t) or (out_list[n+1] is None)):
+      return n
+  return default
 
-nmax = 0
-for n in range(ND):
-  if (out_list[n] is not None) and (out_list[n]['t'] >= tavg_end):
-    nmax = n
-    break
+nstart, nmin, nmax, nend = n_of(tstart), n_of(tavg_start, default=0), n_of(tavg_end, default=ND), n_of(tend)
+if nmin < nstart: nmin = nstart
+if nmax > nend: nmax = nend
 
-
-print("nmin = ",nmin)
+print("nstart = {}, nmin = {}, nmax = {} nend = {}".format(nstart,nmin,nmax,nend))
 
 # Make a dict for merged variables
 out_full = {}
@@ -350,11 +348,13 @@ for key in list(out_list[nmin].keys()):
   if key[-2:] == '_r' or key[-3:] == '_rt':
     out_full[key] = np.zeros((ND, out_full['r'].size)) # 1D only trick
     for n in range(ND):
+      if out_list[n] is not None:
         if key in out_list[n]:
           out_full[key][n,:] = out_list[n][key]
   elif key[-3:] == '_th' or key[-4:] == '_tht':
     out_full[key] = np.zeros((ND, out_full['th'].size))
     for n in range(ND):
+      if out_list[n] is not None:
         if key in out_list[n]:
           out_full[key][n,:] = out_list[n][key]
   else:

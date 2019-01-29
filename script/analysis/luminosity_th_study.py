@@ -78,11 +78,33 @@ if __name__ == "__main__":
                                                  (2. * avg['X2'] - 1.) / poly_xt, poly_alpha - 1.)) / (
                                                          (1. + poly_alpha) * poly_xt) -
                                              (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']))
+  # For averaging
+  # What a god-awful hack.  Better to have preserved it with metadata thru the pipeline but whatever
+  # NOTE: a-0.94 384 MAD should be 7000-10000, but due to a bug images were made from 5k, so we average where the images are
+  qui = { "MAD" : { "384x192x192_IHARM" : { "a-0.94" : [5000,10000], "a-0.5" : [5000,9000], "a0" : [5000,10000], "a+0.5" : [5000,10000], "a+0.75" : [5000,9000], "a+0.94" : [5000,10000] },
+                  "192x96x96_IHARM" : { "a-0.94" : [5000,10000], "a-0.5" : [5500,10000], "a-0.25" : [6000,9000], "a0" : [5000,8500], "a+0.25" : [6000,10000], "a+0.5" : [5000,10000], "a+0.75" : [6000,10000], "a+0.94" : [5000,10000] },
+                  "288x128x128_gamma53" : { "a+0.94" : [6000,10000] },
+                  "384x192x192_gamma53" : { "a+0.94" : [6000,9990] } # Last dump was not output
+                  },
+         "SANE" : { "288x128x128_IHARM" : { "a-0.94" : [6000,9000], "a-0.5" : [5000,8000], "a0" : [5000,10000], "a+0.5" : [3000,5500], "a+0.94" : [3000,6000] },
+                  "192x192x192_IHARM" : { "a+0.5" : [6000,8000], "a+0.94" : [8000,10000] }
+                  }
+      }
+
+  ND = avg['LBZ_sigma1_rt'].shape[0]
+  rtype,rspin,rname = run_name.split("/")
+  start, end = qui[rtype][rname][rspin]
+  # I can rely on this for now
+  start = int(start)//5
+  end = int(end)//5
+
   
-  # Perform conversion
+  # Perform average and conversion
+  new_avg = {}
   for key in avg.keys():
-    if "_th" in key:
-      avg[key] *= to_th*geom['gdet'][iBZ,:hdr['n2']//2]
+    if "_tht" in key:
+      new_avg[key[:-1]] = np.mean(avg[key][start:end,:], axis=0)*to_th*geom['gdet'][iBZ,:hdr['n2']//2]
+  avg = {**avg, **new_avg}
 
   # L_th
   fig, axes = plt.subplots(2,2, figsize=(FIGX, FIGY))
