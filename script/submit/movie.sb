@@ -43,6 +43,8 @@ fi
 
 MOVIE_DIR=$WORK/movies
 OUT_DIR=$MOVIE_DIR/$PROB
+LISTS_DIR=~/imaging/lists/GRMHD/
+QUI_DIR=$LISTS_DIR/$PROB
 
 # Autodetect folder
 if [ -d $SCRATCH/pharm_dumps/$PROB/dumps ]; then
@@ -79,18 +81,26 @@ export MKL_DYNAMIC=false
 python3 plot_init.py $DUMP_DIR
 python3 initial_cuts.py $DUMP_DIR
 
-# TODO quiescence...
 if [[ $TYPE == "eht" ]]; then
   AVG_AFTER="5000"
+  AVG_END="10000"
 else
-  AVG_AFTER="8000"
+  if [ -f $QUI_DIR/qui.txt ]; then
+    AVG_BOUNDS=$(cat $QUI_DIR/qui.txt)
+    AVG_AFTER="${AVG_BOUNDS% *}"
+    AVG_END="${AVG_BOUNDS##* }"
+  else
+    AVG_AFTER="8000"
+    AVG_END="10000"
+  fi
 fi
 
 if [[ $TYPE != "init" ]]; then
   # When forcing re-ana this file simply doesn't exist
   if [ ! -f eht_out.p ]; then
     # Plot EHT analysis
-    python3 eht_analysis.py $DUMP_DIR $RUN_START $AVG_AFTER 10000 $RUN_END
+    echo "Running analysis $PROB from $RUN_START to $RUN_END averaging $AVG_AFTER-$AVG_END"
+    python3 eht_analysis.py $DUMP_DIR $RUN_START $AVG_AFTER $AVG_END $RUN_END
   fi
   python3 eht_unify.py eht_out_*.p
   python3 eht_plot.py eht_out.p $(basename $PROB)

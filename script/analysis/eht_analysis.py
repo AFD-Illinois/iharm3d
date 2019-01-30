@@ -131,7 +131,7 @@ def avg_dump(n):
 
   if out['t'] < tstart or out['t'] > tend:
     print("Loaded {} / {}: {} (SKIPPED)".format((n+1), len(dumps), out['t']))
-    return None
+    return out
   else:
     print("Loaded {} / {}: {}".format((n+1), len(dumps), out['t']))
     dump = io.load_dump(dumps[n], hdr, geom, extras=False)
@@ -333,58 +333,63 @@ else:
 def n_of(t, default=None):
   for n in range(ND):
     # Stop when we hit time or run out of dumps we were assigned
-    if (out_list[n] is not None) and ((out_list[n]['t'] >= t) or (out_list[n+1] is None)):
-      return n
+    if out_list[n]['t'] > t:
+      return n-1
   return default
 
-nstart, nmin, nmax, nend = n_of(tstart), n_of(tavg_start, default=0), n_of(tavg_end, default=ND), n_of(tend)
+nstart, nmin, nmax, nend = n_of(tstart), n_of(tavg_start), n_of(tavg_end, default=ND), n_of(tend)
+full_avg_range = nmax - nmin
 if nmin < nstart: nmin = nstart
+if nmin > nend: nmin = nend
+
+if nmax < nstart: nmax = nstart
 if nmax > nend: nmax = nend
+
+my_avg_range = nmax - nmin
 
 print("nstart = {}, nmin = {}, nmax = {} nend = {}".format(nstart,nmin,nmax,nend))
 
 # Make a dict for merged variables
 out_full = {}
-# Toss in the common geom lists
+# Toss in the common geom lists and our weight in the overall average
 N2 = hdr['n2']
-out_full['r'] = geom['r'][:,N2//2,0]
+out_full['r'] = geom['r'][:,hdr['n2']//2,0]
+out_full['avg_w'] = my_avg_range / full_avg_range
 
 # Merge the output dicts
+print(out_list[nmin].keys())
 for key in list(out_list[nmin].keys()):
   if key[-2:] == '_r' or key[-3:] == '_rt':
     out_full[key] = np.zeros((ND, out_full['r'].size)) # 1D only trick
     for n in range(ND):
-      if out_list[n] is not None:
-        if key in out_list[n]:
-          out_full[key][n,:] = out_list[n][key]
+      if key in out_list[n]:
+        out_full[key][n,:] = out_list[n][key]
   elif key[-3:] == '_th' or key[-4:] == '_tht':
-    out_full[key] = np.zeros((ND, hdr['n2']))
+    out_full[key] = np.zeros((ND, hdr['n2']//2))
     for n in range(ND):
-      if out_list[n] is not None:
-        if key in out_list[n]:
-          out_full[key][n,:] = out_list[n][key]
+      if key in out_list[n]:
+        out_full[key][n,:] = out_list[n][key]
   elif key[-4:] == '_rth' or key[-5:] == '_rtht':
-    out_full[key] = np.zeros((ND, hdr['n1'], hdr['n2']))
+    out_full[key] = np.zeros((ND, hdr['n1'], hdr['n2']//2))
     for n in range(ND):
-      if out_list[n] is not None:
-        if key in out_list[n]:
-          out_full[key][n,:,:] = out_list[n][key]
+      if key in out_list[n]:
+        out_full[key][n,:,:] = out_list[n][key]
   elif key[-6:] == '_thphi' or key[-7:] == '_thphit':
     out_full[key] = np.zeros((ND, hdr['n2'], hdr['n3']))
     for n in range(ND):
-      if out_list[n] is not None:
-        if key in out_list[n]:
-          out_full[key][n,:,:] = out_list[n][key]
+      if key in out_list[n]:
+        out_full[key][n,:,:] = out_list[n][key]
   else:
     out_full[key] = np.zeros(ND)
     for n in range(ND):
-      if out_list[n] is not None:
-        out_full[key][n] = out_list[n][key]
+      out_full[key][n] = out_list[n][key]
 
 # Average items with certain names.  Note suffixing 't' keeps the full NDxN1 or NDxN2/2 array
 for key in out_full:
   if key[-2:] == '_r' or key[-3:] == '_th':
     out_full[key] = (out_full[key][nmin:,:]).mean(axis=0)
+  elif key[-4:] == '_rth' or key[-6:] == '_thphi':
+    out_full[key] = (out_full[key][nmin:,:,:]).mean(axis=0)
 
 # Compat/completeness stuff
 out_full['mdot'] = out_full['Mdot']
