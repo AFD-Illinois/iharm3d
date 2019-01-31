@@ -66,7 +66,7 @@ if [[ $TYPE == "eht" || $TYPE == "ana-movie" ]]; then
 elif [[ $TYPE == "movie" ]]; then
   rm -rf $OUT_DIR/FRAMES
 elif [[ $TYPE == "ana" ]]; then
-  rm -rf $OUT_DIR/eht_out.p
+  rm -rf $OUT_DIR/eht_out.p #$OUT_DIR/eht_out_*.p
 fi
 mkdir -p $OUT_DIR
 cd $OUT_DIR
@@ -101,8 +101,8 @@ if [[ $TYPE != "init" ]]; then
     # Plot EHT analysis
     echo "Running analysis $PROB from $RUN_START to $RUN_END averaging $AVG_AFTER-$AVG_END"
     python3 eht_analysis.py $DUMP_DIR $RUN_START $AVG_AFTER $AVG_END $RUN_END
+    python3 eht_unify.py eht_out_*.p
   fi
-  python3 eht_unify.py eht_out_*.p
   python3 eht_plot.py eht_out.p $(basename $PROB)
 fi
 

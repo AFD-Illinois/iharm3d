@@ -15,7 +15,7 @@ import plot as bplt
 from analysis_fns import *
 
 from defs import Met
-from coordinates import dxdX_KS_to
+from coordinates import dxdX_to_KS, dxdX_KS_to
 
 FIGX=15
 FIGY=15
@@ -29,11 +29,44 @@ def i_of(rcoord):
   return i
 
 def cut_pos(var, cut):
-  var_X2 = bplt.flatten_xz(var, average=True)[iBZ,:hdr['n2']//2]
+  if var.ndim > 2:
+    var_X2 = bplt.flatten_xz(var, average=True)[iBZ,:hdr['n2']//2]
+  else:
+    var_X2 = var
   var_cut = np.where( np.logical_or(
     np.logical_and(var_X2[:-1] > cut, var_X2[1:] < cut),
     np.logical_and(var_X2[:-1] < cut, var_X2[1:] > cut)))
   return var_cut
+
+def overlay_thphi_contours(ax, geom, r):
+  s = "_" + str(r) + "_thphi"
+  r_i = i_of(r)
+  max_th = geom['n2']//2
+  x = bplt.loop_phi(geom['x'][r_i,:max_th,:])
+  y = bplt.loop_phi(geom['y'][r_i,:max_th,:])
+  prep = lambda var : bplt.loop_phi(var[:max_th,:])
+  #ax.contour(x,y, prep(avg['ur'+s]), [0.0], colors='k')
+  ax.contour(x,y, prep(avg['sigma'+s]), [1.0], colors='xkcd:blue')
+  #ax.contour(x,y, prep(avg['sigma'+s]), [10.0], colors='C3')
+  #ax.contour(x,y, prep(avg['Be_b'+s]), [0.02], colors='C4')
+  #ax.contour(x,y, prep(avg['Be_b'+s]), [1.0], colors='C5')
+  ax.contour(x,y, prep(avg['Be_nob'+s]), [0.02], colors='xkcd:purple')
+  ax.contour(x,y, prep(avg['Be_nob'+s]), [1.0], colors='xkcd:green')
+  #ax.contour(x,y, prep(avg['rur_100_thphi']), [1.0], color='C8')
+  #ax.contour(x,y, prep(avg['gamma_100_thphi']), [1.5], color='C9')
+
+def overlay_rth_contours(ax, geom):
+  s = '_rth'
+  bplt.overlay_contours(ax, geom, geom['th'][:,:,0], [0.5, np.pi-0.5], color='k')
+  #bplt.overlay_contours(ax, geom, avg['ucon'+s][:,:,:,1], [0.0], color='k')
+  bplt.overlay_contours(ax, geom, avg['sigma'+s], [1.0], color='xkcd:blue')
+  #bplt.overlay_contours(ax, geom, avg['sigma'+s], [10.0], color='C3')
+  #bplt.overlay_contours(ax, geom, avg['Be_b'+s], [0.02], color='C4')
+  #bplt.overlay_contours(ax, geom, avg['Be_b'+s], [1.0], color='C5')
+  bplt.overlay_contours(ax, geom, avg['Be_nob'+s], [0.02], color='xkcd:purple')
+  bplt.overlay_contours(ax, geom, avg['Be_nob'+s], [1.0], color='xkcd:green')
+  #bplt.overlay_contours(ax, geom, avg['rur'+s], [1.0], color='C8')
+  #bplt.overlay_contours(ax, geom, avg['gamma'+s], [1.5], color='C9')
 
 if __name__ == "__main__":
   run_name = sys.argv[1]
@@ -53,115 +86,168 @@ if __name__ == "__main__":
     rBZ = 100
     rstring = "100"
 
-  avg['X2'] = geom['X2'][iBZ,:hdr['n2']//2,0]
+  sigma_cut1 = cut_pos(avg['sigma_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
+  sigma_cut10 = cut_pos(avg['sigma_100_th'][:hdr['n2']//2]/hdr['n3'], 10.0)
+ 
+  be_b0_cut = cut_pos(avg['Be_b_100_th'][:hdr['n2']//2]/hdr['n3'], 0.02)
+  be_b1_cut = cut_pos(avg['Be_b_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
+  be_nob0_cut = cut_pos(avg['Be_nob_100_th'][:hdr['n2']//2]/hdr['n3'], 0.02)
+  be_nob1_cut = cut_pos(avg['Be_nob_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
+ 
+  rur_cut = cut_pos(avg['rur_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
+  gamma_cut = cut_pos(avg['gamma_100_th'][:hdr['n2']//2]/hdr['n3'], 1.5)
   
-  ucon_cut = cut_pos(dump['ucon'][:,:,:,1], 0.0)
-  
-  sigma_cut1 = cut_pos(dump['bsq']/dump['RHO'], 1.0)
-  sigma_cut10 = cut_pos(dump['bsq']/dump['RHO'], 10.0)
+  # For converting to theta someday
+#   Xgeom = np.zeros((4,1,geom['n2']))
+#   Xgeom[1] = geom['X1'][iBZ,:,0]
+#   Xgeom[2] = geom['X2'][iBZ,:,0]
+#   to_dth = dxdX_KS_to(Xgeom, Met.FMKS, geom)[2,2,0]
 
-  be_b0_cut = cut_pos(bernoulli(dump, with_B=True), 0.02)
-  be_b1_cut = cut_pos(bernoulli(dump, with_B=True), 1.0)
-  be_nob0_cut = cut_pos(bernoulli(dump, with_B=False), 0.02)
-  be_nob1_cut = cut_pos(bernoulli(dump, with_B=False), 1.0)
-
-  rur_cut = cut_pos(geom['r']*dump['ucon'][:,:,:,1], 1.0)
-  gamma_cut = cut_pos(get_gamma(geom, dump), 1.5)
-  
-  # For converting to theta
+  # For converting to theta now
+  avg['X2'] = geom['X2'][0,:,0]
   startx1, hslope, poly_norm, poly_alpha, poly_xt, mks_smooth = geom['startx1'], geom['hslope'], geom['poly_norm'], geom['poly_alpha'], geom['poly_xt'], geom['mks_smooth']
-  to_th = np.pi + (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']) + np.exp(
-    mks_smooth * (startx1 - geom['X1'][iBZ,:hdr['n2']//2,0])) * (-np.pi +
+  to_dth_bz = np.pi + (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']) + np.exp(
+    mks_smooth * (startx1 - geom['X1'][iBZ,:,0])) * (-np.pi +
                                              2. * poly_norm * (1. + np.power((2. * avg['X2'] - 1.) / poly_xt,
                                                                              poly_alpha) / (poly_alpha + 1.)) +
                                              (2. * poly_alpha * poly_norm * (2. * avg['X2'] - 1.) * np.power(
                                                  (2. * avg['X2'] - 1.) / poly_xt, poly_alpha - 1.)) / (
                                                          (1. + poly_alpha) * poly_xt) -
-                                             (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']))
-  # For averaging
-  # What a god-awful hack.  Better to have preserved it with metadata thru the pipeline but whatever
-  # NOTE: a-0.94 384 MAD should be 7000-10000, but due to a bug images were made from 5k, so we average where the images are
-  qui = { "MAD" : { "384x192x192_IHARM" : { "a-0.94" : [5000,10000], "a-0.5" : [5000,9000], "a0" : [5000,10000], "a+0.5" : [5000,10000], "a+0.75" : [5000,9000], "a+0.94" : [5000,10000] },
-                  "192x96x96_IHARM" : { "a-0.94" : [5000,10000], "a-0.5" : [5500,10000], "a-0.25" : [6000,9000], "a0" : [5000,8500], "a+0.25" : [6000,10000], "a+0.5" : [5000,10000], "a+0.75" : [6000,10000], "a+0.94" : [5000,10000] },
-                  "288x128x128_gamma53" : { "a+0.94" : [6000,10000] },
-                  "384x192x192_gamma53" : { "a+0.94" : [6000,9990] } # Last dump was not output
-                  },
-         "SANE" : { "288x128x128_IHARM" : { "a-0.94" : [6000,9000], "a-0.5" : [5000,8000], "a0" : [5000,10000], "a+0.5" : [3000,5500], "a+0.94" : [3000,6000] },
-                  "192x192x192_IHARM" : { "a+0.5" : [6000,8000], "a+0.94" : [8000,10000] }
-                  }
-      }
+                                                         (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']))
+  to_dth_5 = np.pi + (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']) + np.exp(
+    mks_smooth * (startx1 - geom['X1'][i_of(5),:,0])) * (-np.pi +
+                                             2. * poly_norm * (1. + np.power((2. * avg['X2'] - 1.) / poly_xt,
+                                                                             poly_alpha) / (poly_alpha + 1.)) +
+                                             (2. * poly_alpha * poly_norm * (2. * avg['X2'] - 1.) * np.power(
+                                                 (2. * avg['X2'] - 1.) / poly_xt, poly_alpha - 1.)) / (
+                                                         (1. + poly_alpha) * poly_xt) -
+                                                         (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']))
 
-  ND = avg['LBZ_sigma1_rt'].shape[0]
-  rtype,rspin,rname = run_name.split("/")
-  start, end = qui[rtype][rname][rspin]
+  ND = avg['t'].shape[0]
   # I can rely on this for now
-  start = int(start)//5
-  end = int(end)//5
+  start = int(avg['avg_start'])//5
+  end = int(avg['avg_end'])//5
 
-  
   # Perform average and conversion
-  new_avg = {}
   for key in avg.keys():
-    if "_tht" in key:
-      new_avg[key[:-1]] = np.mean(avg[key][start:end,:], axis=0)*to_th*geom['gdet'][iBZ,:hdr['n2']//2]
-  avg = {**avg, **new_avg}
+    if "100_th" in key:
+      avg[key] *= geom['gdet'][iBZ,:]*hdr['dx3']*to_dth_bz
+    if "100_thphi" in key:
+      for i in range(hdr['n3']):
+        avg[key][:,i] *= to_dth_bz
+    if "5_th" in key:
+      avg[key] *= geom['gdet'][iBZ,:]*hdr['dx3']*to_dth_5
+    if "5_thphi" in key:
+      for i in range(hdr['n3']):
+        avg[key][:,i] *= to_dth_5
+
+  avg['th100'] = geom['th'][iBZ,:,0]
+  avg['hth100'] = geom['th'][iBZ,:hdr['n2']//2,0]
+  avg['th5'] = geom['th'][i_of(5),:,0]
+  
+#  dth = hdr['dx2']/to_dth_bz
+#   sigmax = sigma_cut1[0][0]
+#   sigmin = sigma_cut1[0][1]
+#   for flux,lum in [['FE_EM', 'LBZ'], ['FE', 'Ltot']]:
+#     print("Compare {} Sigma > 1 cut {} to integrated value {}".format(lum,
+#       np.mean(avg[lum+'_sigma1_rt'][start:end,iBZ]),
+#       (np.sum(avg[flux+'_100_th'][:sigmax]*dth[:sigmax]) + np.sum(avg[flux+'_100_th'][sigmin:]*dth[sigmin:]))))
 
   # L_th
   fig, axes = plt.subplots(2,2, figsize=(FIGX, FIGY))
 
   # Plot Luminosity contribution (incl. KE) as a fn of theta at r=100
   ax = axes[0,0]
-  ax.plot(avg['th'], avg['Ltot_th'], color='xkcd:pink', label=r"$L_{tot}$ (r = "+rstring+")")
-  ax.plot(avg['th'], avg['LBZ_th'], color='xkcd:cyan', label=r"$L_{BZ}$ (r = "+rstring+")")
-  
-  prop = np.sum(avg['Ltot_th'][np.where(avg['Ltot_th'] > 0)])/np.max(avg['Ltot_th'])
-  Ltot_th_acc = [np.sum(avg['Ltot_th'][:n])/prop for n in range(hdr['n2']//2)]
-  LBZ_th_acc = [np.sum(avg['LBZ_th'][:n])/prop for n in range(hdr['n2']//2)]
-  ax.plot(avg['th'], Ltot_th_acc, 'C3', label=r"Accumulated $L_{tot}$ (r = "+rstring+")")
-  ax.plot(avg['th'], LBZ_th_acc, 'C8', label=r"Accumulated $L_{BZ}$ (r = "+rstring+")")
-  
+  ax.plot(avg['hth100'], avg['FE_100_th'][:hdr['n2']//2], color='C1', label=r"$FE_{tot}$ (r = "+rstring+")")
+  ax.plot(avg['hth100'], avg['FE_EM_100_th'][:hdr['n2']//2], color='C2', label=r"$FE_{EM}$ (r = "+rstring+")")
+  ax.plot(avg['hth100'], avg['FE_Fl_100_th'][:hdr['n2']//2], color='C3', label=r"$FE_{Fl}$ (r = "+rstring+")")
+
+#   prop = np.sum(avg['Ltot_th'][np.where(avg['Ltot_th'] > 0)])/np.max(avg['Ltot_th'])
+#   Ltot_th_acc = [np.sum(avg['Ltot_th'][:n])/prop for n in range(hdr['n2']//2)]
+#   LBZ_th_acc = [np.sum(avg['LBZ_th'][:n])/prop for n in range(hdr['n2']//2)]
+#   ax.plot(avg['th100'], Ltot_th_acc, 'C3', label=r"Accumulated $L_{tot}$ (r = "+rstring+")")
+#   ax.plot(avg['th100'], LBZ_th_acc, 'C8', label=r"Accumulated $L_{BZ}$ (r = "+rstring+")")
+
   ax.axhline(0.0, color='k', linestyle=':')
-  
-  # Add axis marked with theta
-#   def x2_to_theta(x2): return 180*geom['th'][iBZ,int(x2*hdr['n2']),0]/np.pi
-#   formatterX = FuncFormatter(lambda x, pos: '{0:g}'.format(x2_to_theta(x)) if x2_to_theta(x) > 5 else '')
-# 
-#   ax2 = ax.twiny()
-#   ax2.set_xlim(ax.get_xlim())
-#   ax2.xaxis.set_major_formatter(formatterX)
 
-  ymax = 1.1*max(np.max(np.abs(avg['Ltot_th'])), np.max(np.abs(avg['LBZ_th'])))
-  #ymin = 1e-4*ymax
-  ymin = -0.2*ymax
-  #ymax = 0.1
-  #ymin = -0.1
+  ymax = 1.1*max(np.max(avg['FE_100_th']), np.max(avg['FE_EM_100_th']))
+  ymin = 1e-2
+  ax.set_ylim([ymin, ymax])
+  ax.set_yscale('log')
 
-  ax.vlines(avg['th'][sigma_cut1], ymin, ymax, colors='C2', label="Sigma > 1 Cut")
+  ax.vlines(avg['th100'][sigma_cut1], ymin, ymax, colors='xkcd:blue', label="Sigma > 1 Cut")
+  ax.vlines(avg['th100'][be_nob0_cut], ymin, ymax, colors='xkcd:purple', label="Be > 0.02 Cut")
+  ax.vlines(avg['th100'][be_nob1_cut], ymin, ymax, colors='xkcd:green', label="Be > 1.0 Cut")
 
-  ax.vlines(avg['th'][be_nob0_cut], ymin, ymax, colors='C6', label="Be > 0.02 Cut")
-  ax.vlines(avg['th'][be_nob1_cut], ymin, ymax, colors='C7', label="Be > 1.0 Cut")
-
-  #ax.vlines(avg['th'][rur_cut], ymin, ymax, colors='C8')
-
-  # Legend
   ax.legend(loc='upper right')
   
-  ax.set_ylim([ymin, ymax])
-  #ax.set_yscale('log')
-  
   ax = axes[0,1]
-  ax.plot(avg['th'], avg['RHO_g_th'], color='xkcd:purple', label=r"$\rho$ (r = "+rstring+")")
+  ax.plot(avg['hth100'], avg['FL_100_th'][:hdr['n2']//2], color='C1', label=r"FL (r = "+rstring+")")
+  ax.plot(avg['hth100'], avg['FL_EM_100_th'][:hdr['n2']//2], color='C2', label=r"FL (r = "+rstring+")")
+  ax.plot(avg['hth100'], avg['FL_Fl_100_th'][:hdr['n2']//2], color='C3', label=r"FL (r = "+rstring+")")
+  
+  ymax = 1.1*max(np.max(avg['FL_100_th']), np.max(avg['FL_EM_100_th']))
+  ymin = 1e-2
+  ax.set_ylim([ymin, ymax])
+  ax.set_yscale('log')
+
+  ax.vlines(avg['th100'][sigma_cut1], ymin, ymax, colors='xkcd:blue', label="Sigma > 1 Cut")
+  ax.vlines(avg['th100'][be_nob0_cut], ymin, ymax, colors='xkcd:purple', label="Be > 0.02 Cut")
+  ax.vlines(avg['th100'][be_nob1_cut], ymin, ymax, colors='xkcd:green', label="Be > 1.0 Cut")
+  
+  
   ax.legend(loc='upper left')
   
   ax = axes[1,0]
-  ax.plot(avg['th'], avg['FM_g_th'], color='xkcd:green', label=r"Mass flux (r = "+rstring+")")
-  ax.plot(avg['th'], avg['FE_g_th'], color='xkcd:orange', label=r"Energy flux (r = "+rstring+")")
-  ax.legend(loc='upper left')
-  
-  ax = axes[1,1]
-  ax.plot(avg['th'], np.mean(avg['FL_g_tht'][1500:,:], axis=0), color='xkcd:blue', label=r"L flux (r = "+rstring+")")
+  ax.plot(avg['th100'], avg['RHO_100_th'], color='xkcd:purple', label=r"$\rho$ (r = "+rstring+")")
+  ax.set_yscale('log')
   ax.legend(loc='upper left')
 
   plt.savefig(run_name.replace("/", "_") + '_L_th.png')
   plt.close(fig)
+  
+  fig, ax = plt.subplots(2,2,figsize=(FIGX, FIGY))
+  bplt.plot_thphi(ax[0,0], geom, np.log10(avg['FE_100_thphi']), iBZ, label = "FE 2D Slice r="+rstring)
+  overlay_thphi_contours(ax[0,0], geom, 100)
+  bplt.plot_thphi(ax[0,1], geom, np.log10(avg['FM_100_thphi']), iBZ, label = "FM 2D Slice r="+rstring)
+  overlay_thphi_contours(ax[0,1], geom, 100)
+  bplt.plot_thphi(ax[1,0], geom, np.log10(avg['FL_100_thphi']), iBZ, label = "FL 2D Slice r="+rstring)
+  overlay_thphi_contours(ax[1,0], geom, 100)
+  bplt.plot_thphi(ax[1,1], geom, np.log10(avg['RHO_100_thphi']), iBZ, label = "RHO 2D Slice r="+rstring)
+  overlay_thphi_contours(ax[1,1], geom, 100)
+  
+  plt.savefig(run_name.replace("/", "_") + '_L_100_thphi.png')
+  plt.close(fig)
+  
+  fig, ax = plt.subplots(2,2,figsize=(FIGX, FIGY))
+  bplt.plot_thphi(ax[0,0], geom, np.log10(avg['FE_5_thphi']), i_of(5), label = "FE 2D Slice r=5")
+  overlay_thphi_contours(ax[0,0], geom, 5)
+  bplt.plot_thphi(ax[0,1], geom, np.log10(avg['FM_5_thphi']), i_of(5), label = "FM 2D Slice r=5")
+  overlay_thphi_contours(ax[0,1], geom, 5)
+  bplt.plot_thphi(ax[1,0], geom, np.log10(avg['FL_5_thphi']), i_of(5), label = "FL 2D Slice r=5")
+  overlay_thphi_contours(ax[1,0], geom, 5)
+  bplt.plot_thphi(ax[1,1], geom, np.log10(avg['RHO_5_thphi']), i_of(5), label = "RHO 2D Slice r=5")
+  overlay_thphi_contours(ax[1,1], geom, 5)
+  
+  plt.savefig(run_name.replace("/", "_") + '_L_5_thphi.png')
+  plt.close(fig)
+  
+  fig, ax = plt.subplots(2,2,figsize=(FIGX, FIGY))
+  bplt.plot_xz(ax[0,0], geom, np.log10(avg['FE_rth']), label = "FE 2D Slice")
+  overlay_rth_contours(ax[0,0], geom)
+  bplt.plot_xz(ax[0,1], geom, np.log10(avg['FM_rth']), label = "FM 2D Slice")
+  overlay_rth_contours(ax[0,1], geom)
+  bplt.plot_xz(ax[1,0], geom, np.log10(avg['FL_rth']), label = "FL 2D Slice")
+  overlay_rth_contours(ax[1,0], geom)
+  bplt.plot_xz(ax[1,1], geom, np.log10(avg['RHO_rth']), label = "RHO 2D Slice")
+  overlay_rth_contours(ax[1,1], geom)
+  
+  plt.savefig(run_name.replace("/", "_") + '_L_rth.png')
+  plt.close(fig)
+  
+  
+  
+  
+  
+  
 

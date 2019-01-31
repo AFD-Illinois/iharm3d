@@ -22,10 +22,11 @@ PLOTY = 3
 SIZE = 40
 
 RADS = True
-OMEGA = True
 FLUXES = True
 EXTRAS = True
 DIAGS = True
+OMEGA = True
+FLUX_PROF = False
 
 def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, ylim=None, timelabels=False):
   for i,avg in enumerate(avgs):
@@ -63,32 +64,11 @@ def plot_rads():
   plt.savefig(fname_out + '_ravgs.png')
   plt.close(fig)
 
-def plot_omega():
-  # Omega
-  fig, ax = plt.subplots(2,2, figsize=(FIGX, FIGY))
-  # Renormalize omega to omega/Omega_H for plotting
-  for avg in avgs:
-    if 'omega_th' in avg.keys(): #Then both are
-      avg['omega_th'] *= 4/avg['a']
-      avg['omega_av_th'] *= 4/avg['a']
-  plot_multi(ax[0,0], 'th', 'omega_th', r"$\omega_f$ (EH, single shell)", ylim=[-1,2])
-  plot_multi(ax[0,1], 'th', 'omega_av_th', r"$\omega_f$ (EH, 5-zone average)", ylim=[-1,2])
-
-  # Legend
-  ax[0,0].legend(loc='lower left')
-
-  # Horizontal guidelines
-  for a in ax.flatten():
-    a.axhline(0.5, linestyle='--', color='k')
-
-  plt.savefig(fname_out + '_omega.png')
-  plt.close(fig)
-
 def plot_fluxes():
   fig,ax = plt.subplots(5,1, figsize=(FIGX, 5*PLOTY))
 
   plot_multi(ax[0],'t','Mdot', r"$|\dot{M}|$")
-  plot_multi(ax[1],'t','Phi', r"$\Phi$")
+  plot_multi(ax[1],'t','Phi_b', r"$\Phi$")
 
   for avg in avgs:
     if 'Ldot' in avg.keys():
@@ -115,9 +95,9 @@ def plot_fluxes():
   plot_multi(ax[0], 't', 'Mdot', r"$|\dot{M}|$")
 
   for avg in avgs:
-    if 'Phi' in avg.keys():
-      avg['phi'] = avg['Phi']/np.sqrt(np.fabs(avg['Mdot']))
-  plot_multi(ax[1], 't', 'phi', r"$\frac{\Phi}{\sqrt{|\dot{M}|}}$")
+    if 'Phi_b' in avg.keys():
+      avg['phi_b'] = avg['Phi_b']/np.sqrt(np.fabs(avg['Mdot']))
+  plot_multi(ax[1], 't', 'phi_b', r"$\frac{\Phi}{\sqrt{|\dot{M}|}}$")
 
   for avg in avgs:
     if 'Ldot' in avg.keys():
@@ -179,6 +159,45 @@ def plot_diags():
   plt.savefig(fname_out + '_diagnostics.png')
   plt.close(fig)
 
+def plot_omega():
+  # Omega
+  fig, ax = plt.subplots(2,2, figsize=(FIGX, FIGY))
+  # Renormalize omega to omega/Omega_H for plotting
+  for avg in avgs:
+    if 'omega_th' in avg.keys(): #Then both are
+      avg['omega_th'] *= 4/avg['a']
+      avg['omega_av_th'] *= 4/avg['a']
+      avg['th_prof'] = avg['th_eh'][:len(avg['th_eh'])//2]
+  plot_multi(ax[0,0], 'th_prof', 'omega_th', r"$\omega_f$ (EH, single shell)", ylim=[-1,2])
+  plot_multi(ax[0,1], 'th_prof', 'omega_av_th', r"$\omega_f$ (EH, 5-zone average)", ylim=[-1,2])
+
+  # Legend
+  ax[0,0].legend(loc='lower left')
+
+  # Horizontal guidelines
+  for a in ax.flatten():
+    a.axhline(0.5, linestyle='--', color='k')
+
+  plt.savefig(fname_out + '_omega.png')
+  plt.close(fig)
+
+def plot_flux_profs():
+  # For converting to theta
+  Xgeom = np.zeros((4,1,geom['n2']))
+  Xgeom[1] = geom['r'][iBZ,:,0]
+  Xgeom[2] = geom['th'][iBZ,:,0]
+  to_th = dxdX_to_KS(Xgeom, Met.FMKS, geom)
+
+  # Legend
+  ax[0,0].legend(loc='lower left')
+
+  # Horizontal guidelines
+  for a in ax.flatten():
+    a.axhline(0.5, linestyle='--', color='k')
+
+  plt.savefig(fname_out + '_omega.png')
+  plt.close(fig)
+
 if __name__ == "__main__":
   if len(sys.argv) < 3:
     util.warn('Format: python eht_plot.py analysis_output [analysis_output ...] [labels_list] image_name')
@@ -216,8 +235,10 @@ if __name__ == "__main__":
     styles = ['k']
     
   if RADS: plot_rads()
-  if OMEGA: plot_omega()
   if FLUXES: plot_fluxes()
   if EXTRAS: plot_extras()
   if DIAGS: plot_diags()
+  if OMEGA: plot_omega()
+  if len(avgs) == 1:
+    if FLUX_PROF: plot_flux_profs()
 

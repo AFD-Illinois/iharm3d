@@ -179,7 +179,12 @@ def plot(n):
       bplt.plot_slices(ax_flux[0], ax_flux[1], geom, dump['bsq']/dump['RHO'] - 100,
                        vmin=-100, vmax=100, cmap='RdBu_r')
       bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
-      
+
+    elif movie_type == "luminosity":
+      # TODO add measures of all floors' efficacy.  Record ceilings in header or extras?
+      bplt.plot_slices(ax_flux[0], ax_flux[1], geom, dump['bsq']/dump['RHO'] - 100,
+                       vmin=-100, vmax=100, cmap='RdBu_r')
+      bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
 
   # TODO enlarge plots w/o messing up even pixel count
   pad = 0.05

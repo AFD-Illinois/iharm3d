@@ -14,6 +14,15 @@ from scipy.integrate import trapz
 
 # Get xz slice of 3D data
 def flatten_xz(array, patch_pole=False, average=False):
+  if array.ndim == 2:
+    N1 = array.shape[0]
+    N2 = array.shape[1]
+    flat = np.zeros([2*N1,N2])
+    for i in range(N1):
+      flat[i,:] = array[N1 - 1 - i,:]
+      flat[i+N1,:] = array[i,:]
+    return flat
+  
   N1 = array.shape[0]; N2 = array.shape[1]; N3 = array.shape[2]
   flat = np.zeros([2*N1,N2])
   if average:
@@ -36,15 +45,21 @@ def flatten_xz(array, patch_pole=False, average=False):
 
 # Get xy slice of 3D data
 def flatten_xy(array, average=False, loop=True):
+  if array.ndim == 2:
+    return array
+  
   if average:
     slice = np.mean(array, axis=1)
   else:
     slice = array[:,array.shape[1]//2,:]
   
   if loop:
-    return np.vstack((slice.transpose(),slice.transpose()[0])).transpose()
+    return loop_phi(slice)
   else:
     return slice
+
+def loop_phi(array):
+  return np.vstack((array.transpose(),array.transpose()[0])).transpose()
 
 # Plotting fns: pass dump file and var as either string (key) or ndarray
 # Note integrate option overrides average
@@ -147,6 +162,38 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
       # BH silhouette
       circle1=plt.Circle((0,0), geom['r_eh'], color='k');
       ax.add_artist(circle1)
+
+  ax.set_aspect('equal')
+
+  if cbar:
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(mesh, cax=cax, ticks=ticks)
+
+  if label:
+    ax.set_title(label)
+
+def plot_thphi(ax, geom, var, r_i, cmap='jet', vmin=None, vmax=None, window=None,
+            cbar=True, label=None, xlabel=True, ylabel=True,
+            ticks=None, arrayspace=False, average=False, integrate=False, bh=True):
+
+  radius = geom['r'][r_i,0,0]
+  max_th = geom['n2']//2
+  x = loop_phi(geom['x'][r_i,:max_th,:])
+  y = loop_phi(geom['y'][r_i,:max_th,:])
+  var = loop_phi(var[:max_th,:])
+
+  if window is None:
+    window = [-radius, radius, -radius, radius]
+
+  #print 'xshape is ', x.shape, ', yshape is ', y.shape, ', varshape is ', var.shape
+  mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
+      shading='gouraud')
+
+  if xlabel: ax.set_xlabel(r"$x \frac{c^2}{G M}$")
+  if ylabel: ax.set_ylabel(r"$y \frac{c^2}{G M}$")
+  if window:
+    ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
 
   ax.set_aspect('equal')
 

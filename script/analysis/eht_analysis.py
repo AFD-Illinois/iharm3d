@@ -62,6 +62,15 @@ else:
   if len(sys.argv) > 5:
     tend = float(sys.argv[5])
 
+if tstart > 0 or tend < 10000:
+  outfname = "eht_out_{}_{}.p".format(tstart,tend)
+else:
+  outfname = "eht_out.p"
+
+# This file is deleted or moved if intended to be replaced
+if os.path.exists(outfname):
+  exit(0)
+
 dumps = io.get_dumps_list(path)
 ND = len(dumps)
 
@@ -130,7 +139,7 @@ def avg_dump(n):
     out['t'] = n
 
   if out['t'] < tstart or out['t'] > tend:
-    print("Loaded {} / {}: {} (SKIPPED)".format((n+1), len(dumps), out['t']))
+    #print("Loaded {} / {}: {} (SKIPPED)".format((n+1), len(dumps), out['t']))
     return out
   else:
     print("Loaded {} / {}: {}".format((n+1), len(dumps), out['t']))
@@ -152,6 +161,10 @@ def avg_dump(n):
   rho_ur = dump['RHO']*dump['ucon'][:,:,:,1]
   sigma = dump['bsq']/dump['RHO']
 
+  # These only twice; eliminate soon
+  rur = geom['r']*dump['ucon'][:,:,:,1]
+  gamma = get_gamma(geom, dump)
+
   # SHELL AVERAGES (only for t >= tavg_start usu. tmax/2 to end)
   if out['t'] >= tavg_start and out['t'] <= tavg_end:
 
@@ -169,40 +182,29 @@ def avg_dump(n):
     # THETA AVERAGES
     # TODO TODO Actually result in X2 profiles.  Multiply by dth/dX2 to complete the theta profiles
     Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
-    out['omega_th'] = theta_av(geom, Fcov01, iEH, 1) / theta_av(geom, Fcov13, iEH, 1)
-    out['omega_av_th'] = theta_av(geom, Fcov01, iEH, 5) / theta_av(geom, Fcov13, iEH, 5)
+    out['omega_hth'] = theta_av(geom, Fcov01, iEH, 1) / theta_av(geom, Fcov13, iEH, 1)
+    out['omega_av_hth'] = theta_av(geom, Fcov01, iEH, 5) / theta_av(geom, Fcov13, iEH, 5)
 
     # This produces much worse results
     #out['omega_alt_th'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
     #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
   # Flux profiles for jet power
+  profiles = {'RHO': dump['RHO'], 'bsq' : dump['bsq'], 'U' : dump['UU'], 'ut' : dump['ucov'][:,:,:,0], 'uphi' : dump['ucov'][:,:,:,3],
+              'FM' : rho_ur, 'FE' : -tfull_rt, 'FE_EM' : -tem_rt, 'FE_Fl' : -tfl_rt, 'FL' : tfull_rphi, 'FL_EM' : tem_rphi, 'FL_Fl' : tfl_rphi,
+              'sigma' : sigma, 'Be_b' : be_b, 'Be_nob' : be_nob, 'rur' : rur, 'gamma' : gamma}
+  
   zones_av=5
-  out['LBZ_tht'] = theta_av(geom, -tem_rt, iBZ, zones_av)
-  out['Ltot_tht'] = theta_av(geom, -tfull_rt - rho_ur, iBZ, zones_av)
 
-  out['RHO_tht'] = theta_av(geom, dump['RHO'], iBZ, zones_av)
-  out['bsq_tht'] = theta_av(geom, dump['bsq'], iBZ, zones_av)
-  out['U_tht'] = theta_av(geom, dump['UU'], iBZ, zones_av)
-  out['ut_tht'] = theta_av(geom, dump['ucov'][:,:,:,0], iBZ, zones_av)
-  out['uphi_tht'] = theta_av(geom, dump['ucov'][:,:,:,3], iBZ, zones_av)
-  
-  out['FM_tht'] = theta_av(geom, rho_ur, iBZ, zones_av)
-  
-  out['FE_tht'] = theta_av(geom, -tfull_rt, iBZ, zones_av)
-  out['FE_EM_tht'] = theta_av(geom, -tem_rt, iBZ, zones_av)
-  out['FE_Fl_tht'] = theta_av(geom, -tfl_rt, iBZ, zones_av)
-  
-  out['FL_tht'] = theta_av(geom, tfull_rphi, iBZ, zones_av)
-  out['FL_EM_tht'] = theta_av(geom, tem_rphi, iBZ, zones_av)
-  out['FL_Fl_tht'] = theta_av(geom, tfl_rphi, iBZ, zones_av)
-
-
-  # Easy way to add the overall averages TODO broken when split into jobs
-#   if out['t'] >= tavg_start and out['t'] <= tavg_end:
-#     for tag in ['LBZ_th','Ltot_th','RHO_th','FM_th','FE_th','FL_th']:
-#       if tag+'t' in out:
-#         out[tag] = out[tag+'t']
+  for key in profiles.keys():
+    out[key+'_5_tht'] = np.sum(profiles[key][i_of(5)], axis=-1)
+    out[key+'_100_tht'] = np.sum(profiles[key][iBZ], axis=-1)
+    if out['t'] >= tavg_start and out['t'] <= tavg_end:
+      out[key+'_5_th'] = out[key+'_5_tht']
+      out[key+'_5_thphi'] = profiles[key][i_of(5),:,:]
+      out[key+'_100_th'] = out[key+'_100_tht']
+      out[key+'_100_thphi'] = profiles[key][iBZ,:,:]
+      out[key+'_rth'] = profiles[key].mean(axis=-1)
 
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
@@ -211,9 +213,9 @@ def avg_dump(n):
     # B1 will be in the _vector_ coordinates.  Must perform the integral in those instead of zone coords
     # Some gymnastics were done to keep in-memory size small
     dxEH = np.einsum("i,...ij->...j", np.array([0, geom['dx1'], geom['dx2'], geom['dx3']]), np.linalg.inv(geom['vec_to_grid'][iEH,:,:,:]))
-    out['Phi'] = 0.5*norm * np.sum( np.fabs(dump['B1'][iEH,:,:]) * geom['gdet_vec'][iEH,:,None]*dxEH[:,None,2]*dxEH[:,None,3], axis=(0,1) )
+    out['Phi_b'] = 0.5*norm * np.sum( np.fabs(dump['B1'][iEH,:,:]) * geom['gdet_vec'][iEH,:,None]*dxEH[:,None,2]*dxEH[:,None,3], axis=(0,1) )
   else:
-    out['Phi'] = 0.5*norm*sum_shell(geom, np.fabs(dump['B1']), at_zone=iEH)
+    out['Phi_b'] = 0.5*norm*sum_shell(geom, np.fabs(dump['B1']), at_zone=iEH)
 
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
@@ -233,10 +235,10 @@ def avg_dump(n):
       out['FM_r'] = -sum_shell(geom, rho_ur, mask=(sigma_shaped < 10))
   else:
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      out['FM_r'] = -sum_shell(geom, rho_ur)
-      out['Mdot'] = out['FM_r'][iF]
+      out['FM_r'] = sum_shell(geom, rho_ur)
+      out['Mdot'] = -out['FM_r'][iF]
     else:
-      out['Mdot'] = sum_shell(geom, -rho_ur, at_zone=iF)
+      out['Mdot'] = -sum_shell(geom, rho_ur, at_zone=iF)
 
   out['Ldot'] = sum_shell(geom, tfull_rphi, at_zone=iF)
 
@@ -274,11 +276,9 @@ def avg_dump(n):
     out['LBZ_be_nob1_rt'] = sum_shell(geom, lbz, mask=(be_nob > 1.0))
     out['Ltot_be_nob1_rt'] = sum_shell(geom, ltot, mask=(be_nob > 1.0))
     
-    rur = geom['r']*dump['ucon'][:,:,:,1]
     out['LBZ_rur_rt'] = sum_shell(geom, lbz, mask=(rur > 1.0))
     out['Ltot_rur_rt'] = sum_shell(geom, ltot, mask=(rur > 1.0))
     
-    gamma = get_gamma(geom, dump)
     out['LBZ_gamma_rt'] = sum_shell(geom, lbz, mask=(gamma > 1.5))
     out['Ltot_gamma_rt'] = sum_shell(geom, ltot, mask=(gamma > 1.5))
     
@@ -317,7 +317,7 @@ if debug:
   out_list = [avg_dump(n) for n in range(len(dumps))]
 else:
   # PARALLEL: TODO put in util.py
-  nthreads = util.calc_nthreads(hdr, pad=0.3)
+  nthreads = util.calc_nthreads(hdr, pad=0.2)
   pool = multiprocessing.Pool(nthreads)
   try:
     # Map the above function to the dump numbers, returning a list of 'out' dicts
@@ -329,19 +329,13 @@ else:
     pool.close()
     pool.join()
 
-# Compute the indices for averaging time
-def n_of(t, default=None):
-  for n in range(ND):
-    # Stop when we hit time or run out of dumps we were assigned
-    if out_list[n]['t'] > t:
-      return n-1
-  return default
+# TODO this properly some other day
+nstart, nmin, nmax, nend = int(tstart)//5, int(tavg_start)//5, int(tavg_end)//5, int(tend)//5
 
-nstart, nmin, nmax, nend = n_of(tstart), n_of(tavg_start), n_of(tavg_end, default=ND), n_of(tend)
 full_avg_range = nmax - nmin
+
 if nmin < nstart: nmin = nstart
 if nmin > nend: nmin = nend
-
 if nmax < nstart: nmax = nstart
 if nmax > nend: nmax = nend
 
@@ -351,26 +345,42 @@ print("nstart = {}, nmin = {}, nmax = {} nend = {}".format(nstart,nmin,nmax,nend
 
 # Make a dict for merged variables
 out_full = {}
+out_full['a'] = hdr['a']
 # Toss in the common geom lists and our weight in the overall average
-N2 = hdr['n2']
 out_full['r'] = geom['r'][:,hdr['n2']//2,0]
+
+# For quick angular plots. Note most will need geometry to convert from dX2 to dth
+out_full['th_eh'] = geom['th'][iEH,:hdr['n2']//2,0]
+out_full['th_5'] = geom['th'][i_of(5),:,0]
+out_full['th_100'] = geom['th'][iBZ,:,0]
+
+out_full['phi'] = geom['phi'][0,hdr['n2']//2,:]
+
+out_full['avg_start'] = tavg_start
+out_full['avg_end'] = tavg_end
 out_full['avg_w'] = my_avg_range / full_avg_range
+print("Will weight averages by {}".format(out_full['avg_w']))
 
 # Merge the output dicts
-print(out_list[nmin].keys())
+#print(out_list[nmin].keys())
 for key in list(out_list[nmin].keys()):
   if key[-2:] == '_r' or key[-3:] == '_rt':
-    out_full[key] = np.zeros((ND, out_full['r'].size)) # 1D only trick
+    out_full[key] = np.zeros((ND, hdr['n1']))
     for n in range(ND):
       if key in out_list[n]:
         out_full[key][n,:] = out_list[n][key]
-  elif key[-3:] == '_th' or key[-4:] == '_tht':
+  elif key[-4:] == '_hth' or key[-5:] == '_htht':
     out_full[key] = np.zeros((ND, hdr['n2']//2))
     for n in range(ND):
       if key in out_list[n]:
         out_full[key][n,:] = out_list[n][key]
+  elif key[-3:] == '_th' or key[-4:] == '_tht':
+    out_full[key] = np.zeros((ND, hdr['n2']))
+    for n in range(ND):
+      if key in out_list[n]:
+        out_full[key][n,:] = out_list[n][key]
   elif key[-4:] == '_rth' or key[-5:] == '_rtht':
-    out_full[key] = np.zeros((ND, hdr['n1'], hdr['n2']//2))
+    out_full[key] = np.zeros((ND, hdr['n1'], hdr['n2']))
     for n in range(ND):
       if key in out_list[n]:
         out_full[key][n,:,:] = out_list[n][key]
@@ -382,22 +392,23 @@ for key in list(out_list[nmin].keys()):
   else:
     out_full[key] = np.zeros(ND)
     for n in range(ND):
-      out_full[key][n] = out_list[n][key]
+      if key in out_list[n]:
+        out_full[key][n] = out_list[n][key]
 
 # Average items with certain names.  Note suffixing 't' keeps the full NDxN1 or NDxN2/2 array
 for key in out_full:
   if key[-2:] == '_r' or key[-3:] == '_th':
-    out_full[key] = (out_full[key][nmin:,:]).mean(axis=0)
+    out_full[key] = (out_full[key][nmin:nmax,:]).mean(axis=0)
   elif key[-4:] == '_rth' or key[-6:] == '_thphi':
-    out_full[key] = (out_full[key][nmin:,:,:]).mean(axis=0)
+    out_full[key] = (out_full[key][nmin:nmax,:,:]).mean(axis=0)
 
 # Compat/completeness stuff
 out_full['mdot'] = out_full['Mdot']
-out_full['phi'] = out_full['Phi']/np.sqrt(out_full['Mdot'])
-out_full['a'] = hdr['a']
+out_full['phi_b'] = out_full['Phi_b']/np.sqrt(out_full['Mdot'])
+
+#print(out_full.keys())
 
 # OUTPUT
-if tstart > 0 or tend < 10000:
-  pickle.dump(out_full, open("eht_out_{}_{}.p".format(tstart,tend), "wb"))
-else:
-  pickle.dump(out_full, open("eht_out.p", "wb"))
+with open(outfname, "wb") as outf:
+  print("Writing {}".format(outfname))
+  pickle.dump(out_full, outf)
