@@ -49,7 +49,12 @@ def load_all(fname, **kwargs):
 # For cutting on time without loading everything
 def get_dump_time(fname):
   dfile = h5py.File(fname, 'r')
-  t = dfile['t'][()]
+
+  if 't' in dfile.keys():
+    t = dfile['t'][()]
+  else:
+    t = 0
+
   dfile.close()
   return t
 
@@ -171,7 +176,6 @@ def load_geom(hdr, path):
   # Useful stuff for direct access in geom. TODO r_isco if available
   for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim', 'metric']:
     geom[key] = hdr[key]
-  # TODO not all non-cart metrics are KS
   if hdr['metric'] in ["MKS", "MMKS", "FMKS"]:
     for key in ['r_eh', 'r_in', 'r_out', 'a', 'hslope']:
       geom[key] = hdr[key]
@@ -181,6 +185,7 @@ def load_geom(hdr, path):
   elif hdr['metric'] in ["MKS3"]:
     for key in ['r_eh']:
       geom[key] = hdr[key]
+    geom['r_out'] = geom['r'][-1,hdr['n2']//2,0]
 
   # these get used interchangeably and I don't care
   geom['x'] = geom['X']

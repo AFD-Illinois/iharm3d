@@ -121,7 +121,7 @@ iEmax = i_of(40)
 # BZ luminosity
 # 100M seems like the standard measuring spot (or at least, BHAC does it that way)
 # L_BZ seems constant* after that, but much higher within ~50M
-if hdr['r_out'] < 100:
+if geom['r_out'] < 100 or geom['r'][-1,geom['n2']//2,0] < 100: # If in theory or pracice the sim is small...
   iBZ = i_of(40) # most SANEs
 else:
   iBZ = i_of(100) # most MADs
