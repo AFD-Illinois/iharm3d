@@ -10,7 +10,7 @@ from analysis_fns import *
 import hdf5_to_dict as io
 import util
 
-import sys
+import os, sys
 import multiprocessing
 import psutil
 import pickle
@@ -62,15 +62,6 @@ else:
   if len(sys.argv) > 5:
     tend = float(sys.argv[5])
 
-if tstart > 0 or tend < 10000:
-  outfname = "eht_out_{}_{}.p".format(tstart,tend)
-else:
-  outfname = "eht_out.p"
-
-# This file is deleted or moved if intended to be replaced
-if os.path.exists(outfname):
-  exit(0)
-
 dumps = io.get_dumps_list(path)
 ND = len(dumps)
 
@@ -95,6 +86,17 @@ if tstart is None:
 
 if tend is None:
   tend = io.get_dump_time(dumps[-1])+1
+
+# Now we know the times we know what filename we'll produce
+if tstart > 0 or tend < 10000:
+  outfname = "eht_out_{}_{}.p".format(tstart,tend)
+else:
+  outfname = "eht_out.p"
+# ...and whether it exists
+# This file is deleted or moved if intended to be replaced
+if os.path.exists(outfname):
+  print("Output file exists: {}".format(outfname))
+  exit(0)
 
 # Decide where to measure fluxes
 def i_of(rcoord):
@@ -121,7 +123,7 @@ iEmax = i_of(40)
 # BZ luminosity
 # 100M seems like the standard measuring spot (or at least, BHAC does it that way)
 # L_BZ seems constant* after that, but much higher within ~50M
-if geom['r_out'] < 100 or geom['r'][-1,geom['n2']//2,0] < 100: # If in theory or pracice the sim is small...
+if geom['r_out'] < 100 or geom['r'][-1,geom['n2']//2,0] < 100: # If in theory or practice the sim is small...
   iBZ = i_of(40) # most SANEs
 else:
   iBZ = i_of(100) # most MADs
@@ -140,47 +142,19 @@ def avg_dump(n):
 
   if out['t'] < tstart or out['t'] > tend:
     #print("Loaded {} / {}: {} (SKIPPED)".format((n+1), len(dumps), out['t']))
+    # Still return the time
     return out
   else:
     print("Loaded {} / {}: {}".format((n+1), len(dumps), out['t']))
     dump = io.load_dump(dumps[n], hdr, geom, extras=False)
 
-  # Variables that will be referenced a bunch
-  tem_rt = TEM_mixed(dump, 1, 0)
-  tem_rphi = TEM_mixed(dump, 1, 3)
-  tfl_rt = TFl_mixed(dump, 1, 0)
-  tfl_rphi = TFl_mixed(dump, 1, 3)
-  tfull_rt = T_mixed(dump, 1, 0)
-  tfull_rphi = T_mixed(dump, 1, 3)
-  be_b = bernoulli(dump, with_B=True)
-  be_nob = bernoulli(dump, with_B=False)
-  
-  Pg = (hdr['gam']-1.)*dump['UU']
-  B = np.sqrt(dump['bsq'])
-
-  rho_ur = dump['RHO']*dump['ucon'][:,:,:,1]
-  sigma = dump['bsq']/dump['RHO']
-
-  # These only twice; eliminate soon
-  rur = geom['r']*dump['ucon'][:,:,:,1]
-  gamma = get_gamma(geom, dump)
-
-  # SHELL AVERAGES (only for t >= tavg_start usu. tmax/2 to end)
+  # EHT Radial profiles: special fn for profile, averaged over phi, 1/3 theta, time
   if out['t'] >= tavg_start and out['t'] <= tavg_end:
-
-    out['rho_r'] = eht_profile(geom, dump['RHO'], jmin, jmax)
-    out['Theta_r'] = eht_profile(geom, Pg/dump['RHO'], jmin, jmax)
-    out['B_r'] = eht_profile(geom, B, jmin, jmax)
-
-    Pb = dump['bsq']/2
-    out['Pg_r'] = eht_profile(geom, Pg, jmin, jmax)
-    out['Ptot_r'] = eht_profile(geom, Pg + Pb, jmin, jmax)
-    out['betainv_r'] = eht_profile(geom, Pb/Pg, jmin, jmax)
-
-    out['uphi_r'] = eht_profile(geom, dump['ucon'][:,:,:,3], jmin, jmax)
+    for var in ['rho', 'Theta', 'B', 'Pg', 'Ptot', 'beta', 'u^phi', 'u_phi']:
+      out[var+'_r'] = eht_profile(geom, d_fns[var](dump), jmin, jmax)
 
     # THETA AVERAGES
-    # TODO TODO Actually result in X2 profiles.  Multiply by dth/dX2 to complete the theta profiles
+    # These are divided averages, not average of division, so not amenable to d_fns
     Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
     out['omega_hth'] = theta_av(geom, Fcov01, iEH, 1) / theta_av(geom, Fcov13, iEH, 1)
     out['omega_av_hth'] = theta_av(geom, Fcov01, iEH, 5) / theta_av(geom, Fcov13, iEH, 5)
@@ -190,21 +164,16 @@ def avg_dump(n):
     #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
   # Flux profiles for jet power
-  profiles = {'RHO': dump['RHO'], 'bsq' : dump['bsq'], 'U' : dump['UU'], 'ut' : dump['ucov'][:,:,:,0], 'uphi' : dump['ucov'][:,:,:,3],
-              'FM' : rho_ur, 'FE' : -tfull_rt, 'FE_EM' : -tem_rt, 'FE_Fl' : -tfl_rt, 'FL' : tfull_rphi, 'FL_EM' : tem_rphi, 'FL_Fl' : tfl_rphi,
-              'sigma' : sigma, 'Be_b' : be_b, 'Be_nob' : be_nob, 'rur' : rur, 'gamma' : gamma}
-  
   zones_av=5
-
-  for key in profiles.keys():
-    out[key+'_5_tht'] = np.sum(profiles[key][i_of(5)], axis=-1)
-    out[key+'_100_tht'] = np.sum(profiles[key][iBZ], axis=-1)
+  for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'betagamma']: #'u_t', 'u_phi', 'FL', 'FL_EM', 'FL_Fl'
+    #out[var+'_5_tht'] = np.sum(d_fns[var](dump)[i_of(5)], axis=-1)
+    out[var+'_100_tht'] = np.sum(d_fns[var](dump)[iBZ], axis=-1)
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      out[key+'_5_th'] = out[key+'_5_tht']
-      out[key+'_5_thphi'] = profiles[key][i_of(5),:,:]
-      out[key+'_100_th'] = out[key+'_100_tht']
-      out[key+'_100_thphi'] = profiles[key][iBZ,:,:]
-      out[key+'_rth'] = profiles[key].mean(axis=-1)
+      #out[var+'_5_th'] = out[var+'_5_tht']
+      #out[var+'_5_thphi'] = d_fns[var](dump)[i_of(5),:,:]
+      out[var+'_100_th'] = out[var+'_100_tht']
+      out[var+'_100_thphi'] = d_fns[var](dump)[iBZ,:,:]
+      out[var+'_rth'] = d_fns[var](dump).mean(axis=-1)
 
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
@@ -220,81 +189,37 @@ def avg_dump(n):
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
   # EHT normalization has both these values positive
-  if out['t'] >= tavg_start and out['t'] <= tavg_end:
-    out['FE_r'] = sum_shell(geom, -tfull_rt)
-    out['Edot'] = out['FE_r'][iF]
-  else:
-    out['Edot'] = sum_shell(geom, -tfull_rt, at_zone=iF)
-
-  if floor_workaround_funnel:
-    # TODO implement all of this with 'mask='?
-    mdot_full = rho_ur[iF,:,:]*geom['gdet'][iF,:,None]*hdr['dx2']*hdr['dx3']
-    sigma_shaped = dump['bsq'][iF,:,:]/dump['RHO'][iF,:,:]
-    out['Mdot'] = (mdot_full[np.where(sigma_shaped < 10)]).sum()
+  for var,flux in [['Edot','FE'],['Mdot','FM'],['Ldot','FL']]:
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      out['FM_r'] = -sum_shell(geom, rho_ur, mask=(sigma_shaped < 10))
-  else:
-    if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      out['FM_r'] = sum_shell(geom, rho_ur)
-      out['Mdot'] = -out['FM_r'][iF]
-    else:
-      out['Mdot'] = -sum_shell(geom, rho_ur, at_zone=iF)
+      out[flux+'_r'] = sum_shell(geom, d_fns[flux](dump))
+    out[var] = sum_shell(geom, d_fns[flux](dump), at_zone=iF)
+  # Mdot is defined special
+  out['Mdot'] *= -1
 
-  out['Ldot'] = sum_shell(geom, tfull_rphi, at_zone=iF)
-
-  out['sigma_max'] = np.max(sigma)
+  # I'll be curious about other maxes
+  for var in ['sigma']:
+    out[var+'_max'] = np.max(d_fns[var](dump))
 
   # Blandford-Znajek Luminosity L_BZ
-  if debug:
-    # A bunch of radial profiles to test consistency
-    out['LBZ_r'] = sum_shell(geom, -tem_rt, mask=(sigma > 1))
-    out['LBZ'] = out['LBZ_r'][iBZ]
-    
-    mu = (-tfull_rt + rho_ur) / rho_ur
-    out['LBZ_mu2_r'] = sum_shell(geom, -tem_rt, mask=np.logical_or(sigma > 1, mu > 2))
-    out['LBZ_mu3_r'] = sum_shell(geom, -tem_rt, mask=np.logical_or(sigma > 1, mu > 3))
-    out['LBZ_mu4_r'] = sum_shell(geom, -tem_rt, mask=np.logical_or(sigma > 1, mu > 4))
-  else:
-    # This is a lot of luminosities!
-    #ucon_mean = np.mean(dump['ucon'][:,:,:,1], axis=-1)
-    #out['Ltot'] = sum_shell(geom, tfull_rt + rho_ur, at_zone=iBZ, mask=( (ucon_mean > 1)[:,:,None] ))
-    lbz = -tem_rt
-    ltot = -tfull_rt - rho_ur
+  # This is a lot of luminosities!
+  # TODO cut on phi/t averages too?
+  cuts = {'sigma1' : lambda dump : (d_fns['sigma'](dump) > 1),
+          'sigma10' : lambda dump : (d_fns['sigma'](dump) > 10),
+          'Be_b0' : lambda dump : (d_fns['Be_b'](dump) > 0.02),
+          'Be_b1' : lambda dump : (d_fns['Be_b'](dump) > 1),
+          'Be_nob0' : lambda dump : (d_fns['Be_nob'](dump) > 0.02),
+          'Be_nob1' : lambda dump : (d_fns['Be_nob'](dump) > 1),
+          'bg1' : lambda dump : (d_fns['betagamma'](dump) > 1.0),
+          'bg05' : lambda dump : (d_fns['betagamma'](dump) > 0.5),
+          'allp' : lambda dump : (d_fns['FE'](dump) > 0)}
 
-    out['LBZ_sigma1_rt'] = sum_shell(geom, lbz, mask=(sigma > 1.0))
-    out['Ltot_sigma1_rt'] = sum_shell(geom, ltot, mask=(sigma > 1.0))
-    out['LBZ_sigma10_rt'] = sum_shell(geom, lbz, mask=(sigma > 10.0))
-    out['Ltot_sigma10_rt'] = sum_shell(geom, ltot, mask=(sigma > 10.0))
-    
-    out['LBZ_be_b0_rt'] = sum_shell(geom, lbz, mask=(be_b > 0.02))
-    out['Ltot_be_b0_rt'] = sum_shell(geom, ltot, mask=(be_b > 0.02))
-    out['LBZ_be_b1_rt'] = sum_shell(geom, lbz, mask=(be_b > 1.0))
-    out['Ltot_be_b1_rt'] = sum_shell(geom, ltot, mask=(be_b > 1.0))
-    
-    out['LBZ_be_nob0_rt'] = sum_shell(geom, lbz, mask=(be_nob > 0.02))
-    out['Ltot_be_nob0_rt'] = sum_shell(geom, ltot, mask=(be_nob > 0.02))
-    out['LBZ_be_nob1_rt'] = sum_shell(geom, lbz, mask=(be_nob > 1.0))
-    out['Ltot_be_nob1_rt'] = sum_shell(geom, ltot, mask=(be_nob > 1.0))
-    
-    out['LBZ_rur_rt'] = sum_shell(geom, lbz, mask=(rur > 1.0))
-    out['Ltot_rur_rt'] = sum_shell(geom, ltot, mask=(rur > 1.0))
-    
-    out['LBZ_gamma_rt'] = sum_shell(geom, lbz, mask=(gamma > 1.5))
-    out['Ltot_gamma_rt'] = sum_shell(geom, ltot, mask=(gamma > 1.5))
-    
-    out['LBZ_allp_rt'] = sum_shell(geom, lbz, mask=(ltot > 0.0))
-    out['Ltot_allp_rt'] = sum_shell(geom, ltot, mask=(ltot > 0.0))
-    
-    if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      for tag in ['sigma1', 'sigma10', 'be_b0', 'be_b1', 'be_nob0', 'be_nob1', 'rur', 'gamma', 'allp']:
-        out['LBZ_'+tag+'_r'] = out['LBZ_'+tag+'_rt']
-        out['LBZ_'+tag] = out['LBZ_'+tag+'_r'][iBZ]
-        out['Ltot_'+tag+'_r'] = out['Ltot_'+tag+'_rt']
-        out['Ltot_'+tag] = out['Ltot_'+tag+'_r'][iBZ]
-    else:
-      for tag in ['sigma1', 'sigma10', 'be_b0', 'be_b1', 'be_nob0', 'be_nob1', 'rur', 'gamma', 'allp']:
-        out['LBZ_'+tag] = out['LBZ_'+tag+'_rt'][iBZ]
-        out['Ltot_'+tag] = out['Ltot_'+tag+'_rt'][iBZ]
+  # Terminology: LBZ = E&M only per usual, Lj = full E flux w/ any cut, Ltot = Lj_allp = full luminosity all positive values
+  for lum,flux in [['LBZ', 'FE_EM'], ['Lj', 'FE']]:
+    for cut in cuts.keys():
+      out[lum+'_'+cut+'_rt'] = sum_shell(geom, d_fns[flux](dump), mask=cuts[cut](dump))
+      if out['t'] >= tavg_start and out['t'] <= tavg_end:
+        out[lum+'_'+cut+'_r'] = out[lum+'_'+cut+'_rt']
+      out[lum+'_'+cut] = out[lum+'_'+cut+'_rt'][iBZ]
 
   if calc_lumproxy:
     rho = dump['RHO']
@@ -310,26 +235,37 @@ def avg_dump(n):
     # For an averaged energy profile
     #out['E_r'] = radial_sum(geom, tfull_tt)
 
+  dump.clear()
+  del dump
+  
   return out
 
-if debug:
-  # SERIAL (very slow)
-  out_list = [avg_dump(n) for n in range(len(dumps))]
-else:
-  # PARALLEL: TODO put in util.py
-  nthreads = util.calc_nthreads(hdr, pad=0.2)
-  pool = multiprocessing.Pool(nthreads)
-  try:
-    # Map the above function to the dump numbers, returning a list of 'out' dicts
-    out_list = pool.map_async(avg_dump, list(range(len(dumps)))).get(99999999)
-  except KeyboardInterrupt:
-    pool.terminate()
-    pool.join()
-  else:
-    pool.close()
-    pool.join()
+def merge_dict(n, out, out_full):
+  # Merge the output dicts
+  # TODO write to an HDF5 file incrementally?
+  for key in list(out.keys()):
+    if key not in out_full:
+      if key[-3:] == '_rt':
+        out_full[key] = np.zeros((ND, hdr['n1']))
+      elif key[-5:] == '_htht':
+        out_full[key] = np.zeros((ND, hdr['n2']//2))
+      elif key[-4:] == '_tht':
+        out_full[key] = np.zeros((ND, hdr['n2']))
+      elif key[-5:] == '_rtht':
+        out_full[key] = np.zeros((ND, hdr['n1'], hdr['n2']))
+      elif key[-7:] == '_thphit':
+        out_full[key] = np.zeros((ND, hdr['n2'], hdr['n3']))
+      elif key[-2:] == '_r' or key[-4:] == '_hth' or key[-3:] == '_th' or key[-4:] == '_rth' or key[-6:] == '_thphi':
+        out_full[key] = np.zeros_like(out[key])
+      else:
+        out_full[key] = np.zeros(ND)
+    if key[-2:] == '_r' or key[-4:] == '_hth' or key[-3:] == '_th' or key[-4:] == '_rth' or key[-6:] == '_thphi':
+      # Weight the average correctly for _us_.  Full weighting will be done on merge w/'avg_w'
+      out_full[key] += out[key]/my_avg_range
+    else:
+      out_full[key][n] = out[key]
 
-# TODO this properly some other day
+# TODO this, properly, some other day
 nstart, nmin, nmax, nend = int(tstart)//5, int(tavg_start)//5, int(tavg_end)//5, int(tend)//5
 
 full_avg_range = nmax - nmin
@@ -343,7 +279,7 @@ my_avg_range = nmax - nmin
 
 print("nstart = {}, nmin = {}, nmax = {} nend = {}".format(nstart,nmin,nmax,nend))
 
-# Make a dict for merged variables
+# Make a dict for merged variables, throw in what we know now to make merging easier
 out_full = {}
 out_full['a'] = hdr['a']
 # Toss in the common geom lists and our weight in the overall average
@@ -361,52 +297,19 @@ out_full['avg_end'] = tavg_end
 out_full['avg_w'] = my_avg_range / full_avg_range
 print("Will weight averages by {}".format(out_full['avg_w']))
 
-# Merge the output dicts
-#print(out_list[nmin].keys())
-for key in list(out_list[nmin].keys()):
-  if key[-2:] == '_r' or key[-3:] == '_rt':
-    out_full[key] = np.zeros((ND, hdr['n1']))
-    for n in range(ND):
-      if key in out_list[n]:
-        out_full[key][n,:] = out_list[n][key]
-  elif key[-4:] == '_hth' or key[-5:] == '_htht':
-    out_full[key] = np.zeros((ND, hdr['n2']//2))
-    for n in range(ND):
-      if key in out_list[n]:
-        out_full[key][n,:] = out_list[n][key]
-  elif key[-3:] == '_th' or key[-4:] == '_tht':
-    out_full[key] = np.zeros((ND, hdr['n2']))
-    for n in range(ND):
-      if key in out_list[n]:
-        out_full[key][n,:] = out_list[n][key]
-  elif key[-4:] == '_rth' or key[-5:] == '_rtht':
-    out_full[key] = np.zeros((ND, hdr['n1'], hdr['n2']))
-    for n in range(ND):
-      if key in out_list[n]:
-        out_full[key][n,:,:] = out_list[n][key]
-  elif key[-6:] == '_thphi' or key[-7:] == '_thphit':
-    out_full[key] = np.zeros((ND, hdr['n2'], hdr['n3']))
-    for n in range(ND):
-      if key in out_list[n]:
-        out_full[key][n,:,:] = out_list[n][key]
-  else:
-    out_full[key] = np.zeros(ND)
-    for n in range(ND):
-      if key in out_list[n]:
-        out_full[key][n] = out_list[n][key]
-
-# Average items with certain names.  Note suffixing 't' keeps the full NDxN1 or NDxN2/2 array
-for key in out_full:
-  if key[-2:] == '_r' or key[-3:] == '_th':
-    out_full[key] = (out_full[key][nmin:nmax,:]).mean(axis=0)
-  elif key[-4:] == '_rth' or key[-6:] == '_thphi':
-    out_full[key] = (out_full[key][nmin:nmax,:,:]).mean(axis=0)
+# Fill the output dict with all per-dump or averaged stuff
+# Hopefully in a way that doesn't keep too much of it around in memory
+nthreads = util.calc_nthreads(hdr, pad=0.4)
+util.iter_parallel(avg_dump, merge_dict, out_full, ND, nthreads)
 
 # Compat/completeness stuff
 out_full['mdot'] = out_full['Mdot']
 out_full['phi_b'] = out_full['Phi_b']/np.sqrt(out_full['Mdot'])
 
-#print(out_full.keys())
+# Add divBmax from HARM's own diagnostic output.  We can recompute the rest, but not this
+diag = io.load_log(path)
+out_full['t_d'] = diag['t']
+out_full['divbmax_d'] = diag['divbmax']
 
 # OUTPUT
 with open(outfname, "wb") as outf:

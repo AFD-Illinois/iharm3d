@@ -20,6 +20,14 @@ from analysis_fns import *
 from defs import Loci, Met
 from coordinates import dxdX_to_KS, dxdX_KS_to
 
+class HARMdump(object):
+  def __init__(self, dfname):
+    self.dfile = h5py.File(dfname)
+  def __getitem__(self, name):
+    return d_fns[name](self.dfile)
+  def __del__(self):
+    self.dfile.close()
+
 def get_dumps_list(path):
   # Funny how many names output has
   files_harm = [file for file in glob.glob(os.path.join(path,"*dump*.h5"))]

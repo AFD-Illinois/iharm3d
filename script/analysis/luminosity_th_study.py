@@ -45,28 +45,16 @@ def overlay_thphi_contours(ax, geom, r):
   x = bplt.loop_phi(geom['x'][r_i,:max_th,:])
   y = bplt.loop_phi(geom['y'][r_i,:max_th,:])
   prep = lambda var : bplt.loop_phi(var[:max_th,:])
-  #ax.contour(x,y, prep(avg['ur'+s]), [0.0], colors='k')
   ax.contour(x,y, prep(avg['sigma'+s]), [1.0], colors='xkcd:blue')
-  #ax.contour(x,y, prep(avg['sigma'+s]), [10.0], colors='C3')
-  #ax.contour(x,y, prep(avg['Be_b'+s]), [0.02], colors='C4')
-  #ax.contour(x,y, prep(avg['Be_b'+s]), [1.0], colors='C5')
   ax.contour(x,y, prep(avg['Be_nob'+s]), [0.02], colors='xkcd:purple')
   ax.contour(x,y, prep(avg['Be_nob'+s]), [1.0], colors='xkcd:green')
-  #ax.contour(x,y, prep(avg['rur_100_thphi']), [1.0], color='C8')
-  #ax.contour(x,y, prep(avg['gamma_100_thphi']), [1.5], color='C9')
 
 def overlay_rth_contours(ax, geom):
   s = '_rth'
-  bplt.overlay_contours(ax, geom, geom['th'][:,:,0], [0.5, np.pi-0.5], color='k')
-  #bplt.overlay_contours(ax, geom, avg['ucon'+s][:,:,:,1], [0.0], color='k')
+  bplt.overlay_contours(ax, geom, geom['th'][:,:,0], [1.0, np.pi-1.0], color='k')
   bplt.overlay_contours(ax, geom, avg['sigma'+s], [1.0], color='xkcd:blue')
-  #bplt.overlay_contours(ax, geom, avg['sigma'+s], [10.0], color='C3')
-  #bplt.overlay_contours(ax, geom, avg['Be_b'+s], [0.02], color='C4')
-  #bplt.overlay_contours(ax, geom, avg['Be_b'+s], [1.0], color='C5')
   bplt.overlay_contours(ax, geom, avg['Be_nob'+s], [0.02], color='xkcd:purple')
   bplt.overlay_contours(ax, geom, avg['Be_nob'+s], [1.0], color='xkcd:green')
-  #bplt.overlay_contours(ax, geom, avg['rur'+s], [1.0], color='C8')
-  #bplt.overlay_contours(ax, geom, avg['gamma'+s], [1.5], color='C9')
 
 if __name__ == "__main__":
   run_name = sys.argv[1]
@@ -86,6 +74,8 @@ if __name__ == "__main__":
     rBZ = 100
     rstring = "100"
 
+  print(avg.keys())
+  avg['sigma_100_th'] = avg['bsq_100_th']/avg['rho_100_th']
   sigma_cut1 = cut_pos(avg['sigma_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
   sigma_cut10 = cut_pos(avg['sigma_100_th'][:hdr['n2']//2]/hdr['n3'], 10.0)
  
@@ -123,6 +113,11 @@ if __name__ == "__main__":
                                                          (1. + poly_alpha) * poly_xt) -
                                                          (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']))
 
+  to_dth_bz = 1/to_dth_bz
+  to_dth_5 = 1/to_dth_5
+  
+  
+
   ND = avg['t'].shape[0]
   # I can rely on this for now
   start = int(avg['avg_start'])//5
@@ -144,6 +139,13 @@ if __name__ == "__main__":
   avg['th100'] = geom['th'][iBZ,:,0]
   avg['hth100'] = geom['th'][iBZ,:hdr['n2']//2,0]
   avg['th5'] = geom['th'][i_of(5),:,0]
+  
+  with open("average_"+run_name.replace("/","_")+".dat", "w") as datf:
+    datf.write("# x2 theta dx2/dtheta gdet rho bsq Fem_t Ffl_t F_mass\n")
+    for i in range(hdr['n2']):
+      datf.write("{} {} {} {} {} {} {} {} {}\n".format(avg['X2'][i], avg['th100'][i], to_dth_bz[i], geom['gdet'][iBZ,i],
+                                                       avg['RHO_100_th'][i], avg['bsq_100_th'][i],
+                                                       avg['FE_EM_100_th'][i], avg['FE_Fl_100_th'][i], avg['FM_100_th'][i]))
   
 #  dth = hdr['dx2']/to_dth_bz
 #   sigmax = sigma_cut1[0][0]

@@ -55,22 +55,9 @@ ax.set_title(r"$\log_{10}( -{{T_{EM}}^r}_t )$")
 
 bplt.overlay_contours(ax, geom, geom['r'], [AT_R], color='k')
 
-#bplt.overlay_contours(ax, geom, dump['ucon'][:,:,:,1], [0.0], color='k')
-
 bplt.overlay_contours(ax, geom, dump['sigma'], [1.0], color='C2')
-#bplt.overlay_contours(ax, geom, dump['sigma'], [10.0], color='C3')
-
-#bplt.overlay_contours(ax, geom, dump['be_b'], [0.02], color='C4')
-#bplt.overlay_contours(ax, geom, dump['be_b'], [1.0], color='C5')
 bplt.overlay_contours(ax, geom, dump['be_nob'], [0.02], color='C3')
 bplt.overlay_contours(ax, geom, dump['be_nob'], [1.0], color='C4')
-
-#bplt.overlay_contours(ax, geom, geom['r']*dump['ucon'][:,:,:,1], [1.0], color='C8')
-#bplt.overlay_contours(ax, geom, dump['gamma'], [1.5], color='C9')
-
-
-#bplt.overlay_contours(ax, geom, geom['r']*dump['ucon'][:,:,:,1], [1.0], color='C4')
-#bplt.overlay_contours(ax, geom, dump['gamma'], [1.5], color='C5')
 
 ax = plt.subplot(gs[1,0])
 bplt.plot_xz(ax, geom, np.log10(-dump['Trt']-dump['RHO']*dump['ucon'][:,:,:,1]), arrayspace=USEARRSPACE, average=True, window=window)
@@ -78,34 +65,14 @@ ax.set_title(r"$\log_{10}( -{T^r}_t - \rho u^r )$")
 
 bplt.overlay_contours(ax, geom, geom['r'], [AT_R], color='k')
 
-#bplt.overlay_contours(ax, geom, dump['ucon'][:,:,:,1], [0.0], color='k')
-
 bplt.overlay_contours(ax, geom, dump['sigma'], [1.0], color='C2')
-#bplt.overlay_contours(ax, geom, dump['sigma'], [10.0], color='C3')
-
-#bplt.overlay_contours(ax, geom, dump['be_b'], [0.02], color='C4')
-#bplt.overlay_contours(ax, geom, dump['be_b'], [1.0], color='C5')
 bplt.overlay_contours(ax, geom, dump['be_nob'], [0.02], color='C3')
 bplt.overlay_contours(ax, geom, dump['be_nob'], [1.0], color='C4')
-
-#bplt.overlay_contours(ax, geom, geom['r']*dump['ucon'][:,:,:,1], [1.0], color='C8')
-#bplt.overlay_contours(ax, geom, dump['gamma'], [1.5], color='C9')
-
-# What a god-awful hack.  Better to have preserved it with metadata thru the pipeline but whatever
-# NOTE: a-0.94 384 MAD should be 7000-10000, but due to a bug images were made from 5k, so we average where the images are
-qui = { "MAD" : { "384x192x192_IHARM" : { "a-0.94" : [5000,10000], "a-0.5" : [5000,9000], "a0" : [5000,10000], "a+0.5" : [5000,10000], "a+0.75" : [5000,9000], "a+0.94" : [5000,10000] },
-                  "192x96x96_IHARM" : { "a-0.94" : [5000,10000], "a-0.5" : [5500,10000], "a-0.25" : [6000,9000], "a0" : [5000,8500], "a+0.25" : [6000,10000], "a+0.5" : [5000,10000], "a+0.75" : [6000,10000], "a+0.94" : [5000,10000] },
-                  "288x128x128_gamma53" : { "a+0.94" : [6000,10000] },
-                  "384x192x192_gamma53" : { "a+0.94" : [6000,9990] } # Last dump was not output
-                },
-       "SANE" : { "288x128x128_IHARM" : { "a-0.94" : [6000,9000], "a-0.5" : [5000,8000], "a0" : [5000,10000], "a+0.5" : [3000,5500], "a+0.94" : [3000,6000] },
-                  "192x192x192_IHARM" : { "a+0.5" : [6000,8000], "a+0.94" : [8000,10000] }
-                  }
-      }
+#bplt.overlay_contours(ax, geom, dump['be_nob'], [1.0], color='C5')
 
 ND = avg['LBZ_sigma1_rt'].shape[0]
 rtype,rspin,rname = run_name.split("/")
-start, end = qui[rtype][rname][rspin]
+start, end = [avg['avg_start'], avg['avg_end']]
 # I can rely on this for now
 start = int(start)//5
 end = int(end)//5
@@ -116,15 +83,9 @@ ab_av = lambda var : np.mean(np.abs(var[start:end,:]), axis=0)/mdav
 
 ax = plt.subplot(gs[0,1])
 ax.plot(avg['r'], ab_av(avg['LBZ_sigma1_rt']), label=r"$L_{BZ}$ (sigma > 1 cut)", color='C2')
-#ax.plot(avg['r'], ab_av(avg['LBZ_sigma10_rt']), label=r"$L_{BZ}$ (sigma > 10 cut)", color='C3')
-
-#ax.plot(avg['r'], ab_av(avg['LBZ_be_b0_rt']), label=r"$L_{BZ}$ ($Be_B > 0.02$ cut)", color='C4')
-#ax.plot(avg['r'], ab_av(avg['LBZ_be_b1_rt']), label=r"$L_{BZ}$ ($Be_B > 1.0$ cut)", color='C5')
-ax.plot(avg['r'], ab_av(avg['LBZ_be_nob0_rt']), label=r"$L_{BZ}$ ($Be > 0.02$ cut)", color='C3')
-ax.plot(avg['r'], ab_av(avg['LBZ_be_nob1_rt']), label=r"$L_{BZ}$ ($Be > 1.0$ cut)", color='C4')
-
-#ax.plot(avg['r'], ab_av(avg['LBZ_rur_rt']), label=r"$L_{BZ}$ (r*u^r cut)", color='C8')
-#ax.plot(avg['r'], ab_av(avg['LBZ_gamma_rt']), label=r"$L_{BZ}$ (gamma cut)", color='C9')
+ax.plot(avg['r'], ab_av(avg['LBZ_Be_nob0_rt']), label=r"$L_{BZ}$ ($Be > 0.02$ cut)", color='C3')
+ax.plot(avg['r'], ab_av(avg['LBZ_Be_nob1_rt']), label=r"$L_{BZ}$ ($Be > 1.0$ cut)", color='C4')
+ax.plot(avg['r'], ab_av(avg['LBZ_bg1_rt']), label=r"$L_{BZ}$ ($\beta\gamma > 1.0$ cut)", color='C5')
 
 ax.set_title(r"$L_{BZ} = \int -{{T_{EM}}^r}_t \sqrt{-g} dx^{\theta} dx^{\phi}$")
 ax.set_xlim([0,SIZE])
@@ -142,16 +103,10 @@ if "SANE" in run_name:
 ax.legend(loc='upper right')
 
 ax = plt.subplot(gs[1,1])
-ax.plot(avg['r'], ab_av(avg['Ltot_sigma1_rt']), label=r"$L_{tot}$ (sigma > 1 cut)", color='C2')
-#ax.plot(avg['r'], ab_av(avg['Ltot_sigma10_rt']), label=r"$L_{tot}$ (sigma > 10 cut)", color='C3')
-
-#ax.plot(avg['r'], ab_av(avg['Ltot_be_b0_rt']), label=r"$L_{tot}$ ($Be_B > 0.02$ cut)", color='C4')
-#ax.plot(avg['r'], ab_av(avg['Ltot_be_b1_rt']), label=r"$L_{tot}$ ($Be_B > 1.0$ cut)", color='C5')
-ax.plot(avg['r'], ab_av(avg['Ltot_be_nob0_rt']), label=r"$L_{tot}$ ($Be > 0.02$ cut)", color='C3')
-ax.plot(avg['r'], ab_av(avg['Ltot_be_nob1_rt']), label=r"$L_{tot}$ ($Be > 1.0$ cut)", color='C4')
-
-#ax.plot(avg['r'], ab_av(avg['Ltot_rur_rt']), label=r"$L_{tot}$ (r*u^r cut)", color='C8')
-#ax.plot(avg['r'], ab_av(avg['Ltot_gamma_rt']), label=r"$L_{tot}$ (gamma cut)", color='C9')
+ax.plot(avg['r'], ab_av(avg['Lj_sigma1_rt']), label=r"$L_{tot}$ (sigma > 1 cut)", color='C2')
+ax.plot(avg['r'], ab_av(avg['Lj_Be_nob0_rt']), label=r"$L_{tot}$ ($Be > 0.02$ cut)", color='C3')
+ax.plot(avg['r'], ab_av(avg['Lj_Be_nob1_rt']), label=r"$L_{tot}$ ($Be > 1.0$ cut)", color='C4')
+ax.plot(avg['r'], ab_av(avg['Lj_bg_rt']), label=r"$L_{tot}$ ($\beta\gamma > 1.0$ cut)", color='C5')
 
 ax.set_title(r"$L_{tot} = \int (-{T^r}_t - \rho u^r) \sqrt{-g} dx^{\theta} dx^{\phi}$")
 ax.set_xlim([0,SIZE])

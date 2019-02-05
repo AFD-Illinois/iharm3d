@@ -16,6 +16,7 @@ import matplotlib.gridspec as gridspec
 import os, sys
 import pickle
 import numpy as np
+from _ast import Or
 
 # Movie size in inches. Keep 16/9 for standard-size movies
 FIGX = 24
@@ -41,6 +42,12 @@ diag_post = True
 
 def plot(n):
   imname = os.path.join(FRAMEDIR, 'frame_%08d.png' % n)
+  if os.path.exists(imname):
+    return
+  tdump = io.get_dump_time(files[n])
+  if (tstart is not None and tdump < tstart) or (tend is not None and tdump > tend):
+    return
+  
   print('%08d / ' % (n+1) + '%08d' % len(files))
 
   fig = plt.figure(figsize=(FIGX, FIGY))
@@ -74,7 +81,7 @@ def plot(n):
     ax_flux = [fig.subplot(gs[1,:])]
     bplt.plot_slices(ax_slc[0], ax_slc[1], geom, dump, np.log10(dump['RHO']),
                      label=r"$\log_{10}(\rho)$", vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
-    bplt.diag_plot(ax_flux[0], diag, 'phi', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI, xlabel=False)
+    bplt.diag_plot(ax_flux[0], diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI, xlabel=False)
   elif movie_type == "simple":
     # Simple movie: RHO mdot phi
     gs = gridspec.GridSpec(3, 2, height_ratios=[4, 1, 1])
@@ -83,7 +90,7 @@ def plot(n):
     bplt.plot_slices(ax_slc[0], ax_slc[1], geom, dump, np.log10(dump['RHO']),
                      label=r"$\log_{10}(\rho)$", vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
     bplt.diag_plot(ax_flux[0], diag, 'mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
-    bplt.diag_plot(ax_flux[1], diag, 'phi', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
+    bplt.diag_plot(ax_flux[1], diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
   elif movie_type == "radial":
 
     rho_r = eht_profile(geom, dump['RHO'], jmin, jmax)
@@ -117,7 +124,7 @@ def plot(n):
                        label=r"$\beta$", vmin=-2, vmax=2, cmap='RdBu_r')
       # FLUXES
       bplt.diag_plot(ax_flux(2), diag, 'mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
-      bplt.diag_plot(ax_flux(4), diag, 'phi', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
+      bplt.diag_plot(ax_flux(4), diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
       # Mixins:
       # Zoomed in RHO
       bplt.plot_slices(ax_slc(7), ax_slc(8), geom, dump, np.log10(dump['RHO']),
@@ -155,7 +162,7 @@ def plot(n):
 
       # Usual fluxes for reference
       bplt.diag_plot(ax_flux[1], diag, 'mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
-      #bplt.diag_plot(ax_flux[3], diag, 'phi', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
+      #bplt.diag_plot(ax_flux[3], diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
 
       # Radial conservation plots
       E_r = sum_shell(geom,Tmixed(geom, dump, 0,0))
@@ -198,9 +205,17 @@ if __name__ == "__main__":
   if sys.argv[1] == '-d':
     debug = True
     path = sys.argv[2]
+    if len(sys.argv) > 3:
+      tstart = float(sys.argv[3])
+    if len(sys.argv) > 4:
+      tend = float(sys.argv[4])
   else:
     debug = False
     path = sys.argv[1]
+    if len(sys.argv) > 2:
+      tstart = float(sys.argv[2])
+    if len(sys.argv) > 3:
+      tend = float(sys.argv[3])
   
   # LOAD FILES
   files = io.get_dumps_list(path)

@@ -52,12 +52,15 @@ def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, ylim=
 
 def plot_rads():
   fig, ax = plt.subplots(2,3, figsize=(FIGX, FIGY))
-  plot_multi(ax[0,0], 'r', 'rho_r', r"$<\rho>$", logy=True, ylim=[1.e-2, 1.e0])
-  plot_multi(ax[0,1], 'r', 'Pg_r', r"$<P_g>$", logy=True, ylim=[1.e-6, 1.e-2])
-  plot_multi(ax[0,2], 'r', 'B_r', r"$<|B|>$", logy=True, ylim=[1.e-4, 1.e-1])
-  plot_multi(ax[1,0], 'r', 'uphi_r', r"$<u^{\phi}>$", logy=True, ylim=[1.e-3, 1.e1])
-  plot_multi(ax[1,1], 'r', 'Ptot_r', r"$<P_{tot}>$", logy=True, ylim=[1.e-6, 1.e-2])
-  plot_multi(ax[1,2], 'r', 'betainv_r', r"$<\beta^{-1}>$", logy=True, ylim=[1.e-2, 1.e1])
+  for avg in avgs:
+    if 'beta_r' in avg:
+      avg['betainv_r'] = 1/avg['beta_r']
+  plot_multi(ax[0,0], 'r', 'rho_r', r"$<\rho>$", logy=True) #, ylim=[1.e-2, 1.e0])
+  plot_multi(ax[0,1], 'r', 'Pg_r', r"$<P_g>$", logy=True) #, ylim=[1.e-6, 1.e-2])
+  plot_multi(ax[0,2], 'r', 'B_r', r"$<|B|>$", logy=True) #, ylim=[1.e-4, 1.e-1])
+  plot_multi(ax[1,0], 'r', 'u^phi_r', r"$<u^{\phi}>$", logy=True) #, ylim=[1.e-3, 1.e1])
+  plot_multi(ax[1,1], 'r', 'Ptot_r', r"$<P_{tot}>$", logy=True) #, ylim=[1.e-6, 1.e-2])
+  plot_multi(ax[1,2], 'r', 'betainv_r', r"$<\beta^{-1}>$", logy=True) #, ylim=[1.e-2, 1.e1])
 
   ax[0,2].legend(loc='lower left')
 
@@ -133,7 +136,7 @@ def plot_extras():
 
   for avg in avgs:
     if 'LBZ' in avg.keys():
-      avg['aLBZ'] = np.abs(avg['LBZ'])
+      avg['aLBZ'] = np.abs(avg['LBZ_sigma1'])
   plot_multi(ax[2], 't', 'aLBZ', "BZ Luminosity", timelabels=True)
 
   for avg in avgs:
@@ -152,6 +155,7 @@ def plot_diags():
 
   plot_multi(ax[0], 't', 'Etot', "Total E")
   plot_multi(ax[1], 't', 'sigma_max', r"$\sigma_{max}$")
+  # TODO include HARM's own diagnostics somehow? Re-insert just this one?
   plot_multi(ax[2], 't_d', 'divbmax_d', "max divB", timelabels=True)
   
   ax[0].legend(loc='lower left')
@@ -165,11 +169,10 @@ def plot_omega():
   # Renormalize omega to omega/Omega_H for plotting
   for avg in avgs:
     if 'omega_th' in avg.keys(): #Then both are
-      avg['omega_th'] *= 4/avg['a']
-      avg['omega_av_th'] *= 4/avg['a']
-      avg['th_prof'] = avg['th_eh'][:len(avg['th_eh'])//2]
-  plot_multi(ax[0,0], 'th_prof', 'omega_th', r"$\omega_f$ (EH, single shell)", ylim=[-1,2])
-  plot_multi(ax[0,1], 'th_prof', 'omega_av_th', r"$\omega_f$ (EH, 5-zone average)", ylim=[-1,2])
+      avg['omega_hth'] *= 4/avg['a']
+      avg['omega_av_hth'] *= 4/avg['a']
+  plot_multi(ax[0,0], 'th_eh', 'omega_hth', r"$\omega_f$/$\Omega_H$ (EH, single shell)", ylim=[-1,2])
+  plot_multi(ax[0,1], 'th_eh', 'omega_av_hth', r"$\omega_f$/$\Omega_H$ (EH, 5-zone average)", ylim=[-1,2])
 
   # Legend
   ax[0,0].legend(loc='lower left')
@@ -184,18 +187,24 @@ def plot_omega():
 def plot_flux_profs():
   # For converting to theta
   Xgeom = np.zeros((4,1,geom['n2']))
-  Xgeom[1] = geom['r'][iBZ,:,0]
-  Xgeom[2] = geom['th'][iBZ,:,0]
-  to_th = dxdX_to_KS(Xgeom, Met.FMKS, geom)
+  Xgeom[1] = avg['r'][iBZ]
+  Xgeom[2] = avg['th_100']
+  to_th = 1/dxdX_to_KS(Xgeom, Met.FMKS, geom)[2,2,1]
+
+  for avg in avgs:
+    if 'FE_100_th' in avg.keys(): # Then all are
+      avg['FE_100_th'] *= to_th
+      avg['FE_Fl_100_th'] *= to_th
+      avg['FE_EM_100_th'] *= to_th
+
+  plot_multi(ax[0,0], 'th_100', 'FE_100_th', r"$\frac{dFE}{d\theta}$ ($r = 100$)")
+  plot_multi(ax[0,1], 'th_100', 'FE_Fl_100_th', r"$\frac{dFE_{Fl}}{d\theta}$ ($r = 100$)")
+  plot_multi(ax[1,0], 'th_100', 'FE_EM_100_th', r"$\frac{dFE_{EM}}{d\theta}$ ($r = 100$)")
 
   # Legend
   ax[0,0].legend(loc='lower left')
 
-  # Horizontal guidelines
-  for a in ax.flatten():
-    a.axhline(0.5, linestyle='--', color='k')
-
-  plt.savefig(fname_out + '_omega.png')
+  plt.savefig(fname_out + '_flux_profs.png')
   plt.close(fig)
 
 if __name__ == "__main__":

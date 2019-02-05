@@ -16,7 +16,7 @@ for fname in sys.argv[1:]:
 num_keys = [len(avg.keys()) for avg in avgs]
 avg_max_keys = num_keys.index(max(num_keys))
 
-direct_list = ['fname', 'a', 'r', 'th', 'th_bh', 'th_5', 'th_bz', 'avg_start', 'avg_end']
+direct_list = ['fname', 'a', 'r', 'th', 'th_bh', 'th_5', 'th_100', 'phi', 'avg_start', 'avg_end', 't']
 keys_to_sum = [key for key in avgs[avg_max_keys].keys() if key not in direct_list]
 
 uni = {}
@@ -25,7 +25,7 @@ for key in keys_to_sum:
   for avg in avgs:
     if key in avg:
       # Keep track of averages w/weights, otherwise just sum since everything's time-dependent
-      if key[-2:] == '_r' or key[-3:] == '_th' or key[-4:] == '_rth' or key[-6:] == '_thphi':
+      if key[-2:] == '_r' or key[-3:] == '_th' or key[-4:] == '_hth' or key[-4:] == '_rth' or key[-6:] == '_thphi':
         uni[key] += avg[key]*avg['avg_w']
       else:
         uni[key] += avg[key]

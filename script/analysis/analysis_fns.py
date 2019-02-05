@@ -4,6 +4,35 @@
 
 import numpy as np
 
+# Define a dict of names, coupled with the functions required to obtain their variables.
+# That way, we only need to specify lists and final operations below,
+# AND don't need to cart all these things around in memory
+d_fns = {'rho': lambda dump: dump['RHO'],
+               'bsq' : lambda dump: dump['bsq'],
+               'sigma' : lambda dump: dump['bsq'] / dump['RHO'],
+               'U' : lambda dump: dump['UU'],
+               'Theta' : lambda dump: (dump['hdr']['gam'] - 1.) * dump['UU']/dump['RHO'],
+               'u_t' : lambda dump: dump['ucov'][:, :, :, 0],
+               'u_phi' : lambda dump: dump['ucov'][:, :, :, 3],
+               'u^phi' : lambda dump: dump['ucon'][:, :, :, 3],
+               'FM' : lambda dump: dump['RHO'] * dump['ucon'][:, :, :, 1],
+               'FE' : lambda dump: -T_mixed(dump, 1, 0),
+               'FE_EM' : lambda dump: -TEM_mixed(dump, 1, 0),
+               'FE_Fl' : lambda dump: -TFl_mixed(dump, 1, 0),
+               'FL' : lambda dump: T_mixed(dump, 1, 3),
+               'FL_EM' : lambda dump: TEM_mixed(dump, 1, 3),
+               'FL_Fl' : lambda dump: TFl_mixed(dump, 1, 3),
+               'Be_b' : lambda dump: bernoulli(dump, with_B=True),
+               'Be_nob' : lambda dump: bernoulli(dump, with_B=False),
+               'Pg' : lambda dump: (dump['hdr']['gam'] - 1.) * dump['UU'],
+               'Pb' : lambda dump: dump['bsq'] / 2,
+               'Ptot' : lambda dump: d_fns['Pg'](dump) + d_fns['Pb'](dump),
+               'beta' : lambda dump: dump['beta'],
+               'B' : lambda dump: np.sqrt(dump['bsq']),
+               'betagamma' : lambda dump: np.sqrt((d_fns['FE_EM'](dump) + d_fns['FE_Fl'](dump))/d_fns['FM'](dump) - 1)
+               }
+               #'rur' : lambda dump: geom['r']*dump['ucon'][:,:,:,1],
+               #'gamma' : lambda dump: get_gamma(geom, dump)}
 
 ## Physics functions ##
 
