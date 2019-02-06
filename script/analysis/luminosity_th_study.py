@@ -79,13 +79,10 @@ if __name__ == "__main__":
   sigma_cut1 = cut_pos(avg['sigma_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
   sigma_cut10 = cut_pos(avg['sigma_100_th'][:hdr['n2']//2]/hdr['n3'], 10.0)
  
-  be_b0_cut = cut_pos(avg['Be_b_100_th'][:hdr['n2']//2]/hdr['n3'], 0.02)
-  be_b1_cut = cut_pos(avg['Be_b_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
-  be_nob0_cut = cut_pos(avg['Be_nob_100_th'][:hdr['n2']//2]/hdr['n3'], 0.02)
-  be_nob1_cut = cut_pos(avg['Be_nob_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
- 
-  rur_cut = cut_pos(avg['rur_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
-  gamma_cut = cut_pos(avg['gamma_100_th'][:hdr['n2']//2]/hdr['n3'], 1.5)
+  #be_b0_cut = cut_pos(avg['Be_b_100_th'][:hdr['n2']//2]/hdr['n3'], 0.02)
+  #be_b1_cut = cut_pos(avg['Be_b_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
+  #be_nob0_cut = cut_pos(avg['Be_nob_100_th'][:hdr['n2']//2]/hdr['n3'], 0.02)
+  #be_nob1_cut = cut_pos(avg['Be_nob_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
   
   # For converting to theta someday
 #   Xgeom = np.zeros((4,1,geom['n2']))
@@ -178,8 +175,8 @@ if __name__ == "__main__":
   ax.set_yscale('log')
 
   ax.vlines(avg['th100'][sigma_cut1], ymin, ymax, colors='xkcd:blue', label="Sigma > 1 Cut")
-  ax.vlines(avg['th100'][be_nob0_cut], ymin, ymax, colors='xkcd:purple', label="Be > 0.02 Cut")
-  ax.vlines(avg['th100'][be_nob1_cut], ymin, ymax, colors='xkcd:green', label="Be > 1.0 Cut")
+  #ax.vlines(avg['th100'][be_nob0_cut], ymin, ymax, colors='xkcd:purple', label="Be > 0.02 Cut")
+  #ax.vlines(avg['th100'][be_nob1_cut], ymin, ymax, colors='xkcd:green', label="Be > 1.0 Cut")
 
   ax.legend(loc='upper right')
   
@@ -194,8 +191,8 @@ if __name__ == "__main__":
   ax.set_yscale('log')
 
   ax.vlines(avg['th100'][sigma_cut1], ymin, ymax, colors='xkcd:blue', label="Sigma > 1 Cut")
-  ax.vlines(avg['th100'][be_nob0_cut], ymin, ymax, colors='xkcd:purple', label="Be > 0.02 Cut")
-  ax.vlines(avg['th100'][be_nob1_cut], ymin, ymax, colors='xkcd:green', label="Be > 1.0 Cut")
+  #ax.vlines(avg['th100'][be_nob0_cut], ymin, ymax, colors='xkcd:purple', label="Be > 0.02 Cut")
+  #ax.vlines(avg['th100'][be_nob1_cut], ymin, ymax, colors='xkcd:green', label="Be > 1.0 Cut")
   
   
   ax.legend(loc='upper left')

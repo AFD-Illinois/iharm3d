@@ -285,6 +285,8 @@ def load_dump(fname, hdr, geom, derived_vars=True, extras=True):
 def load_log(path):
   # TODO specify log name in dumps, like grid
   logfname = os.path.join(path,"log.out")
+  if not os.path.exists(logfname):
+    return None
   dfile = np.loadtxt(logfname).transpose()
   
   # TODO log should probably have a header

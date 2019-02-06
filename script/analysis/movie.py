@@ -30,25 +30,18 @@ MAD = True
 LOG_MDOT = False
 LOG_PHI = False
 
-# Choose between several predefined layouts below
-# For keeping around lots of possible movies with same infrastructure
-# simplest simpler simple traditional e_ratio conservation floors
-movie_type = "traditional"
-
-FRAMEDIR = "FRAMES"
-
 # Load diagnostic data from post-processing (eht_out.p)
 diag_post = True
 
 def plot(n):
-  imname = os.path.join(FRAMEDIR, 'frame_%08d.png' % n)
+  imname = os.path.join(frame_dir, 'frame_%08d.png' % n) # TODO replace?  No?
   if os.path.exists(imname):
     return
   tdump = io.get_dump_time(files[n])
   if (tstart is not None and tdump < tstart) or (tend is not None and tdump > tend):
     return
   
-  print('%08d / ' % (n+1) + '%08d' % len(files))
+  print("{} / {}".format((n+1),len(files)))
 
   fig = plt.figure(figsize=(FIGX, FIGY))
 
@@ -111,7 +104,113 @@ def plot(n):
     bplt.radial_plot(ax_slc(4), geom, uphi_r, ylabel=r"$<u^{\phi}>$", logy=True, ylim=[1.e-3, 1.e1])
     bplt.radial_plot(ax_slc(5), geom, Ptot_r, ylabel=r"$<P_{tot}>$", logy=True, ylim=[1.e-6, 1.e-2])
     bplt.radial_plot(ax_slc(6), geom, betainv_r, ylabel=r"$<\beta^{-1}>$", logy=True, ylim=[1.e-2, 1.e1])
+  
+  elif movie_type == "fluxes_cap":
     
+    if hdr['r_out'] < 100:
+      iBZ = i_of(geom,40) # most SANEs
+      rBZ = 40
+      rstring = "40"
+    else:
+      iBZ = i_of(geom,100) # most MADs
+      rBZ = 100
+      rstring = "100"
+    
+    Xgeom = np.zeros((4,1,geom['n2']))
+    Xgeom[1] = geom['X1'][iBZ,:,0]
+    Xgeom[2] = geom['X2'][iBZ,:,0]
+    to_dth = dxdX_KS_to(Xgeom, Met.FMKS, geom)[2,2,0]
+    
+    axes = [plt.subplot(2, 2, i) for i in range(1,5)]
+    rstring = str(geom['r'][iBZ,0,0])
+    bplt.plot_thphi(axes[0], geom, np.log10(d_fns['FE'](dump)[iBZ,:,:]), iBZ, label = "FE 2D Slice r="+rstring)
+    bplt.plot_thphi(axes[1], geom, np.log10(d_fns['FM'](dump)[iBZ,:,:]), iBZ, label = "FM 2D Slice r="+rstring)
+    bplt.plot_thphi(axes[2], geom, np.log10(d_fns['FL'](dump)[iBZ,:,:]), iBZ, label = "FL 2D Slice r="+rstring)
+    bplt.plot_thphi(axes[3], geom, np.log10(dump['RHO'][iBZ,:,:]), iBZ, label = "RHO 2D Slice r="+rstring)
+    
+    for axis in axes:
+      max_th = geom['n2']//2
+      x = bplt.loop_phi(geom['x'][iBZ,:max_th,:])
+      y = bplt.loop_phi(geom['y'][iBZ,:max_th,:])
+      prep = lambda var : bplt.loop_phi(var[:max_th,:])
+      axis.contour(x,y, prep(diag['bsq_100_thphi']/diag['rho_100_thphi']), [1.0], colors='xkcd:blue')
+      #axis.contour(x,y, prep(diag['Be_nob_100_thphi']), [0.02], colors='xkcd:purple')
+      #axis.contour(x,y, prep(diag['Be_nob_100_thphi']), [1.0], colors='xkcd:green')
+      axis.contour(x,y, prep(diag['betagamma_100_thphi']), [1.0], colors='xkcd:gray')
+      
+      axis.contour(x,y, prep(d_fns['sigma'](dump)[iBZ]), [1.0], colors='xkcd:blue')
+      #axis.contour(x,y, prep(d_fns['Be_nob'](dump)[iBZ]), [0.02], colors='xkcd:purple')
+      #axis.contour(x,y, prep(d_fns['Be_nob'](dump)[iBZ]), [1.0], colors='xkcd:green')
+      axis.contour(x,y, prep(d_fns['betagamma'](dump)[iBZ]), [1.0], colors='xkcd:gray')
+  
+  elif movie_type == "lum_cuts":
+      
+      gs = gridspec.GridSpec(2, 2, width_ratios=[1,2])
+      
+      ax = plt.subplot(gs[0,0])
+      bplt.plot_xz(ax, geom, np.log10(d_fns['FE_EM'](dump)), average=True, window=window)
+      ax.set_title(r"$\log_{10}( -{{T_{EM}}^r}_t )$")
+      
+      bplt.overlay_contours(ax, geom, geom['r'], [AT_R], color='k')
+      
+      bplt.overlay_contours(ax, geom, d_fns['sigma'](dump), [1.0], color='C2')
+      #bplt.overlay_contours(ax, geom, d_fns['Be_nob'](dump), [0.02], color='C3')
+      #bplt.overlay_contours(ax, geom, d_fns['Be_nob'](dump), [1.0], color='C4')
+      bplt.overlay_contours(ax, geom, d_fns['betagamma'](dump), [1.0], color='C5')
+      
+      ax = plt.subplot(gs[1,0])
+      bplt.plot_xz(ax, geom, np.log10(d_fns['FE']), average=True, window=window)
+      ax.set_title(r"$\log_{10}( -{T^r}_t - \rho u^r )$")
+      
+      bplt.overlay_contours(ax, geom, geom['r'], [AT_R], color='k')
+      
+      bplt.overlay_contours(ax, geom, d_fns['sigma'](dump), [1.0], color='C2')
+      #bplt.overlay_contours(ax, geom, d_fns['Be_nob'](dump), [0.02], color='C3')
+      #bplt.overlay_contours(ax, geom, d_fns['Be_nob'](dump), [1.0], color='C4')
+      bplt.overlay_contours(ax, geom, d_fns['betagamma'](dump), [1.0], color='C5')
+      
+      ax = plt.subplot(gs[0,1])
+      ax.plot(avg['r'], avg['LBZ_sigma1_rt'][n], label=r"$L_{BZ}$ (sigma > 1 cut)", color='C2')
+      ax.plot(avg['r'], avg['LBZ_Be_nob0_rt'][n], label=r"$L_{BZ}$ ($Be > 0.02$ cut)", color='C3')
+      ax.plot(avg['r'], avg['LBZ_Be_nob1_rt'][n], label=r"$L_{BZ}$ ($Be > 1.0$ cut)", color='C4')
+      ax.plot(avg['r'], avg['LBZ_bg1_rt'][n], label=r"$L_{BZ}$ ($\beta\gamma > 1.0$ cut)", color='C5')
+      ax.plot(avg['r'], avg['LBZ_allp_rt'][n], label=r"$L_{BZ,tot}$", color='C6')
+      
+      ax.set_title(r"$L_{BZ} = \int -{{T_{EM}}^r}_t \sqrt{-g} dx^{\theta} dx^{\phi}$")
+      ax.set_xlim([0,SIZE])
+      ax.set_xlabel("$r$ (M)")
+      ax.axvline(AT_R, color='k')
+      
+      if "SANE" in run_name:
+        ax.set_ylim([1e-4,1e-1])
+        ax.set_yscale('log')
+      else:
+        ax.set_ylim([1,100])
+        #ax.set_yscale('log')
+      
+      ax.legend(loc='upper right')
+      
+      ax = plt.subplot(gs[1,1])
+      ax.plot(avg['r'], avg['Lj_sigma1_rt'][n], label=r"$L_{jet}$ (sigma > 1 cut)", color='C2')
+      #ax.plot(avg['r'], avg['Lj_Be_nob0_rt'][n], label=r"$L_{jet}$ ($Be > 0.02$ cut)", color='C3')
+      ax.plot(avg['r'], avg['Lj_Be_nob1_rt'][n], label=r"$L_{jet}$ ($Be > 1.0$ cut)", color='C4')
+      # TODO Gamma?
+      ax.plot(avg['r'], avg['Lj_bg1_rt'][n], label=r"$L_{jet}$ ($\beta\gamma > 1.0$ cut)", color='C5')
+      ax.plot(avg['r'], avg['Lj_allp_rt'][n], label=r"$L_{tot}$", color='C6')
+      
+      ax.set_title(r"$L_{tot} = \int (-{T^r}_t - \rho u^r) \sqrt{-g} dx^{\theta} dx^{\phi}$")
+      ax.set_xlim([0,SIZE])
+      ax.set_xlabel("$r$ (M)")
+      ax.axvline(AT_R, color='k')
+      
+      if "SANE" in run_name:
+        ax.set_ylim([1e-4,1e-1])
+        ax.set_yscale('log')
+      else:
+        ax.set_ylim([1,100])
+        #ax.set_yscale('log')
+      ax.legend(loc='lower right')
+  
   else: # All other movie types share a layout
     ax_slc = lambda i: plt.subplot(2, 4, i)
     ax_flux = lambda i: plt.subplot(4, 2, i)
@@ -199,23 +298,28 @@ def plot(n):
 
   plt.savefig(imname, dpi=1920/FIGX)
   plt.close(fig)
+  
+  dump.clear()
+  del dump
 
 if __name__ == "__main__":
   # PROCESS ARGUMENTS
   if sys.argv[1] == '-d':
     debug = True
+    movie_type = sys.argv[2]
+    path = sys.argv[3]
+    if len(sys.argv) > 4:
+      tstart = float(sys.argv[4])
+    if len(sys.argv) > 5:
+      tend = float(sys.argv[5])
+  else:
+    debug = False
+    movie_type = sys.argv[1]
     path = sys.argv[2]
     if len(sys.argv) > 3:
       tstart = float(sys.argv[3])
     if len(sys.argv) > 4:
       tend = float(sys.argv[4])
-  else:
-    debug = False
-    path = sys.argv[1]
-    if len(sys.argv) > 2:
-      tstart = float(sys.argv[2])
-    if len(sys.argv) > 3:
-      tend = float(sys.argv[3])
   
   # LOAD FILES
   files = io.get_dumps_list(path)
@@ -223,7 +327,8 @@ if __name__ == "__main__":
       util.warn("INVALID PATH TO DUMP FOLDER")
       sys.exit(1)
 
-  util.make_dir(FRAMEDIR)
+  frame_dir = "frames_"+movie_type
+  util.make_dir(frame_dir)
 
   hdr = io.load_hdr(files[0])
   geom = io.load_geom(hdr, path)
@@ -238,7 +343,7 @@ if __name__ == "__main__":
     # Load diagnostics from HARM itself
     diag = io.load_log(path)
 
-  nthreads = util.calc_nthreads(hdr, pad=0.25)
+  nthreads = util.calc_nthreads(hdr, pad=0.3)
   if debug:
     # Run sequentially to make backtraces work
     for i in range(len(files)):

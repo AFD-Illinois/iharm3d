@@ -70,14 +70,14 @@ geom = io.load_geom(hdr, path)
 
 # If the time after which to average wasn't given, just use the back half of dumps
 if tavg_start is None:
-  tavg_start = io.load_dump(dumps[ND//2], hdr, geom, derived_vars=False, extras=False)['t'] - 0.1
+  tavg_start = io.get_dump_time(dumps[ND//2]) - 0.1
 # Sometimes we don't know times but want averages
 # This is always when we've converted dumps given only over quiescence, and want averages over all of them
 if tavg_start < 0.:
   tavg_start = 0.
 
 if tavg_end is None:
-  tavg_end = io.load_dump(dumps[ND-1], hdr, geom, derived_vars=False, extras=False)['t']
+  tavg_end = io.get_dump_time(dumps[-1])
 if tavg_end == 0.:
   tavg_end = float(ND)
 
@@ -85,7 +85,7 @@ if tstart is None:
   tstart = 0.
 
 if tend is None:
-  tend = io.get_dump_time(dumps[-1])+1
+  tend = io.get_dump_time(dumps[-1]) + 1
 
 # Now we know the times we know what filename we'll produce
 if tstart > 0 or tend < 10000:
@@ -165,7 +165,7 @@ def avg_dump(n):
 
   # Flux profiles for jet power
   zones_av=5
-  for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'betagamma']: #'u_t', 'u_phi', 'FL', 'FL_EM', 'FL_Fl'
+  for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'betagamma', 'Be_nob']: #'u_t', 'u_phi', 'FL', 'FL_EM', 'FL_Fl'
     #out[var+'_5_tht'] = np.sum(d_fns[var](dump)[i_of(5)], axis=-1)
     out[var+'_100_tht'] = np.sum(d_fns[var](dump)[iBZ], axis=-1)
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
@@ -266,7 +266,12 @@ def merge_dict(n, out, out_full):
       out_full[key][n] = out[key]
 
 # TODO this, properly, some other day
-nstart, nmin, nmax, nend = int(tstart)//5, int(tavg_start)//5, int(tavg_end)//5, int(tend)//5
+if ND < 200:
+  nstart, nmin, nmax, nend = 0, 0, ND-1, ND-1
+elif ND < 300:
+  nstart, nmin, nmax, nend = 0, ND//2, ND-1, ND-1
+else:
+  nstart, nmin, nmax, nend = int(tstart)//5, int(tavg_start)//5, int(tavg_end)//5, int(tend)//5
 
 full_avg_range = nmax - nmin
 
@@ -299,7 +304,7 @@ print("Will weight averages by {}".format(out_full['avg_w']))
 
 # Fill the output dict with all per-dump or averaged stuff
 # Hopefully in a way that doesn't keep too much of it around in memory
-nthreads = util.calc_nthreads(hdr, pad=0.4)
+nthreads = util.calc_nthreads(hdr, pad=0.3)
 util.iter_parallel(avg_dump, merge_dict, out_full, ND, nthreads)
 
 # Compat/completeness stuff
@@ -308,8 +313,11 @@ out_full['phi_b'] = out_full['Phi_b']/np.sqrt(out_full['Mdot'])
 
 # Add divBmax from HARM's own diagnostic output.  We can recompute the rest, but not this
 diag = io.load_log(path)
-out_full['t_d'] = diag['t']
-out_full['divbmax_d'] = diag['divbmax']
+if diag is not None:
+  out_full['t_d'] = diag['t']
+  out_full['divbmax_d'] = diag['divbmax']
+
+# TODO merge with current file here
 
 # OUTPUT
 with open(outfname, "wb") as outf:

@@ -171,6 +171,14 @@ def get_gamma(geom, dump):
                                         gcov[:,:,None,2,3]*U2*U3))
   return np.sqrt(1. + qsq)
 
+# Decide where to measure fluxes
+def i_of(geom, rcoord):
+  i = 0
+  while geom['r'][i,geom['n2']//2,0] < rcoord:
+    i += 1
+  i -= 1
+  return i
+
 ## Sums and Averages ##
   
 # Var must be a 3D array i.e. a grid scalar
