@@ -26,7 +26,6 @@ FIGY = FIGX*9/16
 # Certain plots can override this below
 USEARRSPACE = False
 
-MAD = True
 LOG_MDOT = False
 LOG_PHI = False
 
@@ -52,8 +51,8 @@ def plot(n):
     # Simple movies don't need derived vars
     dump = io.load_dump(files[n], hdr, geom, derived_vars=False, extras=False)
 
-  # Zoom in for SANEs
-  if MAD:
+  # Zoom in for small problems
+  if hdr['r_out'] > 100:
     window = [-40,40,-40,40]
     nlines = 20
     rho_l, rho_h = -3, 2
@@ -86,17 +85,17 @@ def plot(n):
     bplt.diag_plot(ax_flux[1], diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
   elif movie_type == "radial":
 
-    rho_r = eht_profile(geom, dump['RHO'], jmin, jmax)
-    B_r = eht_profile(geom, np.sqrt(dump['bsq']), jmin, jmax)
-    uphi_r = eht_profile(geom, dump['ucon'][:,:,:,3], jmin, jmax)
-    
-    Pg = (hdr['gam']-1.)*dump['UU']
-    Pb = dump['bsq']/2
-    
-    Pg_r = eht_profile(geom, Pg, jmin, jmax)
-    Ptot_r = eht_profile(geom, Pg + Pb, jmin, jmax)
-    betainv_r = eht_profile(geom, Pb/Pg, jmin, jmax)
-    
+#     rho_r = eht_profile(geom, dump['RHO'], jmin, jmax)
+#     B_r = eht_profile(geom, np.sqrt(dump['bsq']), jmin, jmax)
+#     uphi_r = eht_profile(geom, dump['ucon'][:,:,:,3], jmin, jmax)
+#     
+#     Pg = (hdr['gam']-1.)*dump['UU']
+#     Pb = dump['bsq']/2
+#     
+#     Pg_r = eht_profile(geom, Pg, jmin, jmax)
+#     Ptot_r = eht_profile(geom, Pg + Pb, jmin, jmax)
+#     betainv_r = eht_profile(geom, Pb/Pg, jmin, jmax)
+
     ax_slc = lambda i: plt.subplot(2, 3, i)
     bplt.radial_plot(ax_slc(1), geom, rho_r, ylabel=r"$<\rho>$", logy=True, ylim=[1.e-2, 1.e0])
     bplt.radial_plot(ax_slc(2), geom, Pg_r, ylabel=r"$<P_g>$", logy=True, ylim=[1.e-6, 1.e-2])
@@ -192,9 +191,8 @@ def plot(n):
       
       ax = plt.subplot(gs[1,1])
       ax.plot(avg['r'], avg['Lj_sigma1_rt'][n], label=r"$L_{jet}$ (sigma > 1 cut)", color='C2')
-      #ax.plot(avg['r'], avg['Lj_Be_nob0_rt'][n], label=r"$L_{jet}$ ($Be > 0.02$ cut)", color='C3')
+      ax.plot(avg['r'], avg['Lj_Be_nob0_rt'][n], label=r"$L_{jet}$ ($Be > 0.02$ cut)", color='C3')
       ax.plot(avg['r'], avg['Lj_Be_nob1_rt'][n], label=r"$L_{jet}$ ($Be > 1.0$ cut)", color='C4')
-      # TODO Gamma?
       ax.plot(avg['r'], avg['Lj_bg1_rt'][n], label=r"$L_{jet}$ ($\beta\gamma > 1.0$ cut)", color='C5')
       ax.plot(avg['r'], avg['Lj_allp_rt'][n], label=r"$L_{tot}$", color='C6')
       

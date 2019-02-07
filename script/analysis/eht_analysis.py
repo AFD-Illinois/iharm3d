@@ -87,17 +87,6 @@ if tstart is None:
 if tend is None:
   tend = io.get_dump_time(dumps[-1]) + 1
 
-# Now we know the times we know what filename we'll produce
-if tstart > 0 or tend < 10000:
-  outfname = "eht_out_{}_{}.p".format(tstart,tend)
-else:
-  outfname = "eht_out.p"
-# ...and whether it exists
-# This file is deleted or moved if intended to be replaced
-if os.path.exists(outfname):
-  print("Output file exists: {}".format(outfname))
-  exit(0)
-
 # Decide where to measure fluxes
 def i_of(rcoord):
   i = 0
@@ -165,7 +154,7 @@ def avg_dump(n):
 
   # Flux profiles for jet power
   zones_av=5
-  for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'betagamma', 'Be_nob']: #'u_t', 'u_phi', 'FL', 'FL_EM', 'FL_Fl'
+  for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'FL', 'FL_EM', 'FL_Fl', 'betagamma', 'Be_nob', 'Be_b']: #'u_t', 'u_phi'
     #out[var+'_5_tht'] = np.sum(d_fns[var](dump)[i_of(5)], axis=-1)
     out[var+'_100_tht'] = np.sum(d_fns[var](dump)[iBZ], axis=-1)
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
@@ -204,7 +193,7 @@ def avg_dump(n):
   # This is a lot of luminosities!
   # TODO cut on phi/t averages too?
   cuts = {'sigma1' : lambda dump : (d_fns['sigma'](dump) > 1),
-          'sigma10' : lambda dump : (d_fns['sigma'](dump) > 10),
+          #'sigma10' : lambda dump : (d_fns['sigma'](dump) > 10),
           'Be_b0' : lambda dump : (d_fns['Be_b'](dump) > 0.02),
           'Be_b1' : lambda dump : (d_fns['Be_b'](dump) > 1),
           'Be_nob0' : lambda dump : (d_fns['Be_nob'](dump) > 0.02),
@@ -222,6 +211,7 @@ def avg_dump(n):
       out[lum+'_'+cut] = out[lum+'_'+cut+'_rt'][iBZ]
 
   if calc_lumproxy:
+    # TODO TODO variable definitions here
     rho = dump['RHO']
     C = 0.2
     j = rho**3 * Pg**(-2) * np.exp(-C*(rho**2 / (B*Pg**2))**(1./3.))
@@ -232,8 +222,8 @@ def avg_dump(n):
     out['Etot'] = sum_vol(geom, tfull_tt, within=iEmax)
     #print "Energy on grid: ",out['Etot']
 
-    # For an averaged energy profile
-    #out['E_r'] = radial_sum(geom, tfull_tt)
+    # Radial profiles of T^0_0
+    #out['E_r'] = out['E_rt'] = radial_sum(geom, tfull_tt)
 
   dump.clear()
   del dump
@@ -311,13 +301,24 @@ util.iter_parallel(avg_dump, merge_dict, out_full, ND, nthreads)
 out_full['mdot'] = out_full['Mdot']
 out_full['phi_b'] = out_full['Phi_b']/np.sqrt(out_full['Mdot'])
 
-# Add divBmax from HARM's own diagnostic output.  We can recompute the rest, but not this
+# Add divBmax from HARM's own diagnostic output, if available.  We can recompute the rest, but not this
 diag = io.load_log(path)
 if diag is not None:
   out_full['t_d'] = diag['t']
   out_full['divbmax_d'] = diag['divbmax']
 
-# TODO merge with current file here
+# Deduce the name of the output file
+if tstart > 0 or tend < 10000:
+  outfname = "eht_out_{}_{}.p".format(tstart,tend)
+else:
+  outfname = "eht_out.p"
+# See if there's anything already there we're not calculating, and import it
+if os.path.exists(outfname):
+  with open(outfname, "rb") as prev_file:
+    out_old = pickle.load(prev_file)
+    for key in out_old:
+      if key not in out_full:
+        out_full[key] = out_old[key]
 
 # OUTPUT
 with open(outfname, "wb") as outf:

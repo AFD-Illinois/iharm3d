@@ -26,13 +26,8 @@ FIGX = 10
 FIGY = 8
 #FIGY = FIGX*9/16
 
-# Choose between several predefined layouts below
-movie_type = "simplest"
-
-FRAMEDIR = "FRAMES"
-
 def plot(n):
-  imname = os.path.join(FRAMEDIR, 'frame_%08d.png' % n)
+  imname = os.path.join("frames_compare"+movie_type, 'frame_%08d.png' % n)
   print('%08d / ' % (n+1) + '%08d' % len(files1))
 
   # Don't calculate b/ucon/cov/e- stuff unless we need it below

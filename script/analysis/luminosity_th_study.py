@@ -84,36 +84,17 @@ if __name__ == "__main__":
   #be_nob0_cut = cut_pos(avg['Be_nob_100_th'][:hdr['n2']//2]/hdr['n3'], 0.02)
   #be_nob1_cut = cut_pos(avg['Be_nob_100_th'][:hdr['n2']//2]/hdr['n3'], 1.0)
   
-  # For converting to theta someday
-#   Xgeom = np.zeros((4,1,geom['n2']))
-#   Xgeom[1] = geom['X1'][iBZ,:,0]
-#   Xgeom[2] = geom['X2'][iBZ,:,0]
-#   to_dth = dxdX_KS_to(Xgeom, Met.FMKS, geom)[2,2,0]
+  # For converting differentials to theta
+  avg['X2'] = geom['X2'][iBZ,:,0]
+  Xgeom = np.zeros((4,1,geom['n2']))
+  Xgeom[1] = geom['X1'][iBZ,:,0]
+  Xgeom[2] = geom['X2'][iBZ,:,0]
+  to_dth_bz = dxdX_KS_to(Xgeom, Met.FMKS, geom)[2,2,0]
+  Xgeom[1] = geom['X1'][i_of(5),:,0]
+  Xgeom[2] = geom['X2'][i_of(5),:,0]
+  to_dth_5 = dxdX_KS_to(Xgeom, Met.FMKS, geom)[2,2,0]
 
-  # For converting to theta now
-  avg['X2'] = geom['X2'][0,:,0]
-  startx1, hslope, poly_norm, poly_alpha, poly_xt, mks_smooth = geom['startx1'], geom['hslope'], geom['poly_norm'], geom['poly_alpha'], geom['poly_xt'], geom['mks_smooth']
-  to_dth_bz = np.pi + (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']) + np.exp(
-    mks_smooth * (startx1 - geom['X1'][iBZ,:,0])) * (-np.pi +
-                                             2. * poly_norm * (1. + np.power((2. * avg['X2'] - 1.) / poly_xt,
-                                                                             poly_alpha) / (poly_alpha + 1.)) +
-                                             (2. * poly_alpha * poly_norm * (2. * avg['X2'] - 1.) * np.power(
-                                                 (2. * avg['X2'] - 1.) / poly_xt, poly_alpha - 1.)) / (
-                                                         (1. + poly_alpha) * poly_xt) -
-                                                         (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']))
-  to_dth_5 = np.pi + (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']) + np.exp(
-    mks_smooth * (startx1 - geom['X1'][i_of(5),:,0])) * (-np.pi +
-                                             2. * poly_norm * (1. + np.power((2. * avg['X2'] - 1.) / poly_xt,
-                                                                             poly_alpha) / (poly_alpha + 1.)) +
-                                             (2. * poly_alpha * poly_norm * (2. * avg['X2'] - 1.) * np.power(
-                                                 (2. * avg['X2'] - 1.) / poly_xt, poly_alpha - 1.)) / (
-                                                         (1. + poly_alpha) * poly_xt) -
-                                                         (1. - hslope) * np.pi * np.cos(2. * np.pi * avg['X2']))
-
-  to_dth_bz = 1/to_dth_bz
-  to_dth_5 = 1/to_dth_5
-  
-  
+  geom['gdet_ks'] = np.einsum("",geom['gcov']
 
   ND = avg['t'].shape[0]
   # I can rely on this for now
@@ -140,11 +121,12 @@ if __name__ == "__main__":
   with open("average_"+run_name.replace("/","_")+".dat", "w") as datf:
     datf.write("# x2 theta dx2/dtheta gdet rho bsq Fem_t Ffl_t F_mass\n")
     for i in range(hdr['n2']):
-      datf.write("{} {} {} {} {} {} {} {} {}\n".format(avg['X2'][i], avg['th100'][i], to_dth_bz[i], geom['gdet'][iBZ,i],
-                                                       avg['RHO_100_th'][i], avg['bsq_100_th'][i],
-                                                       avg['FE_EM_100_th'][i], avg['FE_Fl_100_th'][i], avg['FM_100_th'][i]))
+      datf.write("{} {} {} {} {} {} {} {} {}\n".format(avg['X2'][i], avg['th100'][i], to_dth_bz[i], geom['gdet_ks'][iBZ,i],
+                                                       avg['rho_100_th'][i]/geom['gdet_ks'][iBZ,i], avg['bsq_100_th'][i]/geom['gdet_ks'][iBZ,i],
+                                                       avg['FE_EM_100_th'][i]/geom['gdet_ks'][iBZ,i], avg['FE_Fl_100_th'][i]/geom['gdet_ks'][iBZ,i],
+                                                       avg['FM_100_th'][i]/geom['gdet_ks'][iBZ,i]))
   
-#  dth = hdr['dx2']/to_dth_bz
+#   dth = hdr['dx2']/to_dth_bz
 #   sigmax = sigma_cut1[0][0]
 #   sigmin = sigma_cut1[0][1]
 #   for flux,lum in [['FE_EM', 'LBZ'], ['FE', 'Ltot']]:
@@ -198,7 +180,7 @@ if __name__ == "__main__":
   ax.legend(loc='upper left')
   
   ax = axes[1,0]
-  ax.plot(avg['th100'], avg['RHO_100_th'], color='xkcd:purple', label=r"$\rho$ (r = "+rstring+")")
+  ax.plot(avg['th100'], avg['rho_100_th'], color='xkcd:purple', label=r"$\rho$ (r = "+rstring+")")
   ax.set_yscale('log')
   ax.legend(loc='upper left')
 
