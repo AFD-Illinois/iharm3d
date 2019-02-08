@@ -200,6 +200,9 @@ def load_geom(hdr, path):
   geom['y'] = geom['Y']
   geom['z'] = geom['Z']
 
+  if 'phi' not in geom and hdr['metric'] in ["MKS", "MMKS", "FMKS", "MKS3"]:
+    geom['phi'] = geom['X3']
+
   # Sometimes the vectors and zones use different coordinate systems
   # TODO allow specifying both systems
   if 'gdet_zone' in geom:

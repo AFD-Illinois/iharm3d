@@ -16,7 +16,6 @@ from analysis_fns import *
 
 from defs import Met, Loci
 from coordinates import dxdX_to_KS, dxdX_KS_to
-from grid import Grid
 
 FIGX=15
 FIGY=15
