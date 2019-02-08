@@ -173,18 +173,27 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
   if label:
     ax.set_title(label)
 
+# TODO this is currently just for profiles already in 2D
 def plot_thphi(ax, geom, var, r_i, cmap='jet', vmin=None, vmax=None, window=None,
             cbar=True, label=None, xlabel=True, ylabel=True,
-            ticks=None, arrayspace=False, average=False, integrate=False, bh=True):
+            ticks=None, project=False):
 
   radius = geom['r'][r_i,0,0]
   max_th = geom['n2']//2
-  x = loop_phi(geom['x'][r_i,:max_th,:])
-  y = loop_phi(geom['y'][r_i,:max_th,:])
+  if project:
+    x = loop_phi((geom['th']*np.cos(geom['phi']))[r_i,:max_th,:])
+    y = loop_phi((geom['th']*np.sin(geom['phi']))[r_i,:max_th,:])
+  else:
+    x = loop_phi(geom['x'][r_i,:max_th,:])
+    y = loop_phi(geom['y'][r_i,:max_th,:])
+
   var = loop_phi(var[:max_th,:])
 
   if window is None:
-    window = [-radius, radius, -radius, radius]
+    if project:
+      window = [-1.6, 1.6, -1.6, 1.6]
+    else:
+      window = [-radius, radius, -radius, radius]
 
   #print 'xshape is ', x.shape, ', yshape is ', y.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
@@ -209,7 +218,7 @@ def overlay_contours(ax, geom, var, levels, color='k'):
   x = flatten_xz(geom['x'])
   z = flatten_xz(geom['z'])
   var = flatten_xz(var, average=True)
-  ax.contour(x, z, var, levels=levels, colors=color)
+  return ax.contour(x, z, var, levels=levels, colors=color)
 
 def overlay_field(ax, geom, dump, nlines=10):
   hdr = dump['hdr']

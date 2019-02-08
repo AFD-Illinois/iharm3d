@@ -12,6 +12,8 @@ class Met(Enum):
     # Exotic metrics from KORAL et al
     EKS = 4
     MKS3 = 5
+    # For conversions, etc
+    KS = 6
 
 
 class Loci(Enum):

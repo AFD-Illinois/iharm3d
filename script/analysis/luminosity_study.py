@@ -16,6 +16,7 @@ import matplotlib.gridspec as gridspec
 import hdf5_to_dict as io
 import plot as bplt
 from analysis_fns import *
+from luminosity_th_study import overlay_rth_contours
 
 
 USEARRSPACE=False
@@ -39,55 +40,37 @@ hdr,geom,dump = io.load_all(dumpfile)
 plotfile = os.path.join("/work/03002/bprather/stampede2/movies",run_name,"eht_out.p")
 avg = pickle.load(open(plotfile, "rb"))
 
-dump['sigma'] = dump['bsq']/dump['RHO']
-dump['gamma'] = get_gamma(geom, dump)
-dump['be_b'] = bernoulli(dump, with_B=True)
-dump['be_nob'] = bernoulli(dump, with_B=False)
-dump['TEMrt'] = TEM_mixed(dump, 1, 0)
-dump['Trt'] = T_mixed(dump, 1, 0)
-
 fig = plt.figure(figsize=(FIGX, FIGY))
 gs = gridspec.GridSpec(2, 2, width_ratios=[1,2])
 
 ax = plt.subplot(gs[0,0])
-bplt.plot_xz(ax, geom, np.log10(-dump['TEMrt']), arrayspace=USEARRSPACE, average=True, window=window)
+bplt.plot_xz(ax, geom, np.log10(d_fns['FE_EM'](dump)), arrayspace=USEARRSPACE, average=True, window=window)
 ax.set_title(r"$\log_{10}( -{{T_{EM}}^r}_t )$")
 
 bplt.overlay_contours(ax, geom, geom['r'], [AT_R], color='k')
-
-bplt.overlay_contours(ax, geom, dump['sigma'], [1.0], color='C2')
-bplt.overlay_contours(ax, geom, dump['be_nob'], [0.02], color='C3')
-bplt.overlay_contours(ax, geom, dump['be_nob'], [1.0], color='C4')
+overlay_rth_contours(ax, geom, avg, legend=True)
 
 ax = plt.subplot(gs[1,0])
-bplt.plot_xz(ax, geom, np.log10(-dump['Trt']-dump['RHO']*dump['ucon'][:,:,:,1]), arrayspace=USEARRSPACE, average=True, window=window)
+bplt.plot_xz(ax, geom, np.log10(d_fns['FE'](dump)), arrayspace=USEARRSPACE, average=True, window=window)
 ax.set_title(r"$\log_{10}( -{T^r}_t - \rho u^r )$")
 
 bplt.overlay_contours(ax, geom, geom['r'], [AT_R], color='k')
+overlay_rth_contours(ax, geom, avg)
 
-bplt.overlay_contours(ax, geom, dump['sigma'], [1.0], color='C2')
-bplt.overlay_contours(ax, geom, dump['be_nob'], [0.02], color='C3')
-bplt.overlay_contours(ax, geom, dump['be_nob'], [1.0], color='C4')
-#bplt.overlay_contours(ax, geom, dump['be_nob'], [1.0], color='C5')
-
-ND = avg['LBZ_sigma1_rt'].shape[0]
-rtype,rspin,rname = run_name.split("/")
-start, end = [avg['avg_start'], avg['avg_end']]
 # I can rely on this for now
-start = int(start)//5
-end = int(end)//5
-
+start = int(avg['avg_start'])//5
+end = int(avg['avg_end'])//5
 # Average over quiescence
 mdav = np.mean(np.abs(avg['mdot'][start:end]))
-ab_av = lambda var : np.mean(np.abs(var[start:end,:]), axis=0)/mdav
 
 ax = plt.subplot(gs[0,1])
-ax.plot(avg['r'], ab_av(avg['LBZ_sigma1_rt']), label=r"$L_{BZ}$ (sigma > 1 cut)", color='C2')
-ax.plot(avg['r'], ab_av(avg['LBZ_Be_nob0_rt']), label=r"$L_{BZ}$ ($Be > 0.02$ cut)", color='C3')
-ax.plot(avg['r'], ab_av(avg['LBZ_Be_nob1_rt']), label=r"$L_{BZ}$ ($Be > 1.0$ cut)", color='C4')
-ax.plot(avg['r'], ab_av(avg['LBZ_bg1_rt']), label=r"$L_{BZ}$ ($\beta\gamma > 1.0$ cut)", color='C5')
+ax.plot(avg['r'], avg['LBZ_bg1_r']/mdav, label=r"$L_{BZ}$ ($\beta\gamma > 1.0$ cut)", color='k')
+ax.plot(avg['r'], avg['LBZ_sigma1_r']/mdav, label=r"$L_{BZ}$ ($\sigma$ > 1 cut)", color='xkcd:green')
+ax.plot(avg['r'], avg['LBZ_allp_r']/mdav, label=r"$L_{BZ}$ (FE > 0 cut)", color='xkcd:pink')
+ax.plot(avg['r'], avg['LBZ_Be_nob0_r']/mdav, label=r"$L_{BZ}$ ($Be > 0.02$ cut)", color='xkcd:red')
+ax.plot(avg['r'], avg['LBZ_mu2_r']/mdav, label=r"$L_{BZ}$ ($\mu > 2$ cut)", color='xkcd:blue')
 
-ax.set_title(r"$L_{BZ} = \int -{{T_{EM}}^r}_t \sqrt{-g} dx^{\theta} dx^{\phi}$")
+ax.set_title(r"$L_{BZ} / \dot{M} = \int -{{T_{EM}}^r}_t \sqrt{-g} dx^{\theta} dx^{\phi} / \dot{M}$")
 ax.set_xlim([0,SIZE])
 ax.set_xlabel("$r$ (M)")
 ax.axvline(AT_R, color='k')
@@ -103,12 +86,13 @@ if "SANE" in run_name:
 ax.legend(loc='upper right')
 
 ax = plt.subplot(gs[1,1])
-ax.plot(avg['r'], ab_av(avg['Lj_sigma1_rt']), label=r"$L_{tot}$ (sigma > 1 cut)", color='C2')
-ax.plot(avg['r'], ab_av(avg['Lj_Be_nob0_rt']), label=r"$L_{tot}$ ($Be > 0.02$ cut)", color='C3')
-ax.plot(avg['r'], ab_av(avg['Lj_Be_nob1_rt']), label=r"$L_{tot}$ ($Be > 1.0$ cut)", color='C4')
-ax.plot(avg['r'], ab_av(avg['Lj_bg_rt']), label=r"$L_{tot}$ ($\beta\gamma > 1.0$ cut)", color='C5')
+ax.plot(avg['r'], avg['Lj_bg1_r']/mdav, label=r"$L_{j}$ ($\beta\gamma > 1.0$ cut)", color='k')
+ax.plot(avg['r'], avg['Lj_sigma1_r']/mdav, label=r"$L_{j}$ ($\sigma$ > 1 cut)", color='xkcd:green')
+ax.plot(avg['r'], avg['Lj_allp_r']/mdav, label=r"$L_{j}$ (FE > 0 cut)", color='xkcd:pink')
+ax.plot(avg['r'], avg['Lj_Be_nob0_r']/mdav, label=r"$L_{j}$ ($Be > 0.02$ cut)", color='xkcd:red')
+ax.plot(avg['r'], avg['Lj_mu2_r']/mdav, label=r"$L_{j}$ ($\mu > 2$ cut)", color='xkcd:blue')
 
-ax.set_title(r"$L_{tot} = \int (-{T^r}_t - \rho u^r) \sqrt{-g} dx^{\theta} dx^{\phi}$")
+ax.set_title(r"$L_{tot} / \dot{M} = \int (-{T^r}_t - \rho u^r) \sqrt{-g} dx^{\theta} dx^{\phi} / \dot{M}$")
 ax.set_xlim([0,SIZE])
 ax.set_xlabel("$r$ (M)")
 ax.axvline(AT_R, color='k')

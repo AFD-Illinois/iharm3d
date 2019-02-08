@@ -10,15 +10,15 @@ def vec_to_KS(vec, X, mtype):
     """Translate a vector from """
     return np.einsum("i...,ij...", vec, dxdX_KS_to(X, mtype))
 
-def dxdX_KS_to(X, mtype, met_params, koral_rad=False):
-    """Get transformation matrix from Kerr-Schild to several different coordinate systems.
+def dxdX_to_KS(X, mtype, met_params, koral_rad=False):
+    """Get transformation matrix to Kerr-Schild from several different coordinate systems.
     X should be given in Kerr-Schild coordinates."""
 
     # Play some index games to get the inverse from numpy
-    ks_t = np.einsum("ij...->...ij", dxdX_to_KS(X, mtype, met_params, koral_rad))
+    ks_t = np.einsum("ij...->...ij", dxdX_KS_to(X, mtype, met_params, koral_rad))
     return np.einsum("...ij->ij...", np.linalg.inv(ks_t))
 
-def dxdX_to_KS(X, mtype, met_params, koral_rad=False):
+def dxdX_KS_to(X, mtype, met_params, koral_rad=False):
     """Get transformation to Kerr-Schild coordinates from another coordinate system.
     X should be given in native coordinates"""
 

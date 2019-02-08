@@ -8,6 +8,7 @@ import hdf5_to_dict as io
 import plot as bplt
 from analysis_fns import *
 import util
+from luminosity_th_study import overlay_thphi_contours
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -16,7 +17,6 @@ import matplotlib.gridspec as gridspec
 import os, sys
 import pickle
 import numpy as np
-from _ast import Or
 
 # Movie size in inches. Keep 16/9 for standard-size movies
 FIGX = 24
@@ -33,9 +33,7 @@ LOG_PHI = False
 diag_post = True
 
 def plot(n):
-  imname = os.path.join(frame_dir, 'frame_%08d.png' % n) # TODO replace?  No?
-  if os.path.exists(imname):
-    return
+  imname = os.path.join(frame_dir, 'frame_%08d.png' % n)
   tdump = io.get_dump_time(files[n])
   if (tstart is not None and tdump < tstart) or (tend is not None and tdump > tend):
     return
@@ -52,7 +50,7 @@ def plot(n):
     dump = io.load_dump(files[n], hdr, geom, derived_vars=False, extras=False)
 
   # Zoom in for small problems
-  if hdr['r_out'] > 100:
+  if geom['r'][-1,0,0] > 100:
     window = [-40,40,-40,40]
     nlines = 20
     rho_l, rho_h = -3, 2
@@ -85,16 +83,17 @@ def plot(n):
     bplt.diag_plot(ax_flux[1], diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
   elif movie_type == "radial":
 
-#     rho_r = eht_profile(geom, dump['RHO'], jmin, jmax)
-#     B_r = eht_profile(geom, np.sqrt(dump['bsq']), jmin, jmax)
-#     uphi_r = eht_profile(geom, dump['ucon'][:,:,:,3], jmin, jmax)
-#     
-#     Pg = (hdr['gam']-1.)*dump['UU']
-#     Pb = dump['bsq']/2
-#     
-#     Pg_r = eht_profile(geom, Pg, jmin, jmax)
-#     Ptot_r = eht_profile(geom, Pg + Pb, jmin, jmax)
-#     betainv_r = eht_profile(geom, Pb/Pg, jmin, jmax)
+    # TODO just record these in analysis output...
+    rho_r = eht_profile(geom, dump['RHO'], jmin, jmax)
+    B_r = eht_profile(geom, np.sqrt(dump['bsq']), jmin, jmax)
+    uphi_r = eht_profile(geom, dump['ucon'][:,:,:,3], jmin, jmax)
+     
+    Pg = (hdr['gam']-1.)*dump['UU']
+    Pb = dump['bsq']/2
+     
+    Pg_r = eht_profile(geom, Pg, jmin, jmax)
+    Ptot_r = eht_profile(geom, Pg + Pb, jmin, jmax)
+    betainv_r = eht_profile(geom, Pb/Pg, jmin, jmax)
 
     ax_slc = lambda i: plt.subplot(2, 3, i)
     bplt.radial_plot(ax_slc(1), geom, rho_r, ylabel=r"$<\rho>$", logy=True, ylim=[1.e-2, 1.e0])
@@ -115,32 +114,44 @@ def plot(n):
       rBZ = 100
       rstring = "100"
     
-    Xgeom = np.zeros((4,1,geom['n2']))
-    Xgeom[1] = geom['X1'][iBZ,:,0]
-    Xgeom[2] = geom['X2'][iBZ,:,0]
-    to_dth = dxdX_KS_to(Xgeom, Met.FMKS, geom)[2,2,0]
-    
     axes = [plt.subplot(2, 2, i) for i in range(1,5)]
-    rstring = str(geom['r'][iBZ,0,0])
-    bplt.plot_thphi(axes[0], geom, np.log10(d_fns['FE'](dump)[iBZ,:,:]), iBZ, label = "FE 2D Slice r="+rstring)
-    bplt.plot_thphi(axes[1], geom, np.log10(d_fns['FM'](dump)[iBZ,:,:]), iBZ, label = "FM 2D Slice r="+rstring)
-    bplt.plot_thphi(axes[2], geom, np.log10(d_fns['FL'](dump)[iBZ,:,:]), iBZ, label = "FL 2D Slice r="+rstring)
-    bplt.plot_thphi(axes[3], geom, np.log10(dump['RHO'][iBZ,:,:]), iBZ, label = "RHO 2D Slice r="+rstring)
+    bplt.plot_thphi(axes[0], geom, np.log10(d_fns['FE'](dump)[iBZ,:,:]), iBZ, vmin=-8, vmax=-4, label =r"FE $\theta-\phi$ slice")
+    bplt.plot_thphi(axes[1], geom, np.log10(d_fns['FM'](dump)[iBZ,:,:]), iBZ, vmin=-8, vmax=-4, label =r"FM $\theta-\phi$ slice")
+    bplt.plot_thphi(axes[2], geom, np.log10(d_fns['FL'](dump)[iBZ,:,:]), iBZ, vmin=-8, vmax=-4, label =r"FL $\theta-\phi$ slice")
+    bplt.plot_thphi(axes[3], geom, np.log10(dump['RHO'][iBZ,:,:]), iBZ, vmin=-4, vmax=1, label =r"\rho $\theta-\phi$ slice")
     
-    for axis in axes:
+    for i,axis in enumerate(axes):
+      if i == 0:
+        overlay_thphi_contours(axis, geom, diag, legend=True)
+      else:
+        overlay_thphi_contours(axis, geom, diag)
       max_th = geom['n2']//2
       x = bplt.loop_phi(geom['x'][iBZ,:max_th,:])
       y = bplt.loop_phi(geom['y'][iBZ,:max_th,:])
       prep = lambda var : bplt.loop_phi(var[:max_th,:])
-      axis.contour(x,y, prep(diag['bsq_100_thphi']/diag['rho_100_thphi']), [1.0], colors='xkcd:blue')
-      #axis.contour(x,y, prep(diag['Be_nob_100_thphi']), [0.02], colors='xkcd:purple')
-      #axis.contour(x,y, prep(diag['Be_nob_100_thphi']), [1.0], colors='xkcd:green')
-      axis.contour(x,y, prep(diag['betagamma_100_thphi']), [1.0], colors='xkcd:gray')
       
-      axis.contour(x,y, prep(d_fns['sigma'](dump)[iBZ]), [1.0], colors='xkcd:blue')
-      #axis.contour(x,y, prep(d_fns['Be_nob'](dump)[iBZ]), [0.02], colors='xkcd:purple')
-      #axis.contour(x,y, prep(d_fns['Be_nob'](dump)[iBZ]), [1.0], colors='xkcd:green')
-      axis.contour(x,y, prep(d_fns['betagamma'](dump)[iBZ]), [1.0], colors='xkcd:gray')
+      axis.contour(x,y, prep(geom['th'][iBZ]), [1.0], colors='k')
+      axis.contour(x,y, prep(d_fns['betagamma'](dump)[iBZ]), [1.0], colors='k')
+      axis.contour(x,y, prep(d_fns['sigma'](dump)[iBZ]), [1.0], colors='xkcd:green')
+      axis.contour(x,y, prep(d_fns['FE'](dump)[iBZ]), [0.0], colors='xkcd:pink')
+      axis.contour(x,y, prep(d_fns['Be_nob'](dump)[iBZ]), [0.02], colors='xkcd:red')
+      axis.contour(x,y, prep(d_fns['mu'](dump)[iBZ]), [2.0], colors='xkcd:blue')
+  
+  elif movie_type == "rho_cap":
+    if hdr['r_out'] < 100:
+      iBZ = i_of(geom,40) # most SANEs
+      rBZ = 40
+      rstring = "40"
+    else:
+      iBZ = i_of(geom,100) # most MADs
+      rBZ = 100
+      rstring = "100"
+
+    bplt.plot_slices(plt.subplot(1,3,1), plt.subplot(1,3,2), geom, dump, np.log10(dump['RHO']),
+                   label=r"$\log_{10}(\rho)$", vmin=-3, vmax=2, cmap='jet')
+    bplt.overlay_contours(plt.subplot(1,3,1), geom, geom['r'], [rBZ], color='k')
+    
+    bplt.plot_thphi(plt.subplot(1,3,3), geom, np.log10(dump['RHO'][iBZ,:,:]), iBZ, vmin=-3, vmax=2, label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice")
   
   elif movie_type == "lum_cuts":
       
@@ -154,7 +165,6 @@ def plot(n):
       
       bplt.overlay_contours(ax, geom, d_fns['sigma'](dump), [1.0], color='C2')
       #bplt.overlay_contours(ax, geom, d_fns['Be_nob'](dump), [0.02], color='C3')
-      #bplt.overlay_contours(ax, geom, d_fns['Be_nob'](dump), [1.0], color='C4')
       bplt.overlay_contours(ax, geom, d_fns['betagamma'](dump), [1.0], color='C5')
       
       ax = plt.subplot(gs[1,0])
@@ -165,7 +175,6 @@ def plot(n):
       
       bplt.overlay_contours(ax, geom, d_fns['sigma'](dump), [1.0], color='C2')
       #bplt.overlay_contours(ax, geom, d_fns['Be_nob'](dump), [0.02], color='C3')
-      #bplt.overlay_contours(ax, geom, d_fns['Be_nob'](dump), [1.0], color='C4')
       bplt.overlay_contours(ax, geom, d_fns['betagamma'](dump), [1.0], color='C5')
       
       ax = plt.subplot(gs[0,1])

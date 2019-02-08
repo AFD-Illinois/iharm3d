@@ -153,22 +153,19 @@ def avg_dump(n):
     #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
   # Flux profiles for jet power
-  zones_av=5
-  for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'FL', 'FL_EM', 'FL_Fl', 'betagamma', 'Be_nob', 'Be_b']: #'u_t', 'u_phi'
-    #out[var+'_5_tht'] = np.sum(d_fns[var](dump)[i_of(5)], axis=-1)
+  for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'FL', 'FL_EM', 'FL_Fl', 'betagamma', 'Be_nob', 'Be_b', 'mu']: #'u_t', 'u_phi'
     out[var+'_100_tht'] = np.sum(d_fns[var](dump)[iBZ], axis=-1)
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      #out[var+'_5_th'] = out[var+'_5_tht']
-      #out[var+'_5_thphi'] = d_fns[var](dump)[i_of(5),:,:]
       out[var+'_100_th'] = out[var+'_100_tht']
       out[var+'_100_thphi'] = d_fns[var](dump)[iBZ,:,:]
       out[var+'_rth'] = d_fns[var](dump).mean(axis=-1)
 
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
-  norm = 1 # This is what the EHT comparison uses?  
+  norm = 1 # This is what the EHT comparison uses?
+
   if geom['mixed_metrics']:
-    # B1 will be in the _vector_ coordinates.  Must perform the integral in those instead of zone coords
+    # When different, B1 will be in the _vector_ coordinates.  Must perform the integral in those instead of zone coords
     # Some gymnastics were done to keep in-memory size small
     dxEH = np.einsum("i,...ij->...j", np.array([0, geom['dx1'], geom['dx2'], geom['dx3']]), np.linalg.inv(geom['vec_to_grid'][iEH,:,:,:]))
     out['Phi_b'] = 0.5*norm * np.sum( np.fabs(dump['B1'][iEH,:,:]) * geom['gdet_vec'][iEH,:,None]*dxEH[:,None,2]*dxEH[:,None,3], axis=(0,1) )
@@ -177,7 +174,7 @@ def avg_dump(n):
 
   # FLUXES
   # Radial profiles of Mdot and Edot, and their particular values
-  # EHT normalization has both these values positive
+  # EHT code-comparison normalization has all these values positive
   for var,flux in [['Edot','FE'],['Mdot','FM'],['Ldot','FL']]:
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
       out[flux+'_r'] = sum_shell(geom, d_fns[flux](dump))
@@ -191,13 +188,16 @@ def avg_dump(n):
 
   # Blandford-Znajek Luminosity L_BZ
   # This is a lot of luminosities!
-  # TODO cut on phi/t averages too?
+  # TODO cut on phi/t averages -- needs 2-pass cut...
   cuts = {'sigma1' : lambda dump : (d_fns['sigma'](dump) > 1),
           #'sigma10' : lambda dump : (d_fns['sigma'](dump) > 10),
           'Be_b0' : lambda dump : (d_fns['Be_b'](dump) > 0.02),
           'Be_b1' : lambda dump : (d_fns['Be_b'](dump) > 1),
           'Be_nob0' : lambda dump : (d_fns['Be_nob'](dump) > 0.02),
           'Be_nob1' : lambda dump : (d_fns['Be_nob'](dump) > 1),
+          'mu1' : lambda dump : (d_fns['mu'](dump) > 1),
+          'mu2' : lambda dump : (d_fns['mu'](dump) > 2),
+          'mu3' : lambda dump : (d_fns['mu'](dump) > 3),
           'bg1' : lambda dump : (d_fns['betagamma'](dump) > 1.0),
           'bg05' : lambda dump : (d_fns['betagamma'](dump) > 0.5),
           'allp' : lambda dump : (d_fns['FE'](dump) > 0)}
@@ -211,7 +211,7 @@ def avg_dump(n):
       out[lum+'_'+cut] = out[lum+'_'+cut+'_rt'][iBZ]
 
   if calc_lumproxy:
-    # TODO TODO variable definitions here
+    # TODO TODO new variable definitions here
     rho = dump['RHO']
     C = 0.2
     j = rho**3 * Pg**(-2) * np.exp(-C*(rho**2 / (B*Pg**2))**(1./3.))
