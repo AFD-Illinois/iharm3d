@@ -47,25 +47,25 @@ def overlay_thphi_contours(ax, geom, avg, legend=False):
   x = bplt.loop_phi(geom['x'][iBZ,:max_th,:])
   y = bplt.loop_phi(geom['y'][iBZ,:max_th,:])
   prep = lambda var : bplt.loop_phi(var[:max_th,:])
-  cnts = []
-  cnts.append(ax.contour(x,y, prep(geom['th'][iBZ,:,:]), [1.0], colors='k'))
-  cnts.append(ax.contour(x,y, prep(avg['betagamma_100_thphi']), [1.0], colors='k'))
-  cnts.append(ax.contour(x,y, prep(avg['bsq_100_thphi']/avg['rho_100_thphi']), [1.0], colors='xkcd:green'))
-  cnts.append(ax.contour(x,y, prep(avg['FE_100_thphi']), [0.0], colors='xkcd:pink'))
-  cnts.append(ax.contour(x,y, prep(avg['Be_nob_100_thphi']), [0.02], colors='xkcd:red'))
-  cnts.append(ax.contour(x,y, prep(avg['mu_100_thphi']), [2.0], colors='xkcd:blue'))
-  clegends = [cnt.legend_elements()[0][0] for cnt in cnts]
+  cntrs = []
+  cntrs.append(ax.contour(x,y, prep(geom['th'][iBZ,:,:]), [1.0], colors='k'))
+  cntrs.append(ax.contour(x,y, prep(avg['betagamma_100_thphi']), [1.0], colors='k'))
+  cntrs.append(ax.contour(x,y, prep(avg['bsq_100_thphi']/avg['rho_100_thphi']), [1.0], colors='xkcd:green'))
+  cntrs.append(ax.contour(x,y, prep(avg['FE_100_thphi']), [0.0], colors='xkcd:pink'))
+  cntrs.append(ax.contour(x,y, prep(avg['Be_nob_100_thphi']), [0.02], colors='xkcd:red'))
+  cntrs.append(ax.contour(x,y, prep(avg['mu_100_thphi']), [2.0], colors='xkcd:blue'))
+  clegends = [cnt.legend_elements()[0][0] for cnt in cntrs]
   if legend: ax.legend(clegends, [r"$\theta$ = 1", r"$\beta\gamma$ = 1", r"$\sigma$ = 1", r"FE = 0", r"Be = 0.02", r"$\mu$ = 2"])
 
 def overlay_rth_contours(ax, geom, avg, legend=False):
-  cnts = []
-  cnts.append(bplt.overlay_contours(ax, geom, geom['th'][:,:,0], [1.0, np.pi-1.0], color='k'))
-  cnts.append(bplt.overlay_contours(ax, geom, avg['betagamma_rth'], [1.0], color='k'))
-  cnts.append(bplt.overlay_contours(ax, geom, avg['bsq_rth']/avg['rho_rth'], [1.0], color='xkcd:green'))
-  cnts.append(bplt.overlay_contours(ax, geom, avg['FE_rth'], [0.0], color='xkcd:pink'))
-  cnts.append(bplt.overlay_contours(ax, geom, avg['Be_nob_rth'], [0.02], color='xkcd:red'))
-  cnts.append(bplt.overlay_contours(ax, geom, avg['mu_rth'], [2.0], color='xkcd:blue'))
-  clegends = [cnt.legend_elements()[0][0] for cnt in cnts]
+  cntrs = []
+  cntrs.append(bplt.overlay_contours(ax, geom, geom['th'][:,:,0], [1.0, np.pi-1.0], color='k'))
+  cntrs.append(bplt.overlay_contours(ax, geom, avg['betagamma_rth'], [1.0], color='k'))
+  cntrs.append(bplt.overlay_contours(ax, geom, avg['bsq_rth']/avg['rho_rth'], [1.0], color='xkcd:green'))
+  cntrs.append(bplt.overlay_contours(ax, geom, avg['FE_rth'], [0.0], color='xkcd:pink'))
+  cntrs.append(bplt.overlay_contours(ax, geom, avg['Be_nob_rth'], [0.02], color='xkcd:red'))
+  cntrs.append(bplt.overlay_contours(ax, geom, avg['mu_rth'], [2.0], color='xkcd:blue'))
+  clegends = [cnt.legend_elements()[0][0] for cnt in cntrs]
   if legend: ax.legend(clegends, [r"$\theta$ = 1", r"$\beta\gamma$ = 1", r"$\sigma$ = 1", r"FE = 0", r"Be = 0.02", r"$\mu$ = 2"], loc='upper right')
 
 def overlay_th_contours(ax, avg):
