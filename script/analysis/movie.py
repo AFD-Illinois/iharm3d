@@ -49,6 +49,9 @@ def plot(n):
     # Simple movies don't need derived vars
     dump = io.load_dump(files[n], hdr, geom, derived_vars=False, extras=False)
 
+  if np.max(dump['RHO']) < 1e-10:
+    dump['RHO'] *= 1e15
+
   # Zoom in for small problems
   if geom['r'][-1,0,0] > 100:
     window = [-40,40,-40,40]
@@ -152,71 +155,6 @@ def plot(n):
     bplt.overlay_contours(plt.subplot(1,3,1), geom, geom['r'], [rBZ], color='k')
     
     bplt.plot_thphi(plt.subplot(1,3,3), geom, np.log10(dump['RHO'][iBZ,:,:]), iBZ, vmin=-3, vmax=2, label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice")
-  
-  elif movie_type == "lum_cuts":
-      
-      gs = gridspec.GridSpec(2, 2, width_ratios=[1,2])
-      
-      ax = plt.subplot(gs[0,0])
-      bplt.plot_xz(ax, geom, np.log10(d_fns['FE_EM'](dump)), average=True, window=window)
-      ax.set_title(r"$\log_{10}( -{{T_{EM}}^r}_t )$")
-      
-      bplt.overlay_contours(ax, geom, geom['r'], [AT_R], color='k')
-      
-      bplt.overlay_contours(ax, geom, d_fns['sigma'](dump), [1.0], color='C2')
-      #bplt.overlay_contours(ax, geom, d_fns['Be_nob'](dump), [0.02], color='C3')
-      bplt.overlay_contours(ax, geom, d_fns['betagamma'](dump), [1.0], color='C5')
-      
-      ax = plt.subplot(gs[1,0])
-      bplt.plot_xz(ax, geom, np.log10(d_fns['FE']), average=True, window=window)
-      ax.set_title(r"$\log_{10}( -{T^r}_t - \rho u^r )$")
-      
-      bplt.overlay_contours(ax, geom, geom['r'], [AT_R], color='k')
-      
-      bplt.overlay_contours(ax, geom, d_fns['sigma'](dump), [1.0], color='C2')
-      #bplt.overlay_contours(ax, geom, d_fns['Be_nob'](dump), [0.02], color='C3')
-      bplt.overlay_contours(ax, geom, d_fns['betagamma'](dump), [1.0], color='C5')
-      
-      ax = plt.subplot(gs[0,1])
-      ax.plot(avg['r'], avg['LBZ_sigma1_rt'][n], label=r"$L_{BZ}$ (sigma > 1 cut)", color='C2')
-      ax.plot(avg['r'], avg['LBZ_Be_nob0_rt'][n], label=r"$L_{BZ}$ ($Be > 0.02$ cut)", color='C3')
-      ax.plot(avg['r'], avg['LBZ_Be_nob1_rt'][n], label=r"$L_{BZ}$ ($Be > 1.0$ cut)", color='C4')
-      ax.plot(avg['r'], avg['LBZ_bg1_rt'][n], label=r"$L_{BZ}$ ($\beta\gamma > 1.0$ cut)", color='C5')
-      ax.plot(avg['r'], avg['LBZ_allp_rt'][n], label=r"$L_{BZ,tot}$", color='C6')
-      
-      ax.set_title(r"$L_{BZ} = \int -{{T_{EM}}^r}_t \sqrt{-g} dx^{\theta} dx^{\phi}$")
-      ax.set_xlim([0,SIZE])
-      ax.set_xlabel("$r$ (M)")
-      ax.axvline(AT_R, color='k')
-      
-      if "SANE" in run_name:
-        ax.set_ylim([1e-4,1e-1])
-        ax.set_yscale('log')
-      else:
-        ax.set_ylim([1,100])
-        #ax.set_yscale('log')
-      
-      ax.legend(loc='upper right')
-      
-      ax = plt.subplot(gs[1,1])
-      ax.plot(avg['r'], avg['Lj_sigma1_rt'][n], label=r"$L_{jet}$ (sigma > 1 cut)", color='C2')
-      ax.plot(avg['r'], avg['Lj_Be_nob0_rt'][n], label=r"$L_{jet}$ ($Be > 0.02$ cut)", color='C3')
-      ax.plot(avg['r'], avg['Lj_Be_nob1_rt'][n], label=r"$L_{jet}$ ($Be > 1.0$ cut)", color='C4')
-      ax.plot(avg['r'], avg['Lj_bg1_rt'][n], label=r"$L_{jet}$ ($\beta\gamma > 1.0$ cut)", color='C5')
-      ax.plot(avg['r'], avg['Lj_allp_rt'][n], label=r"$L_{tot}$", color='C6')
-      
-      ax.set_title(r"$L_{tot} = \int (-{T^r}_t - \rho u^r) \sqrt{-g} dx^{\theta} dx^{\phi}$")
-      ax.set_xlim([0,SIZE])
-      ax.set_xlabel("$r$ (M)")
-      ax.axvline(AT_R, color='k')
-      
-      if "SANE" in run_name:
-        ax.set_ylim([1e-4,1e-1])
-        ax.set_yscale('log')
-      else:
-        ax.set_ylim([1,100])
-        #ax.set_yscale('log')
-      ax.legend(loc='lower right')
   
   else: # All other movie types share a layout
     ax_slc = lambda i: plt.subplot(2, 4, i)

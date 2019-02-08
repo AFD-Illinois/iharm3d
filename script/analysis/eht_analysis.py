@@ -68,11 +68,14 @@ ND = len(dumps)
 hdr = io.load_hdr(dumps[0])
 geom = io.load_geom(hdr, path)
 
+if tstart is None:
+  tstart = 0.
+
 # If the time after which to average wasn't given, just use the back half of dumps
 if tavg_start is None:
   tavg_start = io.get_dump_time(dumps[ND//2]) - 0.1
-# Sometimes we don't know times but want averages
-# This is always when we've converted dumps given only over quiescence, and want averages over all of them
+# Sometimes we don't know times (i.e. above will be 0) but want averages
+# We always want to average over all dumps in these cases
 if tavg_start < 0.:
   tavg_start = 0.
 
@@ -81,11 +84,11 @@ if tavg_end is None:
 if tavg_end == 0.:
   tavg_end = float(ND)
 
-if tstart is None:
-  tstart = 0.
-
 if tend is None:
-  tend = io.get_dump_time(dumps[-1]) + 1
+  tend = io.get_dump_time(dumps[-1])
+if tend == 0.:
+  tend = float(ND)
+
 
 # Decide where to measure fluxes
 def i_of(rcoord):
@@ -119,6 +122,7 @@ else:
 
 jmin, jmax = get_j_vals(geom)
 
+print("Running from t={} to {}, averaging from {} to {}".format(tstart, tend, tavg_start, tavg_end))
 print("Using EH at zone {}, Fluxes at zone {}, Emax within zone {}, L_BZ at zone {}".format(iEH, iF, iEmax, iBZ))
 
 def avg_dump(n):
