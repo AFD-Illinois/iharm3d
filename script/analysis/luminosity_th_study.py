@@ -118,19 +118,16 @@ if __name__ == "__main__":
   avg['th100'] = geom['th'][iBZ,:,0]
   avg['hth100'] = geom['th'][iBZ,:hdr['n2']//2,0]
   
-  # Write OG values for comparison.  To obtain values identical to George's, measure 2 zones outward
-#   with open("average_"+run_name.replace("/","_")+".dat", "w") as datf:
-#     datf.write("# x2 theta dx2/dtheta gdet rho bsq Fem_t Ffl_t F_mass\n")
-#     for i in range(hdr['n2']):
-#       datf.write("{} {} {} {} {} {} {} {} {}\n".format(avg['X2'][i], avg['th100'][i], to_dth_bz[i], geom['gdet'][iBZ,i],
-#                                                        avg['rho_100_th'][i]/hdr['n3'], avg['bsq_100_th'][i]/hdr['n3'],
-#                                                        -avg['FE_EM_100_th'][i]/hdr['n3'], -avg['FE_Fl_100_th'][i]/hdr['n3'],
-#                                                        avg['FM_100_th'][i]/hdr['n3']))
-#   print("r of iBZ is ",geom['r'][iBZ,0,0])
-#   print("r of iBZ+1 is ",geom['r'][iBZ+1,0,0])
-#   print("r of iBZ+2 is ",geom['r'][iBZ+2,0,0])
+  # Write OG values for comparison/table import.  To obtain values identical to George's, measure 2 zones outward
+  with open("average_"+run_name.replace("/","_").split("x")[0]+".dat", "w") as datf:
+    datf.write("# x2 theta dx2/dtheta gdet rho bsq Fem_t Ffl_t F_mass\n")
+    for i in range(hdr['n2']):
+      datf.write("{} {} {} {} {} {} {} {} {}\n".format(avg['X2'][i], avg['th100'][i], to_dth_bz[i], geom['gdet'][iBZ,i],
+                                                       avg['rho_100_th'][i]/hdr['n3'], avg['bsq_100_th'][i]/hdr['n3'],
+                                                       -avg['FE_EM_100_th'][i]/hdr['n3'], -avg['FE_Fl_100_th'][i]/hdr['n3'],
+                                                       avg['FM_100_th'][i]/hdr['n3']))
 
-  # Convert to partial sum
+  # Add geometric factors to raw sum
   for key in avg.keys():
     if key[-7:] == "_100_th":
       avg[key] *= geom['gdet'][iBZ,:]*hdr['dx3']

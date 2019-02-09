@@ -49,18 +49,24 @@ def plot(n):
     # Simple movies don't need derived vars
     dump = io.load_dump(files[n], hdr, geom, derived_vars=False, extras=False)
 
+  # Put the somewhat crazy rho values from KORAL dumps back in plottable range
   if np.max(dump['RHO']) < 1e-10:
     dump['RHO'] *= 1e15
+
 
   # Zoom in for small problems
   if geom['r'][-1,0,0] > 100:
     window = [-40,40,-40,40]
     nlines = 20
     rho_l, rho_h = -3, 2
+    iBZ = i_of(geom,40) # most SANEs
+    rBZ = 40
   else:
     window = [-20,20,-20,20]
     nlines = 5
     rho_l, rho_h = -3, 1
+    iBZ = i_of(geom,100) # most SANEs
+    rBZ = 100
 
   if movie_type == "simplest":
     # Simplest movie: just RHO
@@ -107,16 +113,6 @@ def plot(n):
     bplt.radial_plot(ax_slc(6), geom, betainv_r, ylabel=r"$<\beta^{-1}>$", logy=True, ylim=[1.e-2, 1.e1])
   
   elif movie_type == "fluxes_cap":
-    
-    if hdr['r_out'] < 100:
-      iBZ = i_of(geom,40) # most SANEs
-      rBZ = 40
-      rstring = "40"
-    else:
-      iBZ = i_of(geom,100) # most MADs
-      rBZ = 100
-      rstring = "100"
-    
     axes = [plt.subplot(2, 2, i) for i in range(1,5)]
     bplt.plot_thphi(axes[0], geom, np.log10(d_fns['FE'](dump)[iBZ,:,:]), iBZ, vmin=-8, vmax=-4, label =r"FE $\theta-\phi$ slice")
     bplt.plot_thphi(axes[1], geom, np.log10(d_fns['FM'](dump)[iBZ,:,:]), iBZ, vmin=-8, vmax=-4, label =r"FM $\theta-\phi$ slice")
@@ -141,20 +137,11 @@ def plot(n):
       axis.contour(x,y, prep(d_fns['mu'](dump)[iBZ]), [2.0], colors='xkcd:blue')
   
   elif movie_type == "rho_cap":
-    if hdr['r_out'] < 100:
-      iBZ = i_of(geom,40) # most SANEs
-      rBZ = 40
-      rstring = "40"
-    else:
-      iBZ = i_of(geom,100) # most MADs
-      rBZ = 100
-      rstring = "100"
-
+    # Note cmaps are different between left 2 and right plot, due to the latter being far away from EH
     bplt.plot_slices(plt.subplot(1,3,1), plt.subplot(1,3,2), geom, dump, np.log10(dump['RHO']),
                    label=r"$\log_{10}(\rho)$", vmin=-3, vmax=2, cmap='jet')
     bplt.overlay_contours(plt.subplot(1,3,1), geom, geom['r'], [rBZ], color='k')
-    
-    bplt.plot_thphi(plt.subplot(1,3,3), geom, np.log10(dump['RHO'][iBZ,:,:]), iBZ, vmin=-3, vmax=2, label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice")
+    bplt.plot_thphi(plt.subplot(1,3,3), geom, np.log10(dump['RHO'][iBZ,:,:]), iBZ, vmin=-4, vmax=1, label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice r="+str(rBZ))
   
   else: # All other movie types share a layout
     ax_slc = lambda i: plt.subplot(2, 4, i)
