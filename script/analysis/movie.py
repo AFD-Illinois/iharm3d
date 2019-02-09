@@ -59,14 +59,14 @@ def plot(n):
     window = [-40,40,-40,40]
     nlines = 20
     rho_l, rho_h = -3, 2
-    iBZ = i_of(geom,40) # most SANEs
-    rBZ = 40
+    iBZ = i_of(geom,100) # most MADs
+    rBZ = 100
   else:
     window = [-20,20,-20,20]
     nlines = 5
     rho_l, rho_h = -3, 1
-    iBZ = i_of(geom,100) # most SANEs
-    rBZ = 100
+    iBZ = i_of(geom,40) # most SANEs
+    rBZ = 40
 
   if movie_type == "simplest":
     # Simplest movie: just RHO
