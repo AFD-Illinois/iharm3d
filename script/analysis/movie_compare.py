@@ -55,7 +55,7 @@ def plot(n):
     iBZ2 = i_of(geom2,40)
     rBZ2 = 40
   else:
-    iBZ2 = i_of(geom2,100
+    iBZ2 = i_of(geom2,100)
     rBZ2 = 100
 
   if movie_type == "simplest":
@@ -104,7 +104,7 @@ def plot(n):
     bplt.plot_slices(axes[3], axes[4], geom2, dump2, np.log10(dump2['RHO']),
                    label=r"$\log_{10}(\rho) (2)$", vmin=-3, vmax=2, cmap='jet')
     bplt.overlay_contours(axes[3], geom2, geom2['r'], [rBZ2], color='k')
-    bplt.plot_thphi(axes[5], geom1, np.log10(dump1['RHO'][iBZ2,:,:]), iBZ2, vmin=-4, vmax=1,
+    bplt.plot_thphi(axes[5], geom2, np.log10(dump2['RHO'][iBZ2,:,:]), iBZ2, vmin=-4, vmax=1,
                     label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice r="+str(rBZ2)+" (2)")
 
 
