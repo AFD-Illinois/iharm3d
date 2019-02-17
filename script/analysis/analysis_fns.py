@@ -30,7 +30,8 @@ d_fns = {'rho': lambda dump: dump['RHO'],
          'Ptot' : lambda dump: d_fns['Pg'](dump) + d_fns['Pb'](dump),
          'beta' : lambda dump: dump['beta'],
          'B' : lambda dump: np.sqrt(dump['bsq']),
-         'betagamma' : lambda dump: np.sqrt((d_fns['FE_EM'](dump) + d_fns['FE_Fl'](dump))/d_fns['FM'](dump) - 1)
+         'betagamma' : lambda dump: np.sqrt((d_fns['FE_EM'](dump) + d_fns['FE_Fl'](dump))/d_fns['FM'](dump) - 1),
+         'Tp' : lambda dump: (dump['hdr']['gam'] - 1) * dump['UU'] / dump['RHO']
          }
          #'rur' : lambda dump: geom['r']*dump['ucon'][:,:,:,1],
          #'gamma' : lambda dump: get_gamma(geom, dump)}

@@ -16,7 +16,7 @@ for fname in sys.argv[1:]:
 num_keys = [len(avg.keys()) for avg in avgs]
 avg_max_keys = num_keys.index(max(num_keys))
 
-direct_list = ['fname', 'a', 'r', 'th', 'th_bh', 'th_5', 'th_100', 'phi', 'avg_start', 'avg_end', 't']
+direct_list = ['fname', 'a', 'r', 'th', 'th_bh', 'th_5', 'th_100', 'phi', 'avg_start', 'avg_end', 'avg_w', 't']
 keys_to_sum = [key for key in avgs[avg_max_keys].keys() if key not in direct_list]
 
 uni = {}
@@ -32,7 +32,7 @@ for key in keys_to_sum:
           uni[key] += avg[key][:uni[key].shape[0]]
         else:
           uni[key][:avg[key].shape[0]] += avg[key]
-      elif key != 'avg_w':
+      else:
         if uni[key].size < avg[key].size:
           uni[key] += avg[key][:uni[key].size]
         else:

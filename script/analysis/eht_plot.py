@@ -51,19 +51,25 @@ def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, ylim=
     ax.set_xlim([0,50]) # For EHT comparison
 
 def plot_rads():
-  fig, ax = plt.subplots(2,3, figsize=(FIGX, FIGY))
+  fig, ax = plt.subplots(2,4, figsize=(4/3*FIGX, FIGY))
   for avg in avgs:
     if 'beta_r' in avg:
       avg['betainv_r'] = 1/avg['beta_r']
+    avg['Tp_r'] = avg['Pg_r'] / avg['rho_r']
+
   plot_multi(ax[0,0], 'r', 'rho_r', r"$<\rho>$", logy=True) #, ylim=[1.e-2, 1.e0])
   plot_multi(ax[0,1], 'r', 'Pg_r', r"$<P_g>$", logy=True) #, ylim=[1.e-6, 1.e-2])
-  plot_multi(ax[0,2], 'r', 'B_r', r"$<|B|>$", logy=True) #, ylim=[1.e-4, 1.e-1])
+  plot_multi(ax[0,2], 'r', 'Ptot_r', r"$<P_{tot}>$", logy=True) #, ylim=[1.e-6, 1.e-2])
+  plot_multi(ax[0,3], 'r', 'B_r', r"$<|B|>$", logy=True) #, ylim=[1.e-4, 1.e-1])
   plot_multi(ax[1,0], 'r', 'u^phi_r', r"$<u^{\phi}>$", logy=True) #, ylim=[1.e-3, 1.e1])
-  plot_multi(ax[1,1], 'r', 'Ptot_r', r"$<P_{tot}>$", logy=True) #, ylim=[1.e-6, 1.e-2])
-  plot_multi(ax[1,2], 'r', 'betainv_r', r"$<\beta^{-1}>$", logy=True) #, ylim=[1.e-2, 1.e1])
+  plot_multi(ax[1,1], 'r', 'u_phi_r', r"$<u_{\phi}>$", logy=True) #, ylim=[1.e-3, 1.e1])
+  plot_multi(ax[1,2], 'r', 'Tp_r', r"$<T_{i}>$", logy=True) #, ylim=[1.e-6, 1.e-2])
+  plot_multi(ax[1,3], 'r', 'betainv_r', r"$<\beta^{-1}>$", logy=True) #, ylim=[1.e-2, 1.e1])
 
   ax[0,2].legend(loc='lower left')
 
+  pad = 0.05
+  plt.subplots_adjust(left=2*pad, right=1-2*pad, bottom=pad, top=1-pad)
   plt.savefig(fname_out + '_ravgs.png')
   plt.close(fig)
 
@@ -123,7 +129,7 @@ def plot_fluxes():
   plt.close(fig)
 
 def plot_extras():
-  fig, ax = plt.subplots(4,1, figsize=(FIGX, 4*PLOTY))
+  fig, ax = plt.subplots(6,1, figsize=(FIGX, 6*PLOTY))
 
   # Efficiency over mean mdot: just use the back half as <>
   for avg in avgs:
@@ -135,15 +141,25 @@ def plot_extras():
   plot_multi(ax[1], 't', 'Edot', r"$\dot{E}$")
 
   for avg in avgs:
-    if 'LBZ' in avg.keys():
-      avg['aLBZ'] = np.abs(avg['LBZ_sigma1'])
+    if 'LBZ_bg1' in avg.keys():
+      avg['aLBZ'] = np.abs(avg['LBZ_bg1'])
   plot_multi(ax[2], 't', 'aLBZ', "BZ Luminosity", timelabels=True)
 
   for avg in avgs:
     if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
       avg['alBZ'] = avg['aLBZ']/np.fabs(avg['Mdot'])
   plot_multi(ax[3], 't', 'alBZ', r"$\frac{L_{BZ}}{\dot{M}}$", timelabels=True)
-  
+
+  for avg in avgs:
+    if 'Lj_bg1' in avg.keys():
+      avg['aLj'] = np.abs(avg['Lj_bg1'])
+  plot_multi(ax[4], 't', 'aLj', "Jet Luminosity", timelabels=True)
+
+  for avg in avgs:
+    if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
+      avg['alj'] = avg['aLj']/np.fabs(avg['Mdot'])
+  plot_multi(ax[5], 't', 'alj', r"$\frac{L_{jet}}{\dot{M}}$", timelabels=True)
+
   ax[0].legend(loc='upper left')
 
   plt.savefig(fname_out + '_extras.png')
