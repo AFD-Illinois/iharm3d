@@ -59,14 +59,14 @@ def plot(n):
     window = [-40,40,-40,40]
     nlines = 20
     rho_l, rho_h = -3, 2
-    iBZ = i_of(geom,40) # most SANEs
-    rBZ = 40
+    iBZ = i_of(geom,100) # most MADs
+    rBZ = 100
   else:
     window = [-20,20,-20,20]
     nlines = 5
-    rho_l, rho_h = -3, 1
-    iBZ = i_of(geom,100) # most SANEs
-    rBZ = 100
+    rho_l, rho_h = -4, 1
+    iBZ = i_of(geom,40) # most SANEs
+    rBZ = 40
 
   if movie_type == "simplest":
     # Simplest movie: just RHO
@@ -143,6 +143,36 @@ def plot(n):
     bplt.overlay_contours(plt.subplot(1,3,1), geom, geom['r'], [rBZ], color='k')
     bplt.plot_thphi(plt.subplot(1,3,3), geom, np.log10(dump['RHO'][iBZ,:,:]), iBZ, vmin=-4, vmax=1, label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice r="+str(rBZ))
   
+  elif movie_type == "funnel_wall":
+    rKH = 20
+    iKH = i_of(geom, rKH)
+    win=[0,rBZ/2,0,rBZ]
+    gs = gridspec.GridSpec(1, 3, width_ratios=[1,1,1])
+    axes = [plt.subplot(gs[0,i]) for i in range(3)]
+    bplt.plot_xz(axes[0], geom, np.log10(dump['RHO']),
+                   label=r"$\log_{10}(\rho)$", vmin=-3, vmax=2, cmap='jet', window=win, shading='flat')
+    
+    bplt.plot_xz(axes[1], geom, np.log10(dump['ucon'][:,:,:,3]),
+                   label=r"$\log_{10}(u^{\phi})$", vmin=-3, vmax=0, cmap='Reds', window=win, cbar=False, shading='flat')
+    bplt.plot_xz(axes[1], geom, np.log10(-dump['ucon'][:,:,:,3]),
+                   label=r"$\log_{10}(u^{\phi})$", vmin=-3, vmax=0, cmap='Blues', window=win, cbar=False, shading='flat')
+
+    bplt.plot_xz(axes[2], geom, np.log10(dump['beta'][:,:,:,3]),
+                   label=r"$\log_{10}(u_{\phi})$", vmin=-3, vmax=3, window=win, shading='flat')
+    
+    for axis in axes:
+      bplt.overlay_field(axis, geom, dump, nlines=nlines*4)
+
+#     bplt.plot_thphi(axes[2], geom, np.log10(dump['RHO'][iKH,:,:]), iKH,
+#                     label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice r="+str(rKH), vmin=-4, vmax=1, cmap='jet', shading='flat')
+
+  elif movie_type == "kh_radii":
+    rlevels = [10, 20, 30, 40, 60, 80, 100, 200]
+    axes = [plt.subplot(2,4,i) for i in range(1,9)]
+    for ax,rlevel in zip(axes, rlevels):
+      bplt.plot_thphi(ax, geom, np.log10(dump['RHO'][i_of(geom, rlevel),:,:]), i_of(geom, rlevel),
+                     label=r"$\log_{10}(\rho) (r = "+str(rlevel)+")$", vmin=-3, vmax=2, cmap='jet', shading='flat', arrayspace=True)
+
   else: # All other movie types share a layout
     ax_slc = lambda i: plt.subplot(2, 4, i)
     ax_flux = lambda i: plt.subplot(4, 2, i)
@@ -217,18 +247,16 @@ def plot(n):
       bplt.plot_slices(ax_flux[0], ax_flux[1], geom, dump['bsq']/dump['RHO'] - 100,
                        vmin=-100, vmax=100, cmap='RdBu_r')
       bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
+      
+    else:
+      print("Movie type not known!")
+      exit(1)
 
-    elif movie_type == "luminosity":
-      # TODO add measures of all floors' efficacy.  Record ceilings in header or extras?
-      bplt.plot_slices(ax_flux[0], ax_flux[1], geom, dump['bsq']/dump['RHO'] - 100,
-                       vmin=-100, vmax=100, cmap='RdBu_r')
-      bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
+    # Extra padding for crowded 4x2 plots
+    pad = 0.05
+    plt.subplots_adjust(left=2*pad, right=1-2*pad, bottom=pad, top=1-pad)
 
-  # TODO enlarge plots w/o messing up even pixel count
-  pad = 0.05
-  plt.subplots_adjust(left=2*pad, right=1-2*pad, bottom=pad, top=1-pad)
-
-  plt.savefig(imname, dpi=1920/FIGX)
+  plt.savefig(imname, dpi=1920/FIGX) # TODO the group projector is like 4:3 man
   plt.close(fig)
   
   dump.clear()

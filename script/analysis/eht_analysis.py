@@ -301,10 +301,6 @@ print("Will weight averages by {}".format(out_full['avg_w']))
 nthreads = util.calc_nthreads(hdr, pad=0.3)
 util.iter_parallel(avg_dump, merge_dict, out_full, ND, nthreads)
 
-# Compat/completeness stuff
-out_full['mdot'] = out_full['Mdot']
-out_full['phi_b'] = out_full['Phi_b']/np.sqrt(out_full['Mdot'])
-
 # Add divBmax from HARM's own diagnostic output, if available.  We can recompute the rest, but not this
 diag = io.load_log(path)
 if diag is not None:

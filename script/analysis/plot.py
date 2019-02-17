@@ -66,9 +66,10 @@ def loop_phi(array):
 # Also note label convention:
 # * "known labels" are assigned true or false,
 # * "unknown labels" are assigned None or a string
+# TODO pass through kwargs instead of all this duplication
 def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
             cbar=True, cbar_ticks=None, label=None, xlabel=True, ylabel=True,
-            arrayspace=False, average=False, integrate=False, bh=True, half_cut=False):
+            arrayspace=False, average=False, integrate=False, bh=True, half_cut=False, shading='gouraud'):
 
   if integrate:
     var *= geom['n3']
@@ -96,7 +97,7 @@ def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
 
   #print 'xshape is ', x.shape, ', zshape is ', z.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
-      shading='gouraud')
+      shading=shading)
 
   if arrayspace:
     if xlabel: ax.set_xlabel("X1 (arbitrary)")
@@ -126,7 +127,7 @@ def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
 
 def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
             cbar=True, label=None, xlabel=True, ylabel=True,
-            ticks=None, arrayspace=False, average=False, integrate=False, bh=True):
+            ticks=None, arrayspace=False, average=False, integrate=False, bh=True, shading='gouraud'):
 
   if integrate:
     var *= geom['n2']
@@ -146,7 +147,7 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
 
   #print 'xshape is ', x.shape, ', yshape is ', y.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
-      shading='gouraud')
+      shading=shading)
 
   if arrayspace:
     if xlabel: ax.set_xlabel("X1 (arbitrary)")
@@ -175,34 +176,44 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
 
 # TODO this is currently just for profiles already in 2D
 def plot_thphi(ax, geom, var, r_i, cmap='jet', vmin=None, vmax=None, window=None,
-            cbar=True, label=None, xlabel=True, ylabel=True,
-            ticks=None, project=False):
+            cbar=True, label=None, xlabel=True, ylabel=True, arrayspace=False,
+            ticks=None, project=False, shading='gouraud'):
 
-  radius = geom['r'][r_i,0,0]
-  max_th = geom['n2']//2
-  if project:
-    x = loop_phi((geom['th']*np.cos(geom['phi']))[r_i,:max_th,:])
-    y = loop_phi((geom['th']*np.sin(geom['phi']))[r_i,:max_th,:])
+  if arrayspace:
+    x = (geom['X2'][r_i] - geom['startx2']) / (geom['n2'] * geom['dx2'])
+    y = (geom['X3'][r_i] - geom['startx3']) / (geom['n3'] * geom['dx3'])
+    var = var
   else:
-    x = loop_phi(geom['x'][r_i,:max_th,:])
-    y = loop_phi(geom['y'][r_i,:max_th,:])
-
-  var = loop_phi(var[:max_th,:])
+    radius = geom['r'][r_i,0,0]
+    max_th = geom['n2']//2
+    if project:
+      x = loop_phi((geom['th']*np.cos(geom['phi']))[r_i,:max_th,:])
+      y = loop_phi((geom['th']*np.sin(geom['phi']))[r_i,:max_th,:])
+    else:
+      x = loop_phi(geom['x'][r_i,:max_th,:])
+      y = loop_phi(geom['y'][r_i,:max_th,:])
+    var = loop_phi(var[:max_th,:])
 
   if window is None:
-    if project:
+    if arrayspace:
+      ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+    elif project:
       window = [-1.6, 1.6, -1.6, 1.6]
     else:
       window = [-radius, radius, -radius, radius]
+  else:
+    ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
 
   #print 'xshape is ', x.shape, ', yshape is ', y.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
-      shading='gouraud')
+      shading=shading)
 
-  if xlabel: ax.set_xlabel(r"$x \frac{c^2}{G M}$")
-  if ylabel: ax.set_ylabel(r"$y \frac{c^2}{G M}$")
-  if window:
-    ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
+  if arrayspace:
+    if xlabel: ax.set_xlabel("X2 (arbitrary)")
+    if ylabel: ax.set_ylabel("X3 (arbitrary)")
+  else:
+    if xlabel: ax.set_xlabel(r"$x \frac{c^2}{G M}$")
+    if ylabel: ax.set_ylabel(r"$y \frac{c^2}{G M}$")
 
   ax.set_aspect('equal')
 

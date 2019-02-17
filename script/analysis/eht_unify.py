@@ -27,12 +27,24 @@ for key in keys_to_sum:
       # Keep track of averages w/weights, otherwise just sum since everything's time-dependent
       if key[-2:] == '_r' or key[-3:] == '_th' or key[-4:] == '_hth' or key[-4:] == '_rth' or key[-6:] == '_thphi':
         uni[key] += avg[key]*avg['avg_w']
-      else:
-        uni[key] += avg[key]
+      elif key[-1:] == 't':
+        if uni[key].shape[0] < avg[key].shape[0]:
+          uni[key] += avg[key][:uni[key].shape[0]]
+        else:
+          uni[key][:avg[key].shape[0]] += avg[key]
+      elif key != 'avg_w':
+        if uni[key].size < avg[key].size:
+          uni[key] += avg[key][:uni[key].size]
+        else:
+          uni[key][:avg[key].size] += avg[key]
 
 for key in direct_list:
   if key in avgs[avg_max_keys].keys():
     uni[key] = avgs[avg_max_keys][key]
+
+# Add compat/completeness stuff
+uni['mdot'] = uni['Mdot']
+uni['phi_b'] = uni['Phi_b']/np.sqrt(uni['Mdot'])
 
 with open("eht_out.p", "wb") as outf:
   print("Writing eht_out.p")
