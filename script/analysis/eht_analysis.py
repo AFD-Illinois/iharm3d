@@ -280,14 +280,15 @@ print("nstart = {}, nmin = {}, nmax = {} nend = {}".format(nstart,nmin,nmax,nend
 
 # Make a dict for merged variables, throw in what we know now to make merging easier
 out_full = {}
-out_full['a'] = hdr['a']
+for key in ['a', 'gam', 'gam_e', 'gam_p']:
+  out_full[key] = hdr[key]
+
 # Toss in the common geom lists and our weight in the overall average
 out_full['r'] = geom['r'][:,hdr['n2']//2,0]
 
 # For quick angular plots. Note most will need geometry to convert from dX2 to dth
-out_full['th_eh'] = geom['th'][iEH,:hdr['n2']//2,0]
-out_full['th_5'] = geom['th'][i_of(5),:,0]
-out_full['th_100'] = geom['th'][iBZ,:,0]
+out_full['th_eh'] = geom['th'][iEH,:,0]
+out_full['th_bz'] = geom['th'][iBZ,:,0]
 
 out_full['phi'] = geom['phi'][0,hdr['n2']//2,:]
 

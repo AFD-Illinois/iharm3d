@@ -16,7 +16,7 @@ for fname in sys.argv[1:]:
 num_keys = [len(avg.keys()) for avg in avgs]
 avg_max_keys = num_keys.index(max(num_keys))
 
-direct_list = ['fname', 'a', 'r', 'th', 'th_bh', 'th_5', 'th_100', 'phi', 'avg_start', 'avg_end', 'avg_w', 't']
+direct_list = ['fname', 'a', 'gam', 'gam_e', 'gam_p', 'r', 'th', 'th_eh', 'th_bz', 'phi', 'avg_start', 'avg_end', 'avg_w', 't']
 keys_to_sum = [key for key in avgs[avg_max_keys].keys() if key not in direct_list]
 
 uni = {}
