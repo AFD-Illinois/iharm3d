@@ -8,6 +8,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 import util
+import units
 
 import sys
 import numpy as np
@@ -25,21 +26,30 @@ RADS = True
 FLUXES = True
 EXTRAS = True
 DIAGS = True
-OMEGA = True
+OMEGA = False
 FLUX_PROF = False
+TEMP = True
+BSQ = True
 
-def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, ylim=None, timelabels=False):
+def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, xlim=None, ylim=None, timelabels=False):
   for i,avg in enumerate(avgs):
     if varname in avg.keys():
-      ax.plot(avg[iname], avg[varname], styles[i], label=labels[i])
+      if iname[:2] == "th":
+        # We plot half-theta, from 0 to pi/2
+        ax.plot(avg[iname][:avg[iname].size//2], avg[varname], styles[i], label=labels[i])
+      else:
+        ax.plot(avg[iname], avg[varname], styles[i], label=labels[i])
   # Plot additions
   if logx: ax.set_xscale('log')
   if logy: ax.set_yscale('log')
   if ylim is not None: ax.set_ylim(ylim)
+  if xlim is not None: ax.set_xlim(xlim)
   ax.grid()
   ax.set_ylabel(varname_pretty)
+  # Defaults and labels for different plot types:
   if iname == 't':
-    ax.set_xlim([ti,tf])
+    if xlim is None:
+      ax.set_xlim([ti,tf])
     if timelabels:
       ax.set_xlabel('t/M')
     else:
@@ -48,13 +58,69 @@ def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, ylim=
     ax.set_xlabel(r"$\theta$")
   elif iname == 'r':
     ax.set_xlabel("r")
-    ax.set_xlim([0,50]) # For EHT comparison
+    if xlim is None:
+      ax.set_xlim([0,50]) # For EHT comparison
+  if logy:
+    ylim = ax.get_ylim()
+    if ylim[0] < 1e-5*ylim[1]:
+      ax.set_ylim([1e-5*ylim[1], ylim[1]])
+
+def plot_temp():
+  for Rhi in [1,10,20,40,80,160]:
+    fig, ax = plt.subplots(1,1, figsize=(FIGX, FIGY))
+    if avgs[0]['r'][-1] > 50:
+      txlim = [1e0,1e3]
+    else:
+      txlim = [1e0,1e2]
+    for i,avg in enumerate(avgs):
+      if 'gam' not in avg:
+        if "5/3" in labels[i]:
+          avg['gam'] = 5./3.
+        else:
+          avg['gam'] = 13./9.
+      if 'gam_p' not in avg: avg['gam_p'] = 5./3.
+      if 'gam_e' not in avg: avg['gam_e'] = 4./3.
+      cgs = units.get_cgs()
+      u_r = 1/(avg['gam'] - 1)*avg['Pg_r']
+      moscR = (Rhi*avg['beta_r']**2 + 1) / (avg['beta_r']**2 + 1)
+      ue_r = (avg['gam_p'] - 1)/(avg['gam_e']-1) * u_r / (2+moscR)
+      avg['Tp_r_old'] = (avg['gam_p'] - 1) * (u_r - ue_r) / avg['rho_r'] * cgs['MP']*cgs['CL']**2 / cgs['KBOL']
+#      avg['Tp_r'] = avg['Pg_r'] / avg['rho_r'] * cgs['MP']*cgs['CL']**2 / cgs['KBOL']
+      avg['Tp_r'] = 2 * cgs['MP'] * moscR * u_r / ( 3 * cgs['KBOL'] * avg['rho_r'] * ( 2 + moscR ) ) * cgs['CL']**2
+    plot_multi(ax, 'r', 'Tp_r', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True)
+    plot_multi(ax, 'r', 'Tp_r_old', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True)
+    logx=np.logspace(txlim[0]-1,txlim[1],num=20)
+    # Place a guideline at 1/x starting near the top of the plot
+    ax.plot(logx, (0.1*ax.get_ylim()[1]) * 1/logx, 'k--')
+    
+    ax.legend(loc='lower right')
+    plt.savefig(fname_out + '_Ti_Rhi{}.png'.format(Rhi))
+    plt.close(fig)
+
+def plot_bsq_rise():
+  fig, ax = plt.subplots(4,1, figsize=(FIGX, FIGY))
+  for avg in avgs:
+    if 'B_rt' in avg:
+      avg['MagE'] = np.mean(avg['B_rt']**2, axis=-1)
+      avg['MagE_close'] = np.mean(avg['B_rt'][:,:100]**2, axis=-1)
+      avg['rho_close'] = np.mean(avg['rho_rt'][:,:100], axis=-1)
+      n2 = avg['rho_100_tht'].shape[1]
+      avg['rho_mid'] = np.mean(avg['rho_100_tht'][:,n2//2-5:n2//2+5], axis=-1)
+    plot_multi(ax[0], 't', 'MagE_close', r"$<B^2>$ (low radii)", logy=True, xlim=[0,10000])
+    plot_multi(ax[1], 't', 'rho_close', r"$<\rho>$ (low radii)", logy=True, xlim=[0,10000])
+    plot_multi(ax[2], 't', 'MagE', r"$<B^2>$", logy=True, xlim=[0,10000])
+    plot_multi(ax[3], 't', 'rho_mid', r"$<\rho>$ (midplane r=40)", logy=True, timelabels=True, xlim=[0,10000])
+  
+  #ax.legend(loc='lower left')
+  plt.savefig(fname_out + '_bsq_rise.png')
+  plt.close(fig)
 
 def plot_rads():
   fig, ax = plt.subplots(2,4, figsize=(4/3*FIGX, FIGY))
   for avg in avgs:
     if 'beta_r' in avg:
       avg['betainv_r'] = 1/avg['beta_r']
+    
     avg['Tp_r'] = avg['Pg_r'] / avg['rho_r']
 
   plot_multi(ax[0,0], 'r', 'rho_r', r"$<\rho>$", logy=True) #, ylim=[1.e-2, 1.e0])
@@ -66,15 +132,15 @@ def plot_rads():
   plot_multi(ax[1,2], 'r', 'Tp_r', r"$<T_{i}>$", logy=True) #, ylim=[1.e-6, 1.e-2])
   plot_multi(ax[1,3], 'r', 'betainv_r', r"$<\beta^{-1}>$", logy=True) #, ylim=[1.e-2, 1.e1])
 
-  ax[0,2].legend(loc='lower left')
+  ax[0,3].legend(loc='upper right')
 
   pad = 0.05
-  plt.subplots_adjust(left=2*pad, right=1-2*pad, bottom=pad, top=1-pad)
+  plt.subplots_adjust(left=pad, right=1-pad/2, bottom=pad, top=1-pad)
   plt.savefig(fname_out + '_ravgs.png')
   plt.close(fig)
 
 def plot_fluxes():
-  fig,ax = plt.subplots(5,1, figsize=(FIGX, 5*PLOTY))
+  fig,ax = plt.subplots(4,1, figsize=(FIGX, 5*PLOTY))
 
   plot_multi(ax[0],'t','Mdot', r"$|\dot{M}|$")
   plot_multi(ax[1],'t','Phi_b', r"$\Phi$")
@@ -89,7 +155,7 @@ def plot_fluxes():
       avg['EmM'] = np.fabs(np.fabs(avg['Edot']) - np.fabs(avg['Mdot']))
   plot_multi(ax[3], 't', 'EmM', r"$|\dot{E} - \dot{M}|$")
 
-  plot_multi(ax[4], 't', 'Lum', "Lum", timelabels=True)
+#  plot_multi(ax[4], 't', 'Lum', "Lum", timelabels=True)
 
   ax[0].legend(loc='upper left')
 
@@ -100,7 +166,7 @@ def plot_fluxes():
   if 'Mdot' not in avg.keys():
     return
 
-  fig, ax = plt.subplots(5,1, figsize=(FIGX, 5*PLOTY))
+  fig, ax = plt.subplots(4,1, figsize=(FIGX, 5*PLOTY))
   plot_multi(ax[0], 't', 'Mdot', r"$|\dot{M}|$")
 
   for avg in avgs:
@@ -115,13 +181,13 @@ def plot_fluxes():
 
   for avg in avgs:
     if 'Edot' in avg.keys():
-      avg['edot'] = np.fabs(np.fabs(avg['Edot']) - np.fabs(avg['Mdot']))/(np.fabs(avg['Mdot']))
-  plot_multi(ax[3], 't', 'edot', r"$\frac{|\dot{E} - \dot{M}|}{|\dot{M}|}$")
+      avg['edot'] = np.fabs(-avg['Edot'] - avg['Mdot'])/(avg['Mdot'])
+  plot_multi(ax[3], 't', 'edot', r"$\frac{|-\dot{E} - \dot{M}|}{|\dot{M}|}$")
 
-  for avg in avgs:
-    if 'Lum' in avg.keys():
-      avg['lum'] = np.fabs(avg['Lum'])/np.fabs(avg['Mdot'])
-  plot_multi(ax[4], 't', 'lum', r"$\frac{Lum}{|\dot{M}|}$", timelabels=True)
+#  for avg in avgs:
+#    if 'Lum' in avg.keys():
+#      avg['lum'] = np.fabs(avg['Lum'])/np.fabs(avg['Mdot'])
+#  plot_multi(ax[4], 't', 'lum', r"$\frac{Lum}{|\dot{M}|}$", timelabels=True)
   
   ax[0].legend(loc='upper left')
 
@@ -135,7 +201,7 @@ def plot_extras():
   for avg in avgs:
     if 'Edot' in avg.keys():
       mdot_mean = np.abs(np.mean(avg['Mdot'][len(avg['Mdot'])//2:]))
-      avg['Eff'] = np.abs(avg['Mdot'] - avg['Edot'])/mdot_mean*100
+      avg['Eff'] = np.abs(avg['Mdot'] + avg['Edot'])/mdot_mean*100
   plot_multi(ax[0], 't', 'Eff', "Efficiency (%)", ylim=[-10,200])
 
   plot_multi(ax[1], 't', 'Edot', r"$\dot{E}$")
@@ -148,7 +214,7 @@ def plot_extras():
   for avg in avgs:
     if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
       avg['alBZ'] = avg['aLBZ']/np.fabs(avg['Mdot'])
-  plot_multi(ax[3], 't', 'alBZ', r"$\frac{L_{BZ}}{\dot{M}}$", timelabels=True)
+  plot_multi(ax[3], 't', 'alBZ', r"$\frac{L_{BZ}}{\dot{M}}$", timelabels=True, ylim=[0, 4])
 
   for avg in avgs:
     if 'Lj_bg1' in avg.keys():
@@ -158,7 +224,15 @@ def plot_extras():
   for avg in avgs:
     if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
       avg['alj'] = avg['aLj']/np.fabs(avg['Mdot'])
-  plot_multi(ax[5], 't', 'alj', r"$\frac{L_{jet}}{\dot{M}}$", timelabels=True)
+  plot_multi(ax[5], 't', 'alj', r"$\frac{L_{jet}}{\dot{M}}$", timelabels=True, ylim=[0, 4])
+
+  for i in range(len(avgs)):
+    if 'alj' in avgs[i]:
+      l_to_avg = avgs[i]['alj'][np.where(avgs[i]['t'] > 6000)]
+      print("{} average (normalized) jet power: {}, std dev {}".format(labels[i], np.mean(l_to_avg), np.std(l_to_avg)))
+#  for i in range(len(avgs)):
+#    if 'alBZ' in avgs[i]:
+#      print("{} average (normalized) BZ power: {}".format(labels[i], np.mean(avgs[i]['alBZ'][np.where(avgs[i]['t'] > 6000)])))
 
   ax[0].legend(loc='upper left')
 
@@ -181,17 +255,17 @@ def plot_diags():
 
 def plot_omega():
   # Omega
-  fig, ax = plt.subplots(2,2, figsize=(FIGX, FIGY))
+  fig, ax = plt.subplots(2,1, figsize=(FIGX, FIGY))
   # Renormalize omega to omega/Omega_H for plotting
   for avg in avgs:
-    if 'omega_th' in avg.keys(): #Then both are
+    if 'omega_hth' in avg.keys(): #Then both are
       avg['omega_hth'] *= 4/avg['a']
       avg['omega_av_hth'] *= 4/avg['a']
-  plot_multi(ax[0,0], 'th_eh', 'omega_hth', r"$\omega_f$/$\Omega_H$ (EH, single shell)", ylim=[-1,2])
-  plot_multi(ax[0,1], 'th_eh', 'omega_av_hth', r"$\omega_f$/$\Omega_H$ (EH, 5-zone average)", ylim=[-1,2])
+  plot_multi(ax[0], 'th_5', 'omega_hth', r"$\omega_f$/$\Omega_H$ (EH, single shell)", ylim=[-1,2])
+  plot_multi(ax[1], 'th_5', 'omega_av_hth', r"$\omega_f$/$\Omega_H$ (EH, 5-zone average)", ylim=[-1,2])
 
   # Legend
-  ax[0,0].legend(loc='lower left')
+  ax[0].legend(loc='lower left')
 
   # Horizontal guidelines
   for a in ax.flatten():
@@ -241,7 +315,8 @@ if __name__ == "__main__":
     avgs.append(pickle.load(open(filename,'rb'), encoding = 'latin1'))
 
   # Split the labels, or use the filename as a label
-  labels = [ lab.replace("/",",") for lab in sys.argv[-2].split(",") ]
+  # TODO something about filenames if this isn't present...
+  labels = sys.argv[-2].split(",")
 
   if len(labels) < len(avgs):
     util.warn("Too few labels!")
@@ -264,6 +339,9 @@ if __name__ == "__main__":
   if EXTRAS: plot_extras()
   if DIAGS: plot_diags()
   if OMEGA: plot_omega()
+  if BSQ: plot_bsq_rise()
+  if TEMP: plot_temp()
   if len(avgs) == 1:
     if FLUX_PROF: plot_flux_profs()
+
 
