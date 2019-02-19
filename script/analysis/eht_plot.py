@@ -31,20 +31,28 @@ FLUX_PROF = False
 TEMP = True
 BSQ = True
 
-def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, xlim=None, ylim=None, timelabels=False):
+def i_of(avg, rcoord):
+  i = 0
+  while avg['r'][i] < rcoord:
+    i += 1
+  i -= 1
+  return i
+
+def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, xlim=None, ylim=None, timelabels=False, label_list=None, linestyle='-'):
+  if label_list is None: label_list = labels
   for i,avg in enumerate(avgs):
     if varname in avg.keys():
       if iname[:2] == "th":
         # We plot half-theta, from 0 to pi/2
-        ax.plot(avg[iname][:avg[iname].size//2], avg[varname], styles[i], label=labels[i])
+        ax.plot(avg[iname][:avg[iname].size//2], avg[varname], styles[i]+linestyle, label=label_list[i])
       else:
-        ax.plot(avg[iname], avg[varname], styles[i], label=labels[i])
+        ax.plot(avg[iname], avg[varname], styles[i]+linestyle, label=label_list[i])
   # Plot additions
   if logx: ax.set_xscale('log')
   if logy: ax.set_yscale('log')
   if ylim is not None: ax.set_ylim(ylim)
   if xlim is not None: ax.set_xlim(xlim)
-  ax.grid()
+  ax.grid(True)
   ax.set_ylabel(varname_pretty)
   # Defaults and labels for different plot types:
   if iname == 't':
@@ -72,27 +80,40 @@ def plot_temp():
       txlim = [1e0,1e3]
     else:
       txlim = [1e0,1e2]
+    
+    fit_labs = []
     for i,avg in enumerate(avgs):
       if 'gam' not in avg:
         if "5/3" in labels[i]:
           avg['gam'] = 5./3.
         else:
           avg['gam'] = 13./9.
-      if 'gam_p' not in avg: avg['gam_p'] = 5./3.
-      if 'gam_e' not in avg: avg['gam_e'] = 4./3.
       cgs = units.get_cgs()
       u_r = 1/(avg['gam'] - 1)*avg['Pg_r']
       moscR = (Rhi*avg['beta_r']**2 + 1) / (avg['beta_r']**2 + 1)
-      ue_r = (avg['gam_p'] - 1)/(avg['gam_e']-1) * u_r / (2+moscR)
-      avg['Tp_r_old'] = (avg['gam_p'] - 1) * (u_r - ue_r) / avg['rho_r'] * cgs['MP']*cgs['CL']**2 / cgs['KBOL']
-#      avg['Tp_r'] = avg['Pg_r'] / avg['rho_r'] * cgs['MP']*cgs['CL']**2 / cgs['KBOL']
       avg['Tp_r'] = 2 * cgs['MP'] * moscR * u_r / ( 3 * cgs['KBOL'] * avg['rho_r'] * ( 2 + moscR ) ) * cgs['CL']**2
-    plot_multi(ax, 'r', 'Tp_r', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True)
-    plot_multi(ax, 'r', 'Tp_r_old', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True)
-    logx=np.logspace(txlim[0]-1,txlim[1],num=20)
-    # Place a guideline at 1/x starting near the top of the plot
-    ax.plot(logx, (0.1*ax.get_ylim()[1]) * 1/logx, 'k--')
     
+      # Add the fits. Aaaaaalll the fits
+      x = avg['r'][i_of(avg, 3):i_of(avg, 30)]
+      y = avg['Tp_r'][i_of(avg, 3):i_of(avg, 30)]
+      logx=np.log(x)
+      logy=np.log(y)
+      # Place a guideline at 1/x starting near the top of the plot
+      #ax.plot(logx, (0.1*ax.get_ylim()[1]) * 1/logx, 'k--')
+      coeffs = np.polyfit(logx,logy,deg=1)
+      poly = np.poly1d(coeffs)
+      yfit = lambda x: np.exp(poly(np.log(x)))
+      # TODO any if statements to cut down on fits
+      avg['r_fit'] = x
+      avg['Tp_r_fit'] = yfit(x)
+      fit_lab = r"{:.2g} * r^{:.2g}".format(np.exp(coeffs[1]), coeffs[0])
+      print("{} Ti fit: ".format(labels[i]+" Rhigh = "+str(Rhi)),fit_lab)
+      fit_labs.append(fit_lab)
+
+    # Plot the profiles themselves
+    plot_multi(ax, 'r', 'Tp_r', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True)
+    plot_multi(ax, 'r_fit', 'Tp_r_fit', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True, label_list=fit_labs, linestyle='--')
+
     ax.legend(loc='lower right')
     plt.savefig(fname_out + '_Ti_Rhi{}.png'.format(Rhi))
     plt.close(fig)
