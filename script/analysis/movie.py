@@ -167,11 +167,28 @@ def plot(n):
 #                     label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice r="+str(rKH), vmin=-4, vmax=1, cmap='jet', shading='flat')
 
   elif movie_type == "kh_radii":
-    rlevels = [10, 20, 30, 40, 60, 80, 100, 200]
-    axes = [plt.subplot(2,4,i) for i in range(1,9)]
+    if True: # Half-theta (one jet) switch
+      awindow = [0,1,0.5,1]
+      bwindow = [0,rBZ/2,0,rBZ]
+    else:
+      awindow = [0,1,0,1]
+      bwindow = [0,rBZ/2,-rBZ/2,rBZ/2]
+    rlevels = [10, 20, 40, 80]
+    axes = [plt.subplot(2,3,1), plt.subplot(2,3,2), plt.subplot(2,3,4), plt.subplot(2,3,5)]
+    bigaxis = plt.subplot(1,3,3)
     for ax,rlevel in zip(axes, rlevels):
       bplt.plot_thphi(ax, geom, np.log10(dump['RHO'][i_of(geom, rlevel),:,:]), i_of(geom, rlevel),
-                     label=r"$\log_{10}(\rho) (r = "+str(rlevel)+")$", vmin=-3, vmax=2, cmap='jet', shading='flat', arrayspace=True)
+                     label=r"$\log_{10}(\rho) (r = "+str(rlevel)+")$", vmin=-3, vmax=2, cmap='jet', shading='flat',
+                     arrayspace=True, window=awindow)
+      
+#     bplt.plot_xz(bigaxis, geom, np.log10(dump['RHO']), label=r"$\log_{10}(\rho) (\phi slice)$",
+#                  vmin=-3, vmax=2, cmap='jet', shading='flat', window=bwindow)
+    bplt.plot_xz(bigaxis, geom, np.log10(dump['ucon'][:,:,:,3]),
+                   label="", vmin=-3, vmax=0, cmap='Reds', window=bwindow, cbar=False, shading='flat')
+    bplt.plot_xz(bigaxis, geom, np.log10(-dump['ucon'][:,:,:,3]),
+                   label=r"$\log_{10}(u^{\phi})$", vmin=-3, vmax=0, cmap='Blues', window=bwindow, shading='flat')
+    bplt.overlay_field(bigaxis, geom, dump)
+    bplt.overlay_contours(bigaxis, geom, geom['r'][:,:,0], levels=rlevels, color='r')
 
   else: # All other movie types share a layout
     ax_slc = lambda i: plt.subplot(2, 4, i)
@@ -247,14 +264,20 @@ def plot(n):
       bplt.plot_slices(ax_flux[0], ax_flux[1], geom, dump['bsq']/dump['RHO'] - 100,
                        vmin=-100, vmax=100, cmap='RdBu_r')
       bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
-      
+    
+    elif movie_type in d_fns: # Hail mary for plotting new functions one at a time
+      axes = [plt.subplot(1,2,1), plt.subplot(1,2,2)]
+      win=[l*2 for l in window]
+      var = d_fns[movie_type](dump)
+      bplt.plot_slices(axes[0], axes[1], geom, dump, np.log10(var), vmin=-3, vmax=3, cmap='Reds', window=win)
+      bplt.plot_slices(axes[0], axes[1], geom, dump, np.log10(-var), vmin=-3, vmax=3, cmap='Blues', window=win)
     else:
       print("Movie type not known!")
       exit(1)
 
     # Extra padding for crowded 4x2 plots
-    pad = 0.05
-    plt.subplots_adjust(left=2*pad, right=1-2*pad, bottom=pad, top=1-pad)
+    pad = 0.03
+    plt.subplots_adjust(left=pad, right=1-pad, bottom=pad, top=1-pad)
 
   plt.savefig(imname, dpi=1920/FIGX) # TODO the group projector is like 4:3 man
   plt.close(fig)

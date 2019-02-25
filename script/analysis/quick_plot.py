@@ -17,9 +17,9 @@ import numpy as np
 
 # TODO parse lots of options I set here
 USEARRSPACE=False
-UNITS=True
+UNITS=False
 
-SIZE = 50
+SIZE = 100
 window=[-SIZE,SIZE,-SIZE,SIZE]
 FIGX = 10
 FIGY = 10
@@ -99,7 +99,14 @@ if var in ['jcon','ucon','ucov','bcon','bcov']:
     bplt.plot_xz(axes[n], geom, np.log10(dump[var][:,:,:,n]), arrayspace=USEARRSPACE, window=window)
 else:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xz(ax, geom, dump[var], arrayspace=USEARRSPACE, window=window, vmin=1e10, vmax=1e12)
+  bplt.plot_xz(ax, geom, np.log10(dump[var]), arrayspace=USEARRSPACE, window=window, vmin=-3, vmax=2)
+  #JE1 = -T_mixed(dump, 1,0)
+  #JE2 = T_mixed(dump, 2,0)
+  #JE1 = dump['ucon'][:,:,:,1]
+  #JE2 = dump['ucon'][:,:,:,2]
+  #bplt.overlay_flowlines(ax, geom, JE1, JE2, nlines=1000, arrayspace=USEARRSPACE)
+  #bplt.overlay_eflow_quiver(ax, geom, dump)
+  bplt.overlay_field(ax, geom, dump, nlines=30, arrayspace=USEARRSPACE)
 
 plt.tight_layout()
 

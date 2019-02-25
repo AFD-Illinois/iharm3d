@@ -164,6 +164,12 @@ def avg_dump(n):
       out[var+'_100_thphi'] = d_fns[var](dump)[iBZ,:,:]
       out[var+'_rth'] = d_fns[var](dump).mean(axis=-1)
 
+  # Conserved (in steady state) 2D energy flux
+  for var in ['JE0', 'JE1', 'JE2']:
+    out[var+'_rt'] = sum_shell(geom, d_fns[var](dump))
+    if out['t'] >= tavg_start and out['t'] <= tavg_end:
+      out[var+'_rth'] = d_fns[var](dump).mean(axis=-1)
+
   # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
   #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
   norm = 1 # This is what the EHT comparison uses?
@@ -183,7 +189,8 @@ def avg_dump(n):
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
       out[flux+'_r'] = sum_shell(geom, d_fns[flux](dump))
     out[var] = sum_shell(geom, d_fns[flux](dump), at_zone=iF)
-  # Mdot is defined special
+  # Mdot is defined specially to be positive
+  # TODO is Edot?
   out['Mdot'] *= -1
 
   # I'll be curious about other maxes

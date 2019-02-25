@@ -5,7 +5,7 @@
 import numpy as np
 
 # Define a dict of names, coupled with the functions required to obtain their variables.
-# That way, we only need to specify lists and final operations below,
+# That way, we only need to specify lists and final operations in eht_analysis,
 # AND don't need to cart all these things around in memory
 d_fns = {'rho': lambda dump: dump['RHO'],
          'bsq' : lambda dump: dump['bsq'],
@@ -31,7 +31,11 @@ d_fns = {'rho': lambda dump: dump['RHO'],
          'beta' : lambda dump: dump['beta'],
          'B' : lambda dump: np.sqrt(dump['bsq']),
          'betagamma' : lambda dump: np.sqrt((d_fns['FE_EM'](dump) + d_fns['FE_Fl'](dump))/d_fns['FM'](dump) - 1),
-         'Tp' : lambda dump: (dump['hdr']['gam_p'] - 1) * dump['UU'] / dump['RHO']
+         'Tp' : lambda dump: (dump['hdr']['gam'] - 1) * dump['UU'] / dump['RHO'],
+         # TODO Te
+         'JE0' : lambda dump: T_mixed(dump, 0, 0),
+         'JE1' : lambda dump: T_mixed(dump, 1, 0),
+         'JE2' : lambda dump: T_mixed(dump, 2, 0)
          }
          #'rur' : lambda dump: geom['r']*dump['ucon'][:,:,:,1],
          #'gamma' : lambda dump: get_gamma(geom, dump)}

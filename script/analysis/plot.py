@@ -12,6 +12,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 from scipy.integrate import trapz
 
+from analysis_fns import *
+
 # Get xz slice of 3D data
 def flatten_xz(array, patch_pole=False, average=False):
   if array.ndim == 2:
@@ -180,8 +182,9 @@ def plot_thphi(ax, geom, var, r_i, cmap='jet', vmin=None, vmax=None, window=None
             ticks=None, project=False, shading='gouraud'):
 
   if arrayspace:
-    x = (geom['X2'][r_i] - geom['startx2']) / (geom['n2'] * geom['dx2'])
-    y = (geom['X3'][r_i] - geom['startx3']) / (geom['n3'] * geom['dx3'])
+    # X3-X2 makes way more sense than X2-X3 since the disk is horizontal
+    x = (geom['X3'][r_i] - geom['startx3']) / (geom['n3'] * geom['dx3'])
+    y = (geom['X2'][r_i] - geom['startx2']) / (geom['n2'] * geom['dx2'])
     var = var
   else:
     radius = geom['r'][r_i,0,0]
@@ -209,8 +212,8 @@ def plot_thphi(ax, geom, var, r_i, cmap='jet', vmin=None, vmax=None, window=None
       shading=shading)
 
   if arrayspace:
-    if xlabel: ax.set_xlabel("X2 (arbitrary)")
-    if ylabel: ax.set_ylabel("X3 (arbitrary)")
+    if xlabel: ax.set_xlabel("X3 (arbitrary)")
+    if ylabel: ax.set_ylabel("X2 (arbitrary)")
   else:
     if xlabel: ax.set_xlabel(r"$x \frac{c^2}{G M}$")
     if ylabel: ax.set_ylabel(r"$y \frac{c^2}{G M}$")
@@ -231,28 +234,47 @@ def overlay_contours(ax, geom, var, levels, color='k'):
   var = flatten_xz(var, average=True)
   return ax.contour(x, z, var, levels=levels, colors=color)
 
-def overlay_field(ax, geom, dump, nlines=10):
-  hdr = dump['hdr']
+def overlay_field(ax, geom, dump, **kwargs):
+  overlay_flowlines(ax, geom, dump['B1'], dump['B2'], **kwargs)
+
+def overlay_flowlines(ax, geom, varx1, varx2, nlines=50, arrayspace=False):
   N1 = geom['n1']; N2 = geom['n2']
-  x = flatten_xz(geom['x']).transpose()
-  z = flatten_xz(geom['z']).transpose()
-  A_phi = np.zeros([N2, 2*N1])
-  gdet = geom['gdet'][:,:].transpose()
-  B1 = dump['B1'].mean(axis=-1).transpose()
-  B2 = dump['B2'].mean(axis=-1).transpose()
+  if arrayspace:
+    x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
+    x2_norm = (geom['X2'] - geom['startx2']) / (geom['n2'] * geom['dx2'])
+    x = flatten_xz(x1_norm)[geom['n1']:,:]
+    z = flatten_xz(x2_norm)[geom['n1']:,:]
+  else:
+    x = flatten_xz(geom['x'])
+    z = flatten_xz(geom['z'])
+  
+  varx1 = varx1.mean(axis=-1)
+  varx2 = varx2.mean(axis=-1)
+  AJ_phi = np.zeros([2*N1, N2])
+  gdet = geom['gdet']
   for j in range(N2):
     for i in range(N1):
-      A_phi[j,N1-1-i] = (trapz(gdet[j,:i]*B2[j,:i], dx=hdr['dx1']) -
-                         trapz(gdet[:j,i]*B1[:j,i], dx=hdr['dx2']))
-      A_phi[j,i+N1] = (trapz(gdet[j,:i]*B2[j,:i], dx=hdr['dx1']) -
-                         trapz(gdet[:j,i]*B1[:j,i], dx=hdr['dx2']))
-  A_phi -= (A_phi[N2//2-1,-1] + A_phi[N2//2,-1])/2.
-  Apm = np.fabs(A_phi).max()
-  if np.fabs(A_phi.min()) > A_phi.max():
-    A_phi *= -1.
-  levels = np.concatenate((np.linspace(-Apm,0,nlines)[:-1],
-                           np.linspace(0,Apm,nlines)[1:]))
-  ax.contour(x, z, A_phi, levels=levels, colors='k')
+      AJ_phi[N1-1-i,j] = AJ_phi[i+N1,j] = (
+        trapz(gdet[:i,j]*varx2[:i,j], dx=geom['dx1']) -
+        trapz(gdet[i,:j]*varx1[i,:j], dx=geom['dx2']))
+  AJ_phi -= AJ_phi.min()
+  levels = np.linspace(0,AJ_phi.max(),nlines*2)
+  
+  if arrayspace:
+    ax.contour(x, z, AJ_phi[N1:,:], levels=levels, colors='k')
+  else:
+    ax.contour(x, z, AJ_phi, levels=levels, colors='k')
+
+def overlay_eflow_quiver(ax, geom, dump):
+  JE1 = -T_mixed(dump,1,0).mean(axis=-1)*geom['gdet']
+  JE2 = T_mixed(dump,2,0).mean(axis=-1)*geom['gdet']
+  x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
+  x2_norm = (geom['X2'] - geom['startx2']) / (geom['n2'] * geom['dx2'])
+  x = flatten_xz(x1_norm)[geom['n1']:,:]
+  z = flatten_xz(x2_norm)[geom['n1']:,:]
+  s1 = geom['n1']//64; s2 = geom['n2']//64
+  ax.quiver(x[::s1,::s2], z[::s1,::s2], JE1[::s1,::s2], JE2[::s1,::s2],
+      units='width')
 
 # Plot two slices together without duplicating everything in the caller
 def plot_slices(ax1, ax2, geom, dump, var, field_overlay=True, nlines=10, **kwargs):
@@ -263,8 +285,8 @@ def plot_slices(ax1, ax2, geom, dump, var, field_overlay=True, nlines=10, **kwar
     arrspace = False
   
   plot_xz(ax1, geom, var, **kwargs)
-  if field_overlay and not arrspace:
-    overlay_field(ax1, geom, dump, nlines=nlines)
+  if field_overlay:
+    overlay_field(ax1, geom, dump, nlines=nlines, arrayspace=arrspace)
 
   plot_xy(ax2, geom, var, **kwargs)
 
