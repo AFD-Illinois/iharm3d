@@ -185,7 +185,6 @@ def plot_thphi(ax, geom, var, r_i, cmap='jet', vmin=None, vmax=None, window=None
     # X3-X2 makes way more sense than X2-X3 since the disk is horizontal
     x = (geom['X3'][r_i] - geom['startx3']) / (geom['n3'] * geom['dx3'])
     y = (geom['X2'][r_i] - geom['startx2']) / (geom['n2'] * geom['dx2'])
-    var = var
   else:
     radius = geom['r'][r_i,0,0]
     max_th = geom['n2']//2

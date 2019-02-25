@@ -142,10 +142,12 @@ def avg_dump(n):
     dump = io.load_dump(dumps[n], hdr, geom, extras=False)
 
   # EHT Radial profiles: special fn for profile, averaged over phi, 1/3 theta, time
-  if out['t'] >= tavg_start and out['t'] <= tavg_end:
-    for var in ['rho', 'Theta', 'B', 'Pg', 'Ptot', 'beta', 'u^phi', 'u_phi']:
-      out[var+'_r'] = eht_profile(geom, d_fns[var](dump), jmin, jmax)
+  for var in ['rho', 'Theta', 'B', 'Pg', 'Ptot', 'beta', 'u^phi', 'u_phi']:
+    out[var+'_rt'] = eht_profile(geom, d_fns[var](dump), jmin, jmax)
+    if out['t'] >= tavg_start and out['t'] <= tavg_end:
+      out[var+'_r'] = out[var+'_rt']
 
+  if out['t'] >= tavg_start and out['t'] <= tavg_end:
     # THETA AVERAGES
     # These are divided averages, not average of division, so not amenable to d_fns
     Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
