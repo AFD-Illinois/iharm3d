@@ -74,49 +74,41 @@ def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, xlim=
       ax.set_ylim([1e-5*ylim[1], ylim[1]])
 
 def plot_temp():
-  for Rhi in [1,10,20,40,80,160]:
-    fig, ax = plt.subplots(1,1, figsize=(FIGX, FIGY))
-    if avgs[0]['r'][-1] > 50:
-      txlim = [1e0,1e3]
-    else:
-      txlim = [1e0,1e2]
-    
-    fit_labs = []
-    for i,avg in enumerate(avgs):
-      if 'gam' not in avg:
-        if "5/3" in labels[i]:
-          avg['gam'] = 5./3.
-        else:
-          avg['gam'] = 13./9.
-      cgs = units.get_cgs()
-      u_r = 1/(avg['gam'] - 1)*avg['Pg_r']
-      moscR = (Rhi*avg['beta_r']**2 + 1) / (avg['beta_r']**2 + 1)
-      avg['Tp_r'] = 2 * cgs['MP'] * moscR * u_r / ( 3 * cgs['KBOL'] * avg['rho_r'] * ( 2 + moscR ) ) * cgs['CL']**2
-    
-      # Add the fits. Aaaaaalll the fits
-      x = avg['r'][i_of(avg, 3):i_of(avg, 30)]
-      y = avg['Tp_r'][i_of(avg, 3):i_of(avg, 30)]
-      logx=np.log(x)
-      logy=np.log(y)
-      # Place a guideline at 1/x starting near the top of the plot
-      #ax.plot(logx, (0.1*ax.get_ylim()[1]) * 1/logx, 'k--')
-      coeffs = np.polyfit(logx,logy,deg=1)
-      poly = np.poly1d(coeffs)
-      yfit = lambda x: np.exp(poly(np.log(x)))
-      # TODO any if statements to cut down on fits
-      avg['r_fit'] = x
-      avg['Tp_r_fit'] = yfit(x)
-      fit_lab = r"{:.2g} * r^{:.2g}".format(np.exp(coeffs[1]), coeffs[0])
-      print("{} Ti fit: ".format(labels[i]+" Rhigh = "+str(Rhi)),fit_lab)
-      fit_labs.append(fit_lab)
+  fig, ax = plt.subplots(1,1, figsize=(FIGX, FIGY))
+  if avgs[0]['r'][-1] > 50:
+    txlim = [1e0,1e3]
+  else:
+    txlim = [1e0,1e2]
+  
+  fit_labs = []
+  for i,avg in enumerate(avgs):
+    cgs = units.get_cgs()
+    avg['Tp_r'] = cgs['MP'] * avg['Pg_r'] / (cgs['KBOL'] * avg['rho_r']) * cgs['CL']**2
+  
+    # Add the fits. Aaaaaalll the fits
+    x = avg['r'][i_of(avg, 3):i_of(avg, 30)]
+    y = avg['Tp_r'][i_of(avg, 3):i_of(avg, 30)]
+    logx=np.log(x)
+    logy=np.log(y)
+    # Place a guideline at 1/x starting near the top of the plot
+    #ax.plot(logx, (0.1*ax.get_ylim()[1]) * 1/logx, 'k--')
+    coeffs = np.polyfit(logx,logy,deg=1)
+    poly = np.poly1d(coeffs)
+    yfit = lambda x: np.exp(poly(np.log(x)))
+    # TODO any if statements to cut down on fits
+    avg['r_fit'] = x
+    avg['Tp_r_fit'] = yfit(x)
+    fit_lab = r"{:.2g} * r^{:.2g}".format(np.exp(coeffs[1]), coeffs[0])
+    print(labels[i]," Ti fit: ",fit_lab)
+    fit_labs.append(fit_lab)
 
-    # Plot the profiles themselves
-    plot_multi(ax, 'r', 'Tp_r', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True)
-    plot_multi(ax, 'r_fit', 'Tp_r_fit', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True, label_list=fit_labs, linestyle='--')
+  # Plot the profiles themselves
+  plot_multi(ax, 'r', 'Tp_r', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True)
+  plot_multi(ax, 'r_fit', 'Tp_r_fit', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True, label_list=fit_labs, linestyle='--')
 
-    ax.legend(loc='lower right')
-    plt.savefig(fname_out + '_Ti_Rhi{}.png'.format(Rhi))
-    plt.close(fig)
+  ax.legend(loc='lower right')
+  plt.savefig(fname_out + "_Ti.png")
+  plt.close(fig)
 
 def plot_bsq_rise():
   fig, ax = plt.subplots(4,1, figsize=(FIGX, FIGY))
