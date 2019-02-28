@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 import sys
 import numpy as np
+from scipy.signal import convolve2d
 
 # TODO parse lots of options I set here
 USEARRSPACE=False
@@ -51,6 +52,32 @@ if var in ['jcov', 'jsq']:
   for n in range(hdr['n_dim']):
     dump['jcov'][:,:,:,n] = np.sum(dump['jcon']*geom['gcov'][:,:,None,:,n], axis=3)
   dump['jsq'] = np.sum(dump['jcon']*dump['jcov'], axis=-1)
+elif var in ['divE2D']:
+  JE1g, JE2g = T_mixed(dump, 1,0).mean(axis=-1)*geom['gdet'], T_mixed(dump, 2,0).mean(axis=-1)*geom['gdet']
+  divJE = (JE1g[1:,:-1] - JE1g[:-1,:-1]) / geom['dx1'] + (JE2g[:-1,1:] - JE2g[:-1,:-1]) / geom['dx2']
+  dump[var] = np.zeros_like(dump['RHO'])
+  dump[var][:-1,:-1,0] = divJE
+  dump[var] /= np.sqrt(T_mixed(dump, 1,0)**2 + T_mixed(dump, 2,0)**2 + T_mixed(dump, 3,0)**2)*geom['gdet'][:,:,None]
+elif var in ['divB2D']:
+  B1g, B2g = dump['B1'].mean(axis=-1)*geom['gdet'], dump['B2'].mean(axis=-1)*geom['gdet']
+  corner_B1 = 0.5*(B1g[:,1:] + B1g[:,:-1])
+  corner_B2 = 0.5*(B2g[1:,:] + B2g[:-1,:])
+  divB = (corner_B1[1:,:] - corner_B1[:-1,:]) / geom['dx1'] + (corner_B2[:,1:] - corner_B2[:,:-1]) / geom['dx2']
+  dump[var] = np.zeros_like(dump['RHO'])
+  dump[var][:-1,:-1,0] = divB
+  #dump[var] /= np.sqrt(dump['bsq'])
+  dump[var] /= np.sqrt(dump['B1']**2 + dump['B2']**2 + dump['B3']**2)*geom['gdet'][:,:,None]
+elif var in ['divB3D']:
+  B1g, B2g, B3g = dump['B1']*geom['gdet'][:,:,None], dump['B2']*geom['gdet'][:,:,None], dump['B3']*geom['gdet'][:,:,None]
+  corner_B1 = 0.25*(B1g[:,1:,1:] + B1g[:,1:,:-1] + B1g[:,:-1,1:] + B1g[:,:-1,:-1])
+  corner_B2 = 0.25*(B2g[1:,:,1:] + B2g[1:,:,:-1] + B2g[:-1,:,1:] + B2g[:-1,:,:-1])
+  corner_B3 = 0.25*(B3g[1:,1:,:] + B3g[1:,:-1,:] + B3g[:-1,1:,:] + B3g[:-1,:-1,:])
+  divB = (corner_B1[1:,:,:] - corner_B1[:-1,:,:]) / geom['dx1'] + (corner_B2[:,1:,:] - corner_B2[:,:-1,:]) / geom['dx2'] + (corner_B3[:,:,1:] - corner_B3[:,:,:-1]) / geom['dx3']
+  dump[var] = np.zeros_like(dump['RHO'])
+  dump[var][:-1,:-1,:-1] = divB
+  #dump[var] /= np.sqrt(dump['bsq'])
+  dump[var] /= np.sqrt(dump['B1']**2 + dump['B2']**2 + dump['B3']**2)*geom['gdet'][:,:,None]
+  # TODO div of U?
 elif var not in dump:
   dump[var] = d_fns[var](dump)
 
@@ -80,7 +107,7 @@ if var in ['jcon','ucon','ucov','bcon','bcov']:
   axes = [plt.subplot(2, 2, i) for i in range(1,5)]
   for n in range(4):
     bplt.plot_xy(axes[n], geom, np.log10(dump[var][:,:,:,n]), arrayspace=USEARRSPACE, window=window)
-else:
+elif var not in ['divE2D', 'divB2D']:
   # TODO allow specifying vmin/max, average from command line or above
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xy(ax, geom, dump[var], arrayspace=USEARRSPACE, window=window, vmin=1e10, vmax=1e12)
@@ -97,16 +124,22 @@ if var in ['jcon','ucon','ucov','bcon','bcov']:
   axes = [plt.subplot(2, 2, i) for i in range(1,5)]
   for n in range(4):
     bplt.plot_xz(axes[n], geom, np.log10(dump[var][:,:,:,n]), arrayspace=USEARRSPACE, window=window)
+
+elif var in ['divB2D', 'divE2D', 'divB3D']:
+  ax = plt.subplot(1, 1, 1)
+  bplt.plot_xz(ax, geom, np.log10(np.abs(dump[var])), arrayspace=USEARRSPACE, window=window, vmin=-6, vmax=0)
+  if var == 'divE2D':
+    JE1 = T_mixed(dump, 1,0)
+    JE2 = T_mixed(dump, 2,0)
+    #JE1 = dump['ucon'][:,:,:,1]
+    #JE2 = dump['ucon'][:,:,:,2]
+    bplt.overlay_flowlines(ax, geom, JE1, JE2, nlines=20, arrayspace=USEARRSPACE)
+    #bplt.overlay_eflow_quiver(ax, geom, dump)
+  else:
+    bplt.overlay_field(ax, geom, dump, nlines=20, arrayspace=USEARRSPACE)
 else:
   ax = plt.subplot(1, 1, 1)
-  bplt.plot_xz(ax, geom, np.log10(dump[var]), arrayspace=USEARRSPACE, window=window, vmin=-3, vmax=2)
-  #JE1 = -T_mixed(dump, 1,0)
-  #JE2 = T_mixed(dump, 2,0)
-  #JE1 = dump['ucon'][:,:,:,1]
-  #JE2 = dump['ucon'][:,:,:,2]
-  #bplt.overlay_flowlines(ax, geom, JE1, JE2, nlines=1000, arrayspace=USEARRSPACE)
-  #bplt.overlay_eflow_quiver(ax, geom, dump)
-  bplt.overlay_field(ax, geom, dump, nlines=30, arrayspace=USEARRSPACE)
+  bplt.plot_xz(ax, geom, np.log10(dump[var]), arrayspace=USEARRSPACE, window=window)
 
 plt.tight_layout()
 

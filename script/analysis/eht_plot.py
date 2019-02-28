@@ -39,7 +39,9 @@ def i_of(avg, rcoord):
   return i
 
 def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, xlim=None, ylim=None, timelabels=False, label_list=None, linestyle='-'):
+
   if label_list is None: label_list = labels
+
   for i,avg in enumerate(avgs):
     if varname in avg.keys():
       if iname[:2] == "th":
@@ -106,7 +108,10 @@ def plot_temp():
   plot_multi(ax, 'r', 'Tp_r', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True)
   plot_multi(ax, 'r_fit', 'Tp_r_fit', r"$<T_{i}>$", logx=True, xlim=txlim, logy=True, label_list=fit_labs, linestyle='--')
 
-  ax.legend(loc='lower right')
+  if len(labels) > 1:
+    ax.legend(loc='lower right')
+  else:
+    ax.set_title(labels[0])
   plt.savefig(fname_out + "_Ti.png")
   plt.close(fig)
 
@@ -145,7 +150,10 @@ def plot_rads():
   plot_multi(ax[1,2], 'r', 'Tp_r', r"$<T_{i}>$", logy=True) #, ylim=[1.e-6, 1.e-2])
   plot_multi(ax[1,3], 'r', 'betainv_r', r"$<\beta^{-1}>$", logy=True) #, ylim=[1.e-2, 1.e1])
 
-  ax[0,3].legend(loc='upper right')
+  if len(labels) > 1:
+    ax[0,3].legend(loc='upper right')
+  else:
+    fig.suptitle(labels[0])
 
   pad = 0.05
   plt.subplots_adjust(left=pad, right=1-pad/2, bottom=pad, top=1-pad)
@@ -170,7 +178,10 @@ def plot_fluxes():
 
 #  plot_multi(ax[4], 't', 'Lum', "Lum", timelabels=True)
 
-  ax[0].legend(loc='upper left')
+  if len(labels) > 1:
+    ax[0].legend(loc='upper left')
+  else:
+    ax[0].set_title(labels[0])
 
   plt.savefig(fname_out + '_fluxes.png')
   plt.close(fig)
@@ -247,7 +258,10 @@ def plot_extras():
 #    if 'alBZ' in avgs[i]:
 #      print("{} average (normalized) BZ power: {}".format(labels[i], np.mean(avgs[i]['alBZ'][np.where(avgs[i]['t'] > 6000)])))
 
-  ax[0].legend(loc='upper left')
+  if len(labels) > 1:
+    ax[0].legend(loc='upper left')
+  else:
+    ax[0].set_title(labels[0])
 
   plt.savefig(fname_out + '_extras.png')
   plt.close(fig)
@@ -261,7 +275,10 @@ def plot_diags():
   # TODO include HARM's own diagnostics somehow? Re-insert just this one?
   plot_multi(ax[2], 't_d', 'divbmax_d', "max divB", timelabels=True)
   
-  ax[0].legend(loc='lower left')
+  if len(labels) > 1:
+    ax[0].legend(loc='lower left')
+  else:
+    ax[0].set_title(labels[0])
 
   plt.savefig(fname_out + '_diagnostics.png')
   plt.close(fig)
@@ -278,7 +295,10 @@ def plot_omega():
   plot_multi(ax[1], 'th_5', 'omega_av_hth', r"$\omega_f$/$\Omega_H$ (EH, 5-zone average)", ylim=[-1,2])
 
   # Legend
-  ax[0].legend(loc='lower left')
+  if len(labels) > 1:
+    ax[0].legend(loc='lower left')
+  else:
+    ax[0].set_title(labels[0])
 
   # Horizontal guidelines
   for a in ax.flatten():
@@ -327,9 +347,11 @@ if __name__ == "__main__":
     # Encoding arg is for python2 numpy bytestrings
     avgs.append(pickle.load(open(filename,'rb'), encoding = 'latin1'))
 
-  # Split the labels, or use the filename as a label
-  # TODO something about filenames if this isn't present...
-  labels = sys.argv[-2].split(",")
+  # Split the labels, or use the output name as a label
+  if len(sys.argv) > 3:
+    labels = sys.argv[-2].split(",")
+  else:
+    labels = [sys.argv[-1].replace("_"," ")]
 
   if len(labels) < len(avgs):
     util.warn("Too few labels!")

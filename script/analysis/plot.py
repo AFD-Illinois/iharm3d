@@ -236,7 +236,7 @@ def overlay_contours(ax, geom, var, levels, color='k'):
 def overlay_field(ax, geom, dump, **kwargs):
   overlay_flowlines(ax, geom, dump['B1'], dump['B2'], **kwargs)
 
-def overlay_flowlines(ax, geom, varx1, varx2, nlines=50, arrayspace=False):
+def overlay_flowlines(ax, geom, varx1, varx2, nlines=50, arrayspace=False, reverse=False):
   N1 = geom['n1']; N2 = geom['n2']
   if arrayspace:
     x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
@@ -246,19 +246,24 @@ def overlay_flowlines(ax, geom, varx1, varx2, nlines=50, arrayspace=False):
   else:
     x = flatten_xz(geom['x'])
     z = flatten_xz(geom['z'])
-  
+
   varx1 = varx1.mean(axis=-1)
   varx2 = varx2.mean(axis=-1)
   AJ_phi = np.zeros([2*N1, N2])
   gdet = geom['gdet']
   for j in range(N2):
     for i in range(N1):
-      AJ_phi[N1-1-i,j] = AJ_phi[i+N1,j] = (
-        trapz(gdet[:i,j]*varx2[:i,j], dx=geom['dx1']) -
-        trapz(gdet[i,:j]*varx1[i,:j], dx=geom['dx2']))
+      if not reverse:
+        AJ_phi[N1-1-i,j] = AJ_phi[i+N1,j] = (
+          trapz(gdet[:i,j]*varx2[:i,j], dx=geom['dx1']) -
+          trapz(gdet[i,:j]*varx1[i,:j], dx=geom['dx2']))
+      else:
+        AJ_phi[N1-1-i,j] = AJ_phi[i+N1,j] = (
+          trapz(gdet[:i,j]*varx2[:i,j], dx=geom['dx1']) +
+          trapz(gdet[i,j:]*varx1[i,j:], dx=geom['dx2']))
   AJ_phi -= AJ_phi.min()
   levels = np.linspace(0,AJ_phi.max(),nlines*2)
-  
+
   if arrayspace:
     ax.contour(x, z, AJ_phi[N1:,:], levels=levels, colors='k')
   else:
