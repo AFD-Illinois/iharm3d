@@ -269,14 +269,17 @@ def overlay_flowlines(ax, geom, varx1, varx2, nlines=50, arrayspace=False, rever
   else:
     ax.contour(x, z, AJ_phi, levels=levels, colors='k')
 
-def overlay_eflow_quiver(ax, geom, dump):
-  JE1 = -T_mixed(dump,1,0).mean(axis=-1)*geom['gdet']
-  JE2 = T_mixed(dump,2,0).mean(axis=-1)*geom['gdet']
+def overlay_quiver(ax, geom, dump, JE1, JE2):
+  JE1 *= geom['gdet']
+  JE2 *= geom['gdet']
+
   x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
   x2_norm = (geom['X2'] - geom['startx2']) / (geom['n2'] * geom['dx2'])
   x = flatten_xz(x1_norm)[geom['n1']:,:]
   z = flatten_xz(x2_norm)[geom['n1']:,:]
+  
   s1 = geom['n1']//64; s2 = geom['n2']//64
+  
   ax.quiver(x[::s1,::s2], z[::s1,::s2], JE1[::s1,::s2], JE2[::s1,::s2],
       units='width')
 

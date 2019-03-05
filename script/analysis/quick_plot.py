@@ -17,7 +17,7 @@ import numpy as np
 from scipy.signal import convolve2d
 
 # TODO parse lots of options I set here
-USEARRSPACE=False
+USEARRSPACE=True
 UNITS=False
 
 SIZE = 100
@@ -129,17 +129,19 @@ elif var in ['divB2D', 'divE2D', 'divB3D']:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, np.log10(np.abs(dump[var])), arrayspace=USEARRSPACE, window=window, vmin=-6, vmax=0)
   if var == 'divE2D':
-    JE1 = T_mixed(dump, 1,0)
-    JE2 = T_mixed(dump, 2,0)
-    #JE1 = dump['ucon'][:,:,:,1]
-    #JE2 = dump['ucon'][:,:,:,2]
+    JE1 = -T_mixed(dump, 1,0)
+    JE2 = -T_mixed(dump, 2,0)
     bplt.overlay_flowlines(ax, geom, JE1, JE2, nlines=20, arrayspace=USEARRSPACE)
-    #bplt.overlay_eflow_quiver(ax, geom, dump)
+    #bplt.overlay_quiver(ax, geom, JE1, JE2)
   else:
     bplt.overlay_field(ax, geom, dump, nlines=20, arrayspace=USEARRSPACE)
 else:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, np.log10(dump[var]), arrayspace=USEARRSPACE, window=window)
+  norm = 0.5*dump['RHO'][:,:,0]*np.sqrt(dump['ucon'][:,:,0,1]**2 + dump['ucon'][:,:,0,2]**2)*geom['gdet']
+  JF1 = dump['RHO'][:,:,0]*dump['ucon'][:,:,0,1]/norm
+  JF2 = dump['RHO'][:,:,0]*dump['ucon'][:,:,0,2]/norm
+  bplt.overlay_quiver(ax, geom, dump, JF1, JF2)
 
 plt.tight_layout()
 
