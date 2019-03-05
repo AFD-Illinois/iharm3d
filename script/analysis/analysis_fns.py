@@ -11,7 +11,6 @@ d_fns = {'rho': lambda dump: dump['RHO'],
          'bsq' : lambda dump: dump['bsq'],
          'sigma' : lambda dump: dump['bsq'] / dump['RHO'],
          'U' : lambda dump: dump['UU'],
-         'Theta' : lambda dump: (dump['hdr']['gam'] - 1.) * dump['UU']/dump['RHO'],
          'u_t' : lambda dump: dump['ucov'][:, :, :, 0],
          'u_phi' : lambda dump: dump['ucov'][:, :, :, 3],
          'u^phi' : lambda dump: dump['ucon'][:, :, :, 3],
@@ -31,8 +30,9 @@ d_fns = {'rho': lambda dump: dump['RHO'],
          'beta' : lambda dump: dump['beta'],
          'B' : lambda dump: np.sqrt(dump['bsq']),
          'betagamma' : lambda dump: np.sqrt((d_fns['FE_EM'](dump) + d_fns['FE_Fl'](dump))/d_fns['FM'](dump) - 1),
-         'Tp' : lambda dump: (dump['hdr']['gam'] - 1) * dump['UU'] / dump['RHO'],
-         # TODO Te
+         'Theta' : lambda dump: (dump['hdr']['gam'] - 1) * dump['UU'] / dump['RHO'],
+         'Thetap' : lambda dump: (dump['hdr']['gam_p'] - 1) * (dump['UU'] ) / dump['RHO'],
+         'Thetae' : lambda dump: (dump['hdr']['gam_e'] - 1) * (dump['UU'] ) / dump['RHO'],
          'JE0' : lambda dump: T_mixed(dump, 0, 0),
          'JE1' : lambda dump: T_mixed(dump, 1, 0),
          'JE2' : lambda dump: T_mixed(dump, 2, 0)
@@ -42,6 +42,7 @@ d_fns = {'rho': lambda dump: dump['RHO'],
 
 ## Physics functions ##
 
+# These are separated to make them faster
 def T_con(geom, dump, i, j):
   gam = dump['hdr']['gam']
   return ( (dump['RHO'] + gam*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucon'][:,:,:,j] +
@@ -54,19 +55,25 @@ def T_cov(geom, dump, i, j):
 
 def T_mixed(dump, i, j):
   gam = dump['hdr']['gam']
-  gmixedij = (i == j)
-  return ( (dump['RHO'] + gam*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
-           ((gam-1)*dump['UU'] + dump['bsq']/2)*gmixedij - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
+  if i != j:
+    return ( (dump['RHO'] + gam*dump['UU'] + dump['bsq'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
+             - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
+  else:
+    return ( (dump['RHO'] + gam*dump['UU'] + dump['bsq']) * dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] +
+             (gam-1)*dump['UU'] + dump['bsq']/2 - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j] )
 
-# TODO These only works for i != j.  Need new code path to keep speed?
 def TEM_mixed(dump, i, j):
-  if i == j: raise ValueError("TEM Not implemented for i==j.")
-  return dump['bsq'][:,:,:]*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j]
+  if i != j:
+    return dump['bsq'][:,:,:]*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j]
+  else:
+    return dump['bsq'][:,:,:]*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] + dump['bsq']/2 - dump['bcon'][:,:,:,i]*dump['bcov'][:,:,:,j]
 
 def TFl_mixed(dump, i, j):
   gam = dump['hdr']['gam']
-  if i == j: raise ValueError("TEM Not implemented for i==j.")
-  return (dump['RHO'] + dump['hdr']['gam']*dump['UU'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j]
+  if i != j:
+    return (dump['RHO'] + dump['hdr']['gam']*dump['UU'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j]
+  else:
+    return (dump['RHO'] + dump['hdr']['gam']*dump['UU'])*dump['ucon'][:,:,:,i]*dump['ucov'][:,:,:,j] + (gam-1)*dump['UU']
 
 # Return the i,j component of contravarient Maxwell tensor
 # TODO there's a computationally easier way to do this:
@@ -97,7 +104,7 @@ def Fcov(geom, dump, i, j):
 
 def bernoulli(dump, with_B=False):
   if with_B:
-    return -T_mixed(dump,0,0) /(dump['RHO']*dump['ucon'][:,:,:,0]) - 1
+    return -T_mixed(dump,0,0) / (dump['RHO']*dump['ucon'][:,:,:,0]) - 1
   else:
     return -(1 + dump['hdr']['gam']*dump['UU']/dump['RHO'])*dump['ucov'][:,:,:,0] - 1
 
@@ -190,17 +197,15 @@ def i_of(geom, rcoord):
 # Var must be a 3D array i.e. a grid scalar
 # TODO could maybe be made faster with 'where' but also harder to get right
 def sum_shell(geom, var, at_zone=None, mask=None):
+  integrand = var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3']
   if mask is not None:
-    integrand = (var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3'])*(mask)
-  else:
-    integrand = var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3']
+    integrand *= mask
 
   if at_zone is not None:
     return np.sum(integrand[at_zone,:,:], axis=(0,1))
   else:
     return np.sum(integrand, axis=(1,2))
 
-# TODO just pass slices here & below?
 def sum_vol(geom, var, within=None):
   if within is not None:
     return np.sum(var[:within,:,:] * geom['gdet'][:within,:,None]*geom['dx1']*geom['dx2']*geom['dx3'])

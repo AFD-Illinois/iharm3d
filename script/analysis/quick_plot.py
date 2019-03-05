@@ -21,7 +21,8 @@ USEARRSPACE=True
 UNITS=False
 
 SIZE = 100
-window=[-SIZE,SIZE,-SIZE,SIZE]
+#window=[-SIZE,SIZE,-SIZE,SIZE]
+window=[-SIZE/4,SIZE/4,0,SIZE]
 FIGX = 10
 FIGY = 10
 
@@ -32,6 +33,9 @@ if len(sys.argv) > 3:
 elif len(sys.argv) > 2:
   gridfile = None
   var = sys.argv[2]
+
+# Take either the var or a custom name
+name = sys.argv[-1]
 
 if UNITS and var not in ['Tp']:
   M_unit = float(sys.argv[-1])
@@ -54,9 +58,11 @@ if var in ['jcov', 'jsq']:
   dump['jsq'] = np.sum(dump['jcon']*dump['jcov'], axis=-1)
 elif var in ['divE2D']:
   JE1g, JE2g = T_mixed(dump, 1,0).mean(axis=-1)*geom['gdet'], T_mixed(dump, 2,0).mean(axis=-1)*geom['gdet']
-  divJE = (JE1g[1:,:-1] - JE1g[:-1,:-1]) / geom['dx1'] + (JE2g[:-1,1:] - JE2g[:-1,:-1]) / geom['dx2']
+  face_JE1 = 0.5*(JE1g[:-1,:] + JE1g[1:,:])
+  face_JE2 = 0.5*(JE2g[:,:-1] + JE2g[:,1:])
+  divJE = (face_JE1[1:,1:-1] - face_JE1[:-1,1:-1]) / geom['dx1'] + (face_JE2[1:-1,1:] - face_JE2[1:-1,:-1]) / geom['dx2']
   dump[var] = np.zeros_like(dump['RHO'])
-  dump[var][:-1,:-1,0] = divJE
+  dump[var][1:-1,1:-1,0] = divJE
   dump[var] /= np.sqrt(T_mixed(dump, 1,0)**2 + T_mixed(dump, 2,0)**2 + T_mixed(dump, 3,0)**2)*geom['gdet'][:,:,None]
 elif var in ['divB2D']:
   B1g, B2g = dump['B1'].mean(axis=-1)*geom['gdet'], dump['B2'].mean(axis=-1)*geom['gdet']
@@ -65,7 +71,6 @@ elif var in ['divB2D']:
   divB = (corner_B1[1:,:] - corner_B1[:-1,:]) / geom['dx1'] + (corner_B2[:,1:] - corner_B2[:,:-1]) / geom['dx2']
   dump[var] = np.zeros_like(dump['RHO'])
   dump[var][:-1,:-1,0] = divB
-  #dump[var] /= np.sqrt(dump['bsq'])
   dump[var] /= np.sqrt(dump['B1']**2 + dump['B2']**2 + dump['B3']**2)*geom['gdet'][:,:,None]
 elif var in ['divB3D']:
   B1g, B2g, B3g = dump['B1']*geom['gdet'][:,:,None], dump['B2']*geom['gdet'][:,:,None], dump['B3']*geom['gdet'][:,:,None]
@@ -75,9 +80,7 @@ elif var in ['divB3D']:
   divB = (corner_B1[1:,:,:] - corner_B1[:-1,:,:]) / geom['dx1'] + (corner_B2[:,1:,:] - corner_B2[:,:-1,:]) / geom['dx2'] + (corner_B3[:,:,1:] - corner_B3[:,:,:-1]) / geom['dx3']
   dump[var] = np.zeros_like(dump['RHO'])
   dump[var][:-1,:-1,:-1] = divB
-  #dump[var] /= np.sqrt(dump['bsq'])
   dump[var] /= np.sqrt(dump['B1']**2 + dump['B2']**2 + dump['B3']**2)*geom['gdet'][:,:,None]
-  # TODO div of U?
 elif var not in dump:
   dump[var] = d_fns[var](dump)
 
@@ -114,7 +117,7 @@ elif var not in ['divE2D', 'divB2D']:
 
 plt.tight_layout()
 
-plt.savefig(var+"_xy.png", dpi=100)
+plt.savefig(name+"_xy.png", dpi=100)
 plt.close(fig)
 
 fig = plt.figure(figsize=(FIGX, FIGY))
@@ -125,25 +128,28 @@ if var in ['jcon','ucon','ucov','bcon','bcov']:
   for n in range(4):
     bplt.plot_xz(axes[n], geom, np.log10(dump[var][:,:,:,n]), arrayspace=USEARRSPACE, window=window)
 
-elif var in ['divB2D', 'divE2D', 'divB3D']:
+elif var in ['divB2D', 'divE2D', 'divE2D_face', 'divB3D']:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, np.log10(np.abs(dump[var])), arrayspace=USEARRSPACE, window=window, vmin=-6, vmax=0)
-  if var == 'divE2D':
-    JE1 = -T_mixed(dump, 1,0)
-    JE2 = -T_mixed(dump, 2,0)
-    bplt.overlay_flowlines(ax, geom, JE1, JE2, nlines=20, arrayspace=USEARRSPACE)
-    #bplt.overlay_quiver(ax, geom, JE1, JE2)
+  if var in ['divE2D', 'divE2D_face']:
+    #JE1 = -T_mixed(dump, 1,0)
+    #JE2 = -T_mixed(dump, 2,0)
+    JE1 = dump['ucon'][:,:,:,1]
+    JE2 = dump['ucon'][:,:,:,2]
+    #bplt.overlay_flowlines(ax, geom, JE1, JE2, nlines=20, arrayspace=USEARRSPACE)
+    bplt.overlay_quiver(ax, geom, JE1, JE2)
   else:
     bplt.overlay_field(ax, geom, dump, nlines=20, arrayspace=USEARRSPACE)
 else:
   ax = plt.subplot(1, 1, 1)
   bplt.plot_xz(ax, geom, np.log10(dump[var]), arrayspace=USEARRSPACE, window=window)
-  norm = 0.5*dump['RHO'][:,:,0]*np.sqrt(dump['ucon'][:,:,0,1]**2 + dump['ucon'][:,:,0,2]**2)*geom['gdet']
-  JF1 = dump['RHO'][:,:,0]*dump['ucon'][:,:,0,1]/norm
-  JF2 = dump['RHO'][:,:,0]*dump['ucon'][:,:,0,2]/norm
-  bplt.overlay_quiver(ax, geom, dump, JF1, JF2)
+  #norm = 0.5*dump['RHO'][:,:,0]*np.sqrt(dump['ucon'][:,:,0,1]**2 + dump['ucon'][:,:,0,2]**2)*geom['gdet']
+  JF1 = dump['RHO'][:,:,0]*dump['ucon'][:,:,0,1] #/norm
+  JF2 = dump['RHO'][:,:,0]*dump['ucon'][:,:,0,2] #/norm
+  
+  bplt.overlay_quiver(ax, geom, dump, JF1, JF2, cadence=32)
 
 plt.tight_layout()
 
-plt.savefig(var+"_xz.png", dpi=100)
+plt.savefig(name+"_xz.png", dpi=100)
 plt.close(fig)
