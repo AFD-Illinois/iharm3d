@@ -269,9 +269,10 @@ def overlay_flowlines(ax, geom, varx1, varx2, nlines=50, arrayspace=False, rever
   else:
     ax.contour(x, z, AJ_phi, levels=levels, colors='k')
 
-def overlay_quiver(ax, geom, dump, JE1, JE2, cadence=64):
+def overlay_quiver(ax, geom, dump, JE1, JE2, cadence=64, norm=1):
   JE1 *= geom['gdet']
   JE2 *= geom['gdet']
+  max_J = np.max(np.sqrt(JE1**2 + JE2**2))
   x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
   x2_norm = (geom['X2'] - geom['startx2']) / (geom['n2'] * geom['dx2'])
   x = flatten_xz(x1_norm)[geom['n1']:,:]
@@ -280,7 +281,7 @@ def overlay_quiver(ax, geom, dump, JE1, JE2, cadence=64):
   s1 = geom['n1']//cadence; s2 = geom['n2']//cadence
   
   ax.quiver(x[::s1,::s2], z[::s1,::s2], JE1[::s1,::s2], JE2[::s1,::s2],
-      units='width')
+      units='xy', angles='xy', scale_units='xy', scale=cadence*max_J/norm)
 
 # Plot two slices together without duplicating everything in the caller
 def plot_slices(ax1, ax2, geom, dump, var, field_overlay=True, nlines=10, **kwargs):
