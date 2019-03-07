@@ -31,12 +31,35 @@ FLUX_PROF = False
 TEMP = True
 BSQ = True
 
-def i_of(avg, rcoord):
+def i_of(var, coord):
   i = 0
-  while avg['r'][i] < rcoord:
+  while var[i] < coord:
     i += 1
   i -= 1
   return i
+
+# Return the portion of a variable which constitutes quiescence
+def qui(avg, vname):
+  if 'avg_start' in avg:
+    istart = i_of(avg['t'], avg['avg_start'])
+  else:
+    istart = i_of(avg['t'], 5000)
+  if 'avg_end' in avg:
+    iend = i_of(avg['t'], avg['avg_end'])
+  else:
+    iend = i_of(avg['t'], 10000)
+  return avg[vname][istart:iend]
+
+def print_av_var(vname, tag=None):
+  if tag:
+    print(tag+":")
+  else:
+    print(vname+":")
+  for label,avg in zip(labels,avgs):
+    if vname in avg:
+      var_av = np.mean(qui(avg,vname))
+      var_std = np.std(qui(avg,vname))
+      print("{}: avg {:.3}, std abs {:.3} rel {:.3}".format(label, var_av, var_std, var_std/var_av))
 
 def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, xlim=None, ylim=None, timelabels=False, label_list=None, linestyle='-'):
 
@@ -88,8 +111,8 @@ def plot_temp():
     avg['Tp_r'] = cgs['MP'] * avg['Pg_r'] / (cgs['KBOL'] * avg['rho_r']) * cgs['CL']**2
   
     # Add the fits. Aaaaaalll the fits
-    x = avg['r'][i_of(avg, 3):i_of(avg, 30)]
-    y = avg['Tp_r'][i_of(avg, 3):i_of(avg, 30)]
+    x = avg['r'][i_of(avg['r'], 3):i_of(avg['r'], 30)]
+    y = avg['Tp_r'][i_of(avg['r'], 3):i_of(avg['r'], 30)]
     logx=np.log(x)
     logy=np.log(y)
     # Place a guideline at 1/x starting near the top of the plot
@@ -161,22 +184,18 @@ def plot_rads():
   plt.close(fig)
 
 def plot_fluxes():
-  fig,ax = plt.subplots(4,1, figsize=(FIGX, 5*PLOTY))
+  fig,ax = plt.subplots(5,1, figsize=(FIGX, 5*PLOTY))
 
-  plot_multi(ax[0],'t','Mdot', r"$|\dot{M}|$")
+  plot_multi(ax[0],'t','Mdot', r"$\dot{M}$")
   plot_multi(ax[1],'t','Phi_b', r"$\Phi$")
-
-  for avg in avgs:
-    if 'Ldot' in avg.keys():
-      avg['abs_Ldot'] = np.abs(avg['Ldot'])
-  plot_multi(ax[2],'t','abs_Ldot', r"$|\dot{L}|$")
+  plot_multi(ax[2],'t','Ldot', r"$\dot{L}$")
 
   for avg in avgs:
     if 'Edot' in avg.keys() and 'Mdot' in avg.keys():
-      avg['EmM'] = np.fabs(np.fabs(avg['Edot']) - np.fabs(avg['Mdot']))
-  plot_multi(ax[3], 't', 'EmM', r"$|\dot{E} - \dot{M}|$")
+      avg['MmE'] = avg['Mdot'] + avg['Edot'] # TODO Edot sign changing
+  plot_multi(ax[3], 't', 'MmE', r"$\dot{M} - \dot{E}$")
 
-#  plot_multi(ax[4], 't', 'Lum', "Lum", timelabels=True)
+  plot_multi(ax[4], 't', 'Lum', "Luminosity proxy", timelabels=True)
 
   if len(labels) > 1:
     ax[0].legend(loc='upper left')
@@ -186,32 +205,39 @@ def plot_fluxes():
   plt.savefig(fname_out + '_fluxes.png')
   plt.close(fig)
 
-  # Don't print the norm fluxes if you can't norm
-  if 'Mdot' not in avg.keys():
-    return
+  for avg in avgs:
+    if 'Mdot' not in avg.keys():
+      avg['Mdot_av'] = 1
+    else:
+      avg['Mdot_av'] = np.mean(qui(avg,'Mdot'))
 
-  fig, ax = plt.subplots(4,1, figsize=(FIGX, 5*PLOTY))
-  plot_multi(ax[0], 't', 'Mdot', r"$|\dot{M}|$")
+  fig, ax = plt.subplots(5,1, figsize=(FIGX, 5*PLOTY))
+  plot_multi(ax[0], 't', 'Mdot', r"$\dot{M}$")
+  print_av_var('Mdot')
 
   for avg in avgs:
     if 'Phi_b' in avg.keys():
-      avg['phi_b'] = avg['Phi_b']/np.sqrt(np.fabs(avg['Mdot']))
-  plot_multi(ax[1], 't', 'phi_b', r"$\frac{\Phi}{\sqrt{|\dot{M}|}}$")
+      avg['phi_b'] = avg['Phi_b']/np.sqrt(avg['Mdot_av'])
+  plot_multi(ax[1], 't', 'phi_b', r"$\frac{\Phi}{\sqrt{\langle \dot{M} \rangle}}$")
+  print_av_var('phi_b', "Normalized Phi_BH")
 
   for avg in avgs:
     if 'Ldot' in avg.keys():
-      avg['ldot'] = np.fabs(avg['Ldot'])/np.fabs(avg['Mdot'])
-  plot_multi(ax[2], 't', 'ldot', r"$\frac{|Ldot|}{|\dot{M}|}$")
+      avg['ldot'] = np.fabs(avg['Ldot'])/avg['Mdot_av']
+  plot_multi(ax[2], 't', 'ldot', r"$\frac{Ldot}{\langle \dot{M} \rangle}$")
+  print_av_var('ldot', "Normalized Ldot")
 
   for avg in avgs:
     if 'Edot' in avg.keys():
-      avg['edot'] = np.fabs(-avg['Edot'] - avg['Mdot'])/(avg['Mdot'])
-  plot_multi(ax[3], 't', 'edot', r"$\frac{|-\dot{E} - \dot{M}|}{|\dot{M}|}$")
-
-#  for avg in avgs:
-#    if 'Lum' in avg.keys():
-#      avg['lum'] = np.fabs(avg['Lum'])/np.fabs(avg['Mdot'])
-#  plot_multi(ax[4], 't', 'lum', r"$\frac{Lum}{|\dot{M}|}$", timelabels=True)
+      avg['mmE'] = (avg['Mdot'] + avg['Edot'])/avg['Mdot_av'] # TODO Edot not - for long
+  plot_multi(ax[3], 't', 'mmE', r"$\frac{\dot{M} - \dot{E}}{\langle \dot{M} \rangle}$")
+  print_av_var('mmE', "Normalized Mdot-Edot")
+  
+  for avg in avgs:
+    if 'Lum' in avg.keys():
+      avg['lum'] = np.fabs(avg['Lum'])/avg['Mdot_av']
+  plot_multi(ax[4], 't', 'lum', r"$\frac{Lum}{|\dot{M}|}$", timelabels=True)
+  print_av_var('lum', "Normalized Luminosity Proxy")
   
   ax[0].legend(loc='upper left')
 
@@ -221,11 +247,10 @@ def plot_fluxes():
 def plot_extras():
   fig, ax = plt.subplots(6,1, figsize=(FIGX, 6*PLOTY))
 
-  # Efficiency over mean mdot: just use the back half as <>
-  for avg in avgs:
+  # Efficiency explicitly as a percentage
+  for i,avg in enumerate(avgs):
     if 'Edot' in avg.keys():
-      mdot_mean = np.abs(np.mean(avg['Mdot'][len(avg['Mdot'])//2:]))
-      avg['Eff'] = np.abs(avg['Mdot'] + avg['Edot'])/mdot_mean*100
+      avg['Eff'] = (avg['Mdot'] + avg['Edot'])/avg['Mdot_av']*100
   plot_multi(ax[0], 't', 'Eff', "Efficiency (%)", ylim=[-10,200])
 
   plot_multi(ax[1], 't', 'Edot', r"$\dot{E}$")
@@ -237,8 +262,10 @@ def plot_extras():
 
   for avg in avgs:
     if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
-      avg['alBZ'] = avg['aLBZ']/np.fabs(avg['Mdot'])
-  plot_multi(ax[3], 't', 'alBZ', r"$\frac{L_{BZ}}{\dot{M}}$", timelabels=True, ylim=[0, 4])
+      avg['alBZ'] = avg['aLBZ']/avg['Mdot_av']
+      
+  plot_multi(ax[3], 't', 'alBZ', r"$\frac{L_{BZ}}{\langle \dot{M} \rangle}$", timelabels=True, ylim=[0, 4])
+  print_av_var('alBZ', "Normalized BZ Jet Power")
 
   for avg in avgs:
     if 'Lj_bg1' in avg.keys():
@@ -247,13 +274,10 @@ def plot_extras():
 
   for avg in avgs:
     if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
-      avg['alj'] = avg['aLj']/np.fabs(avg['Mdot'])
-  plot_multi(ax[5], 't', 'alj', r"$\frac{L_{jet}}{\dot{M}}$", timelabels=True, ylim=[0, 4])
+      avg['alj'] = avg['aLj']/avg['Mdot_av']
+  plot_multi(ax[5], 't', 'alj', r"$\frac{L_{jet}}{\langle \dot{M} \rangle}$", timelabels=True, ylim=[0, 4])
 
-  for i in range(len(avgs)):
-    if 'alj' in avgs[i]:
-      l_to_avg = avgs[i]['alj'][np.where(avgs[i]['t'] > 6000)]
-      print("{} average (normalized) jet power: {}, std dev {}".format(labels[i], np.mean(l_to_avg), np.std(l_to_avg)))
+  print_av_var('alj', "Normalized Total Jet Power")
 #  for i in range(len(avgs)):
 #    if 'alBZ' in avgs[i]:
 #      print("{} average (normalized) BZ power: {}".format(labels[i], np.mean(avgs[i]['alBZ'][np.where(avgs[i]['t'] > 6000)])))
