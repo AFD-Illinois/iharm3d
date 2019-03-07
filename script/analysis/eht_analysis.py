@@ -25,9 +25,16 @@ floor_workaround_flux = False
 # This also reduces interference from floors
 floor_workaround_funnel = False
 
-# Whether to calculate a couple of the more expensive variables
+# Whether to calculate each expensive set of variables
+# Once performed once, calculations will be ported to each new output file
+calc_ravgs = True
+calc_basic = True
+calc_jet_profile = False
+calc_jet_cuts = False
 calc_lumproxy = False
 calc_etot = False
+calc_efluxes = True
+calc_outfluxes = True
 
 if len(sys.argv) < 2:
   util.warn('Format: python eht_analysis.py /path/to/dumps [start time] [start radial averages] [stop radial averages] [stop time]')
@@ -89,36 +96,27 @@ if tend is None:
 if tend == 0.:
   tend = float(ND)
 
-
-# Decide where to measure fluxes
-def i_of(rcoord):
-  i = 0
-  while geom['r'][i,hdr['n2']//2,0] < rcoord:
-    i += 1
-  i -= 1
-  return i
-
 # Leave several extra zones if using MKS3 coordinates
 if geom['metric'] == "MKS3":
-  iEH = i_of(hdr['r_eh'])+4
+  iEH = i_of(geom, hdr['r_eh'])+4
 else:
-  iEH = i_of(hdr['r_eh'])
+  iEH = i_of(geom, hdr['r_eh'])
 
 if floor_workaround_flux:
-  iF = i_of(5) # Measure fluxes at r=5M
+  iF = i_of(geom, 5) # Measure fluxes at r=5M
 else:
   iF = iEH
 
 # Max radius when computing "total" energy
-iEmax = i_of(40)
+iEmax = i_of(geom, 40)
 
 # BZ luminosity
 # 100M seems like the standard measuring spot (or at least, BHAC does it that way)
 # L_BZ seems constant* after that, but much higher within ~50M
 if geom['r_out'] < 100 or geom['r'][-1,geom['n2']//2,0] < 100: # If in theory or practice the sim is small...
-  iBZ = i_of(40) # most SANEs
+  iBZ = i_of(geom, 40) # most SANEs
 else:
-  iBZ = i_of(100) # most MADs
+  iBZ = i_of(geom, 100) # most MADs
 
 jmin, jmax = get_j_vals(geom)
 
@@ -142,93 +140,96 @@ def avg_dump(n):
     dump = io.load_dump(dumps[n], hdr, geom, extras=False)
 
   # EHT Radial profiles: special fn for profile, averaged over phi, 1/3 theta, time
-  for var in ['rho', 'Theta', 'B', 'Pg', 'Ptot', 'beta', 'u^phi', 'u_phi']:
-    out[var+'_rt'] = eht_profile(geom, d_fns[var](dump), jmin, jmax)
+  if calc_ravgs:
+    for var in ['rho', 'Theta', 'B', 'Pg', 'Ptot', 'beta', 'u^phi', 'u_phi']:
+      out[var+'_rt'] = eht_profile(geom, d_fns[var](dump), jmin, jmax)
+      out[var+'_jet_rt'] = eht_profile(geom, d_fns[var](dump), 0, jmin) + eht_profile(geom, d_fns[var](dump), jmax, geom['n2'])
+      if out['t'] >= tavg_start and out['t'] <= tavg_end:
+        out[var+'_r'] = out[var+'_rt']
+        out[var+'_jet_r'] = out[var+'_jet_rt']
+  
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      out[var+'_r'] = out[var+'_rt']
-
-  if out['t'] >= tavg_start and out['t'] <= tavg_end:
-    # THETA AVERAGES
-    # These are divided averages, not average of division, so not amenable to d_fns
-    Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
-    out['omega_hth'] = theta_av(geom, Fcov01, iEH, 1) / theta_av(geom, Fcov13, iEH, 1)
-    out['omega_av_hth'] = theta_av(geom, Fcov01, iEH, 5) / theta_av(geom, Fcov13, iEH, 5)
-
-    # This produces much worse results
-    #out['omega_alt_th'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
-    #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
+      # THETA AVERAGES
+      # These are divided averages, not average of division, so not amenable to d_fns
+      Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
+      out['omega_hth'] = theta_av(geom, Fcov01, iEH, 1) / theta_av(geom, Fcov13, iEH, 1)
+      out['omega_av_hth'] = theta_av(geom, Fcov01, iEH, 5) / theta_av(geom, Fcov13, iEH, 5)
+  
+      # This produces much worse results
+      #out['omega_alt_th'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
+      #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
   # Flux profiles for jet power
-  for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'FL', 'FL_EM', 'FL_Fl', 'betagamma', 'Be_nob', 'Be_b', 'mu']: #'u_t', 'u_phi'
-    out[var+'_100_tht'] = np.sum(d_fns[var](dump)[iBZ], axis=-1)
-    if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      out[var+'_100_th'] = out[var+'_100_tht']
-      out[var+'_100_thphi'] = d_fns[var](dump)[iBZ,:,:]
-      out[var+'_rth'] = d_fns[var](dump).mean(axis=-1)
+  if calc_jet_profile:
+    for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'FL', 'FL_EM', 'FL_Fl', 'betagamma', 'Be_nob', 'Be_b', 'mu']: #'u_t', 'u_phi'
+      out[var+'_100_tht'] = np.sum(d_fns[var](dump)[iBZ], axis=-1)
+      if out['t'] >= tavg_start and out['t'] <= tavg_end:
+        out[var+'_100_th'] = out[var+'_100_tht']
+        out[var+'_100_thphi'] = d_fns[var](dump)[iBZ,:,:]
+        out[var+'_rth'] = d_fns[var](dump).mean(axis=-1)
 
-  # Conserved (in steady state) 2D energy flux
-  for var in ['JE0', 'JE1', 'JE2']:
-    out[var+'_rt'] = sum_shell(geom, d_fns[var](dump))
-    if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      out[var+'_rth'] = d_fns[var](dump).mean(axis=-1)
+  if calc_basic:
+    # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
+    #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
+    norm = 1 # This is what the EHT comparison uses?
+  
+    if geom['mixed_metrics']:
+      # When different, B1 will be in the _vector_ coordinates.  Must perform the integral in those instead of zone coords
+      # Some gymnastics were done to keep in-memory size small
+      dxEH = np.einsum("i,...ij->...j", np.array([0, geom['dx1'], geom['dx2'], geom['dx3']]), np.linalg.inv(geom['vec_to_grid'][iEH,:,:,:]))
+      out['Phi_b'] = 0.5*norm * np.sum( np.fabs(dump['B1'][iEH,:,:]) * geom['gdet_vec'][iEH,:,None]*dxEH[:,None,2]*dxEH[:,None,3], axis=(0,1) )
+    else:
+      out['Phi_b'] = 0.5*norm*sum_shell(geom, np.fabs(dump['B1']), at_zone=iEH)
+  
+    # FLUXES
+    # Radial profiles of Mdot and Edot, and their particular values
+    # EHT code-comparison normalization has all these values positive
+    for var,flux in [['Edot','FE'],['Mdot','FM'],['Ldot','FL']]:
+      if out['t'] >= tavg_start and out['t'] <= tavg_end:
+        out[flux+'_r'] = sum_shell(geom, d_fns[flux](dump))
+      out[var] = sum_shell(geom, d_fns[flux](dump), at_zone=iF)
+    # Mdot and Edot are defined inward
+    out['Mdot'] *= -1
+    out['Edot'] *= -1
 
-  # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
-  #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
-  norm = 1 # This is what the EHT comparison uses?
-
-  if geom['mixed_metrics']:
-    # When different, B1 will be in the _vector_ coordinates.  Must perform the integral in those instead of zone coords
-    # Some gymnastics were done to keep in-memory size small
-    dxEH = np.einsum("i,...ij->...j", np.array([0, geom['dx1'], geom['dx2'], geom['dx3']]), np.linalg.inv(geom['vec_to_grid'][iEH,:,:,:]))
-    out['Phi_b'] = 0.5*norm * np.sum( np.fabs(dump['B1'][iEH,:,:]) * geom['gdet_vec'][iEH,:,None]*dxEH[:,None,2]*dxEH[:,None,3], axis=(0,1) )
-  else:
-    out['Phi_b'] = 0.5*norm*sum_shell(geom, np.fabs(dump['B1']), at_zone=iEH)
-
-  # FLUXES
-  # Radial profiles of Mdot and Edot, and their particular values
-  # EHT code-comparison normalization has all these values positive
-  for var,flux in [['Edot','FE'],['Mdot','FM'],['Ldot','FL']]:
-    if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      out[flux+'_r'] = sum_shell(geom, d_fns[flux](dump))
-    out[var] = sum_shell(geom, d_fns[flux](dump), at_zone=iF)
-  # Mdot is defined specially to be positive
-  # TODO is Edot?
-  out['Mdot'] *= -1
-
-  # I'll be curious about other maxes
-  for var in ['sigma']:
-    out[var+'_max'] = np.max(d_fns[var](dump))
+    # Max magnetization
+    for var in ['sigma']:
+      out[var+'_max'] = np.max(d_fns[var](dump))
 
   # Blandford-Znajek Luminosity L_BZ
   # This is a lot of luminosities!
-  # TODO cut on phi/t averages -- needs 2-pass cut...
-  cuts = {'sigma1' : lambda dump : (d_fns['sigma'](dump) > 1),
-          #'sigma10' : lambda dump : (d_fns['sigma'](dump) > 10),
-          'Be_b0' : lambda dump : (d_fns['Be_b'](dump) > 0.02),
-          'Be_b1' : lambda dump : (d_fns['Be_b'](dump) > 1),
-          'Be_nob0' : lambda dump : (d_fns['Be_nob'](dump) > 0.02),
-          'Be_nob1' : lambda dump : (d_fns['Be_nob'](dump) > 1),
-          'mu1' : lambda dump : (d_fns['mu'](dump) > 1),
-          'mu2' : lambda dump : (d_fns['mu'](dump) > 2),
-          'mu3' : lambda dump : (d_fns['mu'](dump) > 3),
-          'bg1' : lambda dump : (d_fns['betagamma'](dump) > 1.0),
-          'bg05' : lambda dump : (d_fns['betagamma'](dump) > 0.5),
-          'allp' : lambda dump : (d_fns['FE'](dump) > 0)}
-
-  # Terminology: LBZ = E&M only per usual, Lj = full E flux w/ any cut, Ltot = Lj_allp = full luminosity all positive values
-  for lum,flux in [['LBZ', 'FE_EM'], ['Lj', 'FE']]:
-    for cut in cuts.keys():
-      out[lum+'_'+cut+'_rt'] = sum_shell(geom, d_fns[flux](dump), mask=cuts[cut](dump))
-      if out['t'] >= tavg_start and out['t'] <= tavg_end:
-        out[lum+'_'+cut+'_r'] = out[lum+'_'+cut+'_rt']
-      out[lum+'_'+cut] = out[lum+'_'+cut+'_rt'][iBZ]
+  if calc_jet_cuts:
+    # TODO cut on phi/t averages? -- needs 2-pass cut...
+    cuts = {'sigma1' : lambda dump : (d_fns['sigma'](dump) > 1),
+            #'sigma10' : lambda dump : (d_fns['sigma'](dump) > 10),
+            'Be_b0' : lambda dump : (d_fns['Be_b'](dump) > 0.02),
+            'Be_b1' : lambda dump : (d_fns['Be_b'](dump) > 1),
+            'Be_nob0' : lambda dump : (d_fns['Be_nob'](dump) > 0.02),
+            'Be_nob1' : lambda dump : (d_fns['Be_nob'](dump) > 1),
+            'mu1' : lambda dump : (d_fns['mu'](dump) > 1),
+            'mu2' : lambda dump : (d_fns['mu'](dump) > 2),
+            'mu3' : lambda dump : (d_fns['mu'](dump) > 3),
+            'bg1' : lambda dump : (d_fns['betagamma'](dump) > 1.0),
+            'bg05' : lambda dump : (d_fns['betagamma'](dump) > 0.5),
+            'allp' : lambda dump : (d_fns['FE'](dump) > 0)}
+  
+    # Terminology:
+    # LBZ = E&M energy only, any cut
+    # Lj = full E flux, any cut
+    # Ltot = Lj_allp = full luminosity wherever it is positive
+    for lum,flux in [['LBZ', 'FE_EM'], ['Lj', 'FE']]:
+      for cut in cuts.keys():
+        out[lum+'_'+cut+'_rt'] = sum_shell(geom, d_fns[flux](dump), mask=cuts[cut](dump))
+        if out['t'] >= tavg_start and out['t'] <= tavg_end:
+          out[lum+'_'+cut+'_r'] = out[lum+'_'+cut+'_rt']
+        out[lum+'_'+cut] = out[lum+'_'+cut+'_rt'][iBZ]
 
   if calc_lumproxy:
     # TODO TODO new variable definitions here
     rho = dump['RHO']
     C = 0.2
     j = rho**3 * Pg**(-2) * np.exp(-C*(rho**2 / (B*Pg**2))**(1./3.))
-    out['Lum'] = eht_vol(geom, j, jmin, jmax, outside=iEH)
+    out['Lum'] = eht_vol(geom, j, jmin, jmax, outside=i_of(geom, 5))
 
   if calc_etot:
     tfull_tt = T_mixed(dump, 0,0)
@@ -237,6 +238,21 @@ def avg_dump(n):
 
     # Radial profiles of T^0_0
     #out['E_r'] = out['E_rt'] = radial_sum(geom, tfull_tt)
+
+  if calc_efluxes:
+    # Conserved (maybe; in steady state) 2D energy flux
+    for var in ['JE0', 'JE1', 'JE2']:
+      out[var+'_rt'] = sum_shell(geom, d_fns[var](dump))
+      if out['t'] >= tavg_start and out['t'] <= tavg_end:
+        out[var+'_rth'] = d_fns[var](dump).mean(axis=-1)
+
+  # Total outflowing portions of variables
+  if calc_outfluxes:
+    for name,var in [['outflow', 'FM'], ['outEflow', 'FE']]:
+      var_temp = d_fns[var](dump)
+      out[name+'_rt'] = sum_shell(geom, var_temp, mask=(var_temp > 0))
+      if out['t'] >= tavg_start and out['t'] <= tavg_end:
+        out[name+'_rth'] = var_temp.mean(axis=-1)
 
   dump.clear()
   del dump

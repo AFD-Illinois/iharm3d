@@ -23,7 +23,6 @@ d_fns = {'rho': lambda dump: dump['RHO'],
          'FL_Fl' : lambda dump: TFl_mixed(dump, 1, 3),
          'Be_b' : lambda dump: bernoulli(dump, with_B=True),
          'Be_nob' : lambda dump: bernoulli(dump, with_B=False),
-         'mu' : lambda dump: (d_fns['FE'](dump) + d_fns['FM'](dump)) / d_fns['FM'](dump),
          'Pg' : lambda dump: (dump['hdr']['gam'] - 1.) * dump['UU'],
          'Pb' : lambda dump: dump['bsq'] / 2,
          'Ptot' : lambda dump: d_fns['Pg'](dump) + d_fns['Pb'](dump),
@@ -33,12 +32,14 @@ d_fns = {'rho': lambda dump: dump['RHO'],
          'Theta' : lambda dump: (dump['hdr']['gam'] - 1) * dump['UU'] / dump['RHO'],
          'Thetap' : lambda dump: (dump['hdr']['gam_p'] - 1) * (dump['UU'] ) / dump['RHO'],
          'Thetae' : lambda dump: (dump['hdr']['gam_e'] - 1) * (dump['UU'] ) / dump['RHO'],
+         'gamma' : lambda dump: get_gamma(geom, dump),
          'JE0' : lambda dump: T_mixed(dump, 0, 0),
          'JE1' : lambda dump: T_mixed(dump, 1, 0),
          'JE2' : lambda dump: T_mixed(dump, 2, 0)
          }
+         # Additions I'm unsure of or which are useless
          #'rur' : lambda dump: geom['r']*dump['ucon'][:,:,:,1],
-         #'gamma' : lambda dump: get_gamma(geom, dump)}
+         #'mu' : lambda dump: (d_fns['FE'](dump) + d_fns['FM'](dump)) / d_fns['FM'](dump),
 
 ## Physics functions ##
 
