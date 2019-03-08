@@ -141,7 +141,7 @@ def avg_dump(n):
 
   # EHT Radial profiles: special fn for profile, averaged over phi, 1/3 theta, time
   if calc_ravgs:
-    for var in ['rho', 'Theta', 'B', 'Pg', 'Ptot', 'beta', 'u^phi', 'u_phi']:
+    for var in ['rho', 'Theta', 'B', 'Pg', 'Ptot', 'beta', 'u^phi', 'u_phi', 'sigma', 'FM']:
       out[var+'_rt'] = eht_profile(geom, d_fns[var](dump), jmin, jmax)
       out[var+'_jet_rt'] = eht_profile(geom, d_fns[var](dump), 0, jmin) + eht_profile(geom, d_fns[var](dump), jmax, geom['n2'])
       if out['t'] >= tavg_start and out['t'] <= tavg_end:
@@ -149,26 +149,28 @@ def avg_dump(n):
         out[var+'_jet_r'] = out[var+'_jet_rt']
   
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
+      # CORRELATION LENGTHS
+      for var in ['rho', 'betainv']:
+        Rvar = corr_midplane(geom, d_fns[var](dump))
+        lam = corr_length(geom, Rvar)
+        out[var+'_cf_10_phi'] = Rvar[i_of(geom,10),:]
+        out[var+'_clen_r'] = lam
+      
       # THETA AVERAGES
+      for var in ['betainv', 'sigma']:
+        out[var+'_25_th'] = theta_av(geom, d_fns[var](dump), i_of(geom, 25), 5)
+      
       # These are divided averages, not average of division, so not amenable to d_fns
       Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
       out['omega_hth'] = theta_av(geom, Fcov01, iEH, 1) / theta_av(geom, Fcov13, iEH, 1)
       out['omega_av_hth'] = theta_av(geom, Fcov01, iEH, 5) / theta_av(geom, Fcov13, iEH, 5)
   
       # This produces much worse results
-      #out['omega_alt_th'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
-      #out['omega_alt_av_th'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
-
-  # Flux profiles for jet power
-  if calc_jet_profile:
-    for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'FL', 'FL_EM', 'FL_Fl', 'betagamma', 'Be_nob', 'Be_b', 'mu']: #'u_t', 'u_phi'
-      out[var+'_100_tht'] = np.sum(d_fns[var](dump)[iBZ], axis=-1)
-      if out['t'] >= tavg_start and out['t'] <= tavg_end:
-        out[var+'_100_th'] = out[var+'_100_tht']
-        out[var+'_100_thphi'] = d_fns[var](dump)[iBZ,:,:]
-        out[var+'_rth'] = d_fns[var](dump).mean(axis=-1)
+      #out['omega_alt_hth'] = theta_av(Fcov(dump, 0, 2), iEH, 1) / theta_av(Fcov(dump, 2, 3), iEH, 1)
+      #out['omega_alt_av_hth'] = theta_av(Fcov(dump, 0, 2), iEH-2, 5) / theta_av(Fcov(dump, 2, 3), iEH-2, 5)
 
   if calc_basic:
+    # FIELD STRENGTHS
     # The HARM B_unit is sqrt(4pi)*c*sqrt(rho) which has caused issues:
     #norm = np.sqrt(4*np.pi) # This is what I believe matches T,N,M '11 and Narayan '12
     norm = 1 # This is what the EHT comparison uses?
@@ -179,7 +181,12 @@ def avg_dump(n):
       dxEH = np.einsum("i,...ij->...j", np.array([0, geom['dx1'], geom['dx2'], geom['dx3']]), np.linalg.inv(geom['vec_to_grid'][iEH,:,:,:]))
       out['Phi_b'] = 0.5*norm * np.sum( np.fabs(dump['B1'][iEH,:,:]) * geom['gdet_vec'][iEH,:,None]*dxEH[:,None,2]*dxEH[:,None,3], axis=(0,1) )
     else:
-      out['Phi_b'] = 0.5*norm*sum_shell(geom, np.fabs(dump['B1']), at_zone=iEH)
+      out['Phi_sph_r'] = 0.5*norm*sum_shell(geom, np.fabs(dump['B1']))
+      out['Phi_b'] = out['Phi_sph_r'][iEH]
+      
+      out['Phi_mid_r'] = np.zeros_like(out['Phi_sph_r'])
+      for i in range(geom['n1']):
+        out['Phi_mid_r'][i] = norm*sum_plane(geom, -dump['B2'], within=i)
   
     # FLUXES
     # Radial profiles of Mdot and Edot, and their particular values
@@ -192,9 +199,22 @@ def avg_dump(n):
     out['Mdot'] *= -1
     out['Edot'] *= -1
 
-    # Max magnetization
-    for var in ['sigma']:
+    # Maxima (for gauging floors)
+    for var in ['sigma', 'betainv', 'Theta']:
       out[var+'_max'] = np.max(d_fns[var](dump))
+    # Minima
+    for var in ['rho', 'U']:
+      out[var+'_min'] = np.min(d_fns[var](dump))
+    # TODO KEL? plot in "floor space"?  Full set of energy ratios?
+
+  # Profiles of different fluxes to gauge jet power calculations
+  if calc_jet_profile:
+    for var in ['rho', 'bsq', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'FL', 'FL_EM', 'FL_Fl', 'betagamma', 'Be_nob', 'Be_b', 'mu']:
+      out[var+'_100_tht'] = np.sum(d_fns[var](dump)[iBZ], axis=-1)
+      if out['t'] >= tavg_start and out['t'] <= tavg_end:
+        out[var+'_100_th'] = out[var+'_100_tht']
+        out[var+'_100_thphi'] = d_fns[var](dump)[iBZ,:,:]
+        out[var+'_rth'] = d_fns[var](dump).mean(axis=-1)
 
   # Blandford-Znajek Luminosity L_BZ
   # This is a lot of luminosities!
@@ -252,7 +272,7 @@ def avg_dump(n):
       var_temp = d_fns[var](dump)
       out[name+'_rt'] = sum_shell(geom, var_temp, mask=(var_temp > 0))
       if out['t'] >= tavg_start and out['t'] <= tavg_end:
-        out[name+'_rth'] = var_temp.mean(axis=-1)
+        out[name+'_r'] = out[name+'_rt']
 
   dump.clear()
   del dump
@@ -274,7 +294,7 @@ def merge_dict(n, out, out_full):
         out_full[key] = np.zeros((ND, hdr['n1'], hdr['n2']))
       elif key[-7:] == '_thphit':
         out_full[key] = np.zeros((ND, hdr['n2'], hdr['n3']))
-      elif key[-2:] == '_r' or key[-4:] == '_hth' or key[-3:] == '_th' or key[-4:] == '_rth' or key[-6:] == '_thphi':
+      elif key[-2:] == '_r' or key[-4:] == '_hth' or key[-3:] == '_th' or key[-4:] == '_phi' or key[-4:] == '_rth' or key[-6:] == '_thphi':
         out_full[key] = np.zeros_like(out[key])
       else:
         out_full[key] = np.zeros(ND)

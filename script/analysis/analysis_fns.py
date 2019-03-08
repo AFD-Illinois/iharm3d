@@ -27,6 +27,7 @@ d_fns = {'rho': lambda dump: dump['RHO'],
          'Pb' : lambda dump: dump['bsq'] / 2,
          'Ptot' : lambda dump: d_fns['Pg'](dump) + d_fns['Pb'](dump),
          'beta' : lambda dump: dump['beta'],
+         'betainv' : lambda dump: 1/dump['beta'],
          'B' : lambda dump: np.sqrt(dump['bsq']),
          'betagamma' : lambda dump: np.sqrt((d_fns['FE_EM'](dump) + d_fns['FE_Fl'](dump))/d_fns['FM'](dump) - 1),
          'Theta' : lambda dump: (dump['hdr']['gam'] - 1) * dump['UU'] / dump['RHO'],
@@ -193,6 +194,35 @@ def i_of(geom, rcoord):
   i -= 1
   return i
 
+## Correlation functions/lengths ##
+
+def corr_midplane(geom, var, norm=True):
+  jmin = geom['n2']//2-1
+  jmax = geom['n2']//2+1
+  
+  varn = var[:-1,jmin:jmax,:] - np.mean(var[:-1,jmin:jmax,:])
+  
+  R = np.ones((geom['n1'], geom['n3']))
+  for k in range(geom['n3']):
+    dr = geom['r'][1:,jmin:jmax,:] - geom['r'][:-1,jmin:jmax,:]
+    dth = geom['th'][:-1,jmin+1:jmax+1,:] - geom['th'][:-1,jmin:jmax,:]
+    R[:-1,k] = np.sum(varn*np.roll(varn, k, axis=-1)*dr*dth*geom['dx3'])
+  
+  if norm:
+    for k in range(geom['n3']):
+      R[:,k] /= R[:,0]
+  
+  return R
+
+def corr_length(geom, R):
+  lam = np.zeros(geom['n1'])
+  for i in range(geom['n1']):
+    k = 0
+    while R[i,k] >= R[i,0] / np.exp(1):
+      k += 1
+    lam[i] = k*geom['dx3']
+  return lam
+
 ## Sums and Averages ##
   
 # Var must be a 3D array i.e. a grid scalar
@@ -206,6 +236,14 @@ def sum_shell(geom, var, at_zone=None, mask=None):
     return np.sum(integrand[at_zone,:,:], axis=(0,1))
   else:
     return np.sum(integrand, axis=(1,2))
+
+def sum_plane(geom, var, within=None):
+  jmin = geom['n2']//2-1
+  jmax = geom['n2']//2+1
+  if within is not None:
+    return np.sum(var[:within,jmin:jmax,:] * geom['gdet'][:within,jmin:jmax,None]*geom['dx1']*geom['dx3']) / (jmax-jmin)
+  else:
+    return np.sum(var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx1']*geom['dx3']) / (jmax-jmin)
 
 def sum_vol(geom, var, within=None):
   if within is not None:
