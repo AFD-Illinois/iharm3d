@@ -25,7 +25,8 @@ for key in keys_to_sum:
   for avg in avgs:
     if key in avg:
       # Keep track of averages w/weights, otherwise just sum since everything's time-dependent
-      if key[-2:] == '_r' or key[-3:] == '_th' or key[-4:] == '_hth' or key[-4:] == '_rth' or key[-6:] == '_thphi':
+      if (key[-2:] == '_r' or key[-3:] == '_th' or key[-4:] == '_hth' or key[-4:] == '_phi' or
+          key[-4:] == '_rth' or key[-6:] == '_thphi' or key[-5:] == '_rphi'):
         uni[key] += avg[key]*avg['avg_w']
       elif key[-1:] == 't':
         if uni[key].shape[0] < avg[key].shape[0]:

@@ -30,7 +30,7 @@ floor_workaround_funnel = False
 calc_ravgs = True
 calc_basic = True
 calc_jet_profile = False
-calc_jet_cuts = False
+calc_jet_cuts = True
 calc_lumproxy = False
 calc_etot = False
 calc_efluxes = True
@@ -149,16 +149,15 @@ def avg_dump(n):
         out[var+'_jet_r'] = out[var+'_jet_rt']
   
     if out['t'] >= tavg_start and out['t'] <= tavg_end:
-      # CORRELATION LENGTHS
+      # CORRELATION FUNCTION
       for var in ['rho', 'betainv']:
         Rvar = corr_midplane(geom, d_fns[var](dump))
-        lam = corr_length(geom, Rvar)
+        out[var+'_cf_rphi'] = Rvar
         out[var+'_cf_10_phi'] = Rvar[i_of(geom,10),:]
-        out[var+'_clen_r'] = lam
       
       # THETA AVERAGES
       for var in ['betainv', 'sigma']:
-        out[var+'_25_th'] = theta_av(geom, d_fns[var](dump), i_of(geom, 25), 5)
+        out[var+'_25_th'] = theta_av(geom, d_fns[var](dump), i_of(geom, 25), 5, fold=False)
       
       # These are divided averages, not average of division, so not amenable to d_fns
       Fcov01, Fcov13 = Fcov(geom, dump, 0, 1), Fcov(geom, dump, 1, 3)
@@ -226,9 +225,9 @@ def avg_dump(n):
             'Be_b1' : lambda dump : (d_fns['Be_b'](dump) > 1),
             'Be_nob0' : lambda dump : (d_fns['Be_nob'](dump) > 0.02),
             'Be_nob1' : lambda dump : (d_fns['Be_nob'](dump) > 1),
-            'mu1' : lambda dump : (d_fns['mu'](dump) > 1),
-            'mu2' : lambda dump : (d_fns['mu'](dump) > 2),
-            'mu3' : lambda dump : (d_fns['mu'](dump) > 3),
+            #'mu1' : lambda dump : (d_fns['mu'](dump) > 1),
+            #'mu2' : lambda dump : (d_fns['mu'](dump) > 2),
+            #'mu3' : lambda dump : (d_fns['mu'](dump) > 3),
             'bg1' : lambda dump : (d_fns['betagamma'](dump) > 1.0),
             'bg05' : lambda dump : (d_fns['betagamma'](dump) > 0.5),
             'allp' : lambda dump : (d_fns['FE'](dump) > 0)}
@@ -294,13 +293,16 @@ def merge_dict(n, out, out_full):
         out_full[key] = np.zeros((ND, hdr['n1'], hdr['n2']))
       elif key[-7:] == '_thphit':
         out_full[key] = np.zeros((ND, hdr['n2'], hdr['n3']))
-      elif key[-2:] == '_r' or key[-4:] == '_hth' or key[-3:] == '_th' or key[-4:] == '_phi' or key[-4:] == '_rth' or key[-6:] == '_thphi':
+      elif (key[-2:] == '_r' or key[-4:] == '_hth' or key[-3:] == '_th' or key[-4:] == '_phi' or
+            key[-4:] == '_rth' or key[-5:] == '_rphi' or key[-6:] == '_thphi'):
         out_full[key] = np.zeros_like(out[key])
       else:
         out_full[key] = np.zeros(ND)
-    if key[-2:] == '_r' or key[-4:] == '_hth' or key[-3:] == '_th' or key[-4:] == '_rth' or key[-6:] == '_thphi':
+    if (key[-2:] == '_r' or key[-4:] == '_hth' or key[-3:] == '_th' or key[-4:] == '_phi' or
+        key[-4:] == '_rth' or key[-5:] == '_rphi' or key[-6:] == '_thphi'):
       # Weight the average correctly for _us_.  Full weighting will be done on merge w/'avg_w'
-      out_full[key] += out[key]/my_avg_range
+      if my_avg_range > 0:
+        out_full[key] += out[key]/my_avg_range
     else:
       out_full[key][n] = out[key]
 
@@ -344,7 +346,7 @@ print("Will weight averages by {}".format(out_full['avg_w']))
 
 # Fill the output dict with all per-dump or averaged stuff
 # Hopefully in a way that doesn't keep too much of it around in memory
-nthreads = util.calc_nthreads(hdr, pad=0.3)
+nthreads = util.calc_nthreads(hdr, pad=0.2)
 util.iter_parallel(avg_dump, merge_dict, out_full, ND, nthreads)
 
 # Add divBmax from HARM's own diagnostic output, if available.  We can recompute the rest, but not this

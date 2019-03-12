@@ -204,9 +204,7 @@ def corr_midplane(geom, var, norm=True):
   
   R = np.ones((geom['n1'], geom['n3']))
   for k in range(geom['n3']):
-    dr = geom['r'][1:,jmin:jmax,:] - geom['r'][:-1,jmin:jmax,:]
-    dth = geom['th'][:-1,jmin+1:jmax+1,:] - geom['th'][:-1,jmin:jmax,:]
-    R[:-1,k] = np.sum(varn*np.roll(varn, k, axis=-1)*dr*dth*geom['dx3'])
+    R[:-1,k] = np.sum(varn*np.roll(varn, -k, axis=-1)*geom['dx3'])/2
   
   if norm:
     for k in range(geom['n3']):
@@ -280,7 +278,7 @@ def eht_profile(geom, var, jmin, jmax):
   return ( (var[:,jmin:jmax,:] * geom['gdet'][:,jmin:jmax,None]*geom['dx2']*geom['dx3']).sum(axis=(1,2)) /
            ((geom['gdet'][:,jmin:jmax]*geom['dx2']).sum(axis=1)*2*np.pi) )
 
-def theta_av(geom, var, start, zones_to_av=1, use_gdet=False):
+def theta_av(geom, var, start, zones_to_av=1, use_gdet=False, fold=True):
   # Sum theta from each pole to equator and take overall mean
   N2 = geom['n2']
   if use_gdet:
@@ -288,7 +286,10 @@ def theta_av(geom, var, start, zones_to_av=1, use_gdet=False):
               var[start:start+zones_to_av,:N2//2-1:-1,:] * geom['gdet'][start:start+zones_to_av,:N2//2-1:-1,None]*geom['dx1']*geom['dx3']).sum(axis=(0,2))\
            /((geom['gdet'][start:start+zones_to_av,:N2//2]*geom['dx1']).sum(axis=0)*2*np.pi)
   else:
-    return (var[start:start+zones_to_av,:N2//2,:].mean(axis=(0,2)) + var[start:start+zones_to_av,:N2//2-1:-1,:].mean(axis=(0,2))) / 2
+    if fold:
+      return (var[start:start+zones_to_av,:N2//2,:].mean(axis=(0,2)) + var[start:start+zones_to_av,:N2//2-1:-1,:].mean(axis=(0,2))) / 2
+    else:
+      return var[start:start+zones_to_av,:,:].mean(axis=(0,2))
 
 ## Internal functions ##
 
