@@ -32,9 +32,9 @@ calc_basic = True
 calc_jet_profile = False
 calc_jet_cuts = True
 calc_lumproxy = False
-calc_etot = False
+calc_etot = True
 calc_efluxes = True
-calc_outfluxes = True
+calc_outfluxes = False
 
 if len(sys.argv) < 2:
   util.warn('Format: python eht_analysis.py /path/to/dumps [start time] [start radial averages] [stop radial averages] [stop time]')

@@ -34,7 +34,7 @@ elif len(sys.argv) > 2:
   gridfile = None
   var = sys.argv[2]
 
-# Take either the var or a custom name
+# Optionally take extra name
 name = sys.argv[-1]
 
 if UNITS and var not in ['Tp']:
@@ -47,8 +47,6 @@ if gridfile is not None:
 else:
   # Assumes gridfile in same directory
   hdr,geom,dump = io.load_all(dumpfile)
-
-fig = plt.figure(figsize=(FIGX, FIGY))
 
 # If we're plotting a derived variable, calculate + add it
 if var in ['jcov', 'jsq']:
@@ -81,6 +79,10 @@ elif var in ['divB3D']:
   dump[var] = np.zeros_like(dump['RHO'])
   dump[var][:-1,:-1,:-1] = divB
   dump[var] /= np.sqrt(dump['B1']**2 + dump['B2']**2 + dump['B3']**2)*geom['gdet'][:,:,None]
+elif var[-4:] == "_pdf":
+  var_og = var[:-4]
+  dump[var_og] = d_fns[var_og](dump)
+  dump[var], dump[var+'_bins'] = np.histogram(np.log10(dump[var_og]), bins=200, range=(-3.5,3.5), weights=np.repeat(geom['gdet'], geom['n3']).reshape(dump[var_og].shape), density=True)
 elif var not in dump:
   dump[var] = d_fns[var](dump)
 
@@ -104,6 +106,18 @@ if UNITS:
     elif var in ['Thetae']:
       # TODO non-const te
       dump[var] = unit['Thetae_unit'] * dump['UU']/dump['RHO']
+
+fig = plt.figure(figsize=(FIGX, FIGY))
+# Treat PDFs separately
+if var[-4:] == "_pdf":
+  plt.plot(dump[var+'_bins'][:-1], dump[var])
+  plt.title("PDF of "+var[:-4])
+  plt.xlabel("Log10 value")
+  plt.ylabel("Probability")
+  
+  plt.savefig(name+".png", dpi=100)
+  plt.close(fig)
+  exit()
 
 # Plot XY differently for vectors, scalars
 if var in ['jcon','ucon','ucov','bcon','bcov']:

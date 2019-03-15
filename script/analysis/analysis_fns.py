@@ -200,15 +200,21 @@ def corr_midplane(geom, var, norm=True):
   jmin = geom['n2']//2-1
   jmax = geom['n2']//2+1
   
-  varn = var[:-1,jmin:jmax,:] - np.mean(var[:-1,jmin:jmax,:])
+  var_norm = np.ones((geom['n1'], 2, geom['n3']))
+  # Normalize radii separately
+  for i in range(geom['n1']):
+    vmean = np.mean(var[i,jmin:jmax,:])
+    var_norm[i,:,:] = var[i,jmin:jmax,:] - vmean
   
   R = np.ones((geom['n1'], geom['n3']))
   for k in range(geom['n3']):
-    R[:-1,k] = np.sum(varn*np.roll(varn, -k, axis=-1)*geom['dx3'])/2
-  
+    R[:,k] = np.sum(var_norm*np.roll(var_norm, k, axis=-1)*geom['dx3'], axis=(1,2))/2
+    
+
   if norm:
+    normR = R[:,0]
     for k in range(geom['n3']):
-      R[:,k] /= R[:,0]
+      R[:,k] /= normR
   
   return R
 
