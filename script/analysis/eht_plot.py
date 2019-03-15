@@ -10,14 +10,15 @@ matplotlib.use('Agg')
 import util
 import units
 
-import sys
+import os,sys
 import numpy as np
+from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
 import pickle
 
 # For radials
-FIGX = 15
-FIGY = 15
+FIGX = 10
+FIGY = 10
 # For flux plots; per-plot Y dim
 PLOTY = 3
 SIZE = 40
@@ -32,9 +33,10 @@ TEMP = True
 BSQ = True
 MFLUX = True
 BFLUX = True
-RES_STUDY = True
+TH_PROFS = True
 CFUNCS = True
 PSPECS = True
+LCS = True
 
 def i_of(var, coord):
   i = 0
@@ -106,12 +108,12 @@ def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, xlim=
       ax.set_xlabel('t/M')
     else:
       ax.set_xticklabels([])
-  elif iname == 'freq':
+  elif 'freq' in iname:
     if timelabels:
       ax.set_xlabel('Frequency (1/M)')
     else:
       ax.set_xticklabels([])
-  elif iname == 'lambda':
+  elif 'lambda' in iname:
     if timelabels:
       ax.set_xlabel('Correlation time (M)')
     else:
@@ -310,77 +312,141 @@ def plot_fluxes():
     else:
       avg['Mdot_av'] = np.mean(qui(avg,'Mdot'))
 
-  nplot = 7
+  nplot = 3
   fig, ax = plt.subplots(nplot,1, figsize=(FIGX, nplot*PLOTY))
-  plot_multi(ax[0], 't', 'Mdot', r"$\dot{M}$")
-  print_av_var('Mdot')
+#  plot_multi(ax[0], 't', 'Mdot', r"$\dot{M}$")
+#  print_av_var('Mdot')
 
   for avg in avgs:
     if 'Phi_b' in avg.keys():
       avg['phi_b'] = avg['Phi_b']/np.sqrt(avg['Mdot_av'])
-  plot_multi(ax[1], 't', 'phi_b', r"$\frac{\Phi}{\sqrt{\langle \dot{M} \rangle}}$")
+  plot_multi(ax[0], 't', 'phi_b', r"$\frac{\Phi_{BH}}{\sqrt{\langle \dot{M} \rangle}}$")
   print_av_var('phi_b', "Normalized Phi_BH")
 
   for avg in avgs:
     if 'Ldot' in avg.keys():
       avg['ldot'] = np.fabs(avg['Ldot'])/avg['Mdot_av']
-  plot_multi(ax[2], 't', 'ldot', r"$\frac{Ldot}{\langle \dot{M} \rangle}$")
+  plot_multi(ax[1], 't', 'ldot', r"$\frac{Ldot}{\langle \dot{M} \rangle}$")
   print_av_var('ldot', "Normalized Ldot")
 
+#  for avg in avgs:
+#    if 'Edot' in avg.keys():
+#      avg['mmE'] = (avg['Mdot'] - avg['Edot'])/avg['Mdot_av']
+#  plot_multi(ax[3], 't', 'mmE', r"$\frac{\dot{M} - \dot{E}}{\langle \dot{M} \rangle}$")
+#  print_av_var('mmE', "Normalized Mdot-Edot")
+  
   for avg in avgs:
     if 'Edot' in avg.keys():
-      avg['mmE'] = (avg['Mdot'] - avg['Edot'])/avg['Mdot_av']
-  plot_multi(ax[3], 't', 'mmE', r"$\frac{\dot{M} - \dot{E}}{\langle \dot{M} \rangle}$")
-  print_av_var('mmE', "Normalized Mdot-Edot")
+      avg['edot'] = avg['Edot']/avg['Mdot_av']
+  plot_multi(ax[2], 't', 'edot', r"$\frac{\dot{E}}{\langle \dot{M} \rangle}$")
+  print_av_var('edot', "Normalized Edot")
   
-  for avg in avgs:
-    if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
-      avg['alBZ'] = avg['aLBZ']/avg['Mdot_av']
-  plot_multi(ax[4], 't', 'alBZ', r"$\frac{L_{BZ}}{\langle \dot{M} \rangle}$")
-  print_av_var('alBZ', "Normalized BZ Jet Power")
+#  for avg in avgs:
+#    if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
+#      avg['alBZ'] = avg['aLBZ']/avg['Mdot_av']
+#  plot_multi(ax[5], 't', 'alBZ', r"$\frac{L_{BZ}}{\langle \dot{M} \rangle}$")
+#  print_av_var('alBZ', "Normalized BZ Jet Power")
   
-  for avg in avgs:
-    if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
-      avg['alj'] = avg['aLj']/avg['Mdot_av']
-  plot_multi(ax[5], 't', 'alj', r"$\frac{L_{jet}}{\langle \dot{M} \rangle}$")
-  print_av_var('alj', "Normalized Total Jet Power")
+#  for avg in avgs:
+#    if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
+#      avg['alj'] = avg['aLj']/avg['Mdot_av']
+#  plot_multi(ax[6], 't', 'alj', r"$\frac{L_{jet}}{\langle \dot{M} \rangle}$")
+#  print_av_var('alj', "Normalized Total Jet Power")
+
+#  for avg in avgs:
+#    if 'Lum' in avg.keys():
+#      avg['lum'] = np.fabs(avg['Lum'])/avg['Mdot_av']
+#  plot_multi(ax[7], 't', 'lum', r"$\frac{Lum}{|\dot{M}|}$", timelabels=True)
+#  print_av_var('lum', "Normalized Luminosity Proxy")
   
-  for avg in avgs:
-    if 'Lum' in avg.keys():
-      avg['lum'] = np.fabs(avg['Lum'])/avg['Mdot_av']
-  plot_multi(ax[6], 't', 'lum', r"$\frac{Lum}{|\dot{M}|}$", timelabels=True)
-  print_av_var('lum', "Normalized Luminosity Proxy")
-  
-  ax[0].legend(loc='upper left')
+  if len(labels) > 1:
+    ax[0].legend(loc='upper left')
+  else:
+    ax[0].set_title(labels[0])
 
   plt.savefig(fname_out + '_normfluxes.png')
   plt.close(fig)
 
 def plot_pspecs():
-  spec_keys = ['phi_b', 'Mdot', 'alBZ', 'alj']
+  spec_keys = ['phi_b', 'edot', 'ldot', 'alBZ', 'alj', 'lightcurve']
+  pretty_keys = [r"$\frac{\Phi_{BH}}{\sqrt{\langle \dot{M} \rangle}}$",
+                 r"$\frac{\dot{E}}{\langle \dot{M} \rangle}$",
+                 r"$\frac{\dot{L}}{\langle \dot{M} \rangle}$",
+                 r"$\frac{L_{BZ}}{\langle \dot{M} \rangle}$",
+                 r"$\frac{L_{jet}}{\langle \dot{M} \rangle}$",
+                 r"ipole lightcurve"]
   nplot = len(spec_keys)
-  fig, ax = plt.subplots(nplot,1, figsize=(FIGX, nplot*2*PLOTY))
+  smooth_before = 1
+  smooth_after = 11
+  fig, ax = plt.subplots((nplot+1)//2,2, figsize=(1.5*FIGX, nplot*PLOTY))
 
   for avg in avgs:
     for key in spec_keys:
       if key in avg.keys():
-        avg[key+'_pspec'] = np.abs(np.fft.fft(qui(avg, key)))**2
-        avg['freq'] = np.abs(np.fft.fftfreq(avg[key+'_pspec'].size, 5))
-        avg['lambda'] = 1/avg['freq']
-        print("Taking power spec from {} to {}".format(avg['avg_start'],avg['avg_end']))
-  
-  for axis,key in zip(ax, spec_keys):
+        data = qui(avg, key)
+        data = data[np.nonzero(data)]
+        if smooth_before > 1:
+          window = np.hanning(smooth_before)/np.sum(np.hanning(smooth_before))
+          data = np.convolve(data, window, mode='valid')
+        
+        avg[key+'_pspec'] = np.abs(np.fft.fft(data))**2
+        fft_size = avg[key+'_pspec'].size
+        
+        if smooth_after > 1:
+          window = np.hanning(smooth_after)/np.sum(np.hanning(smooth_after))
+          #window = np.ones(smooth_after)/smooth_after
+          avg[key+'_pspec'] = np.convolve(avg[key+'_pspec'], window, mode='valid')
+
+        avg[key+'_ps_freq'] = np.abs(np.fft.fftfreq(fft_size, 5))
+        if smooth_after > 1:
+          trim = smooth_after//2
+          avg[key+'_ps_freq'] = avg[key+'_ps_freq'][trim:-trim]
+        avg[key+'_ps_lambda'] = 1/avg[key+'_ps_freq']
+
+  for i,key in enumerate(spec_keys):
     psmax = np.max(avgs[-1][key+'_pspec'])
-    plot_multi(axis, 'lambda', key+'_pspec', key+" power spectrum",
-                ylim=[1e-6*psmax,1e-1*psmax], logy=True, logx=True,
+    plot_multi(ax[i//2,i%2], key+'_ps_freq', key+'_pspec', pretty_keys[i],
+                ylim=[1e-10*psmax,psmax], logy=True, logx=True,
                 timelabels=(key == spec_keys[-1]))
 
   if len(labels) > 1:
-    ax[0].legend(loc='upper right')
+    ax[0,0].legend(loc='upper right')
   else:
-    ax[0].set_title(labels[0])
+    fig.suptitle(labels[0])
 
   plt.savefig(fname_out + '_pspecs.png')
+  plt.close(fig)
+
+def plot_lcs():
+  nplot = 1
+  fig,ax = plt.subplots(nplot,1, figsize=(FIGX, nplot*PLOTY))
+
+  for avg,fname in zip(avgs,fnames):
+    datfile = os.path.join(os.path.dirname(fname),"163","m_1_1_20","lightcurve.dat")
+    cols = np.loadtxt(datfile).transpose()
+    # Normalize to 2000 elements
+    f_len = cols.shape[1]
+    t_len = avg['t'].size
+    if f_len >= t_len:
+      avg['lightcurve'] = cols[2][:t_len]
+      avg['lightcurve_pol'] = cols[1][:t_len]
+    elif f_len < t_len:
+      avg['lightcurve'] = np.zeros(t_len)
+      avg['lightcurve_pol'] = np.zeros(t_len)
+      avg['lightcurve'][:f_len] = cols[2]
+      avg['lightcurve'][f_len:] = avg['lightcurve'][f_len-1]
+      avg['lightcurve_pol'][:f_len] = cols[1]
+      avg['lightcurve_pol'][f_len:] = avg['lightcurve_pol'][f_len-1]
+
+  plot_multi(ax, 't', 'lightcurve', r"ipole lightcurve", timelabels=True)
+  print_av_var('lightcurve', "Lightcurve from ipole:")
+
+  if len(labels) > 1:
+    ax.legend(loc='upper left')
+  else:
+    fig.suptitle(labels[0])
+
+  plt.savefig(fname_out + '_lcs.png')
   plt.close(fig)
 
 def plot_extras():
@@ -451,7 +517,7 @@ def plot_omega():
   plt.savefig(fname_out + '_omega.png')
   plt.close(fig)
 
-def plot_res_study():
+def plot_th_profs():
   # Resolution-dependence of values in midplane
   fig, ax = plt.subplots(1,2, figsize=(FIGX, FIGY/3))
   plot_multi(ax[0], 'th_eh', 'betainv_25_th', r"$\beta^{-1} (r = 25)$", logy=True)
@@ -462,8 +528,6 @@ def plot_res_study():
   else:
     ax[0].set_title(labels[0])
 
-  pad = 0.05
-  plt.subplots_adjust(left=pad, right=1-pad/2, bottom=pad, top=1-pad)
   plt.savefig(fname_out + '_th_profs.png')
   plt.close(fig)
 
@@ -472,19 +536,25 @@ def plot_cfs():
   fig, ax = plt.subplots(2,2, figsize=(FIGX, FIGY))
   for avg in avgs:
     if 'rho_cf_rphi' in avg:
+      for i in range(len(avg['rho_cf_rphi'])):
+        avg['rho_cf_rphi'][i] /= np.max(avg['rho_cf_rphi'][i])
       avg['rho_cl_r'] = corr_length(avg, 'rho')
+      avg['rho_cf_10_phi'] = avg['rho_cf_rphi'][i_of(avg['r'],10)]
     if 'betainv_cf_rphi' in avg:
+      for i in range(len(avg['betainv_cf_rphi'])):
+        avg['betainv_cf_rphi'][i] /= np.max(avg['betainv_cf_rphi'][i])
       avg['betainv_cl_r'] = corr_length(avg, 'betainv')
+      avg['betainv_cf_10_phi'] = avg['betainv_cf_rphi'][i_of(avg['r'],10)]
 
-  plot_multi(ax[0,0], 'phi', 'rho_cf_10_phi', r"$\bar{R}(\rho) (r = 10)$")
-  plot_multi(ax[0,1], 'phi', 'betainv_cf_10_phi', r"$\bar{R}(\beta^{-1}) (r = 10)$")
+  plot_multi(ax[0,0], 'phi', 'rho_cf_10_phi', r"$\bar{R}(\rho) (r = 10)$", xlim=[0,np.pi])
+  plot_multi(ax[0,1], 'phi', 'betainv_cf_10_phi', r"$\bar{R}(\beta^{-1}) (r = 10)$", xlim=[0,np.pi])
   plot_multi(ax[1,0], 'r', 'rho_cl_r', r"$\lambda (\rho, r)$", logx=True, xlim=[1,500])
   plot_multi(ax[1,1], 'r', 'betainv_cl_r', r"$\lambda (\rho, r)$", logx=True, xlim=[1,500])
   # Legend
   if len(labels) > 1:
     ax[0,1].legend(loc='lower left')
   else:
-    ax[0,1].set_title(labels[0])
+    fig.suptitle(labels[0])
 
   plt.savefig(fname_out + '_cls.png')
   plt.close(fig)
@@ -524,8 +594,9 @@ if __name__ == "__main__":
     last_file = -2
 
 
+  fnames = sys.argv[1:last_file]
   avgs = []
-  for filename in sys.argv[1:last_file]:
+  for filename in fnames:
     # Encoding arg is for python2 numpy bytestrings
     avgs.append(pickle.load(open(filename,'rb'), encoding = 'latin1'))
 
@@ -542,7 +613,9 @@ if __name__ == "__main__":
   fname_out = sys.argv[-1]
 
   # For time plots.  Also take MAD/SANE for axes?
-  ti = avgs[0]['t'][0]
+  #ti = avgs[0]['t'][0]
+  nt = avgs[0]['t'].size
+  ti = avgs[0]['t'][nt//2]
   tf = avgs[0]['t'][-1]
 
   # Default styles
@@ -560,7 +633,8 @@ if __name__ == "__main__":
   if TEMP: plot_temp()
   if MFLUX: plot_mflux()
   if BFLUX: plot_Bflux()
-  if RES_STUDY: plot_res_study()
+  if TH_PROFS: plot_th_profs()
+  if LCS: plot_lcs()
   if CFUNCS: plot_cfs()
   if PSPECS: plot_pspecs()
   if len(avgs) == 1:
