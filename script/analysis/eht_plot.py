@@ -12,7 +12,7 @@ import units
 
 import os,sys
 import numpy as np
-from scipy.signal import savgol_filter
+from scipy.signal import spectrogram
 import matplotlib.pyplot as plt
 import pickle
 
@@ -376,8 +376,10 @@ def plot_pspecs():
                  r"$\frac{L_{jet}}{\langle \dot{M} \rangle}$",
                  r"ipole lightcurve"]
   nplot = len(spec_keys)
-  smooth_before = 1
-  smooth_after = 11
+  # Window size.  Data len to disable
+  fft_window = 400
+  # Binning of resulting modes. 1 to disable
+  smooth_after = 1
   fig, ax = plt.subplots((nplot+1)//2,2, figsize=(1.5*FIGX, nplot*PLOTY))
 
   for avg in avgs:
@@ -385,29 +387,29 @@ def plot_pspecs():
       if key in avg.keys():
         data = qui(avg, key)
         data = data[np.nonzero(data)]
-        if smooth_before > 1:
-          window = np.hanning(smooth_before)/np.sum(np.hanning(smooth_before))
-          data = np.convolve(data, window, mode='valid')
-        
-        avg[key+'_pspec'] = np.abs(np.fft.fft(data))**2
-        fft_size = avg[key+'_pspec'].size
-        
-        if smooth_after > 1:
-          window = np.hanning(smooth_after)/np.sum(np.hanning(smooth_after))
-          #window = np.ones(smooth_after)/smooth_after
-          avg[key+'_pspec'] = np.convolve(avg[key+'_pspec'], window, mode='valid')
 
-        avg[key+'_ps_freq'] = np.abs(np.fft.fftfreq(fft_size, 5))
+        avg[key + '_pspec'] = np.zeros(fft_window)
+        nsamples = data.size // (fft_window//2)
+        for i in range(nsamples-1):
+          # FFT on Hanning windows, 50% overlap
+          windowed = np.hanning(fft_window)*data[i*(fft_window//2):(i+2)*(fft_window//2)]
+          avg[key + '_pspec'] += np.abs(np.fft.fft(windowed))**2
+        avg[key + '_pspec'] /= nsamples
+        
         if smooth_after > 1:
-          trim = smooth_after//2
-          avg[key+'_ps_freq'] = avg[key+'_ps_freq'][trim:-trim]
+          # Bin N adjacent frequencies
+          avg[key+'_pspec'] = np.add.reduceat(b, range(0, data.size, smooth_after))
+
+        # Take frequencies corresponding to center bins
+        avg[key+'_ps_freq'] = np.abs(np.fft.fftfreq(fft_window, 5))[smooth_after//2::smooth_after]
         avg[key+'_ps_lambda'] = 1/avg[key+'_ps_freq']
 
   for i,key in enumerate(spec_keys):
-    psmax = np.max(avgs[-1][key+'_pspec'])
-    plot_multi(ax[i//2,i%2], key+'_ps_freq', key+'_pspec', pretty_keys[i],
-                ylim=[1e-10*psmax,psmax], logy=True, logx=True,
-                timelabels=(key == spec_keys[-1]))
+    if key in avgs[-1]:
+      psmax = np.max(avgs[-1][key+'_pspec'])
+      plot_multi(ax[i//2,i%2], key+'_ps_freq', key+'_pspec', pretty_keys[i],
+                  ylim=[1e-10*psmax,psmax], logy=True, logx=True,
+                  timelabels=(key == spec_keys[-1]))
 
   if len(labels) > 1:
     ax[0,0].legend(loc='upper right')
@@ -422,21 +424,22 @@ def plot_lcs():
   fig,ax = plt.subplots(nplot,1, figsize=(FIGX, nplot*PLOTY))
 
   for avg,fname in zip(avgs,fnames):
-    datfile = os.path.join(os.path.dirname(fname),"163","m_1_1_20","lightcurve.dat")
-    cols = np.loadtxt(datfile).transpose()
-    # Normalize to 2000 elements
-    f_len = cols.shape[1]
-    t_len = avg['t'].size
-    if f_len >= t_len:
-      avg['lightcurve'] = cols[2][:t_len]
-      avg['lightcurve_pol'] = cols[1][:t_len]
-    elif f_len < t_len:
-      avg['lightcurve'] = np.zeros(t_len)
-      avg['lightcurve_pol'] = np.zeros(t_len)
-      avg['lightcurve'][:f_len] = cols[2]
-      avg['lightcurve'][f_len:] = avg['lightcurve'][f_len-1]
-      avg['lightcurve_pol'][:f_len] = cols[1]
-      avg['lightcurve_pol'][f_len:] = avg['lightcurve_pol'][f_len-1]
+    fpath = os.path.join(os.path.dirname(fname),"163","m_1_1_20","lightcurve.dat")
+    if os.path.exists(fpath):
+      cols = np.loadtxt(fpath).transpose()
+      # Normalize to 2000 elements
+      f_len = cols.shape[1]
+      t_len = avg['t'].size
+      if f_len >= t_len:
+        avg['lightcurve'] = cols[2][:t_len]
+        avg['lightcurve_pol'] = cols[1][:t_len]
+      elif f_len < t_len:
+        avg['lightcurve'] = np.zeros(t_len)
+        avg['lightcurve_pol'] = np.zeros(t_len)
+        avg['lightcurve'][:f_len] = cols[2]
+        avg['lightcurve'][f_len:] = avg['lightcurve'][f_len-1]
+        avg['lightcurve_pol'][:f_len] = cols[1]
+        avg['lightcurve_pol'][f_len:] = avg['lightcurve_pol'][f_len-1]
 
   plot_multi(ax, 't', 'lightcurve', r"ipole lightcurve", timelabels=True)
   print_av_var('lightcurve', "Lightcurve from ipole:")
