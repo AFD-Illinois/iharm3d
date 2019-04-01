@@ -29,14 +29,15 @@ EXTRAS = True
 DIAGS = True
 OMEGA = False
 FLUX_PROF = False
-TEMP = True
-BSQ = True
-MFLUX = True
+TEMP = False
+BSQ = False
+MFLUX = False
 BFLUX = True
 TH_PROFS = True
 CFUNCS = True
 PSPECS = True
 LCS = True
+COMPARE = True
 
 def i_of(var, coord):
   i = 0
@@ -64,7 +65,7 @@ def print_av_var(vname, tag=None):
     print(vname+":")
   for label,avg in zip(labels,avgs):
     if vname in avg:
-      var_av = np.mean(qui(avg,vname))
+      var_av = np.abs(np.mean(qui(avg,vname)))
       var_std = np.std(qui(avg,vname))
       print("{}: avg {:.3}, std abs {:.3} rel {:.3}".format(label, var_av, var_std, var_std/var_av))
 
@@ -77,6 +78,23 @@ def corr_length(avg, var):
       k += 1
     lam[i] = k*(2*np.pi/R.shape[1])
   return lam
+
+def fib_bin(data, freqs):
+  # Fibonacci binning.  Why is this a thing.
+  j = 0
+  fib_a = 1
+  fib_b = 1
+  pspec = []
+  pspec_freq = []
+  while j + fib_b < data.size:
+    pspec.append(np.mean(data[j:j + fib_b]))
+    pspec_freq.append(np.mean(freqs[j:j + fib_b]))
+    j = j + fib_b
+    fib_c = fib_a + fib_b
+    fib_a = fib_b
+    fib_b = fib_c
+
+  return np.array(pspec), np.array(pspec_freq)
 
 def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, xlim=None, ylim=None, timelabels=False, label_list=None, linestyle='-'):
 
@@ -215,8 +233,9 @@ def plot_ravgs():
   else:
     fig.suptitle(labels[0])
 
-  pad = 0.05
-  plt.subplots_adjust(left=pad, right=1-pad/2, bottom=pad, top=1-pad)
+  #pad = 0.05
+  #plt.subplots_adjust(left=pad, right=1-pad/2, bottom=pad, top=1-pad)
+  plt.subplots_adjust(wspace=0.35)
   plt.savefig(fname_out + '_ravgs.png')
   plt.close(fig)
 
@@ -289,14 +308,14 @@ def plot_fluxes():
   for avg in avgs:
     if 'LBZ_bg1' in avg.keys():
       avg['aLBZ'] = np.abs(avg['LBZ_bg1'])
-  plot_multi(ax[4], 't', 'aLBZ', "BZ Luminosity", timelabels=True)
+  plot_multi(ax[4], 't', 'aLBZ', "BZ Luminosity")
 
   for avg in avgs:
     if 'Lj_bg1' in avg.keys():
       avg['aLj'] = np.abs(avg['Lj_bg1'])
   plot_multi(ax[5], 't', 'aLj', "Jet Luminosity", timelabels=True)
 
-  plot_multi(ax[6], 't', 'Lum', "Luminosity proxy", timelabels=True)
+  #plot_multi(ax[6], 't', 'Lum', "Luminosity proxy", timelabels=True)
 
   if len(labels) > 1:
     ax[0].legend(loc='upper left')
@@ -338,7 +357,7 @@ def plot_fluxes():
   for avg in avgs:
     if 'Edot' in avg.keys():
       avg['edot'] = avg['Edot']/avg['Mdot_av']
-  plot_multi(ax[2], 't', 'edot', r"$\frac{\dot{E}}{\langle \dot{M} \rangle}$")
+  plot_multi(ax[2], 't', 'edot', r"$\frac{\dot{E}}{\langle \dot{M} \rangle}$", timelabels=True)
   print_av_var('edot', "Normalized Edot")
   
 #  for avg in avgs:
@@ -368,48 +387,92 @@ def plot_fluxes():
   plt.close(fig)
 
 def plot_pspecs():
-  spec_keys = ['phi_b', 'edot', 'ldot', 'alBZ', 'alj', 'lightcurve']
-  pretty_keys = [r"$\frac{\Phi_{BH}}{\sqrt{\langle \dot{M} \rangle}}$",
+  spec_keys = ['mdot', 'edot', 'ldot'] #, 'lightcurve']
+  pretty_keys = [r"$\dot{M}$",
+                 #r"$\frac{\Phi_{BH}}{\sqrt{\langle \dot{M} \rangle}}$",
                  r"$\frac{\dot{E}}{\langle \dot{M} \rangle}$",
                  r"$\frac{\dot{L}}{\langle \dot{M} \rangle}$",
-                 r"$\frac{L_{BZ}}{\langle \dot{M} \rangle}$",
-                 r"$\frac{L_{jet}}{\langle \dot{M} \rangle}$",
-                 r"ipole lightcurve"]
+                 #r"$\frac{L_{BZ}}{\langle \dot{M} \rangle}$",
+                 #r"$\frac{L_{jet}}{\langle \dot{M} \rangle}$",
+                 #r"ipole lightcurve"
+                 ]
   nplot = len(spec_keys)
-  # Window size.  Data len to disable
-  fft_window = 400
+  # Whether to use 50%-overlap Hann windows, or 0%-overlap Hamming windows
+  half_overlap = False
+  # Window size.  Set to 1 to disable
+  # < 1: portion of data in each window
+  # > 1: size of window in data points
+  fft_window = 0.33
   # Binning of resulting modes. 1 to disable
-  smooth_after = 1
-  fig, ax = plt.subplots((nplot+1)//2,2, figsize=(1.5*FIGX, nplot*PLOTY))
+  bin_during = "fib"
+  bin_after = 1
+  fig, ax = plt.subplots((nplot+1)//2, 2, figsize=(1.5*FIGX, nplot*PLOTY))
 
   for avg in avgs:
     for key in spec_keys:
-      if key in avg.keys():
-        data = qui(avg, key)
-        data = data[np.nonzero(data)]
+      if 'diags' in avg.keys() and np.any(avg['diags'][key][avg['diags'][key].size//2:]):
+        data = avg['diags'][key][avg['diags'][key].size//2:]
+        data = data[np.nonzero(data)] - np.mean(data[np.nonzero(data)])
 
-        avg[key + '_pspec'] = np.zeros(fft_window)
-        nsamples = data.size // (fft_window//2)
-        for i in range(nsamples-1):
-          # FFT on Hanning windows, 50% overlap
-          windowed = np.hanning(fft_window)*data[i*(fft_window//2):(i+2)*(fft_window//2)]
-          avg[key + '_pspec'] += np.abs(np.fft.fft(windowed))**2
+        if fft_window < 1:
+          fft_window = int(fft_window*data.size)
+          print("FFT window is ", fft_window)
+
+        avg[key + '_ps_freq'] = np.abs(np.fft.fftfreq(fft_window,
+                                                      (avg['diags']['t'][-1] - avg['diags']['t'][0]) //
+                                                      avg['diags']['t'].size))
+
+        if half_overlap:
+          # Hanning w/50% overlap
+          nsamples = data.size // (fft_window//2)
+
+          for i in range(nsamples-1):
+            # FFT on Hanning windows, 50% overlap
+            windowed = np.hanning(fft_window)*data[i*(fft_window//2):(i+2)*(fft_window//2)]
+            avg[key + '_pspec'] += np.abs(np.fft.fft(windowed)) ** 2
+
+          freqs = avg[key + '_ps_freq']
+
+        else:
+          # Hamming no overlap, like comparison paper
+          nsamples = data.size // fft_window
+
+          for i in range(nsamples):
+            windowed = np.hamming(fft_window) * data[i * fft_window:(i + 1) * fft_window]
+            pspec = np.abs(np.fft.fft(windowed)) ** 2
+
+            if bin_during == "fib":
+              # Modify pspec, allocate for modified form
+              pspec, freqs = fib_bin(pspec, avg[key + '_ps_freq'])
+
+              if i == 0:
+                avg[key + '_pspec'] = np.zeros_like(np.array(pspec))
+
+            avg[key + '_pspec'] += pspec
+
+        print("PSD using ", nsamples, " segments.")
         avg[key + '_pspec'] /= nsamples
-        
-        if smooth_after > 1:
-          # Bin N adjacent frequencies
-          avg[key+'_pspec'] = np.add.reduceat(b, range(0, data.size, smooth_after))
+        avg[key + '_ps_freq'] = freqs
 
-        # Take frequencies corresponding to center bins
-        avg[key+'_ps_freq'] = np.abs(np.fft.fftfreq(fft_window, 5))[smooth_after//2::smooth_after]
+        if bin_after == "fib":
+          # Fibonacci binning after average
+          avg[key + '_pspec'], avg[key + '_ps_freq'] = fib_bin(avg[key + '_pspec'], avg[key + '_ps_freq'])
+
+        elif bin_after > 1:
+          # Even binning of adjacent frequencies
+          avg[key+'_pspec'] = np.add.reduceat(b, range(0, data.size, ))
+          # Take frequencies corresponding to center bins
+          avg[key+'_ps_freq'] = np.abs(np.fft.fftfreq(fft_window, 5))[bin_after//2::bin_after]
+
         avg[key+'_ps_lambda'] = 1/avg[key+'_ps_freq']
+        avg[key+'_pspec_f2'] = avg[key+'_pspec']*avg[key+'_ps_freq']**2
 
   for i,key in enumerate(spec_keys):
-    if key in avgs[-1]:
-      psmax = np.max(avgs[-1][key+'_pspec'])
-      plot_multi(ax[i//2,i%2], key+'_ps_freq', key+'_pspec', pretty_keys[i],
-                  ylim=[1e-10*psmax,psmax], logy=True, logx=True,
-                  timelabels=(key == spec_keys[-1]))
+    if key+'_pspec_f2' in avgs[-1]:
+      psmax = np.max(avgs[-1][key+'_pspec_f2'])
+      plot_multi(ax[i//2, i%2], key+'_ps_freq', key+'_pspec_f2', pretty_keys[i],
+                  ylim=[10*psmax, 0.01*psmax], logy=True, logx=True,
+                  timelabels=(key in spec_keys[-2:]))
 
   if len(labels) > 1:
     ax[0,0].legend(loc='upper right')
@@ -424,25 +487,29 @@ def plot_lcs():
   fig,ax = plt.subplots(nplot,1, figsize=(FIGX, nplot*PLOTY))
 
   for avg,fname in zip(avgs,fnames):
-    fpath = os.path.join(os.path.dirname(fname),"163","m_1_1_20","lightcurve.dat")
-    if os.path.exists(fpath):
-      cols = np.loadtxt(fpath).transpose()
-      # Normalize to 2000 elements
-      f_len = cols.shape[1]
-      t_len = avg['t'].size
-      if f_len >= t_len:
-        avg['lightcurve'] = cols[2][:t_len]
-        avg['lightcurve_pol'] = cols[1][:t_len]
-      elif f_len < t_len:
-        avg['lightcurve'] = np.zeros(t_len)
-        avg['lightcurve_pol'] = np.zeros(t_len)
-        avg['lightcurve'][:f_len] = cols[2]
-        avg['lightcurve'][f_len:] = avg['lightcurve'][f_len-1]
-        avg['lightcurve_pol'][:f_len] = cols[1]
-        avg['lightcurve_pol'][f_len:] = avg['lightcurve_pol'][f_len-1]
+    fpaths = [os.path.join(os.path.dirname(fname), "163", "m_1_1_20", "lightcurve.dat"),
+    os.path.join(os.path.dirname(fname), "17", "m_1_1_20", "lightcurve.dat")]
+    for fpath in fpaths:
+      print(fpath)
+      if os.path.exists(fpath):
+        print("Found ",fpath)
+        cols = np.loadtxt(fpath).transpose()
+        # Normalize to 2000 elements
+        f_len = cols.shape[1]
+        t_len = avg['t'].size
+        if f_len >= t_len:
+          avg['lightcurve'] = cols[2][:t_len]
+          avg['lightcurve_pol'] = cols[1][:t_len]
+        elif f_len < t_len:
+          avg['lightcurve'] = np.zeros(t_len)
+          avg['lightcurve_pol'] = np.zeros(t_len)
+          avg['lightcurve'][:f_len] = cols[2]
+          avg['lightcurve'][f_len:] = avg['lightcurve'][f_len-1]
+          avg['lightcurve_pol'][:f_len] = cols[1]
+          avg['lightcurve_pol'][f_len:] = avg['lightcurve_pol'][f_len-1]
 
   plot_multi(ax, 't', 'lightcurve', r"ipole lightcurve", timelabels=True)
-  print_av_var('lightcurve', "Lightcurve from ipole:")
+  print_av_var('lightcurve', "Lightcurve from ipole")
 
   if len(labels) > 1:
     ax.legend(loc='upper left')
@@ -462,7 +529,7 @@ def plot_extras():
       avg['Eff'] = (avg['Mdot'] + avg['Edot'])/avg['Mdot_av']*100
   plot_multi(ax[0], 't', 'Eff', "Efficiency (%)", ylim=[-10,200])
 
-  plot_multi(ax[1], 't', 'Edot', r"$\dot{E}$")
+  plot_multi(ax[1], 't', 'Edot', r"$\dot{E}$", timelabels=True)
 
   if len(labels) > 1:
     ax[0].legend(loc='upper left')
@@ -585,6 +652,24 @@ def plot_flux_profs():
   plt.savefig(fname_out + '_flux_profs.png')
   plt.close(fig)
 
+def plot_var_compare():
+  nplotsy, nplotsx = 2,2
+  fig, ax = plt.subplots(nplotsy, nplotsx, figsize=(FIGX, FIGY))
+
+  for i,vname in enumerate(['phi_b', 'ldot', 'edot', 'lightcurve']):
+    stddevs = [np.std(qui(avg,vname))/np.abs(np.mean(qui(avg,vname))) for avg in avgs if vname in avg.keys()]
+    n2s = [int(fname.split("x")[1]) for fname in fnames]
+    axis = ax[i//nplotsy, i % nplotsx]
+    axis.plot(n2s, stddevs, marker='o', color='k')
+    axis.set_xscale('log')
+    axis.set_xlabel(r"$N_{\theta}$")
+    axis.set_ylim([0,None])
+    axis.set_title("Relative variance of "+vname)
+
+
+  plt.savefig(fname_out + '_var_compare.png')
+  plt.close(fig)
+
 if __name__ == "__main__":
   if len(sys.argv) < 3:
     util.warn('Format: python eht_plot.py analysis_output [analysis_output ...] [labels_list] image_name')
@@ -642,5 +727,7 @@ if __name__ == "__main__":
   if PSPECS: plot_pspecs()
   if len(avgs) == 1:
     if FLUX_PROF: plot_flux_profs()
+  else:
+    if COMPARE: plot_var_compare()
 
 

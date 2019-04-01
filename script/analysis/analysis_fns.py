@@ -196,7 +196,19 @@ def i_of(geom, rcoord):
 
 ## Correlation functions/lengths ##
 
-def corr_midplane(geom, var, norm=True):
+def corr_midplane(geom, var, at_i1=None):
+  if at_i1 is None:
+    at_i1 = range(geom['n1'])
+  corr = np.zeros((len(at_i1), geom['n3']))
+
+  for i1 in at_i1:
+    var_phi = np.mean(var[i1, geom['n2']//2-1:geom['n2']//2+1, :], axis=0)
+    corr[i1] = np.fft.ifft(np.abs(np.fft.fft(var_phi)) ** 2)
+
+  return corr
+
+
+def corr_midplane_direct(geom, var, norm=True):
   jmin = geom['n2']//2-1
   jmax = geom['n2']//2+1
   
