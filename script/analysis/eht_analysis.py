@@ -31,10 +31,13 @@ calc_ravgs = True
 calc_basic = True
 calc_jet_profile = False
 calc_jet_cuts = True
-calc_lumproxy = False
+calc_lumproxy = True
 calc_etot = True
-calc_efluxes = True
+calc_efluxes = False
 calc_outfluxes = False
+
+calc_pdfs = True
+pdf_nbins = 200
 
 if len(sys.argv) < 2:
   util.warn('Format: python eht_analysis.py /path/to/dumps [start time] [start radial averages] [stop radial averages] [stop time]')
@@ -244,19 +247,17 @@ def avg_dump(n):
         out[lum+'_'+cut] = out[lum+'_'+cut+'_rt'][iBZ]
 
   if calc_lumproxy:
-    # TODO TODO new variable definitions here
-    rho = dump['RHO']
-    C = 0.2
-    j = rho**3 * Pg**(-2) * np.exp(-C*(rho**2 / (B*Pg**2))**(1./3.))
-    out['Lum'] = eht_vol(geom, j, jmin, jmax, outside=i_of(geom, 5))
+    rho, Pg, B = d_fns['rho'](dump), d_fns['Pg'](dump), d_fns['B'](dump)
+    # See EHT code comparison paper
+    j = rho**3 / Pg**2 * np.exp(-0.2 * (rho**2 / ( B * Pg**2))**(1./3.))
+    out['Lum_rt'] = eht_profile(geom, j, jmin, jmax)
 
   if calc_etot:
-    tfull_tt = T_mixed(dump, 0,0)
-    out['Etot'] = sum_vol(geom, tfull_tt, within=iEmax)
-    #print "Energy on grid: ",out['Etot']
-
-    # Radial profiles of T^0_0
-    #out['E_r'] = out['E_rt'] = radial_sum(geom, tfull_tt)
+    # Total energy and current, summed by shells to allow cuts on radius
+    for tot_name, var_name in [['Etot', 'JE0']]:
+      out[tot_name+'_rt'] = sum_shell(geom, d_fns[var_name](dump))
+    for tot_name, var_name in [['Jsqtot', 'jsq']]:
+      out[tot_name+'_rt'] = sum_shell(geom, d_fns[var_name](geom, dump))
 
   if calc_efluxes:
     # Conserved (maybe; in steady state) 2D energy flux
@@ -272,6 +273,13 @@ def avg_dump(n):
       out[name+'_rt'] = sum_shell(geom, var_temp, mask=(var_temp > 0))
       if out['t'] >= tavg_start and out['t'] <= tavg_end:
         out[name+'_r'] = out[name+'_rt']
+  
+  if calc_pdfs:
+    for var in ['betainv', 'rho']:
+      out[var+'_pdf'], _ = np.histogram(np.log10(d_fns[var](dump)),
+                                            bins=pdf_nbins, range=(-3.5, 3.5),
+                                            weights=np.repeat(geom['gdet'], geom['n3']).reshape((geom['n1'], geom['n2'], geom['n3'])),
+                                            density=True)
 
   dump.clear()
   del dump
@@ -293,13 +301,15 @@ def merge_dict(n, out, out_full):
         out_full[key] = np.zeros((ND, hdr['n1'], hdr['n2']))
       elif key[-7:] == '_thphit':
         out_full[key] = np.zeros((ND, hdr['n2'], hdr['n3']))
+      elif key[-5:] == '_pdft':
+        out_full[key] = np.zeros((ND, pdf_nbins))
       elif (key[-2:] == '_r' or key[-4:] == '_hth' or key[-3:] == '_th' or key[-4:] == '_phi' or
-            key[-4:] == '_rth' or key[-5:] == '_rphi' or key[-6:] == '_thphi'):
+            key[-4:] == '_rth' or key[-5:] == '_rphi' or key[-6:] == '_thphi' or key[-4:] == '_pdf'):
         out_full[key] = np.zeros_like(out[key])
       else:
         out_full[key] = np.zeros(ND)
     if (key[-2:] == '_r' or key[-4:] == '_hth' or key[-3:] == '_th' or key[-4:] == '_phi' or
-        key[-4:] == '_rth' or key[-5:] == '_rphi' or key[-6:] == '_thphi'):
+        key[-4:] == '_rth' or key[-5:] == '_rphi' or key[-6:] == '_thphi' or key[-4:] == '_pdf'):
       # Weight the average correctly for _us_.  Full weighting will be done on merge w/'avg_w'
       if my_avg_range > 0:
         out_full[key] += out[key]/my_avg_range

@@ -3,6 +3,7 @@
 # Meant to be imported "from analysis_fns import *" for convenience
 
 import numpy as np
+import scipy.fftpack as fft
 
 # Define a dict of names, coupled with the functions required to obtain their variables.
 # That way, we only need to specify lists and final operations in eht_analysis,
@@ -28,6 +29,10 @@ d_fns = {'rho': lambda dump: dump['RHO'],
          'Ptot' : lambda dump: d_fns['Pg'](dump) + d_fns['Pb'](dump),
          'beta' : lambda dump: dump['beta'],
          'betainv' : lambda dump: 1/dump['beta'],
+         'jcon': lambda dump: dump['jcon'],
+         # TODO TODO TODO
+         'jcov': lambda geom, dump: jcov(geom, dump),
+         'jsq': lambda geom, dump: jsq(geom, dump),
          'B' : lambda dump: np.sqrt(dump['bsq']),
          'betagamma' : lambda dump: np.sqrt((d_fns['FE_EM'](dump) + d_fns['FE_Fl'](dump))/d_fns['FM'](dump) - 1),
          'Theta' : lambda dump: (dump['hdr']['gam'] - 1) * dump['UU'] / dump['RHO'],
@@ -186,6 +191,12 @@ def get_gamma(geom, dump):
                                         gcov[:,:,None,2,3]*U2*U3))
   return np.sqrt(1. + qsq)
 
+def jcov(geom, dump):
+  return np.einsum("...i,...ij->...j", dump['jcon'], geom['gcov'][:,:,None,:,:])
+
+def jsq(geom, dump):
+  return np.sum(dump['jcon']*jcov(geom, dump), axis=-1)
+
 # Decide where to measure fluxes
 def i_of(geom, rcoord):
   i = 0
@@ -196,17 +207,41 @@ def i_of(geom, rcoord):
 
 ## Correlation functions/lengths ##
 
-def corr_midplane(geom, var, at_i1=None):
+def corr_midplane(geom, var, norm=True, at_i1=None):
   if at_i1 is None:
     at_i1 = range(geom['n1'])
-  corr = np.zeros((len(at_i1), geom['n3']))
+  
+  jmin = geom['n2']//2-1
+  jmax = geom['n2']//2+1
+    
+  R = np.zeros((len(at_i1), geom['n3']))
 
+  # TODO is there a way to vectorize over R? Also, are we going to average over adjacent r ever?
   for i1 in at_i1:
-    var_phi = np.mean(var[i1, geom['n2']//2-1:geom['n2']//2+1, :], axis=0)
-    corr[i1] = np.fft.ifft(np.abs(np.fft.fft(var_phi)) ** 2)
+    # Average over small angle around midplane
+    var_phi = np.mean(var[i1, jmin:jmax, :], axis=0)
+    # Calculate autocorrelation
+    var_phi_normal = (var_phi - np.mean(var_phi))/np.std(var_phi)
+    var_corr = fft.ifft(np.abs(fft.fft(var_phi_normal))**2)
+    R[i1] = np.real(var_corr)/(var_corr.size)
 
-  return corr
+  if norm:
+    normR = R[:,0]
+    for k in range(geom['n3']):
+      R[:,k] /= normR
 
+  return R
+
+# TODO needs work...
+def jnu_inv(nu, Thetae, Ne, B, theta):
+  K2 = 2.*Thetae**2
+  nuc = EE * B / (2. * np.pi * ME * CL)
+  nus = (2./9.) * nuc * Thetae**2 * np.sin(theta)
+  j[nu > 1.e12*nus] = 0.
+  x = nu/nus
+  f = pow( pow(x, 1./2.) + pow(2.,11./12.)*pow(x,1./6.), 2 )
+  j = (sqrt(2.) * np.pi * EE**2 * Ne * nus / (3. *CL * K2)) * f * exp(-pow(x,1./3.))
+  return j / nu**2
 
 def corr_midplane_direct(geom, var, norm=True):
   jmin = geom['n2']//2-1

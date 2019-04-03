@@ -51,8 +51,6 @@ else:
 # If we're plotting a derived variable, calculate + add it
 if var in ['jcov', 'jsq']:
   dump['jcov'] = np.einsum("...i,...ij->...j", dump['jcon'], geom['gcov'][:,:,None,:,n])
-  for n in range(hdr['n_dim']):
-    dump['jcov'][:,:,:,n] = np.sum(dump['jcon']*geom['gcov'][:,:,None,:,n], axis=3)
   dump['jsq'] = np.sum(dump['jcon']*dump['jcov'], axis=-1)
 elif var in ['divE2D']:
   JE1g, JE2g = T_mixed(dump, 1,0).mean(axis=-1)*geom['gdet'], T_mixed(dump, 2,0).mean(axis=-1)*geom['gdet']

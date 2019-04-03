@@ -163,7 +163,6 @@ def load_hdr(fname):
 
   return hdr
 
-# TODO construct this instead someday
 def load_geom(hdr, path):
   # Allow override by making path a filename
   if ".h5" in path:
