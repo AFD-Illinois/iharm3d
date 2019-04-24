@@ -70,7 +70,7 @@ def loop_phi(array):
 # * "unknown labels" are assigned None or a string
 # TODO pass through kwargs instead of all this duplication
 def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
-            cbar=True, cbar_ticks=None, label=None, xlabel=True, ylabel=True,
+            cbar=True, cbar_ticks=None, label=None, xlabel=True, ylabel=True, xticks=True, yticks=True,
             arrayspace=False, average=False, integrate=False, bh=True, half_cut=False, shading='gouraud'):
 
   if integrate:
@@ -124,11 +124,25 @@ def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(mesh, cax=cax, ticks=cbar_ticks)
 
+  if not xticks:
+    plt.gca().set_xticks([])
+    plt.xticks([])
+    ax.set_xticks([])
+  if not yticks:
+    plt.gca().set_yticks([])
+    plt.yticks([])
+    ax.set_yticks([])
+  if not xticks and not yticks:
+    # Remove the whole frame for good measure
+    #fig.patch.set_visible(False)
+    ax.axis('off')
+
+
   if label is not None:
     ax.set_title(label)
 
 def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
-            cbar=True, label=None, xlabel=True, ylabel=True,
+            cbar=True, label=None, xlabel=True, ylabel=True, xticks=True, yticks=True,
             ticks=None, arrayspace=False, average=False, integrate=False, bh=True, shading='gouraud'):
 
   if integrate:
@@ -172,6 +186,19 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(mesh, cax=cax, ticks=ticks)
+
+  if not xticks:
+    plt.gca().set_xticks([])   
+    plt.xticks([])
+    ax.set_xticks([])
+  if not yticks:  
+    plt.gca().set_yticks([])
+    plt.yticks([])
+    ax.set_yticks([])
+  if not xticks and not yticks:
+    # Remove the whole frame for good measure
+    #fig.patch.set_visible(False)
+    ax.axis('off')
 
   if label:
     ax.set_title(label)

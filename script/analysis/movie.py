@@ -19,7 +19,7 @@ import pickle
 import numpy as np
 
 # Movie size in inches. Keep 16/9 for standard-size movies
-FIGX = 24
+FIGX = 12
 FIGY = FIGX*9/16
 
 # For plotting debug, "array-space" plots
@@ -56,13 +56,13 @@ def plot(n):
 
   # Zoom in for small problems
   if geom['r'][-1,0,0] > 100:
-    window = [-40,40,-40,40]
+    window = [-100,100,-100,100]
     nlines = 20
     rho_l, rho_h = -3, 2
     iBZ = i_of(geom,100) # most MADs
     rBZ = 100
   else:
-    window = [-20,20,-20,20]
+    window = [-50,50,-50,50]
     nlines = 5
     rho_l, rho_h = -4, 1
     iBZ = i_of(geom,40) # most SANEs
@@ -70,16 +70,27 @@ def plot(n):
 
   if movie_type == "simplest":
     # Simplest movie: just RHO
-    ax_slc = plt.subplots(1,2)
-    bplt.plot_slices(ax_slc[0], ax_slc[1], geom, dump, np.log10(dump['RHO']),
-                     label=r"$\log_{10}(\rho)$", vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
+    ax_slc = [plt.subplot(1,2,1), plt.subplot(1,2,2)]
+    bplt.plot_xz(ax_slc[0], geom, np.log10(dump['RHO']),
+                     label="", vmin=rho_l, vmax=rho_h, window=window,
+                     xlabel=False, ylabel=False, xticks=False, yticks=False,
+                     cbar=False, cmap='jet')
+    bplt.plot_xy(ax_slc[1], geom, np.log10(dump['RHO']),
+                     label="", vmin=rho_l-0.5, vmax=rho_h-0.5, window=window,
+                     xlabel=False, ylabel=False, xticks=False, yticks=False,
+                     cbar=False, cmap='jet')
+
+    pad = 0.0
+    plt.subplots_adjust(hspace=0, wspace=0, left=pad, right=1-pad, bottom=pad, top=1-pad)
+
   elif movie_type == "simpler":
     # Simpler movie: RHO and phi
     gs = gridspec.GridSpec(2, 2, height_ratios=[6, 1], width_ratios=[16,17])
     ax_slc = [fig.subplot(gs[0,0]), fig.subplot(gs[0,1])]
     ax_flux = [fig.subplot(gs[1,:])]
     bplt.plot_slices(ax_slc[0], ax_slc[1], geom, dump, np.log10(dump['RHO']),
-                     label=r"$\log_{10}(\rho)$", vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
+                     label=r"$\log_{10}(\rho)$", vmin=rho_l, vmax=rho_h, window=window,
+                     overlay_field=False, cmap='jet')
     bplt.diag_plot(ax_flux[0], diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI, xlabel=False)
   elif movie_type == "simple":
     # Simple movie: RHO mdot phi
