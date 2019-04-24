@@ -5,16 +5,16 @@
 ################################################################################
 
 import matplotlib
-matplotlib.use('Agg')
+import os, sys
+import numpy as np
+import pickle
 
 import util
 import units
+from analysis_fns import *
 
-import os,sys
-import numpy as np
-from scipy.signal import spectrogram
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import pickle
 
 # For radials
 FIGX = 10
@@ -37,7 +37,8 @@ TH_PROFS = True
 CFUNCS = True
 PSPECS = True
 LCS = True
-COMPARE = True
+COMPARE = False
+PDFS = True
 
 def i_of(var, coord):
   i = 0
@@ -69,38 +70,11 @@ def print_av_var(vname, tag=None):
       var_std = np.std(qui(avg,vname))
       print("{}: avg {:.3}, std abs {:.3} rel {:.3}".format(label, var_av, var_std, var_std/var_av))
 
-def corr_length(avg, var):
-  lam = np.zeros_like(avg['rho_r'])
-  R = avg[var+'_cf_rphi']
-  for i in range(lam.size):
-    k = 0
-    while k < R.shape[1] and R[i,k] >= R[i,0] / np.exp(1):
-      k += 1
-    lam[i] = k*(2*np.pi/R.shape[1])
-  return lam
-
-def fib_bin(data, freqs):
-  # Fibonacci binning.  Why is this a thing.
-  j = 0
-  fib_a = 1
-  fib_b = 1
-  pspec = []
-  pspec_freq = []
-  while j + fib_b < data.size:
-    pspec.append(np.mean(data[j:j + fib_b]))
-    pspec_freq.append(np.mean(freqs[j:j + fib_b]))
-    j = j + fib_b
-    fib_c = fib_a + fib_b
-    fib_a = fib_b
-    fib_b = fib_c
-
-  return np.array(pspec), np.array(pspec_freq)
-
 def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, xlim=None, ylim=None, timelabels=False, label_list=None, linestyle='-'):
 
   if label_list is None: label_list = labels
 
-  for i,avg in enumerate(avgs):
+  for i, avg in enumerate(avgs):
     if varname in avg:
       if avg[iname].size > avg[varname].size:
         # Some vars are only to half in theta
@@ -150,9 +124,9 @@ def plot_multi(ax, iname, varname, varname_pretty, logx=False, logy=False, xlim=
 def plot_temp():
   fig, ax = plt.subplots(1,1, figsize=(FIGX, FIGY))
   if avgs[0]['r'][-1] > 50:
-    txlim = [1e0,1e3]
+    txlim = [1e0, 1e3]
   else:
-    txlim = [1e0,1e2]
+    txlim = [1e0, 1e2]
   
   fit_labs = []
   for i,avg in enumerate(avgs):
@@ -167,18 +141,15 @@ def plot_temp():
     # Add the fits. Aaaaaalll the fits
     x = avg['r'][i_of(avg['r'], 3):i_of(avg['r'], 30)]
     y = avg['Tp_r'][i_of(avg['r'], 3):i_of(avg['r'], 30)]
-    logx=np.log(x)
-    logy=np.log(y)
-    # Place a guideline at 1/x starting near the top of the plot
-    #ax.plot(logx, (0.1*ax.get_ylim()[1]) * 1/logx, 'k--')
-    coeffs = np.polyfit(logx,logy,deg=1)
+
+    coeffs = np.polyfit(np.log(x), np.log(y), deg=1)
     poly = np.poly1d(coeffs)
-    yfit = lambda x: np.exp(poly(np.log(x)))
-    # TODO any if statements to cut down on fits
+    yfit = lambda xf: np.exp(poly(np.log(xf)))
+
     avg['r_fit'] = x
     avg['Tp_r_fit'] = yfit(x)
     fit_lab = r"{:.2g} * r^{:.2g}".format(np.exp(coeffs[1]), coeffs[0])
-    print(labels[i]," Ti fit: ",fit_lab)
+    print(labels[i], " Ti fit: ", fit_lab)
     fit_labs.append(fit_lab)
 
   # Plot the profiles themselves
@@ -209,7 +180,7 @@ def plot_bsq_rise():
   plt.close(fig)
 
 def plot_ravgs():
-  fig, ax = plt.subplots(3,3, figsize=(FIGX, FIGY))
+  fig, ax = plt.subplots(3, 3, figsize=(FIGX, FIGY))
   for avg in avgs:
     if 'beta_r' in avg:
       avg['betainv_r'] = 1/avg['beta_r']
@@ -218,18 +189,18 @@ def plot_ravgs():
     if 'B_r' in avg:
       avg['sigma_r'] = avg['B_r']**2 / avg['rho_r']
 
-  plot_multi(ax[0,0], 'r', 'rho_r', r"$<\rho>$", logy=True) #, ylim=[1.e-2, 1.e0])
-  plot_multi(ax[0,1], 'r', 'Pg_r', r"$<P_g>$", logy=True) #, ylim=[1.e-6, 1.e-2])
-  plot_multi(ax[0,2], 'r', 'Ptot_r', r"$<P_{tot}>$", logy=True) #, ylim=[1.e-6, 1.e-2])
-  plot_multi(ax[1,0], 'r', 'B_r', r"$<|B|>$", logy=True) #, ylim=[1.e-4, 1.e-1])
-  plot_multi(ax[1,1], 'r', 'u^phi_r', r"$<u^{\phi}>$", logy=True) #, ylim=[1.e-3, 1.e1])
-  plot_multi(ax[1,2], 'r', 'u_phi_r', r"$<u_{\phi}>$", logy=True) #, ylim=[1.e-3, 1.e1])
-  plot_multi(ax[2,0], 'r', 'Tp_r', r"$<T>$", logy=True) #, ylim=[1.e-6, 1.e-2])
-  plot_multi(ax[2,1], 'r', 'betainv_r', r"$<\beta^{-1}>$", logy=True) #, ylim=[1.e-2, 1.e1])
-  plot_multi(ax[2,2], 'r', 'sigma_r', r"$<\sigma>$", logy=True) #, ylim=[1.e-2, 1.e1])
+  plot_multi(ax[0, 0], 'r', 'rho_r', r"$<\rho>$", logy=True) #, ylim=[1.e-2, 1.e0])
+  plot_multi(ax[0, 1], 'r', 'Pg_r', r"$<P_g>$", logy=True) #, ylim=[1.e-6, 1.e-2])
+  plot_multi(ax[0, 2], 'r', 'Ptot_r', r"$<P_{tot}>$", logy=True) #, ylim=[1.e-6, 1.e-2])
+  plot_multi(ax[1, 0], 'r', 'B_r', r"$<|B|>$", logy=True) #, ylim=[1.e-4, 1.e-1])
+  plot_multi(ax[1, 1], 'r', 'u^phi_r', r"$<u^{\phi}>$", logy=True) #, ylim=[1.e-3, 1.e1])
+  plot_multi(ax[1, 2], 'r', 'u_phi_r', r"$<u_{\phi}>$", logy=True) #, ylim=[1.e-3, 1.e1])
+  plot_multi(ax[2, 0], 'r', 'Tp_r', r"$<T>$", logy=True) #, ylim=[1.e-6, 1.e-2])
+  plot_multi(ax[2, 1], 'r', 'betainv_r', r"$<\beta^{-1}>$", logy=True) #, ylim=[1.e-2, 1.e1])
+  plot_multi(ax[2, 2], 'r', 'sigma_r', r"$<\sigma>$", logy=True) #, ylim=[1.e-2, 1.e1])
 
   if len(labels) > 1:
-    ax[0,-1].legend(loc='upper right')
+    ax[0, -1].legend(loc='upper right')
   else:
     fig.suptitle(labels[0])
 
@@ -277,10 +248,10 @@ def plot_Bflux():
           avg['rho_enc_r'][i] = np.sum(avg['rho_r'][:i])
         avg['phi_brnorm_r'] = avg['Phi_mid_r'] / avg['rho_enc_r']
 
-  plot_multi(ax[0,0], 'r', 'phi_sph_r', r"$\frac{\Phi_{sph}}{\langle \dot{M} \rangle}$")
-  plot_multi(ax[0,1], 'r', 'phi_mid_r', r"$\frac{\Phi_{mid}}{\langle \dot{M} \rangle}$")
-  plot_multi(ax[1,0], 'r', 'phi_diff_r', r"$\frac{\Phi_{sph} - \Phi_{mid}}{\langle \dot{M} \rangle}$")
-  plot_multi(ax[1,0], 'r', 'phi_brnorm_r', r"$\frac{\Phi_{mid}}{\rho_{enc}}$")
+  plot_multi(ax[0, 0], 'r', 'phi_sph_r', r"$\frac{\Phi_{sph}}{\langle \dot{M} \rangle}$")
+  plot_multi(ax[0, 1], 'r', 'phi_mid_r', r"$\frac{\Phi_{mid}}{\langle \dot{M} \rangle}$")
+  plot_multi(ax[1, 0], 'r', 'phi_diff_r', r"$\frac{\Phi_{sph} - \Phi_{mid}}{\langle \dot{M} \rangle}$")
+  plot_multi(ax[1, 0], 'r', 'phi_brnorm_r', r"$\frac{\Phi_{mid}}{\rho_{enc}}$")
 
   if len(labels) > 1:
     ax[0,0].legend(loc='upper right')
@@ -294,11 +265,11 @@ def plot_Bflux():
 
 def plot_fluxes():
   nplot = 7
-  fig,ax = plt.subplots(nplot,1, figsize=(FIGX, nplot*PLOTY))
+  fig,ax = plt.subplots(nplot, 1, figsize=(FIGX, nplot*PLOTY))
 
-  plot_multi(ax[0],'t','Mdot', r"$\dot{M}$")
-  plot_multi(ax[1],'t','Phi_b', r"$\Phi$")
-  plot_multi(ax[2],'t','Ldot', r"$\dot{L}$")
+  plot_multi(ax[0], 't', 'Mdot', r"$\dot{M}$")
+  plot_multi(ax[1], 't', 'Phi_b', r"$\Phi$")
+  plot_multi(ax[2], 't', 'Ldot', r"$\dot{L}$")
 
   for avg in avgs:
     if 'Edot' in avg.keys() and 'Mdot' in avg.keys():
@@ -360,15 +331,15 @@ def plot_fluxes():
   plot_multi(ax[2], 't', 'edot', r"$\frac{\dot{E}}{\langle \dot{M} \rangle}$", timelabels=True)
   print_av_var('edot', "Normalized Edot")
   
-#  for avg in avgs:
-#    if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
-#      avg['alBZ'] = avg['aLBZ']/avg['Mdot_av']
+  for avg in avgs:
+    if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
+      avg['alBZ'] = avg['aLBZ']/avg['Mdot_av']
 #  plot_multi(ax[5], 't', 'alBZ', r"$\frac{L_{BZ}}{\langle \dot{M} \rangle}$")
 #  print_av_var('alBZ', "Normalized BZ Jet Power")
   
-#  for avg in avgs:
-#    if 'aLBZ' in avg.keys() and 'Mdot' in avg.keys():
-#      avg['alj'] = avg['aLj']/avg['Mdot_av']
+  for avg in avgs:
+    if 'aLj' in avg.keys() and 'Mdot' in avg.keys():
+      avg['alj'] = avg['aLj']/avg['Mdot_av']
 #  plot_multi(ax[6], 't', 'alj', r"$\frac{L_{jet}}{\langle \dot{M} \rangle}$")
 #  print_av_var('alj', "Normalized Total Jet Power")
 
@@ -387,95 +358,40 @@ def plot_fluxes():
   plt.close(fig)
 
 def plot_pspecs():
-  spec_keys = ['mdot', 'edot', 'ldot'] #, 'lightcurve']
+  spec_keys = ['mdot', 'phi', 'edot', 'ldot', 'alBZ', 'alj', 'lightcurve']
   pretty_keys = [r"$\dot{M}$",
-                 #r"$\frac{\Phi_{BH}}{\sqrt{\langle \dot{M} \rangle}}$",
+                 r"$\frac{\Phi_{BH}}{\sqrt{\langle \dot{M} \rangle}}$",
                  r"$\frac{\dot{E}}{\langle \dot{M} \rangle}$",
                  r"$\frac{\dot{L}}{\langle \dot{M} \rangle}$",
-                 #r"$\frac{L_{BZ}}{\langle \dot{M} \rangle}$",
-                 #r"$\frac{L_{jet}}{\langle \dot{M} \rangle}$",
-                 #r"ipole lightcurve"
+                 r"$\frac{L_{BZ}}{\langle \dot{M} \rangle}$",
+                 r"$\frac{L_{jet}}{\langle \dot{M} \rangle}$",
+                 r"ipole lightcurve"
                  ]
   nplot = len(spec_keys)
-  # Whether to use 50%-overlap Hann windows, or 0%-overlap Hamming windows
-  half_overlap = False
-  # Window size.  Set to 1 to disable
-  # < 1: portion of data in each window
-  # > 1: size of window in data points
-  fft_window = 0.33
-  # Binning of resulting modes. 1 to disable
-  bin_during = "fib"
-  bin_after = 1
   fig, ax = plt.subplots((nplot+1)//2, 2, figsize=(1.5*FIGX, nplot*PLOTY))
 
   for avg in avgs:
     for key in spec_keys:
-      if 'diags' in avg.keys() and np.any(avg['diags'][key][avg['diags'][key].size//2:]):
-        data = avg['diags'][key][avg['diags'][key].size//2:]
-        data = data[np.nonzero(data)] - np.mean(data[np.nonzero(data)])
-
-        if fft_window < 1:
-          fft_window = int(fft_window*data.size)
-          print("FFT window is ", fft_window)
-
-        avg[key + '_ps_freq'] = np.abs(np.fft.fftfreq(fft_window,
-                                                      (avg['diags']['t'][-1] - avg['diags']['t'][0]) //
-                                                      avg['diags']['t'].size))
-
-        if half_overlap:
-          # Hanning w/50% overlap
-          nsamples = data.size // (fft_window//2)
-
-          for i in range(nsamples-1):
-            # FFT on Hanning windows, 50% overlap
-            windowed = np.hanning(fft_window)*data[i*(fft_window//2):(i+2)*(fft_window//2)]
-            avg[key + '_pspec'] += np.abs(np.fft.fft(windowed)) ** 2
-
-          freqs = avg[key + '_ps_freq']
-
-        else:
-          # Hamming no overlap, like comparison paper
-          nsamples = data.size // fft_window
-
-          for i in range(nsamples):
-            windowed = np.hamming(fft_window) * data[i * fft_window:(i + 1) * fft_window]
-            pspec = np.abs(np.fft.fft(windowed)) ** 2
-
-            if bin_during == "fib":
-              # Modify pspec, allocate for modified form
-              pspec, freqs = fib_bin(pspec, avg[key + '_ps_freq'])
-
-              if i == 0:
-                avg[key + '_pspec'] = np.zeros_like(np.array(pspec))
-
-            avg[key + '_pspec'] += pspec
-
-        print("PSD using ", nsamples, " segments.")
-        avg[key + '_pspec'] /= nsamples
-        avg[key + '_ps_freq'] = freqs
-
-        if bin_after == "fib":
-          # Fibonacci binning after average
-          avg[key + '_pspec'], avg[key + '_ps_freq'] = fib_bin(avg[key + '_pspec'], avg[key + '_ps_freq'])
-
-        elif bin_after > 1:
-          # Even binning of adjacent frequencies
-          avg[key+'_pspec'] = np.add.reduceat(b, range(0, data.size, ))
-          # Take frequencies corresponding to center bins
-          avg[key+'_ps_freq'] = np.abs(np.fft.fftfreq(fft_window, 5))[bin_after//2::bin_after]
-
-        avg[key+'_ps_lambda'] = 1/avg[key+'_ps_freq']
-        avg[key+'_pspec_f2'] = avg[key+'_pspec']*avg[key+'_ps_freq']**2
+      # Use the diag version if available for higher time res
+      if 'diags' in avg and avg['diags'] is not None and key in avg['diags']:
+        avg[key+'_pspec'], avg[key+'_ps_freq'] = pspec(avg['diags'][key], avg['diags']['t'])
+      elif key in avg:
+        avg[key+'_pspec'], avg[key + '_ps_freq'] = pspec(avg[key], avg['t'])
+      # If these happened add a normalized version
+      if key+'_pspec' in avg:
+        avg[key+'_pspec_f2'] = avg[key+'_pspec'] * avg[key + '_ps_freq']**2
 
   for i,key in enumerate(spec_keys):
-    if key+'_pspec_f2' in avgs[-1]:
-      psmax = np.max(avgs[-1][key+'_pspec_f2'])
+    if key+'_pspec' in avgs[-1]:
+      # psmax = np.max(avgs[-1][key+'_pspec'])
+      # fmax = np.max(avgs[-1][key + '_ps_freq'])
       plot_multi(ax[i//2, i%2], key+'_ps_freq', key+'_pspec_f2', pretty_keys[i],
-                  ylim=[10*psmax, 0.01*psmax], logy=True, logx=True,
-                  timelabels=(key in spec_keys[-2:]))
+                 logx=True, #xlim=[1e-5 * fmax, fmax],
+                 logy=True, #ylim=[1e-8 * psmax, psmax],
+                 timelabels=True)
 
   if len(labels) > 1:
-    ax[0,0].legend(loc='upper right')
+    ax[0, 0].legend(loc='upper right')
   else:
     fig.suptitle(labels[0])
 
@@ -603,23 +519,19 @@ def plot_th_profs():
 
 def plot_cfs():
   # Correlation functions in midplane
-  fig, ax = plt.subplots(2,2, figsize=(FIGX, FIGY))
+  fig, ax = plt.subplots(2, 2, figsize=(FIGX, FIGY))
   for avg in avgs:
     if 'rho_cf_rphi' in avg:
-      for i in range(len(avg['rho_cf_rphi'])):
-        avg['rho_cf_rphi'][i] /= np.max(avg['rho_cf_rphi'][i])
-      avg['rho_cl_r'] = corr_length(avg, 'rho')
-      avg['rho_cf_10_phi'] = avg['rho_cf_rphi'][i_of(avg['r'],10)]
+      avg['rho_cl_r'] = corr_length(avg['rho_cf_rphi'])
+      avg['rho_cf_10_phi'] = avg['rho_cf_rphi'][i_of(avg['r'], 10)]
     if 'betainv_cf_rphi' in avg:
-      for i in range(len(avg['betainv_cf_rphi'])):
-        avg['betainv_cf_rphi'][i] /= np.max(avg['betainv_cf_rphi'][i])
-      avg['betainv_cl_r'] = corr_length(avg, 'betainv')
-      avg['betainv_cf_10_phi'] = avg['betainv_cf_rphi'][i_of(avg['r'],10)]
+      avg['betainv_cl_r'] = corr_length(avg['betainv_cf_rphi'])
+      avg['betainv_cf_10_phi'] = avg['betainv_cf_rphi'][i_of(avg['r'], 10)]
 
-  plot_multi(ax[0,0], 'phi', 'rho_cf_10_phi', r"$\bar{R}(\rho) (r = 10)$", xlim=[0,np.pi])
-  plot_multi(ax[0,1], 'phi', 'betainv_cf_10_phi', r"$\bar{R}(\beta^{-1}) (r = 10)$", xlim=[0,np.pi])
-  plot_multi(ax[1,0], 'r', 'rho_cl_r', r"$\lambda (\rho, r)$", logx=True, xlim=[1,500])
-  plot_multi(ax[1,1], 'r', 'betainv_cl_r', r"$\lambda (\rho, r)$", logx=True, xlim=[1,500])
+  plot_multi(ax[0, 0], 'phi', 'rho_cf_10_phi', r"$\bar{R}(\rho) (r = 10)$", xlim=[0, np.pi])
+  plot_multi(ax[0, 1], 'phi', 'betainv_cf_10_phi', r"$\bar{R}(\beta^{-1}) (r = 10)$", xlim=[0, np.pi])
+  plot_multi(ax[1, 0], 'r', 'rho_cl_r', r"$\lambda (\rho, r)$", logx=True, xlim=[1, 500])
+  plot_multi(ax[1, 1], 'r', 'betainv_cl_r', r"$\lambda (\rho, r)$", logx=True, xlim=[1, 500])
   # Legend
   if len(labels) > 1:
     ax[0,1].legend(loc='lower left')
@@ -668,6 +580,19 @@ def plot_var_compare():
 
 
   plt.savefig(fname_out + '_var_compare.png')
+  plt.close(fig)
+
+def plot_pdfs():
+  nplotsy, nplotsx = 1, 2
+  fig, ax = plt.subplots(nplotsy, nplotsx, figsize=(FIGX, FIGY))
+  for avg in avgs:
+    avg['pdf_bins'] = np.linspace(-3.5, 3.5, 200)
+
+  for var in avg:
+    if var[-4:] == '_pdf':
+      plot_multi(ax, 'pdf_bins', var)
+
+  plt.savefig(fname_out + '_pdfs.png')
   plt.close(fig)
 
 if __name__ == "__main__":
@@ -725,6 +650,7 @@ if __name__ == "__main__":
   if LCS: plot_lcs()
   if CFUNCS: plot_cfs()
   if PSPECS: plot_pspecs()
+  if PDFS: plot_pdfs()
   if len(avgs) == 1:
     if FLUX_PROF: plot_flux_profs()
   else:

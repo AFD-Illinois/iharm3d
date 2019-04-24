@@ -9,39 +9,39 @@ import scipy.fftpack as fft
 # That way, we only need to specify lists and final operations in eht_analysis,
 # AND don't need to cart all these things around in memory
 d_fns = {'rho': lambda dump: dump['RHO'],
-         'bsq' : lambda dump: dump['bsq'],
-         'sigma' : lambda dump: dump['bsq'] / dump['RHO'],
-         'U' : lambda dump: dump['UU'],
-         'u_t' : lambda dump: dump['ucov'][:, :, :, 0],
-         'u_phi' : lambda dump: dump['ucov'][:, :, :, 3],
-         'u^phi' : lambda dump: dump['ucon'][:, :, :, 3],
-         'FM' : lambda dump: dump['RHO'] * dump['ucon'][:, :, :, 1],
-         'FE' : lambda dump: -T_mixed(dump, 1, 0),
-         'FE_EM' : lambda dump: -TEM_mixed(dump, 1, 0),
-         'FE_Fl' : lambda dump: -TFl_mixed(dump, 1, 0),
-         'FL' : lambda dump: T_mixed(dump, 1, 3),
-         'FL_EM' : lambda dump: TEM_mixed(dump, 1, 3),
-         'FL_Fl' : lambda dump: TFl_mixed(dump, 1, 3),
-         'Be_b' : lambda dump: bernoulli(dump, with_B=True),
-         'Be_nob' : lambda dump: bernoulli(dump, with_B=False),
-         'Pg' : lambda dump: (dump['hdr']['gam'] - 1.) * dump['UU'],
-         'Pb' : lambda dump: dump['bsq'] / 2,
-         'Ptot' : lambda dump: d_fns['Pg'](dump) + d_fns['Pb'](dump),
-         'beta' : lambda dump: dump['beta'],
-         'betainv' : lambda dump: 1/dump['beta'],
+         'bsq': lambda dump: dump['bsq'],
+         'sigma': lambda dump: dump['bsq'] / dump['RHO'],
+         'U': lambda dump: dump['UU'],
+         'u_t': lambda dump: dump['ucov'][:, :, :, 0],
+         'u_phi': lambda dump: dump['ucov'][:, :, :, 3],
+         'u^phi': lambda dump: dump['ucon'][:, :, :, 3],
+         'FM': lambda dump: dump['RHO'] * dump['ucon'][:, :, :, 1],
+         'FE': lambda dump: -T_mixed(dump, 1, 0),
+         'FE_EM': lambda dump: -TEM_mixed(dump, 1, 0),
+         'FE_Fl': lambda dump: -TFl_mixed(dump, 1, 0),
+         'FL': lambda dump: T_mixed(dump, 1, 3),
+         'FL_EM': lambda dump: TEM_mixed(dump, 1, 3),
+         'FL_Fl': lambda dump: TFl_mixed(dump, 1, 3),
+         'Be_b': lambda dump: bernoulli(dump, with_B=True),
+         'Be_nob': lambda dump: bernoulli(dump, with_B=False),
+         'Pg': lambda dump: (dump['hdr']['gam'] - 1.) * dump['UU'],
+         'Pb': lambda dump: dump['bsq'] / 2,
+         'Ptot': lambda dump: d_fns['Pg'](dump) + d_fns['Pb'](dump),
+         'beta': lambda dump: dump['beta'],
+         'betainv': lambda dump: 1/dump['beta'],
          'jcon': lambda dump: dump['jcon'],
-         # TODO TODO TODO
+         # TODO TODO TODO take geom everywhere or nowhere
          'jcov': lambda geom, dump: jcov(geom, dump),
          'jsq': lambda geom, dump: jsq(geom, dump),
-         'B' : lambda dump: np.sqrt(dump['bsq']),
-         'betagamma' : lambda dump: np.sqrt((d_fns['FE_EM'](dump) + d_fns['FE_Fl'](dump))/d_fns['FM'](dump) - 1),
-         'Theta' : lambda dump: (dump['hdr']['gam'] - 1) * dump['UU'] / dump['RHO'],
-         'Thetap' : lambda dump: (dump['hdr']['gam_p'] - 1) * (dump['UU'] ) / dump['RHO'],
-         'Thetae' : lambda dump: (dump['hdr']['gam_e'] - 1) * (dump['UU'] ) / dump['RHO'],
-         'gamma' : lambda dump: get_gamma(geom, dump),
-         'JE0' : lambda dump: T_mixed(dump, 0, 0),
-         'JE1' : lambda dump: T_mixed(dump, 1, 0),
-         'JE2' : lambda dump: T_mixed(dump, 2, 0)
+         'B': lambda dump: np.sqrt(dump['bsq']),
+         'betagamma': lambda dump: np.sqrt((d_fns['FE_EM'](dump) + d_fns['FE_Fl'](dump))/d_fns['FM'](dump) - 1),
+         'Theta': lambda dump: (dump['hdr']['gam'] - 1) * dump['UU'] / dump['RHO'],
+         'Thetap': lambda dump: (dump['hdr']['gam_p'] - 1) * (dump['UU']) / dump['RHO'],
+         'Thetae': lambda dump: (dump['hdr']['gam_e'] - 1) * (dump['UU']) / dump['RHO'],
+         'gamma': lambda geom, dump: get_gamma(geom, dump),
+         'JE0': lambda dump: T_mixed(dump, 0, 0),
+         'JE1': lambda dump: T_mixed(dump, 1, 0),
+         'JE2': lambda dump: T_mixed(dump, 2, 0)
          }
          # Additions I'm unsure of or which are useless
          #'rur' : lambda dump: geom['r']*dump['ucon'][:,:,:,1],
@@ -93,7 +93,7 @@ def Fcon(geom, dump, i, j):
   if i != j:
     for mu in range(NDIM):
       for nu in range(NDIM):
-        Fconij[:,:,:] += _antisym(i,j,mu,nu) * dump['ucov'][:,:,:,mu] * dump['bcov'][:,:,:,nu]
+        Fconij[:, :, :] += _antisym(i, j, mu, nu) * dump['ucov'][:, :, :, mu] * dump['bcov'][:, :, :, nu]
 
   # Specify we want gdet in the vectors' coordinate system (this matters for KORAL dump files)
   # TODO is normalization correct?
@@ -210,10 +210,10 @@ def i_of(geom, rcoord):
 def corr_midplane(geom, var, norm=True, at_i1=None):
   if at_i1 is None:
     at_i1 = range(geom['n1'])
-  
+
   jmin = geom['n2']//2-1
   jmax = geom['n2']//2+1
-    
+
   R = np.zeros((len(at_i1), geom['n3']))
 
   # TODO is there a way to vectorize over R? Also, are we going to average over adjacent r ever?
@@ -228,7 +228,7 @@ def corr_midplane(geom, var, norm=True, at_i1=None):
   if norm:
     normR = R[:,0]
     for k in range(geom['n3']):
-      R[:,k] /= normR
+      R[:, k] /= normR
 
   return R
 
@@ -255,31 +255,107 @@ def corr_midplane_direct(geom, var, norm=True):
   
   R = np.ones((geom['n1'], geom['n3']))
   for k in range(geom['n3']):
-    R[:,k] = np.sum(var_norm*np.roll(var_norm, k, axis=-1)*geom['dx3'], axis=(1,2))/2
+    R[:, k] = np.sum(var_norm*np.roll(var_norm, k, axis=-1)*geom['dx3'], axis=(1,2))/2
     
 
   if norm:
-    normR = R[:,0]
+    normR = R[:, 0]
     for k in range(geom['n3']):
-      R[:,k] /= normR
+      R[:, k] /= normR
   
   return R
 
-def corr_length(geom, R):
-  lam = np.zeros(geom['n1'])
-  for i in range(geom['n1']):
+def corr_length(R):
+  # TODO this can be done with a one-liner, I know it
+  lam = np.zeros(R.shape[0])
+  for i in range(R.shape[0]):
     k = 0
-    while R[i,k] >= R[i,0] / np.exp(1):
+    while k < R.shape[1] and R[i, k] >= R[i, 0] / np.exp(1):
       k += 1
-    lam[i] = k*geom['dx3']
+    lam[i] = k*(2*np.pi/R.shape[1])
   return lam
+
+
+## Power Spectra ##
+def pspec(var, t, window=0.33, half_overlap=False, bin="fib"):
+  if not np.any(var[var.size // 2:]):
+    return np.zeros_like(var), np.zeros_like(var)
+
+  data = var[var.size // 2:]
+  data = data[np.nonzero(data)] - np.mean(data[np.nonzero(data)])
+
+  if window < 1:
+    window = int(window * data.size)
+  print("FFT window is ", window)
+
+  sample_time = (t[-1] - t[0]) / t.size
+  print("Sampling time is {}".format(sample_time))
+  out_freq = np.abs(np.fft.fftfreq(window, sample_time))
+
+  if half_overlap:
+    # Hanning w/50% overlap
+    spacing = (window // 2)
+    nsamples = data.size // spacing
+
+    out = np.zeros(window)
+    for i in range(nsamples - 1):
+      windowed = np.hanning(window) * data[i * spacing:(i + window//spacing) * spacing]
+      out += np.abs(np.fft.fft(windowed)) ** 2
+
+    # TODO binning?
+
+    freqs = out_freq
+
+  else:
+    # Hamming no overlap, like comparison paper
+    nsamples = data.size // window
+
+    for i in range(nsamples):
+      windowed = np.hamming(window) * data[i * window:(i + 1) * window]
+      pspec = np.abs(fft.fft(windowed)) ** 2
+
+      # Bin data, declare accumulator output when we know its size
+      if bin == "fib":
+        # Modify pspec, allocate for modified form
+        pspec, freqs = fib_bin(pspec, out_freq)
+
+        if i == 0:
+          out = np.zeros_like(np.array(pspec))
+      else:
+        if i == 0:
+          out = np.zeros(window)
+
+      out += pspec
+
+  print("PSD using ", nsamples, " segments.")
+  out /= nsamples
+  out_freq = freqs
+
+  return out, out_freq
+
+def fib_bin(data, freqs):
+  # Fibonacci binning.  Why is this a thing.
+  j = 0
+  fib_a = 1
+  fib_b = 1
+  pspec = []
+  pspec_freq = []
+  while j + fib_b < data.size:
+    pspec.append(np.mean(data[j:j + fib_b]))
+    pspec_freq.append(np.mean(freqs[j:j + fib_b]))
+    j = j + fib_b
+    fib_c = fib_a + fib_b
+    fib_a = fib_b
+    fib_b = fib_c
+
+  return np.array(pspec), np.array(pspec_freq)
 
 ## Sums and Averages ##
   
 # Var must be a 3D array i.e. a grid scalar
 # TODO could maybe be made faster with 'where' but also harder to get right
 def sum_shell(geom, var, at_zone=None, mask=None):
-  integrand = var * geom['gdet'][:,:,None]*geom['dx2']*geom['dx3']
+  integrand = var * geom['gdet'][:, :, None]*geom['dx2']*geom['dx3']
   if mask is not None:
     integrand *= mask
 
@@ -347,7 +423,7 @@ def theta_av(geom, var, start, zones_to_av=1, use_gdet=False, fold=True):
 ## Internal functions ##
 
 # Completely antisymmetric 4D symbol
-# TODO cache?
+# TODO cache? Is this validation necessary?
 def _antisym(a, b, c, d):
   # Check for valid permutation
   if (a < 0 or a > 3): return 100
@@ -356,14 +432,11 @@ def _antisym(a, b, c, d):
   if (d < 0 or d > 3): return 100
 
   # Entries different? 
-  if (a == b): return 0
-  if (a == c): return 0
-  if (a == d): return 0
-  if (b == c): return 0
-  if (b == d): return 0
-  if (c == d): return 0
+  if (a == b or a == c or a == d or
+          b == c or b == d or c == d):
+    return 0
 
-  return _pp([a,b,c,d])
+  return _pp([a, b, c, d])
 
 # Due to Norm Hardy; good for general n
 def _pp(P):

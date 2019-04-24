@@ -135,8 +135,8 @@ plt.close(fig)
 fig = plt.figure(figsize=(FIGX, FIGY))
 
 # Plot XZ
-if var in ['jcon','ucon','ucov','bcon','bcov']:
-  axes = [plt.subplot(2, 2, i) for i in range(1,5)]
+if var in ['jcon', 'ucon', 'ucov', 'bcon', 'bcov']:
+  axes = [plt.subplot(2, 2, i) for i in range(1, 5)]
   for n in range(4):
     bplt.plot_xz(axes[n], geom, np.log10(dump[var][:,:,:,n]), arrayspace=USEARRSPACE, window=window)
 
