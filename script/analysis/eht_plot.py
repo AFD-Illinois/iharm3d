@@ -39,6 +39,7 @@ PSPECS = True
 LCS = True
 COMPARE = False
 PDFS = True
+JSQ = True
 
 def i_of(var, coord):
   i = 0
@@ -521,6 +522,8 @@ def plot_cfs():
   # Correlation functions in midplane
   fig, ax = plt.subplots(2, 2, figsize=(FIGX, FIGY))
   for avg in avgs:
+    if np.max(avg['rho_cf_rphi']) > 2:
+      del avg['rho_cf_rphi'], avg['betainv_cf_rphi'], avg['rho_cf_10_phi'], avg['betainv_cf_10_phi']
     if 'rho_cf_rphi' in avg:
       avg['rho_cl_r'] = corr_length(avg['rho_cf_rphi'])
       avg['rho_cf_10_phi'] = avg['rho_cf_rphi'][i_of(avg['r'], 10)]
@@ -583,16 +586,39 @@ def plot_var_compare():
   plt.close(fig)
 
 def plot_pdfs():
-  nplotsy, nplotsx = 1, 2
+  nplotsy, nplotsx = 2, 1
   fig, ax = plt.subplots(nplotsy, nplotsx, figsize=(FIGX, FIGY))
+  pdf_vars = []
   for avg in avgs:
     avg['pdf_bins'] = np.linspace(-3.5, 3.5, 200)
+    for var in avg:
+      if var[-4:] == '_pdf' and var not in pdf_vars:
+        pdf_vars.append(var)
 
-  for var in avg:
-    if var[-4:] == '_pdf':
-      plot_multi(ax, 'pdf_bins', var)
+  for i,var in enumerate(pdf_vars):
+    plot_multi(ax[i], 'pdf_bins', var, var)
+
+  # Legend
+  if len(labels) > 1:
+    ax[0].legend(loc='upper right')
+  else:
+    fig.suptitle(labels[0])
 
   plt.savefig(fname_out + '_pdfs.png')
+  plt.close(fig)
+
+def plot_jsq():
+  nplotsy, nplotsx = 1, 1
+  fig, ax = plt.subplots(nplotsy, nplotsx, figsize=(FIGX, PLOTY))
+  for avg in avgs:
+    if 'Jsqtot_rt' in avg:
+      avg['Jsqtot_t'] = np.sum(avg['Jsqtot_rt'], axis=-1)
+
+  plot_multi(ax, 't', 'Jsqtot_t', r"Total $J^2$ on grid", timelabels=True)
+  print_av_var('Jsqtot_t', "Total J^2")
+  
+
+  plt.savefig(fname_out + '_jsq.png')
   plt.close(fig)
 
 if __name__ == "__main__":
@@ -651,6 +677,7 @@ if __name__ == "__main__":
   if CFUNCS: plot_cfs()
   if PSPECS: plot_pspecs()
   if PDFS: plot_pdfs()
+  if JSQ: plot_jsq()
   if len(avgs) == 1:
     if FLUX_PROF: plot_flux_profs()
   else:
