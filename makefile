@@ -31,6 +31,9 @@ HOST := $(shell hostname)
 ifneq (,$(findstring stampede2,$(HOST)))
 	-include $(MAKEFILE_PATH)/machines/stampede2.make
 endif
+ifneq (,$(findstring theta,$(HOST)))
+        -include $(MAKEFILE_PATH)/machines/theta.make
+endif
 -include $(MAKEFILE_PATH)/machines/$(HOST).make
 
 # Everything below this should be static
