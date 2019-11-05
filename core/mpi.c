@@ -149,15 +149,20 @@ int sync_mpi_bound_X1(struct FluidState *S)
   // We don't check returns since MPI kindly crashes on failure
 #if N1 > 1
   // First send right/receive left
-  MPI_Sendrecv(&(S->P[0][NG][NG][N1]), 1, face_type[2], neighbors[1][1][2], 0,
-           &(S->P[0][NG][NG][0]), 1, face_type[2], neighbors[1][1][0], 0, comm, MPI_STATUS_IGNORE);
-  MPI_Sendrecv(&(pflag[NG][NG][N1]), 1, pflag_face_type[2], neighbors[1][1][2], 6,
-           &(pflag[NG][NG][0]), 1, pflag_face_type[2], neighbors[1][1][0], 6, comm, MPI_STATUS_IGNORE);
+  MPI_Request null, back1, back2, back3, back4;
+  MPI_Isend(&(S->P[0][NG][NG][N1]), 1, face_type[2], neighbors[1][1][2], 0, comm, &null);
+  MPI_Irecv(&(S->P[0][NG][NG][0]), 1, face_type[2], neighbors[1][1][0], 0, comm, &back1);
+  MPI_Isend(&(pflag[NG][NG][N1]), 1, pflag_face_type[2], neighbors[1][1][2], 1, comm, &null);
+  MPI_Irecv(&(pflag[NG][NG][0]), 1, pflag_face_type[2], neighbors[1][1][0], 1, comm, &back2);
   // And back
-  MPI_Sendrecv(&(S->P[0][NG][NG][NG]), 1, face_type[2], neighbors[1][1][0], 1,
-           &(S->P[0][NG][NG][N1+NG]), 1, face_type[2], neighbors[1][1][2], 1, comm, MPI_STATUS_IGNORE);
-  MPI_Sendrecv(&(pflag[NG][NG][NG]), 1, pflag_face_type[2], neighbors[1][1][0], 7,
-           &(pflag[NG][NG][N1+NG]), 1, pflag_face_type[2], neighbors[1][1][2], 7, comm, MPI_STATUS_IGNORE);
+  MPI_Isend(&(S->P[0][NG][NG][NG]), 1, face_type[2], neighbors[1][1][0], 2, comm, &null);
+  MPI_Irecv(&(S->P[0][NG][NG][N1+NG]), 1, face_type[2], neighbors[1][1][2], 2, comm, &back3);
+  MPI_Isend(&(pflag[NG][NG][NG]), 1, pflag_face_type[2], neighbors[1][1][0], 3, comm, &null);
+  MPI_Irecv(&(pflag[NG][NG][N1+NG]), 1, pflag_face_type[2], neighbors[1][1][2], 3, comm, &back4);
+  MPI_Wait(&back1, MPI_STATUS_IGNORE);
+  MPI_Wait(&back2, MPI_STATUS_IGNORE);
+  MPI_Wait(&back3, MPI_STATUS_IGNORE);
+  MPI_Wait(&back4, MPI_STATUS_IGNORE);
 #endif
 
   return 0;
@@ -167,15 +172,20 @@ int sync_mpi_bound_X2(struct FluidState *S)
 {
 
 #if N2 > 1
-  MPI_Sendrecv(&(S->P[0][NG][N2][0]), 1, face_type[1], neighbors[1][2][1], 2,
-           &(S->P[0][NG][0][0]), 1, face_type[1], neighbors[1][0][1], 2, comm, MPI_STATUS_IGNORE);
-  MPI_Sendrecv(&(pflag[NG][N2][0]), 1, pflag_face_type[1], neighbors[1][2][1], 8,
-           &(pflag[NG][0][0]), 1, pflag_face_type[1], neighbors[1][0][1], 8, comm, MPI_STATUS_IGNORE);
+  MPI_Request null, back1, back2, back3, back4;
+  MPI_Isend(&(S->P[0][NG][N2][0]), 1, face_type[1], neighbors[1][2][1], 4, comm, &null);
+  MPI_Irecv(&(S->P[0][NG][0][0]), 1, face_type[1], neighbors[1][0][1], 4, comm, &back1);
+  MPI_Isend(&(pflag[NG][N2][0]), 1, pflag_face_type[1], neighbors[1][2][1], 5, comm, &null);
+  MPI_Irecv(&(pflag[NG][0][0]), 1, pflag_face_type[1], neighbors[1][0][1], 5, comm, &back2);
 
-  MPI_Sendrecv(&(S->P[0][NG][NG][0]), 1, face_type[1], neighbors[1][0][1], 3,
-           &(S->P[0][NG][N2+NG][0]), 1, face_type[1], neighbors[1][2][1], 3, comm, MPI_STATUS_IGNORE);
-  MPI_Sendrecv(&(pflag[NG][NG][0]), 1, pflag_face_type[1], neighbors[1][0][1], 9,
-           &(pflag[NG][N2+NG][0]), 1, pflag_face_type[1], neighbors[1][2][1], 9, comm, MPI_STATUS_IGNORE);
+  MPI_Isend(&(S->P[0][NG][NG][0]), 1, face_type[1], neighbors[1][0][1], 6, comm, &null);
+  MPI_Irecv(&(S->P[0][NG][N2+NG][0]), 1, face_type[1], neighbors[1][2][1], 6, comm, &back3);
+  MPI_Isend(&(pflag[NG][NG][0]), 1, pflag_face_type[1], neighbors[1][0][1], 7, comm, &null);
+  MPI_Irecv(&(pflag[NG][N2+NG][0]), 1, pflag_face_type[1], neighbors[1][2][1], 7, comm, &back4);
+  MPI_Wait(&back1, MPI_STATUS_IGNORE);
+  MPI_Wait(&back2, MPI_STATUS_IGNORE);
+  MPI_Wait(&back3, MPI_STATUS_IGNORE);
+  MPI_Wait(&back4, MPI_STATUS_IGNORE);
 #endif
 
   return 0;
@@ -185,15 +195,20 @@ int sync_mpi_bound_X3(struct FluidState *S)
 {
 
 #if N3 > 1
-  MPI_Sendrecv(&(S->P[0][N3][0][0]), 1, face_type[0], neighbors[2][1][1], 4,
-           &(S->P[0][0][0][0]), 1, face_type[0], neighbors[0][1][1], 4, comm, MPI_STATUS_IGNORE);
-  MPI_Sendrecv(&(pflag[N3][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 10,
-           &(pflag[0][0][0]), 1, pflag_face_type[0], neighbors[0][1][1], 10, comm, MPI_STATUS_IGNORE);
+  MPI_Request null, back1, back2, back3, back4;
+  MPI_Isend(&(S->P[0][N3][0][0]), 1, face_type[0], neighbors[2][1][1], 8, comm, &null);
+  MPI_Irecv(&(S->P[0][0][0][0]), 1, face_type[0], neighbors[0][1][1], 8, comm, &back1);
+  MPI_Isend(&(pflag[N3][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 9, comm, &null);
+  MPI_Irecv(&(pflag[0][0][0]), 1, pflag_face_type[0], neighbors[0][1][1], 9, comm, &back2);
 
-  MPI_Sendrecv(&(S->P[0][NG][0][0]), 1, face_type[0], neighbors[0][1][1], 5,
-           &(S->P[0][N3+NG][0][0]), 1, face_type[0], neighbors[2][1][1], 5, comm, MPI_STATUS_IGNORE);
-  MPI_Sendrecv(&(pflag[NG][0][0]), 1, pflag_face_type[0], neighbors[0][1][1], 11,
-           &(pflag[N3+NG][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 11, comm, MPI_STATUS_IGNORE);
+  MPI_Isend(&(S->P[0][NG][0][0]), 1, face_type[0], neighbors[0][1][1], 10, comm, &null);
+  MPI_Irecv(&(S->P[0][N3+NG][0][0]), 1, face_type[0], neighbors[2][1][1], 10, comm, &back3);
+  MPI_Isend(&(pflag[NG][0][0]), 1, pflag_face_type[0], neighbors[0][1][1], 11, comm, &null);
+  MPI_Irecv(&(pflag[N3+NG][0][0]), 1, pflag_face_type[0], neighbors[2][1][1], 11, comm, &back4);
+  MPI_Wait(&back1, MPI_STATUS_IGNORE);
+  MPI_Wait(&back2, MPI_STATUS_IGNORE);
+  MPI_Wait(&back3, MPI_STATUS_IGNORE);
+  MPI_Wait(&back4, MPI_STATUS_IGNORE);
 #endif
 
   return 0;
