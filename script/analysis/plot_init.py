@@ -80,7 +80,7 @@ ax = plt.subplot(NPLOTSY,NPLOTSX,4)
 bplt.plot_xz(ax, geom, np.log10(dump['beta']),
              label=r"$\beta$", cmap='RdBu_r', vmin=1, vmax=4,
              window=[0,SIZE,-SIZE/2,SIZE/2])
-bplt.overlay_field(ax, geom, dump, NLINES)
+bplt.overlay_field(ax, geom, dump, nlines=NLINES)
 
 if PLOT_EXTRA:
   ax = plt.subplot(NPLOTSY,NPLOTSX,5)
@@ -92,7 +92,7 @@ if PLOT_EXTRA:
   bplt.plot_xz(ax, geom, np.log10(dump['bsq']),
                label=r"$\log_{10}(b^2)$", cmap='RdBu_r', vmin=-8, vmax=2,
                window=[0,SIZE,-SIZE/2,SIZE/2])
-  bplt.overlay_field(ax, geom, dump, NLINES)
+  bplt.overlay_field(ax, geom, dump, nlines=NLINES)
 
 plt.tight_layout()
 
