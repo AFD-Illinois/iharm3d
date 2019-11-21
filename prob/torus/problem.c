@@ -154,9 +154,9 @@ void init(struct GridGeom *G, struct FluidState *S)
 
       S->P[RHO][k][j][i] = rho;
       if (rho > rhomax) rhomax = rho;
+      if (u > umax && r > rin) umax = u;
       u *= (1. + u_jitter * (gsl_rng_uniform(rng) - 0.5));
       S->P[UU][k][j][i] = u;
-      if (u > umax && r > rin) umax = u;
       S->P[U1][k][j][i] = 0.;
       S->P[U2][k][j][i] = 0.;
       S->P[U3][k][j][i] = up;
