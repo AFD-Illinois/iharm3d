@@ -1,7 +1,8 @@
 # iharm3D
 This code implements the HARM algorithm outlined in [Gammie et al. 2003](https://doi.org/10.1086/374594), with some modifications
 outlined in [McKinney & Gammie 2004](https://doi.org/10.1086/422244).  This is a second-order, conservative, shock-capturing scheme 
-for general-relativistic magnetohydrodynamics (GRMHD).
+for general-relativistic magnetohydrodynamics (GRMHD).  Credit also to the many people who have worked on the code over the years, 
+including Scott Noble, who implemented the first 3D version of the code, Josh Dolence, Ben Ryan, George Wong, and Ben Prather.
 
 ## Requirements
 `iharm3D` requires an MPI/Parallel HDF5 stack.  In practice, this means that the executable `h5pcc` must be in your `PATH`
