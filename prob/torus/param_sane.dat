@@ -41,7 +41,7 @@
 [dbl] rBend = 810.0
 [dbl] BHflux = 0.0
 
-# NOT USED: Funky MKS parameters
+# What did the acorn say when it grew up? Gee, I'm a tree!
 [dbl] mks_smooth = 0.5
 [dbl] poly_xt = 0.82
 [dbl] poly_alpha = 14.0
