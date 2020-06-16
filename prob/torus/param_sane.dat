@@ -6,7 +6,7 @@
 [dbl] Rout = 50.0
 
 # FLUID
-[dbl] gam = 1.333333
+[dbl] gam = 1.666667
 [dbl] cour = 0.9
 
 [dbl] u_jitter = 4.0e-02
