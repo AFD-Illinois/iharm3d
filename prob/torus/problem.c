@@ -8,6 +8,7 @@
 
 #include "bl_coord.h"
 #include "decs.h"
+#include "hdf5_utils.h"
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
@@ -23,6 +24,9 @@ double lfish_calc(double rmax);
 #define R3S3 2
 #define GAUSSIAN 3
 #define NARAYAN 4
+
+#define HDF_STR_LEN 20
+hid_t string_type = hdf5_make_str_type(HDF_STR_LEN)
 
 // Alternative normalization from HARMPI.  Dosn't seem common to use
 static int maxr_normalization = 0;
@@ -44,6 +48,24 @@ void set_problem_params() {
 
   set_param("rBstart", &rBstart);
   set_param("rBend", &rBend);
+}
+
+// Save problem specific details
+// This is done in each dump file in /header/problem/
+void save_problem_data()
+{
+	if (mad_type == 1){
+		hdf5_write_single_val("MAD", "accretion_type", string_type);
+	}
+	else {
+		hdf5_write_single_val("SANE", "accretion_type", string_type);
+	}
+	hdf5_write_single_val("torus", "PROB", string_type);
+	hdf5_write_single_val(&rin, "rin", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&rmax, "rmax", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&beta, "beta", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&u_jitter, "u_jitter", H5T_IEEE_F64LE);
+
 }
 
 void init(struct GridGeom *G, struct FluidState *S)

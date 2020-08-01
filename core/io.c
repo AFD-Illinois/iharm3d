@@ -59,7 +59,13 @@ void dump(struct GridGeom *G, struct FluidState *S)
   hdf5_set_directory("/");
   hdf5_make_directory("header");
   hdf5_set_directory("/header/");
-
+  
+  //Adding problem-specific data (problem type, initial data)
+  hdf5_make_directory("problem");
+  hdf5_set_directory("/header/problem/");
+  save_problem_data();
+  
+  hdf5_set_directory("/header/");
   hdf5_write_single_val(VERSION, "version", string_type);
   int has_electrons = ELECTRONS;
   hdf5_write_single_val(&has_electrons, "has_electrons", H5T_STD_I32LE);
