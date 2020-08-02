@@ -54,12 +54,7 @@ void set_problem_params() {
 // This is done in each dump file in /header/problem/
 void save_problem_data()
 {
-	if (mad_type == 1){
-		hdf5_write_single_val("MAD", "accretion_type", string_type);
-	}
-	else {
-		hdf5_write_single_val("SANE", "accretion_type", string_type);
-	}
+	hdf5_write_single_val(&mad_type, "mad_type", H5T_STD_I32LE);
 	hdf5_write_single_val("torus", "PROB", string_type);
 	hdf5_write_single_val(&rin, "rin", H5T_IEEE_F64LE);
 	hdf5_write_single_val(&rmax, "rmax", H5T_IEEE_F64LE);

@@ -7,9 +7,9 @@
  ******************************************************************************/
 
 /* GLOBAL RESOLUTION */
-#define N1TOT 128
-#define N2TOT 128
-#define N3TOT 128
+#define N1TOT 64
+#define N2TOT 32
+#define N3TOT 32
 
 /* MPI DECOMPOSITION */
 /* COUNTERINTUITIVE: Split N3, N2, N1 order to keep k smaller than i,j*/
