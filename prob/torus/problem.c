@@ -26,7 +26,6 @@ double lfish_calc(double rmax);
 #define NARAYAN 4
 
 #define HDF_STR_LEN 20
-hid_t string_type = hdf5_make_str_type(HDF_STR_LEN)
 
 // Alternative normalization from HARMPI.  Dosn't seem common to use
 static int maxr_normalization = 0;
@@ -54,6 +53,7 @@ void set_problem_params() {
 // This is done in each dump file in /header/problem/
 void save_problem_data()
 {
+	hid_t string_type = hdf5_make_str_type(HDF_STR_LEN)
 	hdf5_write_single_val(&mad_type, "mad_type", H5T_STD_I32LE);
 	hdf5_write_single_val("torus", "PROB", string_type);
 	hdf5_write_single_val(&rin, "rin", H5T_IEEE_F64LE);
