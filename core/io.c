@@ -63,7 +63,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
   //Adding problem-specific data (problem type, initial data)
   hdf5_make_directory("problem");
   hdf5_set_directory("/header/problem/");
-  save_problem_data();
+  save_problem_data(string_type);
   
   hdf5_set_directory("/header/");
   hdf5_write_single_val(VERSION, "version", string_type);

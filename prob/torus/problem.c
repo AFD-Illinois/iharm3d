@@ -25,8 +25,6 @@ double lfish_calc(double rmax);
 #define GAUSSIAN 3
 #define NARAYAN 4
 
-#define HDF_STR_LEN 20
-
 // Alternative normalization from HARMPI.  Dosn't seem common to use
 static int maxr_normalization = 0;
 
@@ -51,15 +49,17 @@ void set_problem_params() {
 
 // Save problem specific details
 // This is done in each dump file in /header/problem/
-void save_problem_data()
+void save_problem_data(hid_t string_type)
 {
-	hid_t string_type = hdf5_make_str_type(HDF_STR_LEN)
 	hdf5_write_single_val(&mad_type, "mad_type", H5T_STD_I32LE);
 	hdf5_write_single_val("torus", "PROB", string_type);
 	hdf5_write_single_val(&rin, "rin", H5T_IEEE_F64LE);
 	hdf5_write_single_val(&rmax, "rmax", H5T_IEEE_F64LE);
 	hdf5_write_single_val(&beta, "beta", H5T_IEEE_F64LE);
 	hdf5_write_single_val(&u_jitter, "u_jitter", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&BHflux, "bhflux", H5T_IEEE_F64LE);
+        hdf5_write_single_val(&rBstart, "rBstart", H5T_IEEE_F64LE);
+        hdf5_write_single_val(&rBend, "rBend", H5T_IEEE_F64LE);
 
 }
 
