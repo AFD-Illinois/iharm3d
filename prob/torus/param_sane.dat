@@ -1,7 +1,7 @@
 ### RUNTIME PARAMETERS FOR EHT COMPARISON PROBLEM ###
 
 # COORDINATES
-[dbl] tf = 10000
+[dbl] tf = 10000.0
 [dbl] dt = 1.0e-06
 [dbl] Rout = 50.0
 
