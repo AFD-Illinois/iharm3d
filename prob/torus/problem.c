@@ -58,8 +58,8 @@ void save_problem_data(hid_t string_type)
 	hdf5_write_single_val(&beta, "beta", H5T_IEEE_F64LE);
 	hdf5_write_single_val(&u_jitter, "u_jitter", H5T_IEEE_F64LE);
 	hdf5_write_single_val(&BHflux, "bhflux", H5T_IEEE_F64LE);
-        hdf5_write_single_val(&rBstart, "rBstart", H5T_IEEE_F64LE);
-        hdf5_write_single_val(&rBend, "rBend", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&rBstart, "rBstart", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&rBend, "rBend", H5T_IEEE_F64LE);
 
 }
 
