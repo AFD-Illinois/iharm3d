@@ -104,7 +104,6 @@ void init(struct GridGeom *G, struct FluidState *S)
     }
 
     if (nmode == 0) { // Entropy
-      omega = 2.*M_PI/5.*I;
       drho = 1.;
     } else if (nmode == 1) { // Slow
       omega = 2.41024185339*I;
@@ -161,10 +160,13 @@ void init(struct GridGeom *G, struct FluidState *S)
     }
   }
 
-  // Override tf and the dump and log intervals
-  tf = 2.*M_PI/fabs(cimag(omega));
-  DTd = tf/5.; // These are set from param.dat
-  DTl = tf/5.;
+  // Override tf and the dump and log intervals,
+  // If running a one-period test
+  if (nmode > 0) {
+    tf = 2.*M_PI/fabs(cimag(omega));
+    DTd = tf/5.; // These are set from param.dat
+    DTl = tf/5.;
+  }
 
   set_grid(G);
 
