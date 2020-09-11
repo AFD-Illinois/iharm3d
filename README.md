@@ -52,12 +52,6 @@ remove just the object and executable files, preserving any customizations in `b
 Full details of production runs on larger machines e.g. Stampede2 are in `script/submit/checklist.txt` in this repository, along
 with job submission scripts for SLURM in the TACC environment, adaptable for a lot of SLURM machines.
 
-## Running
-`iharm3D` uses both compile-time and runtime parameters, given in the problem directories as `parameters.h` and
-`param.dat` respectively.  A general workflow for customization and initiation of a run is in
-`script/submit/checklist.txt`.  Most problem-specific and physical parameters are specified at runtime, while the MPI process
-geometry and certain operations/stability options are specified at compile time.
-
 ## Hacking
 Notes that may save you time in reading the source code:
 * Grid coordinates match physical coordinates i => x^1, j => x^2, k => x^3.  However, they are indexed backward
