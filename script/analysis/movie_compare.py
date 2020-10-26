@@ -26,14 +26,11 @@ FIGX = 10
 FIGY = 8
 #FIGY = FIGX*9/16
 
-# Choose between several predefined layouts below
-movie_type = "simplest"
-
-FRAMEDIR = "FRAMES"
-
 def plot(n):
-  imname = os.path.join(FRAMEDIR, 'frame_%08d.png' % n)
-  print('%08d / ' % (n+1) + '%08d' % len(files1))
+  imname = os.path.join(frame_dir, 'frame_%08d.png' % n)
+  tdump = io.get_dump_time(files1[n])
+  if (tstart is not None and tdump < tstart) or (tend is not None and tdump > tend):
+    return
 
   # Don't calculate b/ucon/cov/e- stuff unless we need it below
   dump1 = io.load_dump(files1[n], hdr1, geom1, derived_vars = False, extras = False)
@@ -41,11 +38,25 @@ def plot(n):
 
   fig = plt.figure(figsize=(FIGX, FIGY))
 
-  # Keep same parameters betwen plots
+  # Keep same parameters betwen plots, even of SANE/MAD
   rho_l, rho_h = -3, 2
   window = [-20,20,-20,20]
   nlines1 = 20
   nlines2 = 5
+  
+  # But BZ stuff is done individually
+  if hdr1['r_out'] < 100:
+    iBZ1 = i_of(geom1,40) # most SANEs
+    rBZ1 = 40
+  else:
+    iBZ1 = i_of(geom1,100) # most MADs
+    rBZ1 = 100
+  if hdr2['r_out'] < 100:
+    iBZ2 = i_of(geom2,40)
+    rBZ2 = 40
+  else:
+    iBZ2 = i_of(geom2,100)
+    rBZ2 = 100
 
   if movie_type == "simplest":
     # Simplest movie: just RHO
@@ -81,6 +92,21 @@ def plot(n):
     ax.set_ylim(ylim)
     ax.set_ylabel(r"$\phi_{BH}$")
     ax.legend(loc=2)
+  elif movie_type == "rho_cap":
+    axes = [plt.subplot(2,3,i) for i in range(1,7)]
+    
+    bplt.plot_slices(axes[0], axes[1], geom1, dump1, np.log10(dump1['RHO']),
+                   label=r"$\log_{10}(\rho) (1)$", vmin=-3, vmax=2, cmap='jet')
+    bplt.overlay_contours(axes[0], geom1, geom1['r'], [rBZ1], color='k')
+    bplt.plot_thphi(axes[2], geom1, np.log10(dump1['RHO'][iBZ1,:,:]), iBZ1, vmin=-4, vmax=1,
+                    label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice r="+str(rBZ1)+" (1)")
+    
+    bplt.plot_slices(axes[3], axes[4], geom2, dump2, np.log10(dump2['RHO']),
+                   label=r"$\log_{10}(\rho) (2)$", vmin=-3, vmax=2, cmap='jet')
+    bplt.overlay_contours(axes[3], geom2, geom2['r'], [rBZ2], color='k')
+    bplt.plot_thphi(axes[5], geom2, np.log10(dump2['RHO'][iBZ2,:,:]), iBZ2, vmin=-4, vmax=1,
+                    label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice r="+str(rBZ2)+" (2)")
+
 
   pad = 0.05
   plt.subplots_adjust(left=pad, right=1-pad, bottom=2*pad, top=1-pad)
@@ -91,12 +117,22 @@ if __name__ == "__main__":
   # PROCESS ARGUMENTS
   if sys.argv[1] == '-d':
     debug = True
-    path1 = sys.argv[2]
-    path2 = sys.argv[3]
+    movie_type = sys.argv[2]
+    path1 = sys.argv[3]
+    path2 = sys.argv[4]
+    if len(sys.argv) > 5:
+      tstart = float(sys.argv[5])
+    if len(sys.argv) > 6:
+      tend = float(sys.argv[6])
   else:
     debug = False
-    path1 = sys.argv[1]
-    path2 = sys.argv[2]
+    movie_type = sys.argv[1]
+    path1 = sys.argv[2]
+    path2 = sys.argv[3]
+    if len(sys.argv) > 4:
+      tstart = float(sys.argv[4])
+    if len(sys.argv) > 5:
+      tend = float(sys.argv[5])
   
   # LOAD FILES
   files1 = io.get_dumps_list(path1)
@@ -106,7 +142,8 @@ if __name__ == "__main__":
       util.warn("INVALID PATH TO DUMP FOLDER")
       sys.exit(1)
 
-  util.make_dir(FRAMEDIR)
+  frame_dir = "frames_compare_"+movie_type
+  util.make_dir(frame_dir)
 
   hdr1 = io.load_hdr(files1[0])
   hdr2 = io.load_hdr(files2[0])

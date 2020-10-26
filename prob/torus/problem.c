@@ -8,6 +8,7 @@
 
 #include "bl_coord.h"
 #include "decs.h"
+#include "hdf5_utils.h"
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
@@ -44,6 +45,22 @@ void set_problem_params() {
 
   set_param("rBstart", &rBstart);
   set_param("rBend", &rBend);
+}
+
+// Save problem specific details
+// This is done in each dump file in /header/problem/
+void save_problem_data(hid_t string_type)
+{
+	hdf5_write_single_val(&mad_type, "mad_type", H5T_STD_I32LE);
+	hdf5_write_single_val("torus", "PROB", string_type);
+	hdf5_write_single_val(&rin, "rin", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&rmax, "rmax", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&beta, "beta", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&u_jitter, "u_jitter", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&BHflux, "bhflux", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&rBstart, "rBstart", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&rBend, "rBend", H5T_IEEE_F64LE);
+
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
@@ -154,9 +171,9 @@ void init(struct GridGeom *G, struct FluidState *S)
 
       S->P[RHO][k][j][i] = rho;
       if (rho > rhomax) rhomax = rho;
+      if (u > umax && r > rin) umax = u;
       u *= (1. + u_jitter * (gsl_rng_uniform(rng) - 0.5));
       S->P[UU][k][j][i] = u;
-      if (u > umax && r > rin) umax = u;
       S->P[U1][k][j][i] = 0.;
       S->P[U2][k][j][i] = 0.;
       S->P[U3][k][j][i] = up;

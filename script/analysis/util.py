@@ -14,14 +14,13 @@ import psutil
 
 import numpy as np
 
-# TODO fns to process arguments
+# TODO fns to process argv
 
 # Run a function in parallel with Python's multiprocessing
 # 'function' must take only a number
 def run_parallel(function, nmax, nthreads, debug=False):
-  #original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+  # TODO if debug...
   pool = multiprocessing.Pool(nthreads)
-  #signal.signal(signal.SIGINT, original_sigint_handler)
   try:
     pool.map_async(function, list(range(nmax))).get(720000)
   except KeyboardInterrupt:
@@ -32,34 +31,50 @@ def run_parallel(function, nmax, nthreads, debug=False):
     pool.close()
   pool.join()
 
+# Run a function in parallel with Python's multiprocessing
+# 'function' must take only a number
+# 'merge_function' must take the same number plus whatever 'function' outputs, and adds to the dictionary out_dict
+def iter_parallel(function, merge_function, out_dict, nmax, nthreads, debug=False):
+  # TODO if debug...
+  pool = multiprocessing.Pool(nthreads)
+  try:
+    # Map the above function to the dump numbers, returning an iterator of 'out' dicts to be merged one at a time
+    # This avoids keeping the (very large) full pre-average list in memory
+    out_iter = pool.imap(function, list(range(nmax)))
+    for n,result in enumerate(out_iter):
+      merge_function(n, result, out_dict)
+  except KeyboardInterrupt:
+    pool.terminate()
+    pool.join()
+  else:
+    pool.close()
+    pool.join()
+
 # Calculate ideal # threads
+# Lower pad values are safer
 def calc_nthreads(hdr, n_mkl=8, pad=0.25):
   # Limit threads for 192^3+ problem due to memory
-  if hdr['n1'] * hdr['n2'] * hdr['n3'] >= 288 * 128 * 128:
-    # Try to add some parallelism MKL
-    try:
-      import ctypes
+  # Try to add some parallelism w/MKL.  Don't freak if it doesn't work
+  try:
+    import ctypes
     
-      mkl_rt = ctypes.CDLL('libmkl_rt.so')
-      mkl_set_num_threads = mkl_rt.MKL_Set_Num_Threads
-      mkl_get_max_threads = mkl_rt.MKL_Get_Max_Threads
-      mkl_set_num_threads(n_mkl)
-      print("Using {} MKL threads".format(mkl_get_max_threads()))
-    except Error as e:
-      print(e)
+    mkl_rt = ctypes.CDLL('libmkl_rt.so')
+    mkl_set_num_threads = mkl_rt.MKL_Set_Num_Threads
+    mkl_get_max_threads = mkl_rt.MKL_Get_Max_Threads
+    mkl_set_num_threads(n_mkl)
+    print("Using {} MKL threads".format(mkl_get_max_threads()))
+  except Exception as e:
+    print(e)
     
-    # Roughly compute memory and leave some generous padding for multiple copies and Python games
-    # (N1*N2*N3*8)*(NPRIM + 4*4 + 6) = size of "dump," (N1*N2*N3*8)*(2*4*4 + 6) = size of "geom"
-    # TODO get a better model for this, and save memory in general
-    ncopies = hdr['n_prim'] + 4*4 + 6
-    nproc = int(pad * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*8*ncopies))
-    if nproc < 1: nproc = 1
-    print("Using {} Python processes".format(nproc))
-    return nproc
-  else:
-    nproc = psutil.cpu_count(logical=False)
-    print("Using {} Python processes".format(nproc))
-    return nproc
+  # Roughly compute memory and leave some generous padding for multiple copies and Python games
+  # (N1*N2*N3*8)*(NPRIM + 4*4 + 6) = size of "dump," (N1*N2*N3*8)*(2*4*4 + 6) = size of "geom"
+  # TODO get a better model for this, and save memory in general
+  ncopies = hdr['n_prim'] + 4*4 + 6
+  nproc = int(pad * psutil.virtual_memory().total/(hdr['n1']*hdr['n2']*hdr['n3']*8*ncopies))
+  if nproc < 1: nproc = 1
+  if nproc > psutil.cpu_count(logical=False): nproc = psutil.cpu_count(logical=False)
+  print("Using {} Python processes".format(nproc))
+  return nproc
 
 # COLORIZED OUTPUT
 class color:

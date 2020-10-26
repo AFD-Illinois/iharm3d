@@ -12,8 +12,19 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 from scipy.integrate import trapz
 
+from analysis_fns import *
+
 # Get xz slice of 3D data
 def flatten_xz(array, patch_pole=False, average=False):
+  if array.ndim == 2:
+    N1 = array.shape[0]
+    N2 = array.shape[1]
+    flat = np.zeros([2*N1,N2])
+    for i in range(N1):
+      flat[i,:] = array[N1 - 1 - i,:]
+      flat[i+N1,:] = array[i,:]
+    return flat
+  
   N1 = array.shape[0]; N2 = array.shape[1]; N3 = array.shape[2]
   flat = np.zeros([2*N1,N2])
   if average:
@@ -36,24 +47,31 @@ def flatten_xz(array, patch_pole=False, average=False):
 
 # Get xy slice of 3D data
 def flatten_xy(array, average=False, loop=True):
+  if array.ndim == 2:
+    return array
+  
   if average:
     slice = np.mean(array, axis=1)
   else:
     slice = array[:,array.shape[1]//2,:]
   
   if loop:
-    return np.vstack((slice.transpose(),slice.transpose()[0])).transpose()
+    return loop_phi(slice)
   else:
     return slice
+
+def loop_phi(array):
+  return np.vstack((array.transpose(),array.transpose()[0])).transpose()
 
 # Plotting fns: pass dump file and var as either string (key) or ndarray
 # Note integrate option overrides average
 # Also note label convention:
 # * "known labels" are assigned true or false,
 # * "unknown labels" are assigned None or a string
+# TODO pass through kwargs instead of all this duplication
 def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
-            cbar=True, cbar_ticks=None, label=None, xlabel=True, ylabel=True,
-            arrayspace=False, average=False, integrate=False, bh=True, half_cut=False):
+            cbar=True, cbar_ticks=None, label=None, xlabel=True, ylabel=True, xticks=True, yticks=True,
+            arrayspace=False, average=False, integrate=False, bh=True, half_cut=False, shading='gouraud'):
 
   if integrate:
     var *= geom['n3']
@@ -81,7 +99,7 @@ def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
 
   #print 'xshape is ', x.shape, ', zshape is ', z.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
-      shading='gouraud')
+      shading=shading)
 
   if arrayspace:
     if xlabel: ax.set_xlabel("X1 (arbitrary)")
@@ -106,12 +124,26 @@ def plot_xz(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(mesh, cax=cax, ticks=cbar_ticks)
 
+  if not xticks:
+    plt.gca().set_xticks([])
+    plt.xticks([])
+    ax.set_xticks([])
+  if not yticks:
+    plt.gca().set_yticks([])
+    plt.yticks([])
+    ax.set_yticks([])
+  if not xticks and not yticks:
+    # Remove the whole frame for good measure
+    #fig.patch.set_visible(False)
+    ax.axis('off')
+
+
   if label is not None:
     ax.set_title(label)
 
 def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,40],
-            cbar=True, label=None, xlabel=True, ylabel=True,
-            ticks=None, arrayspace=False, average=False, integrate=False, bh=True):
+            cbar=True, label=None, xlabel=True, ylabel=True, xticks=True, yticks=True,
+            ticks=None, arrayspace=False, average=False, integrate=False, bh=True, shading='gouraud'):
 
   if integrate:
     var *= geom['n2']
@@ -131,7 +163,7 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
 
   #print 'xshape is ', x.shape, ', yshape is ', y.shape, ', varshape is ', var.shape
   mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
-      shading='gouraud')
+      shading=shading)
 
   if arrayspace:
     if xlabel: ax.set_xlabel("X1 (arbitrary)")
@@ -155,37 +187,128 @@ def plot_xy(ax, geom, var, cmap='jet', vmin=None, vmax=None, window=[-40,40,-40,
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(mesh, cax=cax, ticks=ticks)
 
+  if not xticks:
+    plt.gca().set_xticks([])   
+    plt.xticks([])
+    ax.set_xticks([])
+  if not yticks:  
+    plt.gca().set_yticks([])
+    plt.yticks([])
+    ax.set_yticks([])
+  if not xticks and not yticks:
+    # Remove the whole frame for good measure
+    #fig.patch.set_visible(False)
+    ax.axis('off')
+
   if label:
     ax.set_title(label)
 
-def overlay_contours(ax, geom, var, levels):
+# TODO this is currently just for profiles already in 2D
+def plot_thphi(ax, geom, var, r_i, cmap='jet', vmin=None, vmax=None, window=None,
+            cbar=True, label=None, xlabel=True, ylabel=True, arrayspace=False,
+            ticks=None, project=False, shading='gouraud'):
+
+  if arrayspace:
+    # X3-X2 makes way more sense than X2-X3 since the disk is horizontal
+    x = (geom['X3'][r_i] - geom['startx3']) / (geom['n3'] * geom['dx3'])
+    y = (geom['X2'][r_i] - geom['startx2']) / (geom['n2'] * geom['dx2'])
+  else:
+    radius = geom['r'][r_i,0,0]
+    max_th = geom['n2']//2
+    if project:
+      x = loop_phi((geom['th']*np.cos(geom['phi']))[r_i,:max_th,:])
+      y = loop_phi((geom['th']*np.sin(geom['phi']))[r_i,:max_th,:])
+    else:
+      x = loop_phi(geom['x'][r_i,:max_th,:])
+      y = loop_phi(geom['y'][r_i,:max_th,:])
+    var = loop_phi(var[:max_th,:])
+
+  if window is None:
+    if arrayspace:
+      ax.set_xlim([0, 1]); ax.set_ylim([0, 1])
+    elif project:
+      window = [-1.6, 1.6, -1.6, 1.6]
+    else:
+      window = [-radius, radius, -radius, radius]
+  else:
+    ax.set_xlim(window[:2]); ax.set_ylim(window[2:])
+
+  #print 'xshape is ', x.shape, ', yshape is ', y.shape, ', varshape is ', var.shape
+  mesh = ax.pcolormesh(x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
+      shading=shading)
+
+  if arrayspace:
+    if xlabel: ax.set_xlabel("X3 (arbitrary)")
+    if ylabel: ax.set_ylabel("X2 (arbitrary)")
+  else:
+    if xlabel: ax.set_xlabel(r"$x \frac{c^2}{G M}$")
+    if ylabel: ax.set_ylabel(r"$y \frac{c^2}{G M}$")
+
+  ax.set_aspect('equal')
+
+  if cbar:
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(mesh, cax=cax, ticks=ticks)
+
+  if label:
+    ax.set_title(label)
+
+def overlay_contours(ax, geom, var, levels, color='k'):
   x = flatten_xz(geom['x'])
   z = flatten_xz(geom['z'])
   var = flatten_xz(var, average=True)
-  ax.contour(x, z, var, levels=levels, colors='k')
+  return ax.contour(x, z, var, levels=levels, colors=color)
 
-def overlay_field(ax, geom, dump, nlines=10):
-  hdr = dump['hdr']
+def overlay_field(ax, geom, dump, **kwargs):
+  overlay_flowlines(ax, geom, dump['B1'], dump['B2'], **kwargs)
+
+def overlay_flowlines(ax, geom, varx1, varx2, nlines=50, arrayspace=False, reverse=False):
   N1 = geom['n1']; N2 = geom['n2']
-  x = flatten_xz(geom['x']).transpose()
-  z = flatten_xz(geom['z']).transpose()
-  A_phi = np.zeros([N2, 2*N1])
-  gdet = geom['gdet'][:,:].transpose()
-  B1 = dump['B1'].mean(axis=-1).transpose()
-  B2 = dump['B2'].mean(axis=-1).transpose()
+  if arrayspace:
+    x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
+    x2_norm = (geom['X2'] - geom['startx2']) / (geom['n2'] * geom['dx2'])
+    x = flatten_xz(x1_norm)[geom['n1']:,:]
+    z = flatten_xz(x2_norm)[geom['n1']:,:]
+  else:
+    x = flatten_xz(geom['x'])
+    z = flatten_xz(geom['z'])
+
+  varx1 = varx1.mean(axis=-1)
+  varx2 = varx2.mean(axis=-1)
+  AJ_phi = np.zeros([2*N1, N2])
+  gdet = geom['gdet']
   for j in range(N2):
     for i in range(N1):
-      A_phi[j,N1-1-i] = (trapz(gdet[j,:i]*B2[j,:i], dx=hdr['dx1']) -
-                         trapz(gdet[:j,i]*B1[:j,i], dx=hdr['dx2']))
-      A_phi[j,i+N1] = (trapz(gdet[j,:i]*B2[j,:i], dx=hdr['dx1']) -
-                         trapz(gdet[:j,i]*B1[:j,i], dx=hdr['dx2']))
-  A_phi -= (A_phi[N2//2-1,-1] + A_phi[N2//2,-1])/2.
-  Apm = np.fabs(A_phi).max()
-  if np.fabs(A_phi.min()) > A_phi.max():
-    A_phi *= -1.
-  levels = np.concatenate((np.linspace(-Apm,0,nlines)[:-1],
-                           np.linspace(0,Apm,nlines)[1:]))
-  ax.contour(x, z, A_phi, levels=levels, colors='k')
+      if not reverse:
+        AJ_phi[N1-1-i,j] = AJ_phi[i+N1,j] = (
+          trapz(gdet[:i,j]*varx2[:i,j], dx=geom['dx1']) -
+          trapz(gdet[i,:j]*varx1[i,:j], dx=geom['dx2']))
+      else:
+        AJ_phi[N1-1-i,j] = AJ_phi[i+N1,j] = (
+          trapz(gdet[:i,j]*varx2[:i,j], dx=geom['dx1']) +
+          trapz(gdet[i,j:]*varx1[i,j:], dx=geom['dx2']))
+  AJ_phi -= AJ_phi.min()
+  levels = np.linspace(0,AJ_phi.max(),nlines*2)
+
+  if arrayspace:
+    ax.contour(x, z, AJ_phi[N1:,:], levels=levels, colors='k')
+  else:
+    ax.contour(x, z, AJ_phi, levels=levels, colors='k')
+
+def overlay_quiver(ax, geom, dump, JE1, JE2, cadence=64, norm=1):
+  JE1 *= geom['gdet']
+  JE2 *= geom['gdet']
+  max_J = np.max(np.sqrt(JE1**2 + JE2**2))
+  x1_norm = (geom['X1'] - geom['startx1']) / (geom['n1'] * geom['dx1'])
+  x2_norm = (geom['X2'] - geom['startx2']) / (geom['n2'] * geom['dx2'])
+  x = flatten_xz(x1_norm)[geom['n1']:,:]
+  z = flatten_xz(x2_norm)[geom['n1']:,:]
+  
+  s1 = geom['n1']//cadence; s2 = geom['n2']//cadence
+  
+  ax.quiver(x[::s1,::s2], z[::s1,::s2], JE1[::s1,::s2], JE2[::s1,::s2],
+      units='xy', angles='xy', scale_units='xy', scale=cadence*max_J/norm)
 
 # Plot two slices together without duplicating everything in the caller
 def plot_slices(ax1, ax2, geom, dump, var, field_overlay=True, nlines=10, **kwargs):
@@ -196,8 +319,8 @@ def plot_slices(ax1, ax2, geom, dump, var, field_overlay=True, nlines=10, **kwar
     arrspace = False
   
   plot_xz(ax1, geom, var, **kwargs)
-  if field_overlay and not arrspace:
-    overlay_field(ax1, geom, dump, nlines=nlines)
+  if field_overlay:
+    overlay_field(ax1, geom, dump, nlines=nlines, arrayspace=arrspace)
 
   plot_xy(ax2, geom, var, **kwargs)
 

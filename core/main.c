@@ -22,8 +22,10 @@ int main(int argc, char *argv[])
     fprintf(stdout, "          *                                                          *\n");
     fprintf(stdout, "          *                          IHARM3D                         *\n");
     fprintf(stdout, "          *                                                          *\n");
-    fprintf(stdout, "          *          Ryan, Dolence & Gammie ApJ 807:31, 2015         *\n");
+    fprintf(stdout, "          *          Gammie, McKinney & Toth ApJ 509:444, 2003       *\n");
     fprintf(stdout, "          *                                                          *\n");
+    fprintf(stdout, "          *  B S Prather                                             *\n");
+    fprintf(stdout, "          *  G N Wong                                                *\n");
     fprintf(stdout, "          *  B R Ryan                                                *\n");
     fprintf(stdout, "          *  J C Dolence                                             *\n");
     fprintf(stdout, "          *  C F Gammie                                              *\n");

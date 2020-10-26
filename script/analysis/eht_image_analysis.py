@@ -114,6 +114,15 @@ def process(n):
   print("Read {} / {}".format(n,len(files)))
 
   out = {}
+  # Keep full images to average them into another
+  out['i0'] = i0
+  out['j0'] = j0
+  out['Ia'] = Ia
+  out['Is'] = Is
+  out['Qs'] = Qs
+  out['Us'] = Us
+  out['Vs'] = Vs
+
   # set image size: assumed square!
   out['ImRes'] = ImRes = int(round(np.sqrt(len(i0))))
 
@@ -159,15 +168,30 @@ if __name__ == "__main__":
   ND = len(out_list)
   out_full = {}
   for key in out_list[0].keys():
-    out_full[key] = np.zeros(ND)
-    for n in range(ND):
-      out_full[key][n] = out_list[n][key]
+    if key in ['i0', 'j0', 'Ia', 'Is', 'Qs', 'Us', 'Vs']:
+      # Average the image parameter keys
+      out_full[key] = np.zeros_like(out_list[0][key])
+      for n in range(ND):
+        out_full[key] += out_list[n][key]
+      out_full[key] /= ND
+    else:
+      # Record all the individual number keys
+      out_full[key] = np.zeros(ND)
+      for n in range(ND):
+        out_full[key][n] = out_list[n][key]
 
   for key in out_full:
-    print("Average {} is {}".format(key, np.mean(out_full[key])))
+    if key not in ['i0', 'j0', 'Ia', 'Is', 'Qs', 'Us', 'Vs']:
+      print("Average {} is {}".format(key, np.mean(out_full[key])))
+
+  # Output average image
+  cols_array = np.c_[out_full['i0'], out_full['j0'], out_full['Ia'], out_full['Is'], out_full['Qs'], out_full['Us'], out_full['Vs']]
+  datfile = open("avg_img_{}.dat".format(foldername), "w")
+  for i in range(out_full['i0'].size):
+    datfile.write("{:.0f} {:.0f} {:g} {:g} {:g} {:g} {:g}\n".format(*cols_array[i]))
+  datfile.close()
 
   # Add params too
   out_full.update(params_global)
-
   # Tag output with model to avoid writing more bash code
   pickle.dump(out_full, open("im_avgs_{}.p".format(foldername), "wb"))

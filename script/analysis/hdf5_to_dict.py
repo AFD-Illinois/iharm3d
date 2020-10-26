@@ -16,11 +16,23 @@ import glob
 import units
 from analysis_fns import *
 
+# New infra
+from defs import Loci, Met
+from coordinates import dxdX_to_KS, dxdX_KS_to
+
+class HARMdump(object):
+  def __init__(self, dfname):
+    self.dfile = h5py.File(dfname)
+  def __getitem__(self, name):
+    return d_fns[name](self.dfile)
+  def __del__(self):
+    self.dfile.close()
+
 def get_dumps_list(path):
   # Funny how many names output has
-  files_harm = [file for file in glob.glob(path+"*dump*.h5")]
-  files_koral = [file for file in glob.glob(path+"*sim*.h5")]
-  files_bhac = [file for file in glob.glob(path+"*data*.h5")]
+  files_harm = [file for file in glob.glob(os.path.join(path,"*dump*.h5"))]
+  files_koral = [file for file in glob.glob(os.path.join(path,"*sim*.h5"))]
+  files_bhac = [file for file in glob.glob(os.path.join(path,"*data*.h5"))]
   return np.sort(files_harm + files_koral + files_bhac)
 
 def get_full_dumps_list(path):
@@ -42,6 +54,18 @@ def load_all(fname, **kwargs):
   dump = load_dump(fname, hdr, geom, **kwargs)
   return hdr, geom, dump
 
+# For cutting on time without loading everything
+def get_dump_time(fname):
+  dfile = h5py.File(fname, 'r')
+
+  if 't' in dfile.keys():
+    t = dfile['t'][()]
+  else:
+    t = 0
+
+  dfile.close()
+  return t
+
 # Function to recursively un-bytes all the dumb HDF5 strings
 def decode_all(dict):
     for key in dict:
@@ -62,8 +86,11 @@ def load_hdr(fname):
   hdr = {}
   try:
     # Scoop all the keys that are not folders
-    for key in [key for key in list(dfile['header'].keys()) if not key == 'geom']:
+    for key in [key for key in list(dfile['header'].keys()) if not (key == 'geom' or key == 'problem')]:
       hdr[key] = dfile['header/' + key][()]
+
+    for key in [key for key in list(dfile['header/problem'].keys())]:
+        hdr[key] = dfile['header/problem/'+key][()]
       
     # TODO load these from grid.h5? Or is the header actually the place for them?
     for key in [key for key in list(dfile['header/geom'].keys()) if not key in ['mks', 'mmks', 'mks3'] ]:
@@ -126,8 +153,11 @@ def load_hdr(fname):
     else:
       hdr['has_electrons'] = False
   # TODO this is KS-specific
-  if 'r_eh' not in hdr:
+  if 'r_eh' not in hdr and hdr['metric'] != "MINKOWSKI":
     hdr['r_eh'] = (1. + np.sqrt(1. - hdr['a']**2))
+  if 'poly_norm' not in hdr and hdr['metric'] == "MMKS":
+    hdr['poly_norm'] = 0.5 * np.pi * 1. / (1. + 1. / (hdr['poly_alpha'] + 1.) *
+                                     1. / np.power(hdr['poly_xt'], hdr['poly_alpha']))
   
   if 'git_version' in hdr:
     print("Loaded header from code {}, git rev {}".format(hdr['version'], hdr['git_version']))
@@ -154,39 +184,64 @@ def load_geom(hdr, path):
     geom[key] = gfile[key][()]
 
   # Useful stuff for direct access in geom. TODO r_isco if available
-  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim']:
+  for key in ['n1', 'n2', 'n3', 'dx1', 'dx2', 'dx3', 'startx1', 'startx2', 'startx3', 'n_dim', 'metric']:
     geom[key] = hdr[key]
-  # TODO not all non-cart metrics are KS
   if hdr['metric'] in ["MKS", "MMKS", "FMKS"]:
-    for key in ['r_eh', 'r_in', 'r_out']:
+    for key in ['r_eh', 'r_in', 'r_out', 'a', 'hslope']:
       geom[key] = hdr[key]
+      if hdr['metric'] == "MMKS": # TODO standardize names !!!
+        for key in ['poly_norm', 'poly_alpha', 'poly_xt', 'mks_smooth']:
+          geom[key] = hdr[key]
   elif hdr['metric'] in ["MKS3"]:
     for key in ['r_eh']:
       geom[key] = hdr[key]
+    geom['r_out'] = geom['r'][-1,hdr['n2']//2,0]
 
   # these get used interchangeably and I don't care
   geom['x'] = geom['X']
   geom['y'] = geom['Y']
   geom['z'] = geom['Z']
 
+  if 'phi' not in geom and hdr['metric'] in ["MKS", "MMKS", "FMKS", "MKS3"]:
+    geom['phi'] = geom['X3']
+
   # Sometimes the vectors and zones use different coordinate systems
+  # TODO allow specifying both systems
   if 'gdet_zone' in geom:
-    # If we laoded them, put them in the right places
+    # Preserve 
+    geom['gcon_vec'] = geom['gcon']
+    geom['gcov_vec'] = geom['gcov']
     geom['gdet_vec'] = geom['gdet']
+    geom['lapse_vec'] = geom['lapse']
+    # But default to the grid metric.  Lots of integrals and later manipulation with this
+    geom['gcon'] = geom.pop('gcon_zone',None)
+    geom['gcov'] = geom.pop('gcov_zone',None)
     geom['gdet'] = geom.pop('gdet_zone',None)
+    geom['lapse'] = geom.pop('lapse_zone',None)
+
+    geom['mixed_metrics'] = True
   else:
-    # Otherwise define the names so I can use them
-    geom['gcon_zone'] = geom['gcon']
-    geom['gcov_zone'] = geom['gcov']
-    geom['gdet_vec'] = geom['gdet']
-    geom['lapse_zone'] = geom['lapse']
+    geom['mixed_metrics'] = False
 
   # Compress geom in phi for normal use
-  for key in ['gdet', 'lapse', 'gdet_vec', 'lapse_zone']:
-    geom[key] = geom[key][:,:,0]
+  for key in ['gdet', 'lapse', 'gdet_vec', 'lapse_vec']:
+    if key in geom:
+      geom[key] = geom[key][:,:,0]
 
-  for key in ['gcon','gcov','gcon_zone','gcov_zone']:
-    geom[key] = geom[key][:,:,0,:,:]
+  for key in ['gcon', 'gcov', 'gcon_vec', 'gcov_vec']:
+    if key in geom:
+      geom[key] = geom[key][:,:,0,:,:]
+  
+  if geom['mixed_metrics']:
+    # Get all Kerr-Schild coordinates for generating transformation matrices
+    Xgeom = np.zeros((4,geom['n1'],geom['n2']))
+    Xgeom[1] = geom['r'][:,:,0]
+    Xgeom[2] = geom['th'][:,:,0]
+    # TODO add all metric params to the geom dict
+    eks2ks = dxdX_to_KS(Xgeom, Met.EKS, hdr, koral_rad=hdr['has_electrons'])
+    ks2mks3 = dxdX_KS_to(Xgeom, Met[geom['metric']], hdr, koral_rad=hdr['has_electrons'])
+    print("Will convert vectors in EKS to zone metric {}".format(geom['metric']))
+    geom['vec_to_grid'] = np.einsum("ij...,jk...->...ik", eks2ks, ks2mks3)
 
   return geom
 
@@ -235,6 +290,8 @@ def load_dump(fname, hdr, geom, derived_vars=True, extras=True):
 def load_log(path):
   # TODO specify log name in dumps, like grid
   logfname = os.path.join(path,"log.out")
+  if not os.path.exists(logfname):
+    return None
   dfile = np.loadtxt(logfname).transpose()
   
   # TODO log should probably have a header
