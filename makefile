@@ -34,6 +34,9 @@ endif
 ifneq (,$(findstring theta,$(HOST)))
         -include $(MAKEFILE_PATH)/machines/theta.make
 endif
+ifneq (,$(findstring frontera,$(HOST)))
+        -include $(MAKEFILE_PATH)/machines/frontera.make
+endif
 -include $(MAKEFILE_PATH)/machines/$(HOST).make
 
 # Everything below this should be static
