@@ -121,6 +121,7 @@
 #define PPM    (1)
 #define WENO   (2)
 #define MP5    (3)
+#define DONOR_CELL (4)
 
 // Primitive and conserved variables
 #define RHO (0)
@@ -166,14 +167,13 @@
 
 // Failure modes
 // TODO find+eliminate uses
+// TODO make these the real U_to_P returns...
 #define FAIL_UTOPRIM     (0)
 #define FAIL_VCHAR_DISCR (1)
 #define FAIL_COEFF_NEG   (2)
 #define FAIL_COEFF_SUP   (3)
 #define FAIL_GAMMA       (4)
 #define FAIL_METRIC      (5)
-
-// U to P failure modes
 
 
 // Timers

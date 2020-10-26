@@ -9,7 +9,9 @@
 #include "decs.h"
 
 // Play some pre-processor games
-#if RECONSTRUCTION == LINEAR
+#if RECONSTRUCTION == DONOR_CELL
+#define RECON_ALGO donor_cell
+#elif RECONSTRUCTION == LINEAR
 // MC is the only limiter used
 #define RECON_ALGO linear_mc
 #elif RECONSTRUCTION == PPM
@@ -27,13 +29,12 @@
 #error "not enough ghost zones! PPM/WENO/MP5 + NG < 3\n"
 #endif
 
-void linear_mc(double unused1, double x1, double x2, double x3, double unused2, double *lout, double *rout);
-void para(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout);
-void weno(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout);
+void reconstruct_poles(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir);
 
-double median(double a, double b, double c);
-double mp5_subcalc(double Fjm2, double Fjm1, double Fj, double Fjp1, double Fjp2);
-void mp5(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout);
+inline void donor_cell(double unused1, double unused2, double x, double unused3, double unused4, double *lout, double *rout) {
+  *lout = x;
+  *rout = x;
+}
 
 inline void linear_mc(double unused1, double x1, double x2, double x3, double unused2, double *lout, double *rout)
 {
@@ -267,6 +268,66 @@ void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
       }
     }
   }
+
+#if LOWER_ORDER_POLES
+  reconstruct_poles(S, Pl, Pr, dir);
+#endif
+
   timer_stop(TIMER_RECON);
 }
 
+void reconstruct_poles(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
+{
+  if (dir == 2) {
+    // Last physical/first Ghost: donor cell
+#pragma omp parallel for collapse(3)
+    PLOOP {
+      KSLOOP(-1, N3) {
+        JSLOOP(-1, 0) {
+          ISLOOP(-1, N1) {
+            donor_cell(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
+    }
+#pragma omp parallel for collapse(3)
+    PLOOP {
+      KSLOOP(-1, N3) {
+        JSLOOP(N2-1, N2) {
+          ISLOOP(-1, N1) {
+            donor_cell(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+      }
+    }
+
+    // Next physical: linear
+    int j = 1;
+#pragma omp parallel for collapse(2)
+    PLOOP {
+      KSLOOP(-1, N3) {
+          ISLOOP(-1, N1) {
+            linear_mc(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+      }
+    }
+
+    j = N2-2;
+#pragma omp parallel for collapse(2)
+    PLOOP {
+      KSLOOP(-1, N3) {
+          ISLOOP(-1, N1) {
+            linear_mc(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                 &(Pr[ip][k][j][i]));
+          }
+        }
+    }
+  }
+}
