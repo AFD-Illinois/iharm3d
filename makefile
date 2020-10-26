@@ -116,6 +116,12 @@ clean:
 	@echo "Cleaning build files..."
 	@rm -f $(EXE) $(OBJ)
 
+distclean: clean
+	@echo "Cleaning config files..."
+	@rm -rf build_archive
+
+archive-invalidation: distclean
+
 $(EXE): $(ARC_DIR)/$(EXE)
 	@cp $(ARC_DIR)/$(EXE) .
 
