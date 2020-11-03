@@ -280,54 +280,61 @@ void reconstruct_poles(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
 {
   if (dir == 2) {
     // Last physical/first Ghost: donor cell
+    if (global_start[1] == 0) {
 #pragma omp parallel for collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(-1, 0) {
-          ISLOOP(-1, N1) {
-            donor_cell(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
-                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
+      PLOOP {
+        KSLOOP(-1, N3) {
+          JSLOOP(-1, 0) {
+            ISLOOP(-1, N1) {
+              donor_cell(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                  S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                  &(Pr[ip][k][j][i]));
+            }
           }
         }
       }
     }
+    if (global_stop[1] == N2TOT) {
 #pragma omp parallel for collapse(3)
-    PLOOP {
-      KSLOOP(-1, N3) {
-        JSLOOP(N2-1, N2) {
-          ISLOOP(-1, N1) {
-            donor_cell(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
-                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
+      PLOOP {
+        KSLOOP(-1, N3) {
+          JSLOOP(N2-1, N2) {
+            ISLOOP(-1, N1) {
+              donor_cell(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                  S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                  &(Pr[ip][k][j][i]));
+            }
           }
         }
       }
     }
 
     // Next physical: linear
-    int j = 1;
+    if (global_start[1] == 0) {
+      int j = NG + 1;
 #pragma omp parallel for collapse(2)
-    PLOOP {
-      KSLOOP(-1, N3) {
-          ISLOOP(-1, N1) {
-            linear_mc(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
-                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
-          }
+      PLOOP {
+        KSLOOP(-1, N3) {
+            ISLOOP(-1, N1) {
+              linear_mc(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                  S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                  &(Pr[ip][k][j][i]));
+            }
+        }
       }
     }
-
-    j = N2-2;
+    if (global_stop[1] == N2TOT) {
+      int j = N2 + NG - 2;
 #pragma omp parallel for collapse(2)
-    PLOOP {
-      KSLOOP(-1, N3) {
-          ISLOOP(-1, N1) {
-            linear_mc(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
-                 S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
-                 &(Pr[ip][k][j][i]));
+      PLOOP {
+        KSLOOP(-1, N3) {
+            ISLOOP(-1, N1) {
+              linear_mc(S->P[ip][k][j-2][i], S->P[ip][k][j-1][i], S->P[ip][k][j][i],
+                  S->P[ip][k][j+1][i], S->P[ip][k][j+2][i], &(Pl[ip][k][j][i]),
+                  &(Pr[ip][k][j][i]));
+            }
           }
-        }
+      }
     }
   }
 }
