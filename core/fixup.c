@@ -178,6 +178,7 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
 
   if (rhoflr_max > S->P[RHO][k][j][i] || uflr_max > S->P[UU][k][j][i]) { // Apply floors
 
+#if NOFFLOORS
     // Initialize a dummy fluid parcel
     PLOOP {
       Stmp->P[ip][k][j][i] = 0;
@@ -205,6 +206,11 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
     // Recover primitive variables
     // CFG: do we get any failures here?
     pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
+#else
+    S->P[RHO][k][j][i] += MY_MAX(0., rhoflr_max - S->P[RHO][k][j][i]);
+    S->P[UU][k][j][i] += MY_MAX(0., uflr_max - S->P[UU][k][j][i]);
+#endif
+
   }
 
 #if ELECTRONS
