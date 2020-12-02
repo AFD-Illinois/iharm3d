@@ -8,6 +8,7 @@
 
 #include "bl_coord.h"
 #include "decs.h"
+#include "hdf5_utils.h"
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
@@ -31,6 +32,17 @@ void set_problem_params() {
 
   set_param("rBstart", &rBstart);
   set_param("rBend", &rBend);
+}
+
+void save_problem_data(hid_t string_type){
+        hdf5_write_single_val("mad", "PROB", string_type);
+        hdf5_write_single_val(&rin, "rin", H5T_IEEE_F64LE);
+        hdf5_write_single_val(&rmax, "rmax", H5T_IEEE_F64LE);
+        hdf5_write_single_val(&MAD, "mad_type", H5T_STD_I32LE);
+        hdf5_write_single_val(&BHflux, "bhflux", H5T_IEEE_F64LE);
+        hdf5_write_single_val(&beta, "beta", H5T_IEEE_F64LE);
+        hdf5_write_single_val(&rBstart, "rBstart", H5T_IEEE_F64LE);
+        hdf5_write_single_val(&rBend, "rBend", H5T_IEEE_F64LE);
 }
 
 void init(struct GridGeom *G, struct FluidState *S)

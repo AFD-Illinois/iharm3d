@@ -1,7 +1,8 @@
 # iharm3D
 This code implements the HARM algorithm outlined in [Gammie et al. 2003](https://doi.org/10.1086/374594), with some modifications
 outlined in [McKinney & Gammie 2004](https://doi.org/10.1086/422244).  This is a second-order, conservative, shock-capturing scheme 
-for general-relativistic magnetohydrodynamics (GRMHD).
+for general-relativistic magnetohydrodynamics (GRMHD).  Credit also to the many people who have worked on the code over the years, 
+including Scott Noble, who implemented the first 3D version of the code, Josh Dolence, Ben Ryan, George Wong, and Ben Prather.
 
 ## Requirements
 `iharm3D` requires an MPI/Parallel HDF5 stack.  In practice, this means that the executable `h5pcc` must be in your `PATH`
@@ -26,13 +27,30 @@ The make process or flags can be customized by adding a host-specific makefile
 ```bash
 $ touch machines/$(hostname).make
 ```
-which can contain any valid `make` script and is read after setting most of the default parameters, in order to override them
+which can contain any valid `make` script and is read after setting most of the default parameters, in order to override them.
 
-## Running
-`iharm3D` uses both compile-time and runtime parameters, given in the problem directories as `parameters.h` and
-`param.dat` respectively.  A general workflow for customization and initiation of a run is in
-`script/submit/checklist.txt`.  Most problem-specific and physical parameters are specified at runtime, while the MPI process
-geometry and certain operations/stability options are specified at compile time.
+## Configuration and Running
+Building `iharm3d` produces a directory named `build_archive` in the directory where `make` is invoked.  This archive contains
+all the source files used in the build, as well as all the object files and a copy of the executable.
+
+If `build_archive` already exists, `make` will prefer any newer/modified files in that directory, vs their equivalents in the original source.
+This allows modifying the compile-time parameters in `parameters.h`, or even modifying the C code as desired, without disrupting the
+original repository and potentially committing upstream whatever compile-time or runtime configuration you happen to be using.
+
+Note that `iharm3d` also takes runtime parameters (most of the physical parameters, whereas grid size & MPI topology are compile-time).
+`iharm3d` will automatically use any file called `param.dat` in the current working directory, and will output simulation data to the
+working directory as well.  You can specify an alternative parameter file with `-p` or output directory with `-o`.  Sample runtime
+parameters for each problem are provided in the problem directories.
+
+Due to this extra copy, note that between building different problems (e.g. from a torus to the MHD modes problem) one must run
+```bash
+$ make distclean
+```
+which will remove the `build_archive` directory, including any customizations that had previously been applied. A simple `make clean` will
+remove just the object and executable files, preserving any customizations in `build_archive`
+
+Full details of production runs on larger machines e.g. Stampede2 are in `script/submit/checklist.txt` in this repository, along
+with job submission scripts for SLURM in the TACC environment, adaptable for a lot of SLURM machines.
 
 ## Hacking
 Notes that may save you time in reading the source code:

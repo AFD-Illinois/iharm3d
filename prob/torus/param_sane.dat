@@ -6,7 +6,7 @@
 [dbl] Rout = 50.0
 
 # FLUID
-[dbl] gam = 1.333333
+[dbl] gam = 1.666667
 [dbl] cour = 0.9
 
 [dbl] u_jitter = 4.0e-02
@@ -41,7 +41,7 @@
 [dbl] rBend = 810.0
 [dbl] BHflux = 0.0
 
-# NOT USED: Funky MKS parameters
+# What did the acorn say when it grew up? Gee, I'm a tree!
 [dbl] mks_smooth = 0.5
 [dbl] poly_xt = 0.82
 [dbl] poly_alpha = 14.0

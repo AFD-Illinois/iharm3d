@@ -8,12 +8,18 @@
 
 #include "decs.h"
 #include <complex.h>
+#include "hdf5_utils.h"
 
 static int nmode;
 
 void set_problem_params()
 {
   set_param("nmode", &nmode);
+}
+
+void save_problem_data(hid_t string_type){
+        hdf5_write_single_val("mhdmodes", "PROB", string_type);
+        hdf5_write_single_val(&nmode, "nmode", H5T_STD_I32LE);
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
