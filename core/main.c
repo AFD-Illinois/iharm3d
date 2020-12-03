@@ -127,7 +127,6 @@ int main(int argc, char *argv[])
   while (t < tf) {
 
     // Handle abort case
-    chdir(".");
     if ( access(abort_fname, F_OK) != -1 ) {
       if (mpi_io_proc()) {
         fprintf(stdout, "\nFound 'abort' file. Quitting now.\n\n");
