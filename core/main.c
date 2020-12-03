@@ -62,6 +62,10 @@ int main(int argc, char *argv[])
   set_problem_params();
   read_params(pfname);
 
+  // Remove 'abort' file if it exists
+  char abort_fname[256] = "abort";
+  remove(abort_fname);
+
   // Chdir to output directory and make output folders
   if( chdir(outputdir) != 0) {
     fprintf(stderr, "Output directory does not exist!\n");
@@ -121,6 +125,19 @@ int main(int argc, char *argv[])
   time_init();
   int dumpThisStep = 0;
   while (t < tf) {
+
+    // Handle abort case
+    chdir(".");
+    if ( access(abort_fname, F_OK) != -1 ) {
+      if (mpi_io_proc()) {
+        fprintf(stdout, "\nFound 'abort' file. Quitting now.\n\n");
+      }
+      diag(G, S, DIAG_ABORT);
+      restart_write_backend(S, IO_ABORT);
+      mpi_finalize();
+      return 0;
+    }
+
     dumpThisStep = 0;
     timer_start(TIMER_ALL);
 
