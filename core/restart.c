@@ -21,7 +21,13 @@ static hsize_t fcount[] = {NVAR, N3, N2, N1};
 static hsize_t mdims[] = {NVAR, N3+2*NG, N2+2*NG, N1+2*NG};
 static hsize_t mstart[] = {0, NG, NG, NG};
 
-void restart_write(struct FluidState *S)
+
+void restart_write(struct FluidState *S) 
+{
+  restart_write_backend(S, IO_REGULAR);
+}
+
+void restart_write_backend(struct FluidState *S, int type)
 {
   timer_start(TIMER_RESTART);
 
@@ -29,7 +35,12 @@ void restart_write(struct FluidState *S)
   restart_id++;
 
   char fname[STRLEN];
-  sprintf(fname, "restarts/restart_%08d.h5", restart_id);
+
+  if (type == IO_REGULAR) {
+    sprintf(fname, "restarts/restart_%08d.h5", restart_id);
+  } else if (type == IO_ABORT) {
+    sprintf(fname, "restarts/restart_abort.h5");
+  }
 
   hdf5_create(fname);
 
