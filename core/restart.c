@@ -144,7 +144,7 @@ void restart_read(char *fname, struct FluidState *S)
   #endif
   // I want to be able to change tf/cadences/courant mid-run
   // Hence we just pick these up from param.dat again unless we're testing the MHD modes
-  // TODO include problem name in parameters.h
+  // TODO make this if problem == mhdmodes
 if (METRIC != MKS) {
   hdf5_read_single_val(&tf, "tf", H5T_IEEE_F64LE);
   hdf5_read_single_val(&cour, "cour", H5T_IEEE_F64LE);
