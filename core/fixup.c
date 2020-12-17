@@ -36,14 +36,14 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL fflag[k][j][i] = 0;
 
-#pragma omp parallel for collapse(3)
-  ZLOOP fixup_ceiling(G, S, i, j, k);
-
   // Bulk call before bsq calculation below
   get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
 #pragma omp parallel for collapse(3)
   ZLOOP fixup_floor(G, S, i, j, k);
+
+#pragma omp parallel for collapse(3)
+  ZLOOP fixup_ceiling(G, S, i, j, k);
 
   // Some debug info about floors
 #if DEBUG
