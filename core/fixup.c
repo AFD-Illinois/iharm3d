@@ -114,6 +114,7 @@ inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j
     }
 #endif
 
+#if TEMP_ADJUST_U
   // 3. Limit temperature by cooling in fluid frame
   // Note this is applied after the RHO floor has taken effect
   double u_ceil_temp = UORHOMAX * S->P[RHO][k][j][i];
@@ -121,6 +122,7 @@ inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j
     fflag[k][j][i] |= HIT_FLOOR_TEMP;
     S->P[UU][k][j][i] = u_ceil_temp;
   }
+#endif
 
 }
 
@@ -167,19 +169,27 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
   // Evaluate highest U floor
   double uflr_max = MY_MAX(uflr_geom, uflr_b);
 
+#if TEMP_ADJUST_U
+  // Evaluate highest RHO floor
+  double rhoflr_max = MY_MAX(rhoflr_geom, rhoflr_b);
+#else
   // 3. Temperature ceiling: impose maximum temperature
   // Take floors on U into account
-  //double rhoflr_temp = MY_MAX(S->P[UU][k][j][i] / UORHOMAX, uflr_max / UORHOMAX);
+  double rhoflr_temp = MY_MAX(S->P[UU][k][j][i] / UORHOMAX, uflr_max / UORHOMAX);
 
   // Record hitting temperature ceiling
-  //if (rhoflr_temp > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_TEMP; // Misnomer for consistency
+  if (rhoflr_temp > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_TEMP; // Misnomer for consistency
 
   // Evaluate highest RHO floor
-  double rhoflr_max = MY_MAX(rhoflr_geom, rhoflr_b); //, rhoflr_temp);
+  double rhoflr_max = MY_MAX(MY_MAX(rhoflr_geom, rhoflr_b), rhoflr_temp);
+#endif
 
   if (rhoflr_max > S->P[RHO][k][j][i] || uflr_max > S->P[UU][k][j][i]) { // Apply floors
 
-#if NOFFLOORS
+#if FLUID_FRAME_FLOORS
+    S->P[RHO][k][j][i] += MY_MAX(0., rhoflr_max - S->P[RHO][k][j][i]);
+    S->P[UU][k][j][i] += MY_MAX(0., uflr_max - S->P[UU][k][j][i]);
+#else
     // Initialize a dummy fluid parcel
     PLOOP {
       Stmp->P[ip][k][j][i] = 0;
@@ -207,9 +217,6 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
     // Recover primitive variables
     // CFG: do we get any failures here?
     pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
-#else
-    S->P[RHO][k][j][i] += MY_MAX(0., rhoflr_max - S->P[RHO][k][j][i]);
-    S->P[UU][k][j][i] += MY_MAX(0., uflr_max - S->P[UU][k][j][i]);
 #endif
 
   }
