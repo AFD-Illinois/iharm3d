@@ -188,7 +188,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   ZLOOP {
     pflag[k][j][i] = U_to_P(G, Sf, i, j, k, CENT);
     // This is too annoying even for debug
-    //if (pflag[k][j][i] != 0) LOGN("Pflag is %d\n", pflag[k][j][i]);
+    //if (pflag[k][j][i] == 1) LOGN("Itermax %d %d %d\n", k, j, i);
   }
   timer_stop(TIMER_U_TO_P);
 
