@@ -233,7 +233,6 @@ inline double gamma_func(double Bsq, double D, double QdB, double Qtsq, double W
   return gamma;
 }
 
-//double Wp_func(double *prim, struct of_geom *geom, int *eflag)
 inline double Wp_func(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc, int *eflag)
 {
