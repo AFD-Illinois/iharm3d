@@ -7,7 +7,7 @@ ifneq (,$(findstring icc,$(shell $(CC) --version)))
 	ifneq (,$(findstring 18.0,$(shell $(CC) --version)))
 		GSL_DIR = /opt/apps/intel18/gsl/2.6
 	else
-		GSL_DIR = /opt/apps/intel17/gsl/2.6
+		GSL_DIR = /opt/apps/intel17/gsl/2.3
 	endif
 
 	ifeq ($(S2TARGET),skx)

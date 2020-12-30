@@ -27,6 +27,11 @@
 
 void dump(struct GridGeom *G, struct FluidState *S)
 {
+  dump_backend(G, S, IO_REGULAR);
+}
+
+void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
+{
   timer_start(TIMER_IO);
 
   static GridDouble *data;
@@ -48,7 +53,12 @@ void dump(struct GridGeom *G, struct FluidState *S)
   //Don't re-dump the grid after a restart
   if (dump_cnt == 0) dump_grid(G);
 
-  sprintf(fname, "dumps/dump_%08d.h5", dump_cnt);
+  if (type == IO_REGULAR) {
+    sprintf(fname, "dumps/dump_%08d.h5", dump_cnt);
+  } else if (type == IO_ABORT) {
+    sprintf(fname, "dumps/dump_abort.h5");    
+  }
+
   if(mpi_io_proc()) fprintf(stdout, "DUMP %s\n", fname);
 
   hdf5_create(fname);
