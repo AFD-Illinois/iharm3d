@@ -133,6 +133,10 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
     dump_cnt++;
   }
 
+  if (call_code == DIAG_ABORT) {
+    dump_backend(G, S, IO_ABORT);
+  }
+
   if (call_code == DIAG_INIT || call_code == DIAG_LOG ||
       call_code == DIAG_FINAL) {
     double mdot_all = mpi_reduce(mdot);

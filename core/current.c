@@ -8,7 +8,7 @@
 
 #include "decs.h"
 
-double Fcon_calc(struct GridGeom *G, struct FluidState *S, int mu, int nu, int i, int j, int k);
+double gFcon_calc(struct GridGeom *G, struct FluidState *S, int mu, int nu, int i, int j, int k);
 int antisym(int a, int b, int c, int d);
 int pp(int n, int *P);
 
@@ -59,26 +59,26 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
 
     // X0
     DLOOP1 {
-      gF0p[mu] = Fcon_calc(G, S,  0, mu, i, j, k);
-      gF0m[mu] = Fcon_calc(G, Ssave, 0, mu, i, j, k);
+      gF0p[mu] = gFcon_calc(G, S,  0, mu, i, j, k);
+      gF0m[mu] = gFcon_calc(G, Ssave, 0, mu, i, j, k);
     }
 
     // X1
     DLOOP1 {
-      gF1p[mu] = Fcon_calc(G, Sa, 1, mu, i+1, j, k);
-      gF1m[mu] = Fcon_calc(G, Sa, 1, mu, i-1, j, k);
+      gF1p[mu] = gFcon_calc(G, Sa, 1, mu, i+1, j, k);
+      gF1m[mu] = gFcon_calc(G, Sa, 1, mu, i-1, j, k);
     }
 
     // X2
     DLOOP1 {
-      gF2p[mu] = Fcon_calc(G, Sa, 2, mu, i, j+1, k);
-      gF2m[mu] = Fcon_calc(G, Sa, 2, mu, i, j-1, k);
+      gF2p[mu] = gFcon_calc(G, Sa, 2, mu, i, j+1, k);
+      gF2m[mu] = gFcon_calc(G, Sa, 2, mu, i, j-1, k);
     }
 
     // X3
     DLOOP1 {
-      gF3p[mu] = Fcon_calc(G, Sa, 3, mu, i, j, k+1);
-      gF3m[mu] = Fcon_calc(G, Sa, 3, mu, i, j, k-1);
+      gF3p[mu] = gFcon_calc(G, Sa, 3, mu, i, j, k+1);
+      gF3m[mu] = gFcon_calc(G, Sa, 3, mu, i, j, k-1);
     }
 
     // Difference: D_mu F^{mu nu} = 4 \pi j^nu
@@ -98,12 +98,12 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
 // Calculate field rotation rate
 void omega_calc(struct GridGeom *G, struct FluidState *S, GridDouble *omega)
 {
-  static GridDouble *Fcov01, *Fcov13;
+  static GridDouble *gFcov01, *gFcov13;
 
   static int firstc = 1;
   if (firstc) {
-    Fcov01 = calloc (1, sizeof(GridDouble));
-    Fcov13 = calloc (1, sizeof(GridDouble));
+    gFcov01 = calloc (1, sizeof(GridDouble));
+    gFcov13 = calloc (1, sizeof(GridDouble));
     firstc = 0;
   }
 
@@ -111,20 +111,20 @@ void omega_calc(struct GridGeom *G, struct FluidState *S, GridDouble *omega)
 #pragma omp parallel for simd collapse(3)
   DLOOP2 {
     ZLOOP {
-      double Fmunu = Fcon_calc(G, S, mu, nu, i, j, k);
-      (*Fcov01)[k][j][i] += Fmunu*G->gcov[CENT][mu][0][j][i]*G->gcov[CENT][nu][1][j][i];
-      (*Fcov13)[k][j][i] += Fmunu*G->gcov[CENT][mu][1][j][i]*G->gcov[CENT][nu][3][j][i];
+      double gFmunu = gFcon_calc(G, S, mu, nu, i, j, k);
+      (*gFcov01)[k][j][i] += gFmunu*G->gcov[CENT][mu][0][j][i]*G->gcov[CENT][nu][1][j][i];
+      (*gFcov13)[k][j][i] += gFmunu*G->gcov[CENT][mu][1][j][i]*G->gcov[CENT][nu][3][j][i];
     }
   }
 
 #pragma omp parallel for simd collapse(2)
   ZLOOP {
-    (*omega)[k][j][i] = (*Fcov01)[k][j][i]/(*Fcov13)[k][j][i];
+    (*omega)[k][j][i] = (*gFcov01)[k][j][i]/(*gFcov13)[k][j][i];
   }
 }
 
-// Return mu, nu component of contravarient Maxwell tensor at grid zone i, j, k
-inline double Fcon_calc(struct GridGeom *G, struct FluidState *S, int mu, int nu, int i, int j, int k)
+// Return mu, nu component of contravarient Maxwell tensor at grid zone i, j, k multiplied by gdet
+inline double gFcon_calc(struct GridGeom *G, struct FluidState *S, int mu, int nu, int i, int j, int k)
 {
   double Fcon;
 
