@@ -119,26 +119,33 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   PLOOP {
     if (dir == 1) {
 #pragma omp parallel for collapse(2)
-      ZSLOOP_REVERSE(-1, N3, -1, N2, -1, N1)
-        Sl->P[ip][k][j][i] = Sl->P[ip][k][j][i - 1];
+      ZSLOOP_REVERSE(-1, N3, -1, N2, -1, N1) {
+        Sl->P[ip][k][j][i] = (ip < 2) ? MY_MAX(Sl->P[ip][k][j][i - 1], SMALL) : Sl->P[ip][k][j][i - 1];
+        Sr->P[ip][k][j][i] = (ip < 2) ? MY_MAX(Sr->P[ip][k][j][i], SMALL) : Sr->P[ip][k][j][i];
+      }
     } else if (dir == 2) {
 #pragma omp parallel for collapse(2)
       for (int k = (N3) + NG; k >= (-1) + NG; k--) {
         for (int i = (N1) + NG; i >= (-1) + NG; i--) {
-          for (int j = (N2) + NG; j >= (-1) + NG; j--)
-            Sl->P[ip][k][j][i] = Sl->P[ip][k][j - 1][i];
+          for (int j = (N2) + NG; j >= (-1) + NG; j--) {
+            Sl->P[ip][k][j][i] = (ip < 2) ? MY_MAX(Sl->P[ip][k][j - 1][i], SMALL) : Sl->P[ip][k][j - 1][i];
+            Sr->P[ip][k][j][i] = (ip < 2) ? MY_MAX(Sr->P[ip][k][j][i], SMALL) : Sr->P[ip][k][j][i];
+          }
         }
       }
     } else if (dir == 3) {
 #pragma omp parallel for collapse(2)
       for (int j = (N2) + NG; j >= (-1) + NG; j--) {
         for (int i = (N1) + NG; i >= (-1) + NG; i--) {
-          for (int k = (N3) + NG; k >= (-1) + NG; k--)
-            Sl->P[ip][k][j][i] = Sl->P[ip][k - 1][j][i];
+          for (int k = (N3) + NG; k >= (-1) + NG; k--) {
+            Sl->P[ip][k][j][i] = (ip < 2) ? MY_MAX(Sl->P[ip][k - 1][j][i], SMALL) : Sl->P[ip][k - 1][j][i];
+            Sr->P[ip][k][j][i] = (ip < 2) ? MY_MAX(Sr->P[ip][k][j][i], SMALL) : Sr->P[ip][k][j][i];
+          }
         }
       }
     }
   }
+  
 
   //FLAG("Left Face Offset");
 
