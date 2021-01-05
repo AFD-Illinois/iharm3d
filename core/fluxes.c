@@ -142,14 +142,15 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
       }
     }
   }
-  fixup(G, Sl);
-  fixup(G, Sr);
-  
 
   //FLAG("Left Face Offset");
 
   timer_start(TIMER_LR_STATE);
 
+  get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
+  get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
+  fixup(G, Sl);
+  fixup(G, Sr);
   get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
   get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
 

@@ -12,19 +12,20 @@
 #if RECONSTRUCTION == DONOR_CELL
 #define RECON_ALGO donor_cell
 #elif RECONSTRUCTION == LINEAR
-// MC is the only limiter used
+// MC is our only implemented limiter for now
 #define RECON_ALGO linear_mc
 #elif RECONSTRUCTION == PPM
-#error "PPM currently broken!"
+#define RECON_ALGO para
 #elif RECONSTRUCTION == WENO
 #define RECON_ALGO weno
 #elif RECONSTRUCTION == MP5
+#warning "MP5 is unsupported.  Proceed with caution."
 #define RECON_ALGO mp5
 #else
 #error "Reconstruction not specified!"
 #endif
 
-  // Sanity checks
+// Sanity checks
 #if (RECONSTRUCTION == PPM || RECONSTRUCTION == WENO || RECONSTRUCTION == MP5) && NG < 3
 #error "not enough ghost zones! PPM/WENO/MP5 + NG < 3\n"
 #endif
@@ -61,6 +62,116 @@ inline void linear_mc(double unused1, double x1, double x2, double x3, double un
   *lout = x2 - 0.5*s;
   *rout = x2 + 0.5*s;
 }
+
+
+// Colella & Sekora 2008 (CS08) extremum-preserving PPM
+// Stolen from nubhlight: https://github.com/lanl/nubhlight
+// But apparently doesn't work there, so I'm not touching it either
+// void para(double x1, double x2, double x3, double x4, double x5, double *lout,
+//     double *rout) {
+//   double C = 1.25;
+//   int    i = 2;
+//   double a[5], amin, amax, D2a, D2aL, D2aR, D2alim,
+//       s; //, D2ma, D2ca, D2pa;//alphamax;
+//   a[0] = x1;
+//   a[1] = x2;
+//   a[2] = x3;
+//   a[3] = x4;
+//   a[4] = x5;
+
+//   // CS08 Eqn. 16
+//   double aiph = 7. / 12. * (a[i] + a[i + 1]) - 1. / 12. * (a[i - 1] + a[i + 2]);
+//   double aimh = 7. / 12. * (a[i - 1] + a[i]) - 1. / 12. * (a[i - 2] + a[i + 1]);
+
+//   // Does aiph lie between a[i] and a[i+1]? CS08 Eqn. 13
+//   amin = MY_MIN(a[i], a[i + 1]);
+//   amax = MY_MAX(a[i], a[i + 1]);
+//   if (aiph <= amin || aiph >= amax) {
+//     // Extremum-preserving limiter
+//     D2a  = 3. * (a[i] - 2. * aiph + a[i + 1]);
+//     D2aL = a[i - 1] - 2. * a[i] + a[i + 1];
+//     D2aR = a[i] - 2. * a[i + 1] + a[i + 2];
+//     if (D2a * D2aL > 0. && D2a * D2aR > 0.) {
+//       s      = MY_SIGN(D2a);
+//       D2alim = s * MY_MIN(MY_MIN(C * fabs(D2aL), C * fabs(D2aR)), fabs(D2a));
+//     } else {
+//       D2alim = 0.;
+//     }
+//     aiph = 0.5 * (a[i] + a[i + 1]) - 1. / 3. * D2alim;
+//   }
+
+//   // Does aimh lie between a[i-1] and a[i]? CS08 Eqn. 13
+//   amin = MY_MIN(a[i - 1], a[i]);
+//   amax = MY_MAX(a[i - 1], a[i]);
+//   if (aimh < amin || aimh > amax) {
+//     // Extremum-preserving limiter
+//     D2a  = 3. * (a[i - 1] - 2. * aimh + a[i]);
+//     D2aL = a[i - 2] - 2. * a[i - 1] + a[i];
+//     D2aR = a[i - 1] - 2. * a[i] + a[i + 1];
+//     if (D2a * D2aL > 0. && D2a * D2aR > 0.) {
+//       s      = MY_SIGN(D2a);
+//       D2alim = s * MY_MIN(MY_MIN(C * fabs(D2aL), C * fabs(D2aR)), fabs(D2a));
+//     } else {
+//       D2alim = 0.;
+//     }
+//     aimh = 0.5 * (a[i - 1] + a[i]) - 1. / 3. * D2alim;
+//   }
+
+//   // Does a[i+1/2] lie between a[i] and a[i+1]? CS08 Eqn. 13
+//   /*amin = MY_MIN(a[i], a[i+1]);
+//   amax = MY_MAX(a[i], a[i+1]);
+//   if (aiph < amin || aiph > amax) {
+//     // Extremum-preserving limiter
+//     D2a  = 3.*(a[i] - 2.*aiph + a[i+1]);
+//     D2aL = a[i-1] - 2.*a[i] + a[i+1];
+//     D2aR = a[i] - 2.*a[i+1] + a[i+2];
+//     if (D2a*D2aL > 0. && D2a*D2aR > 0.) {
+//       s = MY_SIGN(D2a);
+//       D2alim = s*MY_MIN(MY_MIN(C*fabs(D2aL), C*fabs(D2aR)), fabs(D2a));
+//     } else {
+//       D2alim = 0.;
+//     }
+//     aiph = 0.5*(a[i] + a[i+1]) - 1./3.*D2alim;
+//   }*/
+
+//   /*if ((aiph - a[i])*(aimh - a[i]) > 0.) {
+//     aiph = a[i];
+//     aimh = a[i];
+// */
+
+//   if ((a[i] - aimh) * (aiph - a[i]) <= 0. ||
+//       (a[i + 1] - a[i]) * (a[i] - a[i - 1]) <= 0.) {
+//     // aiph = a[i];
+//     // aimh = a[i];
+
+//     // THIS BIT OF CODE KILLS EVERYTHING
+//     D2a         = 6. * (aimh - 2. * a[i] + aiph);
+//     double D2aL = a[i - 2] - 2. * a[i - 1] + a[i];
+//     double D2aC = a[i - 1] - 2. * a[i] + a[i + 1];
+//     double D2aR = a[i] - 2. * a[i + 1] + a[i + 2];
+//     // fprintf(stdout, "%e %e %e %e\n", D2a, D2aL, D2aC, D2aR);
+//     double D2alim = 0.;
+//     if (MY_SIGN(D2a) == MY_SIGN(D2aL) && MY_SIGN(D2a) == MY_SIGN(D2aC) &&
+//         MY_SIGN(D2a) == MY_SIGN(D2aR)) {
+//       s      = MY_SIGN(D2a);
+//       D2alim = s * MY_MIN(MY_MIN(fabs(D2a), C * fabs(D2aL)),
+//                        MY_MIN(C * fabs(D2aC), C * fabs(D2aR)));
+//     }
+
+//     aiph = a[i] + (aiph - a[i]) * D2alim / D2a;
+//     aimh = a[i] + (aimh - a[i]) * D2alim / D2a;
+//   } else {
+//     if (fabs(aiph - a[i]) >= 2. * fabs(aimh - a[i])) {
+//       aiph = a[i] - 2. * (aimh - a[i]);
+//     }
+//     if (fabs(aimh - a[i]) >= 2. * fabs(aiph - a[i])) {
+//       aimh = a[i] - 2. * (aiph - a[i]);
+//     }
+//   }
+
+//   *lout = aimh;
+//   *rout = aiph;
+// }
 
 // Parabolic interpolation (see Colella & Woodward 1984; CW)
 // Implemented by Xiaoyue Guan
