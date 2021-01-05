@@ -261,7 +261,7 @@ void init(struct GridGeom *G, struct FluidState *S)
     double uu_plane_av = uu_plane[i_global];
     double uu_end = uu_plane[iend_global];
 
-    if (N3 > 1) {
+    if (N3TOT > 1) {
       if (mad_type == SANE) {
         q = rho_av/rhomax - 0.2;
       } else if (mad_type == RYAN) { // BR's smoothed poloidal in-torus
@@ -288,7 +288,7 @@ void init(struct GridGeom *G, struct FluidState *S)
         exit(-1);
       }
     } else { // TODO How about 2D?
-      q = rho_av/rhomax;
+      q = rho_av/rhomax - 0.2;
     }
 
     A[i][j] = 0.;

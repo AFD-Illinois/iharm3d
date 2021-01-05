@@ -242,8 +242,8 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
 
   // Find fast magnetosonic speed
   bsq = bsq_calc(S, i, j, k);
-  rho = fabs(S->P[RHO][k][j][i]);
-  u = fabs(S->P[UU][k][j][i]);
+  rho = S->P[RHO][k][j][i];
+  u = S->P[UU][k][j][i];
   ef = rho + gam*u;
   ee = bsq + ef;
   va2 = bsq/ee;
@@ -251,7 +251,7 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
 
   cms2 = cs2 + va2 - cs2*va2;
 
-  cms2 = (cms2 < 0) ? SMALL : cms2;
+  cms2 = (cms2 < SMALL) ? SMALL : cms2;
   cms2 = (cms2 > 1) ? 1 : cms2;
 
   // Require that speed of wave measured by observer q->ucon is cms2
@@ -271,15 +271,13 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   B = 2.*(AuBu - (AB + AuBu)*cms2);
   C = Au2 - (Asq + Au2)*cms2;
 
-  discr = B*B - 4.*A*C;
-  discr = (discr < 0.) ? 0. : discr;
-  discr = sqrt(discr);
+  discr = sqrt(MY_MAX(B*B - 4.*A*C, 0.));
 
   vp = -(-B + discr)/(2.*A);
   vm = -(-B - discr)/(2.*A);
 
-  cmax[k][j][i] = (vp > vm) ? vp : vm;
-  cmin[k][j][i] = (vp > vm) ? vm : vp;
+  cmax[k][j][i] = MY_MAX(vp, vm);
+  cmin[k][j][i] = MY_MIN(vp, vm);
 }
 
 // Source terms for equations of motion

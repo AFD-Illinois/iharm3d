@@ -119,22 +119,25 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
   PLOOP {
     if (dir == 1) {
 #pragma omp parallel for collapse(2)
-      ZSLOOP_REVERSE(-1, N3, -1, N2, -1, N1)
+      ZSLOOP_REVERSE(-1, N3, -1, N2, -1, N1) {
         Sl->P[ip][k][j][i] = Sl->P[ip][k][j][i - 1];
+      }
     } else if (dir == 2) {
 #pragma omp parallel for collapse(2)
       for (int k = (N3) + NG; k >= (-1) + NG; k--) {
         for (int i = (N1) + NG; i >= (-1) + NG; i--) {
-          for (int j = (N2) + NG; j >= (-1) + NG; j--)
+          for (int j = (N2) + NG; j >= (-1) + NG; j--) {
             Sl->P[ip][k][j][i] = Sl->P[ip][k][j - 1][i];
+          }
         }
       }
     } else if (dir == 3) {
 #pragma omp parallel for collapse(2)
       for (int j = (N2) + NG; j >= (-1) + NG; j--) {
         for (int i = (N1) + NG; i >= (-1) + NG; i--) {
-          for (int k = (N3) + NG; k >= (-1) + NG; k--)
+          for (int k = (N3) + NG; k >= (-1) + NG; k--) {
             Sl->P[ip][k][j][i] = Sl->P[ip][k - 1][j][i];
+          }
         }
       }
     }
@@ -144,6 +147,10 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
 
   timer_start(TIMER_LR_STATE);
 
+  get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
+  get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
+  fixup(G, Sl);
+  fixup(G, Sr);
   get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
   get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
 

@@ -31,19 +31,20 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   timer_start(TIMER_FIXUP);
 
   static int firstc = 1;
-  if (firstc) {Stmp = calloc(1,sizeof(struct FluidState)); firstc = 0;}
-
-#pragma omp parallel for simd collapse(2)
-  ZLOOPALL fflag[k][j][i] = 0;
-
-#pragma omp parallel for collapse(3)
-  ZLOOP fixup_ceiling(G, S, i, j, k);
+  if (firstc) {
+    Stmp = calloc(1,sizeof(struct FluidState));
+    firstc = 0;
+  }
 
   // Bulk call before bsq calculation below
   get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
 #pragma omp parallel for collapse(3)
-  ZLOOP fixup_floor(G, S, i, j, k);
+  ZLOOP {
+    fflag[k][j][i] = 0;
+    fixup_floor(G, S, i, j, k);
+    fixup_ceiling(G, S, i, j, k);
+  }
 
   // Some debug info about floors
 #if DEBUG
@@ -112,6 +113,17 @@ inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j
       S->P[KTOT][k][j][i] = KTOTMAX;
     }
 #endif
+
+#if TEMP_ADJUST_U
+  // 3. Limit temperature by cooling in fluid frame
+  // Note this is applied after the RHO floor has taken effect
+  double u_ceil_temp = UORHOMAX * S->P[RHO][k][j][i];
+  if (S->P[UU][k][j][i] > u_ceil_temp) {
+    fflag[k][j][i] |= HIT_FLOOR_TEMP;
+    S->P[UU][k][j][i] = u_ceil_temp;
+  }
+#endif
+
 }
 
 inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
@@ -157,6 +169,10 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
   // Evaluate highest U floor
   double uflr_max = MY_MAX(uflr_geom, uflr_b);
 
+#if TEMP_ADJUST_U
+  // Evaluate highest RHO floor
+  double rhoflr_max = MY_MAX(rhoflr_geom, rhoflr_b);
+#else
   // 3. Temperature ceiling: impose maximum temperature
   // Take floors on U into account
   double rhoflr_temp = MY_MAX(S->P[UU][k][j][i] / UORHOMAX, uflr_max / UORHOMAX);
@@ -166,9 +182,14 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
 
   // Evaluate highest RHO floor
   double rhoflr_max = MY_MAX(MY_MAX(rhoflr_geom, rhoflr_b), rhoflr_temp);
+#endif
 
   if (rhoflr_max > S->P[RHO][k][j][i] || uflr_max > S->P[UU][k][j][i]) { // Apply floors
 
+#if FLUID_FRAME_FLOORS
+    S->P[RHO][k][j][i] += MY_MAX(0., rhoflr_max - S->P[RHO][k][j][i]);
+    S->P[UU][k][j][i] += MY_MAX(0., uflr_max - S->P[UU][k][j][i]);
+#else
     // Initialize a dummy fluid parcel
     PLOOP {
       Stmp->P[ip][k][j][i] = 0;
@@ -196,6 +217,8 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
     // Recover primitive variables
     // CFG: do we get any failures here?
     pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
+#endif
+
   }
 
 #if ELECTRONS

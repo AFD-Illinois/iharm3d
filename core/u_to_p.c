@@ -127,7 +127,6 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   for (iter = 0; iter < ITERMAX; iter++) {
     dW = (Wp1 - Wp)*err/(err - err1);
 
-    // TODO should this have limit applied?
     Wp1 = Wp;
     err1 = err;
 
@@ -151,6 +150,8 @@ int U_to_P(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
       break;
     }
   }
+  // Exit on any flagged velocity calculation. Probably overly pessimistic
+  //if (eflag) return eflag;
   // Failure to converge; do not set primitives other than B
   if(iter == ITERMAX) {
     return(1);
@@ -226,7 +227,7 @@ inline double gamma_func(double Bsq, double D, double QdB, double Qtsq, double W
   gamma = sqrt(1. + fabs(utsq));
 
   // Catch utsq < 0
-  if(utsq < 0. || utsq > 1.e3*GAMMAMAX*GAMMAMAX) {
+  if(utsq < -1.e-15 || utsq > 1.e3*GAMMAMAX*GAMMAMAX) {
     *eflag = 2;
   }
 
@@ -259,7 +260,7 @@ inline double Wp_func(struct GridGeom *G, struct FluidState *S, int i, int j, in
   if ((utsq < 0.) && (fabs(utsq) < 1.e-13)) {
     utsq = fabs(utsq);
   }
-  if (utsq < 0. || utsq > 1.e3*GAMMAMAX*GAMMAMAX) {
+  if (utsq < -1.e-15 || utsq > 1.e3*GAMMAMAX*GAMMAMAX) {
     *eflag = 2 ;
     return rho0 + u; // Not sure what to do here...
   }
