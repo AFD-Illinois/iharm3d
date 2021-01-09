@@ -47,7 +47,7 @@ void step(struct GridGeom *G, struct FluidState *S)
 #endif
 
   // Fixup routines: smooth over outlier zones
-  fixup(G, Stmp);
+  fixup(G, Stmp, CENT);
   FLAG("Fixup Tmp");
 #if ELECTRONS
   fixup_electrons(Stmp);
@@ -70,7 +70,7 @@ void step(struct GridGeom *G, struct FluidState *S)
   FLAG("Heat Electrons Full");
 #endif
 
-  fixup(G, S);
+  fixup(G, S, CENT);
   FLAG("Fixup Full");
 #if ELECTRONS
   fixup_electrons(S);

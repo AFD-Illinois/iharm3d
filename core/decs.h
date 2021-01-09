@@ -433,7 +433,7 @@ void fixup_electrons(struct FluidState *S);
 #endif
 
 // fixup.c
-void fixup(struct GridGeom *G, struct FluidState *S);
+void fixup(struct GridGeom *G, struct FluidState *S, int loc);
 void fixup_utoprim(struct GridGeom *G, struct FluidState *S);
 
 // fluxes.c

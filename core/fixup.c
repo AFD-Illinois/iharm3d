@@ -22,11 +22,11 @@
 
 static struct FluidState *Stmp;
 
-void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
-void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
+void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int loc);
+void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int loc);
 
 // Apply floors to density, internal energy
-void fixup(struct GridGeom *G, struct FluidState *S)
+void fixup(struct GridGeom *G, struct FluidState *S, int loc)
 {
   timer_start(TIMER_FIXUP);
 
@@ -42,8 +42,8 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 #pragma omp parallel for collapse(3)
   ZLOOP {
     fflag[k][j][i] = 0;
-    fixup_floor(G, S, i, j, k);
-    fixup_ceiling(G, S, i, j, k);
+    fixup_floor(G, S, i, j, k, loc);
+    fixup_ceiling(G, S, i, j, k, loc);
   }
 
   // Some debug info about floors
@@ -87,11 +87,11 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   timer_stop(TIMER_FIXUP);
 }
 
-inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
+inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int loc)
 {
   // First apply ceilings:
   // 1. Limit gamma with respect to normal observer
-  double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
+  double gamma = mhd_gamma_calc(G, S, i, j, k, loc);
 
   if (gamma > GAMMAMAX) {
     fflag[k][j][i] |= HIT_FLOOR_GAMMA;
@@ -126,14 +126,14 @@ inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j
 
 }
 
-inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
+inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int loc)
 {
   // Then apply floors:
   // 1. Geometric hard floors, not based on fluid relationships
   double rhoflr_geom, uflr_geom;
   if(METRIC == MKS) {
     double r, th, X[NDIM];
-    coord(i, j, k, CENT, X);
+    coord(i, j, k, loc, X);
     bl_coord(X, &r, &th);
 
     // New, steeper floor in rho
@@ -157,7 +157,7 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
 
 
   // 2. Magnetic floors: impose maximum magnetization sigma = bsq/rho, inverse beta prop. to bsq/U
-  //get_state(G, S, i, j, k, CENT); // called above
+  //get_state(G, S, i, j, k, loc); // called above
   double bsq = bsq_calc(S, i, j, k);
   double rhoflr_b = bsq/BSQORHOMAX;
   double uflr_b = bsq/BSQOUMAX;
@@ -201,12 +201,12 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
     Stmp->P[UU][k][j][i] = MY_MAX(0., uflr_max - S->P[UU][k][j][i]);
 
     // Get conserved variables for the parcel
-    get_state(G, Stmp, i, j, k, CENT);
-    prim_to_flux(G, Stmp, i, j, k, 0, CENT, Stmp->U);
+    get_state(G, Stmp, i, j, k, loc);
+    prim_to_flux(G, Stmp, i, j, k, 0, loc, Stmp->U);
 
     // And for the current state
-    //get_state(G, S, i, j, k, CENT); // Called just above, or vectorized above that
-    prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
+    //get_state(G, S, i, j, k, loc); // Called just above, or vectorized above that
+    prim_to_flux(G, S, i, j, k, 0, loc, S->U);
 
     // Add new conserved variables to current values
     PLOOP {
@@ -216,7 +216,7 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
 
     // Recover primitive variables
     // CFG: do we get any failures here?
-    pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
+    pflag[k][j][i] = U_to_P(G, S, i, j, k, loc);
 #endif
 
   }
@@ -306,9 +306,9 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
 #endif
 
       // Make sure fixed values still abide by floors
-      fixup_ceiling(G, S, i, j, k);
+      fixup_ceiling(G, S, i, j, k, CENT);
       get_state(G, S, i, j, k, CENT);
-      fixup_floor(G, S, i, j, k);
+      fixup_floor(G, S, i, j, k, CENT);
     }
   }
 

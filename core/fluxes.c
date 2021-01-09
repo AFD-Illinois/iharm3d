@@ -147,10 +147,10 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
 
   timer_start(TIMER_LR_STATE);
 
-  get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
-  get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
-  fixup(G, Sl);
-  fixup(G, Sr);
+  prim_to_flux_vec(G, Sl, 0, loc, -1, N3, -1, N2, -1, N1, Sl->U);
+  prim_to_flux_vec(G, Sr, 0, loc, -1, N3, -1, N2, -1, N1, Sr->U);
+  fixup(G, Sl, loc);
+  fixup(G, Sr, loc);
   get_state_vec(G, Sl, loc, -1, N3, -1, N2, -1, N1);
   get_state_vec(G, Sr, loc, -1, N3, -1, N2, -1, N1);
 
@@ -160,6 +160,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
 
   timer_start(TIMER_LR_PTOF);
 
+  // TODO if we made fixup() keep lockstep, we could remove the PtoU calls
   prim_to_flux_vec(G, Sl, 0,   loc, -1, N3, -1, N2, -1, N1, Sl->U);
   prim_to_flux_vec(G, Sl, dir, loc, -1, N3, -1, N2, -1, N1, *fluxL);
 

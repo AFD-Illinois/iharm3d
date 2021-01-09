@@ -209,7 +209,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 #endif
 
   //Enforce boundary conditions
-  fixup(G, S);
+  fixup(G, S, CENT);
   set_bounds(G, S);
 }
 
