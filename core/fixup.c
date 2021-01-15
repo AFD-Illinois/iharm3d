@@ -37,7 +37,7 @@ void fixup(struct GridGeom *G, struct FluidState *S, int loc)
   }
 
   // Bulk call before bsq calculation below
-  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
+  get_state_vec(G, S, loc, 0, N3-1, 0, N2-1, 0, N1-1);
 
 #pragma omp parallel for collapse(3)
   ZLOOP {
