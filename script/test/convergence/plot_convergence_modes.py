@@ -105,6 +105,16 @@ for n in range(len(MODES)):
 
   os.chdir('../plots')
 
+  # RECORD VALUES
+  outf = open("data_"+NAMES[MODES[n]]+".csv", "w")
+  outf.write("#res,rho,u,u1,u2,u3,B1,B2,B3\n")
+  for i in range(len(L1[n,:,0])):
+    outf.write("{},".format(RES[i]))
+    for k in range(NVAR):
+      outf.write("{},".format(L1[n,i,k]))
+    outf.write("\n")
+  outf.close()
+
   # MAKE PLOTS
   fig = plt.figure(figsize=(16.18,10))
 
