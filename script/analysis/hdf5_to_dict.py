@@ -86,11 +86,8 @@ def load_hdr(fname):
   hdr = {}
   try:
     # Scoop all the keys that are not folders
-    for key in [key for key in list(dfile['header'].keys()) if not (key == 'geom' or key == 'problem')]:
+    for key in [key for key in list(dfile['header'].keys()) if not key in ['geom', 'problem']]:
       hdr[key] = dfile['header/' + key][()]
-
-    for key in [key for key in list(dfile['header/problem'].keys())]:
-        hdr[key] = dfile['header/problem/'+key][()]
       
     # TODO load these from grid.h5? Or is the header actually the place for them?
     for key in [key for key in list(dfile['header/geom'].keys()) if not key in ['mks', 'mmks', 'mks3'] ]:

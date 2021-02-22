@@ -17,7 +17,7 @@
 
 double C1, C2, n;
 
-double mdot, rs;
+double rs;
 void set_problem_params() {
   set_param("mdot", &mdot);
   set_param("rs", &rs);
