@@ -162,7 +162,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
 
   // Override tf and the dump and log intervals
-  tf = 2.*M_PI/fabs(cimag(omega));
+  if (nmode > 0) tf = 2.*M_PI/fabs(cimag(omega));
   DTd = tf/5.; // These are set from param.dat
   DTl = tf/5.;
 
