@@ -1,7 +1,7 @@
 ### RUNTIME PARAMETERS ###
 
 # COORDINATES
-[dbl] tf = 1.0
+[dbl] tf = 5.0
 [dbl] dt = 1.0e-06
 [dbl] x1Min = 0.0
 [dbl] x1Max = 1.0
