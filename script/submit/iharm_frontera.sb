@@ -12,7 +12,7 @@
 
 #SBATCH --ntasks-per-node 1
 
-#SBATCH -t 02:00:00
+#SBATCH -t 48:00:00
 #SBATCH -o out-%j.txt
 
 # Schedule based on 2x hyperthreading, regardless of actual number of threads
