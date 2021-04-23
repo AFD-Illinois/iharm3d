@@ -191,6 +191,13 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   hdf5_make_directory("extras");
   hdf5_set_directory("/extras/");
 
+	double bsqorhomax = BSQORHOMAX;
+	double uorhomax = UORHOMAX;
+	double bsqoumax = BSQOUMAX;
+	hdf5_write_single_val(&bsqorhomax, "bsqorhomax", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&uorhomax, "uorhomax", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&bsqoumax, "bsqoumax", H5T_IEEE_F64LE);
+
   // Preserve git commit or tag of the run -- see Makefile
 #ifdef GIT_VERSION
   hdf5_write_single_val(QUOTE(GIT_VERSION), "git_version", string_type);
