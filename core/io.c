@@ -69,7 +69,19 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   hdf5_set_directory("/");
   hdf5_make_directory("header");
   hdf5_set_directory("/header/");
-  
+
+	hdf5_make_directory("floors");
+	hdf5_set_directory("/header/floors/");
+
+	double bsqorhomax = BSQORHOMAX;
+	double uorhomax = UORHOMAX;
+	double bsqoumax = BSQOUMAX;
+	hdf5_write_single_val(&bsqorhomax, "bsqorhomax", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&uorhomax, "uorhomax", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&bsqoumax, "bsqoumax", H5T_IEEE_F64LE);
+
+	hdf5_set_directory("/header/");
+ 
   //Adding problem-specific data (problem type, initial data)
   hdf5_make_directory("problem");
   hdf5_set_directory("/header/problem/");
@@ -190,13 +202,6 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   // Currently debug/diagnostic output, on full dumps only
   hdf5_make_directory("extras");
   hdf5_set_directory("/extras/");
-
-	double bsqorhomax = BSQORHOMAX;
-	double uorhomax = UORHOMAX;
-	double bsqoumax = BSQOUMAX;
-	hdf5_write_single_val(&bsqorhomax, "bsqorhomax", H5T_IEEE_F64LE);
-	hdf5_write_single_val(&uorhomax, "uorhomax", H5T_IEEE_F64LE);
-	hdf5_write_single_val(&bsqoumax, "bsqoumax", H5T_IEEE_F64LE);
 
   // Preserve git commit or tag of the run -- see Makefile
 #ifdef GIT_VERSION
