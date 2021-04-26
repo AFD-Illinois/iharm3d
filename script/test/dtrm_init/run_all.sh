@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
 # Output consistency test over multiple invocations
 ./test_init_dtrm.sh torus "0 1"

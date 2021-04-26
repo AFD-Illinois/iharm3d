@@ -133,7 +133,11 @@ for n in range(len(MODES)):
   plt.legend(loc=1)
   plt.savefig('mhdmodes3d_' + NAMES[MODES[n]] + '.png', bbox_inches='tight')
 
-if np.any(powerfits < -2.1) or np.any(powerfits > -1.9):
+print("Modes problem fitted convergences:")
+print(powerfits)
+
+if (np.any(np.logical_and(powerfits < -2.1, powerfits != 0.))
+    or np.any(np.logical_and(powerfits > -1.9, powerfits != 0.))):
     exit(1)
 else:
     exit(0)

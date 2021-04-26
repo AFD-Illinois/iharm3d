@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
 # Only run if the correct restart files are present
 RESOURCE_DIR=~/test-resources
