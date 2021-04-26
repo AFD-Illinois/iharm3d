@@ -136,8 +136,9 @@ for n in range(len(MODES)):
 print("Modes problem fitted convergences:")
 print(powerfits)
 
-if (np.any(np.logical_and(powerfits < -2.1, powerfits != 0.))
-    or np.any(np.logical_and(powerfits > -1.9, powerfits != 0.))):
+if (np.any(powerfits < -2.1) or
+    np.any(np.logical_and(powerfits > -1.9, powerfits < -0.1) or
+    np.any(powerfits > 0.1))):
     exit(1)
 else:
     exit(0)
