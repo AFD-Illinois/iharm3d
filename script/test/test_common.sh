@@ -39,7 +39,7 @@ set_cpu_topo () {
 make_harm_here () {
   [ -z ${HARM_BASE_DIR+x} ] && HARM_BASE_DIR=../../..
   [ -z ${HARM_MAKE_JOBS+x} ] && HARM_MAKE_JOBS=$(nproc --all)
-  make -f $HARM_BASE_DIR/makefile -j$HARM_MAKE_JOBS PROB=$1 debug
+  make -f $HARM_BASE_DIR/makefile -j$HARM_MAKE_JOBS PROB=$1
   # Use default param.dat if none is present in test dir
   if [ ! -f param.dat ]; then
     if [ -f $HARM_BASE_DIR/prob/$1/param.dat ]; then
