@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
 source ../test_common.sh
 
@@ -15,7 +17,7 @@ set_cpu_topo 2 2 1
 rm -rf $OUT_DIR
 mkdir -p $OUT_DIR
 
-for n in 32 64 128 256
+for n in 32 64 128 256 512
 do
 
   set_problem_size $n $n 1

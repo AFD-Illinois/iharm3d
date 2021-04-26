@@ -133,3 +133,7 @@ for n in range(len(MODES)):
   plt.legend(loc=1)
   plt.savefig('mhdmodes3d_' + NAMES[MODES[n]] + '.png', bbox_inches='tight')
 
+if np.any(powerfits < -2.1) or np.any(powerfits > -1.9):
+    exit(1)
+else:
+    exit(0)

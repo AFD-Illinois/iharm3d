@@ -42,8 +42,12 @@ make_harm_here () {
   make -f $HARM_BASE_DIR/makefile -j$HARM_MAKE_JOBS PROB=$1 debug
   # Use default param.dat if none is present in test dir
   if [ ! -f param.dat ]; then
-    [ -f $HARM_BASE_DIR/prob/$1/param.dat ] && cp $HARM_BASE_DIR/prob/$1/param.dat .
-    [ -f $HARM_BASE_DIR/prob/$1/param_sane.dat ] && cp $HARM_BASE_DIR/prob/$1/param_sane.dat ./param.dat
+    if [ -f $HARM_BASE_DIR/prob/$1/param.dat ]; then
+      cp $HARM_BASE_DIR/prob/$1/param.dat .
+    fi
+    if [ -f $HARM_BASE_DIR/prob/$1/param_sane.dat ]; then
+      cp $HARM_BASE_DIR/prob/$1/param_sane.dat ./param.dat
+    fi
   fi
 }
 

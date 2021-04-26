@@ -72,3 +72,7 @@ plt.title("BONDI")
 plt.legend(loc=1)
 plt.savefig('bondi.png', bbox_inches='tight')
 
+if powerfit < -2.1 or powerfit > -1.9:
+    exit(1)
+else:
+    exit(0)
