@@ -1,0 +1,6 @@
+build:
+  before_script:
+    - cd script/test
+
+  script:
+    - bash run_all_tests.sh
