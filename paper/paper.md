@@ -9,7 +9,7 @@ tags:
   - galactic dynamics
   - milky way
 authors:
-  - name: Ben S. Prather^[bprathr2@illinois.edu]
+  - name: Ben S. Prather^[Corresponding author]
     orcid: 0000-0002-0393-7734
     affiliation: "1, 2"
   - name: George N. Wong
