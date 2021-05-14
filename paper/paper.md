@@ -48,7 +48,7 @@ bibliography: paper.bib
 ---
 # `iharm3D` Functionality and Purpose
 
-`iharm3D`^[https://github.com/AFD-Illinois/iharm3d] is an open-source C code for simulating black hole accretion systems in arbitrary stationary spacetimes using ideal general-relativistic magnetohydrodynamics (GRMHD). It is an implementation of the HARM ("High Accuracy Relativistic Magnetohydrodynamics") algorithm outlined in @gammie_harm_2003 with updates as outlined in @mckinney_measurement_2004 and @noble_primitive_2006.  The code is most directly derived from @ryan_bhlight:_2015 but but with radiative transfer portions removed.  HARM is a conservative finite-volume scheme for solving the equations of ideal GRMHD, a hyperbolic system of partial differential equations, on a logically Cartesian mesh in arbitrary coordinates.
+`iharm3D`^[https://github.com/AFD-Illinois/iharm3d] is an open-source C code for simulating black hole accretion systems in arbitrary stationary spacetimes using ideal general-relativistic magnetohydrodynamics (GRMHD). It is an implementation of the HARM ("High Accuracy Relativistic Magnetohydrodynamics") algorithm outlined in @gammie_harm:_2003 with updates as outlined in @mckinney_measurement_2004 and @noble_primitive_2006.  The code is most directly derived from @ryan_bhlight:_2015 but but with radiative transfer portions removed.  HARM is a conservative finite-volume scheme for solving the equations of ideal GRMHD, a hyperbolic system of partial differential equations, on a logically Cartesian mesh in arbitrary coordinates.
 
 # Statement of Need
 
@@ -60,12 +60,12 @@ Multiple codes already exist for solving the ideal GRMHD equations on regular Eu
 - BHAC (@porth_black_2017)
 - Cosmos++ (@anninos_cosmos_2005, @fragile_numerical_2012, @fragile_numerical_2014)
 - ECHO (@londrillo_high-order_2000, @londrillo_divergence-free_2004)
-- H-AMR (@liska_large-scale_2018, @liska_h-amr_2019, Chatterjee+ 2019?)
+- H-AMR (@liska_large-scale_2020, @liska_h-amr_2019, Chatterjee+ 2019?)
 - HARM-Noble (@noble_primitive_2006, @noble_direct_2009, @noble_circumbinary_2012, @zilhao_dynamic_2014, @bowen_quasi-periodic_2018)
 - IllinoisGRMHD (@etienne_illinoisgrmhd_2015)
 - KORAL (@sadowski_semi-implicit_2013, @sadowski_numerical_2014)
 
-The emphasis of `iharm3D` development is to provide a simple, fast, and scalable open update to the original open-source implementation of HARM (@gammie_harm_2003).
+The emphasis of `iharm3D` development is to provide a simple, fast, and scalable open update to the original open-source implementation of HARM (@gammie_harm:_2003).
 
 # Implementation Notes
 
@@ -75,7 +75,7 @@ In MHD, uncorrected discretization errors inevitably lead to violations of the n
 
 In GRMHD, "conserved" variables (energy and momentum density) are complicated analytic functions of "primitive" variables (density, pressure, and velocity).  Conserved variables are stepped forward in time and then inversion to primitives is done numerically. `iharm3d` uses the "$1D_W$" scheme outlined in @noble_primitive_2006.
 
-To model a collisionless plasma, `iharm3D` implements an optional scheme that provides a means of tracking and partitioning dissipation into ions and electrons (@ressler_electron_2015). The code implements the turbulent cascade models of @howes_prescription_2010 and @kawazura_thermal_2018, but new models are easy to implement and welcome.
+To model a collisionless plasma, `iharm3D` implements an optional scheme that provides a means of tracking and partitioning dissipation into ions and electrons (@ressler_electron_2015). The code implements the turbulent cascade models of @howes_prescription_2010 and @kawazura_thermal_2019, but new models are easy to implement and welcome.
 
 To avoid catastrophic failures caused by discretization error, especially in low density regions, fluid variables are bounded at the end of each step. Typical `iharm3D` bounds in black hole accretion problems are enforced as follows:
 
@@ -90,7 +90,7 @@ Global disk simulations inevitably invoke these bounds, most frequently those on
 
 # Tests
 
-The convergence properties of HARM are well-studied in @gammie_harm_2003.  `iharm3D` implements most of the tests presented in that paper as integration and regression tests.  Figure \ref{fig:convergence} shows convergence results for linear modes and for un-magnetized Bondi flow.
+The convergence properties of HARM are well-studied in @gammie_harm:_2003.  `iharm3D` implements most of the tests presented in that paper as integration and regression tests.  Figure \ref{fig:convergence} shows convergence results for linear modes and for un-magnetized Bondi flow.
 
 ![Results of convergence tests with `iharm3d`'s main branch, plotting L1 norm of the computed solution vs. the analytic or stable result with increasing domain size.  Wave solutions were performed on a 3D cubic grid N zones to one side, the Bondi accretion problem was performed on a logically Cartesian 2D square grid N zones on one side. \label{fig:convergence}](figures/convergence.pdf)
 
@@ -108,7 +108,7 @@ Figure \ref{fig:scaling} presents scaling results for `iharm3D` on both Stampede
 
 `iharm3D` is one of several GRMHD codes used by the EHT Collaboration to produce its library of fluid simulations. Images produced from this library were used for validation tests in @PaperIV and @PaperVII and for interpretation of the M87 EHT results in total intensity (@PaperV, @PaperVI) and polarization (@PaperVIII).
 
-`iharm3D` simulations have also been used in @porth_event_2019, @johnson_photonring_2020, @gold2020, @palumbo_discriminating_2020, @lin_imageml_2020, @ricarte_decomposing_2020, @Wielgus_monitoring_2020, @Tiede_vida_2020, and @gelles_adaptive_2021.
+`iharm3D` simulations have also been used in @porth_event_2019, @johnson_universal_2020, @gold2020, @palumbo_discriminating_2020, @lin_feature_2020, @ricarte_decomposing_2020, @Wielgus_monitoring_2020, @tiede_variational_2020, and @gelles_role_2021.
 
 # Acknowledgements
 

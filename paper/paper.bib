@@ -1,309 +1,60 @@
 
-@article{porth_black_2017,
-	title = {The {Black} {Hole} {Accretion} {Code}},
-	volume = {4},
-	issn = {2197-7909},
-	url = {http://arxiv.org/abs/1611.09720},
-	doi = {10.1186/s40668-017-0020-2},
-	abstract = {We present the black hole accretion code (BHAC), a new multidimensional general-relativistic magnetohydrodynamics module for the MPI-AMRVAC framework. BHAC has been designed to solve the equations of ideal general-relativistic magnetohydrodynamics in arbitrary spacetimes and exploits adaptive mesh refinement techniques with an efficient block-based approach. Several spacetimes have already been implemented and tested. We demonstrate the validity of BHAC by means of various one-, two-, and three-dimensional test problems, as well as through a close comparison with the HARM3D code in the case of a torus accreting onto a black hole. The convergence of a turbulent accretion scenario is investigated with several diagnostics and we find accretion rates and horizon-penetrating fluxes to be convergent to within a few percent when the problem is run in three dimensions. Our analysis also involves the study of the corresponding thermal synchrotron emission, which is performed by means of a new general-relativistic radiative transfer code, BHOSS. The resulting synthetic intensity maps of accretion onto black holes are found to be convergent with increasing resolution and are anticipated to play a crucial role in the interpretation of horizon-scale images resulting from upcoming radio observations of the source at the Galactic Center.},
+@article{porth_event_2019,
+	title = {The {Event} {Horizon} {General} {Relativistic} {Magnetohydrodynamic} {Code} {Comparison} {Project}},
+	url = {http://arxiv.org/abs/1904.04923},
+	doi = {10.3847/1538-4365/ab29fd},
+	abstract = {Recent developments in compact object astrophysics, especially the discovery of merging neutron stars by LIGO, the imaging of the black hole in M87 by the Event Horizon Telescope (EHT) and high precision astrometry of the Galactic Center at close to the event horizon scale by the GRAVITY experiment motivate the development of numerical source models that solve the equations of general relativistic magnetohydrodynamics (GRMHD). Here we compare GRMHD solutions for the evolution of a magnetized accretion flow where turbulence is promoted by the magnetorotational instability from a set of nine GRMHD codes: Athena++, BHAC, Cosmos++, ECHO, H-AMR, iharm3D, HARM-Noble, IllinoisGRMHD and KORAL. Agreement between the codes improves as resolution increases, as measured by a consistently applied, specially developed set of code performance metrics. We conclude that the community of GRMHD codes is mature, capable, and consistent on these test problems.},
+	urldate = {2019-09-11},
+	journal = {arXiv:1904.04923 [astro-ph, physics:gr-qc]},
+	author = {Porth, Oliver and Chatterjee, Koushik and Narayan, Ramesh and Gammie, Charles F. and Mizuno, Yosuke and Anninos, Peter and Baker, John G. and Bugli, Matteo and Chan, Chi-kwan and Davelaar, Jordy and Del Zanna, Luca and Etienne, Zachariah B. and Fragile, P. Chris and Kelly, Bernard J. and Liska, Matthew and Markoff, Sera and McKinney, Jonathan C. and Mishra, Bhupendra and Noble, Scott C. and Olivares, Héctor and Prather, Ben and Rezzolla, Luciano and Ryan, Benjamin R. and Stone, James M. and Tomei, Niccolò and White, Christopher J. and Younsi, Ziri and Collaboration, The Event Horizon Telescope},
+	month = apr,
+	year = {2019},
+	note = {arXiv: 1904.04923},
+	keywords = {General Relativity and Quantum Cosmology, Astrophysics - High Energy Astrophysical Phenomena},
+	file = {arXiv\:1904.04923 PDF:/var/home/bprather/Zotero/storage/GLCGUS5J/Porth et al. - 2019 - The Event Horizon General Relativistic Magnetohydr.pdf:application/pdf;arXiv\:1904.04923 PDF:/var/home/bprather/Zotero/storage/52S4IC5S/Porth et al. - 2019 - The Event Horizon General Relativistic Magnetohydr.pdf:application/pdf;arXiv.org Snapshot:/var/home/bprather/Zotero/storage/UQ4VZCWB/1904.html:text/html;arXiv.org Snapshot:/var/home/bprather/Zotero/storage/6JUBMMT8/1904.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/88IGT7SC/Porth et al. - 2019 - The Event Horizon General Relativistic Magnetohydr.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/33EEVD9W/meta.html:text/html}
+}
+
+@article{abramowicz_foundations_2013,
+	title = {Foundations of {Black} {Hole} {Accretion} {Disk} {Theory}},
+	volume = {16},
+	issn = {1433-8351},
+	url = {https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5256006/},
+	doi = {10.12942/lrr-2013-1},
+	abstract = {This review covers the main aspects of black hole accretion disk theory. We begin with the view that one of the main goals of the theory is to better understand the nature of black holes themselves. In this light we discuss how accretion disks might reveal some of the unique signatures of strong gravity: the event horizon, the innermost stable circular orbit, and the ergosphere. We then review, from a first-principles perspective, the physical processes at play in accretion disks. This leads us to the four primary accretion disk models that we review: Polish doughnuts (thick disks), Shakura-Sunyaev (thin) disks, slim disks, and advection-dominated accretion flows (ADAFs). After presenting the models we discuss issues of stability, oscillations, and jets. Following our review of the analytic work, we take a parallel approach in reviewing numerical studies of black hole accretion disks. We finish with a few select applications that highlight particular astrophysical applications: measurements of black hole mass and spin, black hole vs. neutron star accretion disks, black hole accretion disk spectral states, and quasi-periodic oscillations (QPOs).},
 	number = {1},
-	urldate = {2018-06-06},
-	journal = {Computational Astrophysics and Cosmology},
-	author = {Porth, Oliver and Olivares, Hector and Mizuno, Yosuke and Younsi, Ziri and Rezzolla, Luciano and Moscibrodzka, Monika and Falcke, Heino and Kramer, Michael},
-	month = dec,
-	year = {2017},
-	note = {arXiv: 1611.09720},
-	keywords = {Astrophysics - High Energy Astrophysical Phenomena, General Relativity and Quantum Cosmology},
-	file = {arXiv.org Snapshot:/var/home/bprather/Zotero/storage/Z98GDWB5/1611.html:text/html;arXiv\:1611.09720 PDF:/var/home/bprather/Zotero/storage/D62S9PU4/Porth et al. - 2017 - The Black Hole Accretion Code.pdf:application/pdf;Full Text PDF:/var/home/bprather/Zotero/storage/CTP3ICDK/Porth et al. - 2017 - The black hole accretion code.pdf:application/pdf}
+	urldate = {2019-06-13},
+	journal = {Living Reviews in Relativity},
+	author = {Abramowicz, Marek A. and Fragile, P. Chris},
+	year = {2013},
+	pmid = {28179840},
+	pmcid = {PMC5256006},
+	file = {PubMed Central Full Text PDF:/var/home/bprather/Zotero/storage/2X87UV76/Abramowicz and Fragile - 2013 - Foundations of Black Hole Accretion Disk Theory.pdf:application/pdf}
 }
 
-@ARTICLE{Tiede_vida_2020,
-       author = {{Tiede}, Paul and {Broderick}, Avery E. and {Palumbo}, Daniel C.~M.},
-        title = "{Variational Image Feature Extraction for the EHT}",
-      journal = {arXiv e-prints},
-     keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - High Energy Astrophysical Phenomena},
-         year = 2020,
-        month = dec,
-          eid = {arXiv:2012.07889},
-        pages = {arXiv:2012.07889},
-archivePrefix = {arXiv},
-       eprint = {2012.07889},
- primaryClass = {astro-ph.IM},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2020arXiv201207889T},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+@article{shakura_black_1973,
+	title = {Black holes in binary systems. {Observational} appearance.},
+	volume = {24},
+	issn = {0004-6361},
+	url = {http://adsabs.harvard.edu/abs/1973A%26A....24..337S},
+	abstract = {Abstract image available at: 
+http://adsabs.harvard.edu/abs/1973A\&A....24..337S},
+	urldate = {2019-06-05},
+	journal = {Astronomy and Astrophysics},
+	author = {Shakura, N. I. and Sunyaev, R. A.},
+	year = {1973},
+	pages = {337--355},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/46MFBKLP/Shakura and Sunyaev - 1973 - Black holes in binary systems. Observational appea.pdf:application/pdf;Shakura & Sunyaev 1973.pdf:/var/home/bprather/Zotero/storage/Z2PSFBXC/Shakura & Sunyaev 1973.pdf:application/pdf}
 }
 
-@ARTICLE{emami_positrons_2021,
-       author = {{Emami}, Razieh and {Anantua}, Richard and {Chael}, Andrew A and {Loeb}, Abraham},
-        title = "{Positron Effects on Polarized Images and Spectra from Jet and Accretion Flow Models of M87 and Sgr A*}",
-      journal = {arXiv e-prints},
-     keywords = {Astrophysics - High Energy Astrophysical Phenomena, Astrophysics - Cosmology and Nongalactic Astrophysics, Astrophysics - Astrophysics of Galaxies, General Relativity and Quantum Cosmology, High Energy Physics - Phenomenology},
-         year = 2021,
-        month = jan,
-          eid = {arXiv:2101.05327},
-        pages = {arXiv:2101.05327},
-archivePrefix = {arXiv},
-       eprint = {2101.05327},
- primaryClass = {astro-ph.HE},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2021arXiv210105327E},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-}
-
-@article{ressler_disc-jet_2017,
-	title = {The disc-jet symbiosis emerges: modelling the emission of {Sagittarius} {A}* with electron thermodynamics},
-	volume = {467},
-	issn = {0035-8711},
-	shorttitle = {The disc-jet symbiosis emerges},
-	url = {http://adsabs.harvard.edu/abs/2017MNRAS.467.3604R},
-	doi = {10.1093/mnras/stx364},
-	abstract = {We calculate the radiative properties of Sagittarius A* - spectral 
-energy distribution, variability and radio-infrared images - using the
-first 3D, physically motivated black hole accretion models that directly
-evolve the electron thermodynamics in general relativistic MHD
-simulations. These models reproduce the coupled disc-jet structure for
-the emission favoured by previous phenomenological analytic and
-numerical works. More specifically, we find that the low frequency radio
-emission is dominated by emission from a polar outflow while the
-emission above 100 GHz is dominated by the inner region of the accretion
-disc. The latter produces time variable near-infrared (NIR) and X-ray
-emission, with frequent flaring events (including IR flares without
-corresponding X-ray flares and IR flares with weak X-ray flares). The
-photon ring is clearly visible at 230 GHz and 2 μm, which is
-encouraging for future horizon-scale observations. We also show that
-anisotropic electron thermal conduction along magnetic field lines has a
-negligible effect on the radiative properties of our model. We conclude
-by noting limitations of our current generation of first-principles
-models, particularly that the outflow is closer to adiabatic than
-isothermal and thus underpredicts the low frequency radio emission.},
-	urldate = {2018-06-06},
-	journal = {Monthly Notices of the Royal Astronomical Society},
-	author = {Ressler, S. M. and Tchekhovskoy, A. and Quataert, E. and Gammie, C. F.},
-	month = may,
-	year = {2017},
-	keywords = {accretion, black hole physics, relativistic processes, accretion discs, Galaxy: centre, MHD},
-	pages = {3604--3619},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/CT5DTA69/Ressler et al. - 2017 - The disc-jet symbiosis emerges modelling the emis.pdf:application/pdf;Full Text PDF:/var/home/bprather/Zotero/storage/W8AW4K2V/Ressler et al. - 2017 - The disc-jet symbiosis emerges modelling the emis.pdf:application/pdf}
-}
-
-@article{gammie_harm_2003,
-	title = {{HARM}: {A} {Numerical} {Scheme} for {General} {Relativistic} {Magnetohydrodynamics}},
-	volume = {589},
-	issn = {0004-637X},
-	shorttitle = {{HARM}},
-	url = {http://iopscience.iop.org/article/10.1086/374594/meta},
-	doi = {10.1086/374594},
-	language = {en},
-	number = {1},
-	urldate = {2018-06-06},
-	journal = {The Astrophysical Journal},
-	author = {Gammie, Charles F. and McKinney, Jonathan C. and Tóth, Gábor},
-	month = may,
-	year = {2003},
-	pages = {444},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/3EXM5UYW/374594.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/8CLVNJRG/Gammie et al. - 2003 - HARM A Numerical Scheme for General Relativistic .pdf:application/pdf}
-}
-
-@article{mckinney_measurement_2004,
-	title = {A {Measurement} of the {Electromagnetic} {Luminosity} of a {Kerr} {Black} {Hole}},
-	volume = {611},
-	issn = {0004-637X},
-	url = {http://iopscience.iop.org/article/10.1086/422244/meta},
-	doi = {10.1086/422244},
-	language = {en},
-	number = {2},
-	urldate = {2018-06-06},
-	journal = {The Astrophysical Journal},
-	author = {McKinney, Jonathan C. and Gammie, Charles F.},
-	month = aug,
-	year = {2004},
-	pages = {977},
-	file = {Gammie04Omega.png:/var/home/bprather/Zotero/storage/32CJ884Y/Gammie04Omega.png:image/png;Snapshot:/var/home/bprather/Zotero/storage/787TEFXB/422244.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/6X99JQND/McKinney and Gammie - 2004 - A Measurement of the Electromagnetic Luminosity of.pdf:application/pdf}
-}
-
-@article{fishbone_relativistic_1976,
-	title = {Relativistic fluid disks in orbit around {Kerr} black holes},
-	volume = {207},
-	issn = {0004-637X},
-	url = {http://adsabs.harvard.edu/abs/1976ApJ...207..962F},
-	doi = {10.1086/154565},
-	abstract = {The general solution of the relativistic Euler equations for an ideal fluid is presented for the special case of the stationary, axisymmetric, purely azimuthal flow of isentropic fluid in an arbitrary stationary, axisymmetric gravitational field. In leaving the spacetime metric unspecified, the option of imposing Einstein's equations, and thus of taking the effects of self-gravitation into account is retained. As a particular example in which self-gravitation is ignored, the structure of those fluid disks around Kerr black holes which are characterized by constant angular momentum per unit inertial mass is studied. For each allowable equation of state, these solutions describe a two-parameter family of disks which can orbit a given Kerr black hole. Special attention is given to the influence of the black hole's angular momentum upon the structure of the given family of disks. One notable feature these disks exhibit is their pronounced thickness in the direction perpendicular to the equatorial plane of the Kerr field.},
-	urldate = {2018-06-06},
-	journal = {The Astrophysical Journal},
-	author = {Fishbone, L. G. and Moncrief, V.},
-	month = aug,
-	year = {1976},
-	keywords = {Black Holes (Astronomy), Angular Momentum, Disks (Shapes), Euler Equations Of Motion, Flow Equations, Fluid Flow, Gravitational Fields, Isentropic Processes, Newton Theory, Relativistic Effects, Stellar Envelopes},
-	pages = {962--976},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/M22L462Q/Fishbone and Moncrief - 1976 - Relativistic fluid disks in orbit around Kerr blac.pdf:application/pdf}
-}
-
-@article{ryan_bhlight:_2015,
-	title = {bhlight: {General} {Relativistic} {Radiation} {Magnetohydrodynamics} with {Monte} {Carlo} {Transport}},
-	volume = {807},
-	issn = {0004-637X},
-	shorttitle = {bhlight},
-	url = {http://stacks.iop.org/0004-637X/807/i=1/a=31},
-	doi = {10.1088/0004-637X/807/1/31},
-	abstract = {We present bhlight , a numerical scheme for solving the equations of general relativistic radiation magnetohydrodynamics using a direct Monte Carlo solution of the frequency-dependent radiative transport equation. bhlight is designed to evolve black hole accretion flows at intermediate accretion rate, in the regime between the classical radiatively efficient disk and the radiatively inefficient accretion flow (RIAF), in which global radiative effects play a sub-dominant but non-negligible role in disk dynamics. We describe the governing equations, numerical method, idiosyncrasies of our implementation, and a suite of test and convergence results. We also describe example applications to radiative Bondi accretion and to a slowly accreting Kerr black hole in axisymmetry.},
-	language = {en},
-	number = {1},
-	urldate = {2018-06-05},
-	journal = {The Astrophysical Journal},
-	author = {Ryan, B. R. and Dolence, J. C. and Gammie, C. F.},
-	year = {2015},
-	pages = {31},
-	file = {IOP Full Text PDF:/var/home/bprather/Zotero/storage/ELW4VC48/Ryan et al. - 2015 - bhlight General Relativistic Radiation Magnetohyd.pdf:application/pdf}
-}
-
-@ARTICLE{gelles_adaptive_2021,
-       author = {{Gelles}, Z. and {Prather}, B.~S. and {Palumbo}, D.~C.~M. and {Johnson}, M.~D. and {Wong}, G.~N. and {Georgiev}, B.},
-        title = "{The Role of Adaptive Ray Tracing in Analyzing Black Hole Structure}",
-      journal = {arXiv e-prints},
-     keywords = {Astrophysics - High Energy Astrophysical Phenomena, Astrophysics - Instrumentation and Methods for Astrophysics},
-         year = 2021,
-        month = mar,
-          eid = {arXiv:2103.07417},
-        pages = {arXiv:2103.07417},
-archivePrefix = {arXiv},
-       eprint = {2103.07417},
- primaryClass = {astro-ph.HE},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2021arXiv210307417G},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-}
-
-@ARTICLE{johnson_photonring_2020,
-       author = {{Johnson}, Michael D. and {Lupsasca}, Alexandru and {Strominger}, Andrew and {Wong}, George N. and {Hadar}, Shahar and {Kapec}, Daniel and {Narayan}, Ramesh and {Chael}, Andrew and {Gammie}, Charles F. and {Galison}, Peter and {Palumbo}, Daniel C.~M. and {Doeleman}, Sheperd S. and {Blackburn}, Lindy and {Wielgus}, Maciek and {Pesce}, Dominic W. and {Farah}, Joseph R. and {Moran}, James M.},
-        title = "{Universal interferometric signatures of a black hole's photon ring}",
-      journal = {Science Advances},
-     keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - Astrophysics of Galaxies, Astrophysics - High Energy Astrophysical Phenomena, General Relativity and Quantum Cosmology, High Energy Physics - Theory},
-         year = 2020,
-        month = mar,
-       volume = {6},
-       number = {12},
-        pages = {eaaz1310},
-          doi = {10.1126/sciadv.aaz1310},
-archivePrefix = {arXiv},
-       eprint = {1907.04329},
- primaryClass = {astro-ph.IM},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2020SciA....6.1310J},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-}
-
-@ARTICLE{lin_imageml_2020,
-       author = {{Yao-Yu Lin}, Joshua and {Wong}, George N. and {Prather}, Ben S. and {Gammie}, Charles F.},
-        title = "{Feature Extraction on Synthetic Black Hole Images}",
-      journal = {arXiv e-prints},
-     keywords = {Astrophysics - High Energy Astrophysical Phenomena},
-         year = 2020,
-        month = jul,
-          eid = {arXiv:2007.00794},
-        pages = {arXiv:2007.00794},
-archivePrefix = {arXiv},
-       eprint = {2007.00794},
- primaryClass = {astro-ph.HE},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2020arXiv200700794Y},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-}
-
-@article{narayan_grmhd_2012,
-	title = {{GRMHD} simulations of magnetized advection-dominated accretion on a non-spinning black hole: role of outflows},
-	volume = {426},
-	issn = {0035-8711},
-	shorttitle = {{GRMHD} simulations of magnetized advection-dominated accretion on a non-spinning black hole},
-	url = {http://adsabs.harvard.edu/abs/2012MNRAS.426.3241N},
-	doi = {10.1111/j.1365-2966.2012.22002.x},
-	abstract = {We present results from two long-duration general relativistic 
-magneto-hydrodynamic (GRMHD) simulations of advection-dominated
-accretion around a non-spinning black hole. The first simulation was
-designed to avoid significant accumulation of magnetic flux around the
-black hole. This simulation was run for a time of 200 000
-GM/c3 and achieved inflow equilibrium out to a radius
-˜90 GM/c2. Even at this relatively large radius, the
-mass outflow rate M⊙ out is found to be only 60 per cent of the net
-mass inflow rate M⊙ BH into the black hole. The second simulation
-was designed to achieve substantial magnetic flux accumulation around
-the black hole in a magnetically arrested disc. This simulation was run
-for a shorter time of 100 000 GM/c3. Nevertheless, because
-the mean radial velocity was several times larger than in the first
-simulation, it reached inflow equilibrium out to a radius ˜170
-GM/c2. Here, M⊙ out becomes equal to M⊙ BH at r ˜
-160 GM/c2. Since the mass outflow rates in the two simulations do
-not show robust convergence with time, it is likely that the true
-outflow rates are lower than our estimates. The effect of black hole
-spin on mass outflow remains to be explored. Neither simulation shows
-strong evidence for convection, though a complete analysis including the
-effect of magnetic fields is left for the future.},
-	urldate = {2018-06-05},
-	journal = {Monthly Notices of the Royal Astronomical Society},
-	author = {Narayan, Ramesh and SÄ dowski, Aleksander and Penna, Robert F. and Kulkarni, Akshay K.},
-	month = nov,
-	year = {2012},
-	keywords = {accretion, black hole physics, galaxies: jets, accretion discs, binaries: close, convection, methods: numerical},
-	pages = {3241--3259},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/TVXMPZSY/Narayan et al. - 2012 - GRMHD simulations of magnetized advection-dominate.pdf:application/pdf;Full Text PDF:/var/home/bprather/Zotero/storage/J98VMTNY/Narayan et al. - 2012 - GRMHD simulations of magnetized advection-dominate.pdf:application/pdf}
-}
-
-@article{toth_b0_2000,
-	title = {The $\nabla$·{B}=0 {Constraint} in {Shock}-{Capturing} {Magnetohydrodynamics} {Codes}},
-	volume = {161},
-	issn = {0021-9991},
-	url = {http://www.sciencedirect.com/science/article/pii/S0021999100965197},
-	doi = {10.1006/jcph.2000.6519},
-	abstract = {Seven schemes to maintain the $\nabla$·B=0 constraint numerically are compared. All these algorithms can be combined with shock-capturing Godunov type base schemes. They fall into three categories: the eight-wave formulation maintains the constraint to truncation error, the projection scheme enforces the constraint in some discretization by projecting the magnetic field, while the five different versions of the constrained transport/central difference type schemes conserve $\nabla$·B to machine accuracy in some discretization for every grid cell. It is shown that the three constrained transport algorithms, which have been introduced recently, can be recast into pure finite volume schemes, and the staggered representation of the magnetic field is unnecessary. Another two new and simple central difference based algorithms are introduced. The properties of the projection scheme are discussed in some detail, and I prove that it has the same order of accuracy as the base scheme even for discontinuous solutions. I describe a flexible and efficient implementation of the projection scheme using conjugate gradient type iterative methods. Generalizations to resistive MHD, to axial symmetry, and to non-Cartesian grids are given for all schemes. The theoretical discussion is followed by numerical tests, where the robustness, accuracy, and efficiency of the seven schemes and the base scheme can be directly compared. All simulations are done with the Versatile Advection Code, in which several shock-capturing base schemes are implemented. Although the eight-wave formulation usually works correctly, one of the numerical tests demonstrates that its non-conservative nature can occasionally produce incorrect jumps across strong discontinuities. Based on a large number of tests, the projection scheme, one of the new central difference based schemes, and one of the constrained transport schemes are found to be the most accurate and reliable among the examined methods.},
-	number = {2},
-	urldate = {2018-11-06},
-	journal = {Journal of Computational Physics},
-	author = {Tóth, Gábor},
-	month = jul,
-	year = {2000},
-	pages = {605--652},
-	file = {ScienceDirect Full Text PDF:/var/home/bprather/Zotero/storage/PIMNTZA9/Tóth - 2000 - The $\nabla$·B=0 Constraint in Shock-Capturing Magnetohyd.pdf:application/pdf;ScienceDirect Snapshot:/var/home/bprather/Zotero/storage/5AJSGPLR/S0021999100965197.html:text/html}
-}
-
-@article{liska_large-scale_2018,
-	title = {Large-{Scale} {Poloidal} {Magnetic} {Field} {Dynamo} {Leads} to {Powerful} {Jets} in {GRMHD} {Simulations} of {Black} {Hole} {Accretion} with {Toroidal} {Field}},
-	url = {http://arxiv.org/abs/1809.04608},
-	abstract = {Accreting black holes launch relativistic collimated jets, across many decades in luminosity and mass, suggesting the jet launching mechanism is universal, robust and scale-free. Theoretical models and general relativistic magnetohydrodynamic (GRMHD) simulations indicate that the key jet-making ingredient is large-scale poloidal magnetic flux. However, its origin is uncertain, and it is unknown if it can be generated in situ or dragged inward from the ambient medium. Here, we use the GPU-accelerated GRMHD code HAMR to study global 3D black hole accretion at unusually high resolutions more typical of local shearing box simulations. We demonstrate that accretion disc turbulence in a radially-extended accretion disc can generate large-scale poloidal magnetic flux in situ, even when starting from a purely toroidal magnetic field. The flux accumulates around the black hole till it becomes dynamically-important, leads to a magnetically arrested disc (MAD), and launches relativistic jets that are more powerful than the accretion flow. The jet power exceeds that of previous GRMHD toroidal field simulations by a factor of 10,000. The jets do not show significant kink or pinch instabilities, accelerate to \${\textbackslash}gamma {\textbackslash}sim 10\$ over 3 decades in distance, and follow a collimation profile similar to the observed M87 jet.},
-	urldate = {2018-09-21},
-	journal = {arXiv:1809.04608 [astro-ph, physics:physics]},
-	author = {Liska, M. T. P. and Tchekhovskoy, A. and Quataert, E.},
-	month = sep,
-	year = {2018},
-	note = {arXiv: 1809.04608},
-	keywords = {Astrophysics - High Energy Astrophysical Phenomena, Physics - Plasma Physics, Astrophysics - Solar and Stellar Astrophysics},
-	file = {arXiv.org Snapshot:/var/home/bprather/Zotero/storage/XD9QZ57N/1809.html:text/html;arXiv\:1809.04608 PDF:/var/home/bprather/Zotero/storage/J8P7NBTR/Liska et al. - 2018 - Large-Scale Poloidal Magnetic Field Dynamo Leads t.pdf:application/pdf}
-}
-
-@article{white_extension_2016,
-	title = {An {Extension} of the {Athena}++ {Code} {Framework} for {GRMHD} {Based} on {Advanced} {Riemann} {Solvers} and {Staggered}-mesh {Constrained} {Transport}},
-	volume = {225},
-	issn = {0067-0049},
-	url = {http://stacks.iop.org/0067-0049/225/i=2/a=22},
-	doi = {10.3847/0067-0049/225/2/22},
-	abstract = {We present a new general relativistic magnetohydrodynamics (GRMHD) code integrated into the Athena++ framework. Improving upon the techniques used in most GRMHD codes, ours allows the use of advanced, less diffusive Riemann solvers, in particular HLLC and HLLD. We also employ a staggered-mesh constrained transport algorithm suited for curvilinear coordinate systems in order to maintain the divergence-free constraint of the magnetic field. Our code is designed to work with arbitrary stationary spacetimes in one, two, or three dimensions, and we demonstrate its reliability through a number of tests. We also report on its promising performance and scalability.},
-	language = {en},
-	number = {2},
-	urldate = {2018-06-19},
-	journal = {The Astrophysical Journal Supplement Series},
-	author = {White, Christopher J. and Stone, James M. and Gammie, Charles F.},
-	year = {2016},
-	keywords = {accretion, accretion disks, black hole physics, magnetohydrodynamics: MHD, relativistic processes},
-	pages = {22},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/Y6PAWB23/White et al. - 2016 - An Extension of the Athena++ Code Framework for GR.pdf:application/pdf;IOP Full Text PDF:/var/home/bprather/Zotero/storage/SUX54NGP/White et al. - 2016 - An Extension of the Athena++ Code Framework for GR.pdf:application/pdf}
-}
-
-@article{kawazura_thermal_2018,
-	title = {Thermal disequilibration of ions and electrons by collisionless plasma turbulence},
-	url = {http://arxiv.org/abs/1807.07702},
-	abstract = {Does overall thermal equilibrium exist between ions and electrons in a weakly collisional, magnetised, turbulent plasma---and, if not, how is thermal energy partitioned between ions and electrons? This is a fundamental question in plasma physics, the answer to which is also crucial for predicting the properties of far-distant astronomical objects such as accretion discs around black holes. In the context of discs, this question was posed nearly two decades ago and has since generated a sizeable literature. Here we provide the answer for the case in which energy is injected into the plasma via Alfv{\textbackslash}'enic turbulence: collisionless turbulent heating typically acts to disequilibrate the ion and electron temperatures. Numerical simulations using a hybrid fluid-gyrokinetic model indicate that the ion-electron heating-rate ratio is an increasing function of the thermal-to-magnetic energy ratio, \${\textbackslash}beta\_{\textbackslash}mathrm\{i\}\$: it ranges from \${\textbackslash}sim0.05\$ at \${\textbackslash}beta\_{\textbackslash}mathrm\{i\}=0.1\$ to at least \$30\$ for \${\textbackslash}beta\_{\textbackslash}mathrm\{i\} {\textbackslash}gtrsim 10\$. This energy partition is approximately insensitive to the ion-to-electron temperature ratio \$T\_{\textbackslash}mathrm\{i\}/T\_{\textbackslash}mathrm\{e\}\$. Thus, in the absence of other equilibrating mechanisms, a collisionless plasma system heated via Alfv{\textbackslash}'enic turbulence will tend towards a nonequilibrium state in which one of the species is significantly hotter than the other, viz., hotter ions at high \${\textbackslash}beta\_{\textbackslash}mathrm\{i\}\$, hotter electrons at low \${\textbackslash}beta\_{\textbackslash}mathrm\{i\}\$. Spectra of electromagnetic fields and the ion distribution function in 5D phase space exhibit an interesting new magnetically dominated regime at high \${\textbackslash}beta\_i\$ and a tendency for the ion heating to be mediated by nonlinear phase mixing (``entropy cascade'') when \${\textbackslash}beta\_{\textbackslash}mathrm\{i\}{\textbackslash}lesssim1\$ and by linear phase mixing (Landau damping) when \${\textbackslash}beta\_{\textbackslash}mathrm\{i\}{\textbackslash}gg1\$},
-	urldate = {2018-07-23},
-	journal = {arXiv:1807.07702 [astro-ph, physics:physics]},
-	author = {Kawazura, Yohei and Barnes, Michael and Schekochihin, Alexander A.},
-	month = jul,
-	year = {2018},
-	note = {arXiv: 1807.07702},
-	keywords = {Astrophysics - High Energy Astrophysical Phenomena, Physics - Plasma Physics, Physics - Space Physics},
-	file = {arXiv.org Snapshot:/var/home/bprather/Zotero/storage/L4Y85HBQ/1807.html:text/html;arXiv\:1807.07702 PDF:/var/home/bprather/Zotero/storage/H3INWYI8/Kawazura et al. - 2018 - Thermal disequilibration of ions and electrons by .pdf:application/pdf}
+@inproceedings{novikov_astrophysics_1973,
+	title = {Astrophysics of black holes.},
+	url = {http://adsabs.harvard.edu/abs/1973blho.conf..343N},
+	abstract = {Not Available},
+	urldate = {2019-06-05},
+	author = {Novikov, I. D. and Thorne, K. S.},
+	year = {1973},
+	pages = {343--450},
+	file = {Novikov & Thorne 1973.pdf:/var/home/bprather/Zotero/storage/II4Y4FIJ/Novikov & Thorne 1973.pdf:application/pdf}
 }
 
 @article{sadowski_semi-implicit_2013,
@@ -320,7 +71,7 @@ effect of magnetic fields is left for the future.},
 	month = mar,
 	year = {2013},
 	pages = {3533},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/AXRD2TW5/abstract.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/2BZF4Y37/Sądowski et al. - 2013 - Semi-implicit scheme for treating radiation under .pdf:application/pdf}
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/2BZF4Y37/Sądowski et al. - 2013 - Semi-implicit scheme for treating radiation under .pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/AXRD2TW5/abstract.html:text/html}
 }
 
 @article{sadowski_numerical_2014,
@@ -337,7 +88,7 @@ effect of magnetic fields is left for the future.},
 	month = mar,
 	year = {2014},
 	pages = {503},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/N8KTUZUJ/abstract.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/9SYJU2KW/Sądowski et al. - 2014 - Numerical simulations of super-critical black hole.pdf:application/pdf}
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/9SYJU2KW/Sądowski et al. - 2014 - Numerical simulations of super-critical black hole.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/N8KTUZUJ/abstract.html:text/html}
 }
 
 @article{landi_deglinnocenti_solution_1985,
@@ -386,7 +137,7 @@ centre black hole, Sgr A*, at submillimetre wavelengths.},
 	author = {Dexter, Jason},
 	month = oct,
 	year = {2016},
-	keywords = {accretion, black hole physics, galaxies: jets, relativistic processes, accretion discs, Galaxy: centre, radiative transfer},
+	keywords = {accretion, accretion discs, black hole physics, galaxies: jets, Galaxy: centre, radiative transfer, relativistic processes},
 	pages = {115--136},
 	file = {Full Text PDF:/var/home/bprather/Zotero/storage/XL7PV95M/Dexter - 2016 - A public code for general relativistic, polarised .pdf:application/pdf}
 }
@@ -405,7 +156,7 @@ centre black hole, Sgr A*, at submillimetre wavelengths.},
 	month = apr,
 	year = {2019},
 	pages = {L6},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/8JQVM98L/ab1141.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/4PN7XEBR/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. VI. The.pdf:application/pdf}
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/4PN7XEBR/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. VI. The.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/8JQVM98L/ab1141.html:text/html}
 }
 
 @article{collaboration_first_2019-1,
@@ -422,7 +173,7 @@ centre black hole, Sgr A*, at submillimetre wavelengths.},
 	month = apr,
 	year = {2019},
 	pages = {L5},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/FSAWM3YG/ab0f43.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/LAB57HR8/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. V. Phys.pdf:application/pdf}
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/LAB57HR8/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. V. Phys.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/FSAWM3YG/ab0f43.html:text/html}
 }
 
 @article{collaboration_first_2019-2,
@@ -439,7 +190,7 @@ centre black hole, Sgr A*, at submillimetre wavelengths.},
 	month = apr,
 	year = {2019},
 	pages = {L4},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/RDXCJIHD/ab0e85.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/J8ZRX32J/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. IV. Ima.pdf:application/pdf}
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/J8ZRX32J/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. IV. Ima.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/RDXCJIHD/ab0e85.html:text/html}
 }
 
 @article{collaboration_first_2019-3,
@@ -456,7 +207,7 @@ centre black hole, Sgr A*, at submillimetre wavelengths.},
 	month = apr,
 	year = {2019},
 	pages = {L3},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/LZ62F9LW/ab0c57.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/34HUWISK/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. III. Da.pdf:application/pdf}
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/34HUWISK/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. III. Da.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/LZ62F9LW/ab0c57.html:text/html}
 }
 
 @article{collaboration_first_2019-4,
@@ -473,7 +224,7 @@ centre black hole, Sgr A*, at submillimetre wavelengths.},
 	month = apr,
 	year = {2019},
 	pages = {L2},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/NAJAM8AD/ab0c96.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/XR7VLGBD/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. II. Arr.pdf:application/pdf}
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/XR7VLGBD/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. II. Arr.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/NAJAM8AD/ab0c96.html:text/html}
 }
 
 @article{collaboration_first_2019-5,
@@ -490,7 +241,7 @@ centre black hole, Sgr A*, at submillimetre wavelengths.},
 	month = apr,
 	year = {2019},
 	pages = {L1},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/WNUKUMBK/ab0ec7.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/ZJJ727WI/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. I. The .pdf:application/pdf}
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/ZJJ727WI/Collaboration et al. - 2019 - First M87 Event Horizon Telescope Results. I. The .pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/WNUKUMBK/ab0ec7.html:text/html}
 }
 
 @article{yuan_hot_2014,
@@ -507,21 +258,7 @@ centre black hole, Sgr A*, at submillimetre wavelengths.},
 	month = aug,
 	year = {2014},
 	pages = {529--588},
-	file = {Submitted Version:/var/home/bprather/Zotero/storage/YMYE56EI/Yuan and Narayan - 2014 - Hot Accretion Flows Around Black Holes.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/CFR7IB5I/annurev-astro-082812-141003.html:text/html}
-}
-
-@article{white_resolution_2019,
-	title = {A {Resolution} {Study} of {Magnetically} {Arrested} {Disks}},
-	url = {http://arxiv.org/abs/1903.01509},
-	abstract = {We investigate numerical convergence in simulations of magnetically arrested disks around spinning black holes. Using the general-relativistic magnetohydrodynamics code Athena++, we study the same system at four resolutions (up to an effective 512 by 256 by 512 cells) and with two different spatial reconstruction algorithms. The accretion rate and general large-scale structure of the flow agree across the simulations. This includes the amount of magnetic flux accumulated in the saturated state and the ensuing suppression of the magnetorotational instability from the strong field. The energy of the jet and the efficiency with which spin energy is extracted via the Blandford-Znajek process also show convergence. However the spatial structure of the jet shows variation across the set of grids employed, as do the Lorentz factors. Small-scale features of the turbulence, as measured by correlation lengths, are not fully converged. Despite convergence of a number of aspects of the flow, modeling of synchrotron emission shows that variability is not converged and decreases with increasing resolution even at our highest resolutions.},
-	urldate = {2019-03-06},
-	journal = {arXiv:1903.01509 [astro-ph]},
-	author = {White, Christopher J. and Stone, James M. and Quataert, Eliot},
-	month = mar,
-	year = {2019},
-	note = {arXiv: 1903.01509},
-	keywords = {Astrophysics - High Energy Astrophysical Phenomena},
-	file = {arXiv.org Snapshot:/var/home/bprather/Zotero/storage/MXNCREIA/1903.html:text/html;arXiv\:1903.01509 PDF:/var/home/bprather/Zotero/storage/JLVM9AEA/White et al. - 2019 - A Resolution Study of Magnetically Arrested Disks.pdf:application/pdf}
+	file = {Snapshot:/var/home/bprather/Zotero/storage/CFR7IB5I/annurev-astro-082812-141003.html:text/html;Submitted Version:/var/home/bprather/Zotero/storage/YMYE56EI/Yuan and Narayan - 2014 - Hot Accretion Flows Around Black Holes.pdf:application/pdf}
 }
 
 @article{moscibrodzka_ipole_2018,
@@ -539,7 +276,7 @@ centre black hole, Sgr A*, at submillimetre wavelengths.},
 	month = mar,
 	year = {2018},
 	pages = {43--54},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/C5DWFMJH/4712230.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/K2ZPHKRI/Mościbrodzka and Gammie - 2018 - ipole – semi-analytic scheme for relativistic pola.pdf:application/pdf}
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/K2ZPHKRI/Mościbrodzka and Gammie - 2018 - ipole – semi-analytic scheme for relativistic pola.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/C5DWFMJH/4712230.html:text/html}
 }
 
 @article{noble_primitive_2006,
@@ -571,7 +308,7 @@ electronic edition of the article.},
 	author = {Noble, Scott C. and Gammie, Charles F. and McKinney, Jonathan C. and Del Zanna, Luca},
 	month = apr,
 	year = {2006},
-	keywords = {Magnetohydrodynamics: MHD, Hydrodynamics, Methods: Numerical},
+	keywords = {Hydrodynamics, Magnetohydrodynamics: MHD, Methods: Numerical},
 	pages = {626--637},
 	file = {Full Text PDF:/var/home/bprather/Zotero/storage/H4ARKBA8/Noble et al. - 2006 - Primitive Variable Solvers for Conservative Genera.pdf:application/pdf}
 }
@@ -591,7 +328,7 @@ electronic edition of the article.},
 	month = jun,
 	year = {1984},
 	pages = {721--750},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/8QACZRNT/967104.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/SI4QQBI6/Papaloizou and Pringle - 1984 - The dynamical stability of differentially rotating.pdf:application/pdf}
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/SI4QQBI6/Papaloizou and Pringle - 1984 - The dynamical stability of differentially rotating.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/8QACZRNT/967104.html:text/html}
 }
 
 @article{ryan_resolution_2017,
@@ -624,103 +361,223 @@ possible reasons for the lack of convergence.},
 	file = {Full Text PDF:/var/home/bprather/Zotero/storage/A92DFZGI/Ryan et al. - 2017 - Resolution Dependence of Magnetorotational Turbule.pdf:application/pdf}
 }
 
-@article{liska_h-amr_2019,
-	title = {H-{AMR}: {A} {New} {GPU}-accelerated {GRMHD} {Code} for {Exascale} {Computing} {With} {3D} {Adaptive} {Mesh} {Refinement} and {Local} {Adaptive} {Time}-stepping},
-	volume = {1912},
-	shorttitle = {H-{AMR}},
-	url = {http://adsabs.harvard.edu/abs/2019arXiv191210192L},
-	abstract = {General-relativistic magnetohydrodynamic (GRMHD) simulations have 
-revolutionized our understanding of black-hole accretion. Here, we
-present a GPU-accelerated GRMHD code H-AMR with multi-faceted
-optimizations that, collectively, accelerate computation by 2-5 orders
-of magnitude for a wide range of applications. Firstly, it involves a
-novel implementation of a spherical-polar grid with 3D adaptive mesh
-refinement that operates in each of the 3 dimensions independently. This
-allows us to circumvent the Courant condition near the polar
-singularity, which otherwise cripples high-res computational
-performance. Secondly, we demonstrate that local adaptive time-stepping
-(LAT) on a logarithmic spherical-polar grid accelerates computation by a
-factor of \${\textbackslash}lesssim10\$ compared to traditional hierarchical
-time-stepping approaches. Jointly, these unique features lead to an
-effective speed of \${\textbackslash}sim10{\textasciicircum}9\$ zone-cycles-per-second-per-node on 5,400
-NVIDIA V100 GPUs (i.e., 900 nodes of the OLCF Summit supercomputer). We
-demonstrate its computational performance by presenting the first GRMHD
-simulation of a tilted thin accretion disk threaded by a toroidal
-magnetic field around a rapidly spinning black hole. With an effective
-resolution of \$13\$,\$440{\textbackslash}times4\$,\$608{\textbackslash}times8\$,\$092\$ cells, and a total of
-\${\textbackslash}lesssim22\$ billion cells and \${\textbackslash}sim0.65{\textbackslash}times10{\textasciicircum}8\$ timesteps, it is
-among the largest astrophysical simulations ever performed. We find that
-frame-dragging by the black hole tears up the disk into two
-independently precessing sub-disks. The innermost sub-disk rotation axis
-intermittently aligns with the black hole spin, demonstrating for the
-first time that such long-sought alignment is possible in the absence of
-large-scale poloidal magnetic fields.},
-	urldate = {2020-02-13},
-	journal = {arXiv e-prints},
-	author = {Liska, Matthew and Chatterjee, Koushik and Tchekhovskoy, Alexander and Yoon, Doosoo and van Eijnatten, David and Hesp, Casper and Markoff, Sera and Ingram, Adam and van der Klis, Michiel},
-	month = dec,
-	year = {2019},
-	keywords = {Astrophysics - Astrophysics of Galaxies, Astrophysics - High Energy Astrophysical Phenomena, Astrophysics - Solar and Stellar Astrophysics},
-	pages = {arXiv:1912.10192},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/WHR83WFT/Liska et al. - 2019 - H-AMR A New GPU-accelerated GRMHD Code for Exasca.pdf:application/pdf}
+@article{toth_b0_2000,
+	title = {The ∇·{B}=0 {Constraint} in {Shock}-{Capturing} {Magnetohydrodynamics} {Codes}},
+	volume = {161},
+	issn = {0021-9991},
+	url = {http://www.sciencedirect.com/science/article/pii/S0021999100965197},
+	doi = {10.1006/jcph.2000.6519},
+	abstract = {Seven schemes to maintain the ∇·B=0 constraint numerically are compared. All these algorithms can be combined with shock-capturing Godunov type base schemes. They fall into three categories: the eight-wave formulation maintains the constraint to truncation error, the projection scheme enforces the constraint in some discretization by projecting the magnetic field, while the five different versions of the constrained transport/central difference type schemes conserve ∇·B to machine accuracy in some discretization for every grid cell. It is shown that the three constrained transport algorithms, which have been introduced recently, can be recast into pure finite volume schemes, and the staggered representation of the magnetic field is unnecessary. Another two new and simple central difference based algorithms are introduced. The properties of the projection scheme are discussed in some detail, and I prove that it has the same order of accuracy as the base scheme even for discontinuous solutions. I describe a flexible and efficient implementation of the projection scheme using conjugate gradient type iterative methods. Generalizations to resistive MHD, to axial symmetry, and to non-Cartesian grids are given for all schemes. The theoretical discussion is followed by numerical tests, where the robustness, accuracy, and efficiency of the seven schemes and the base scheme can be directly compared. All simulations are done with the Versatile Advection Code, in which several shock-capturing base schemes are implemented. Although the eight-wave formulation usually works correctly, one of the numerical tests demonstrates that its non-conservative nature can occasionally produce incorrect jumps across strong discontinuities. Based on a large number of tests, the projection scheme, one of the new central difference based schemes, and one of the constrained transport schemes are found to be the most accurate and reliable among the examined methods.},
+	number = {2},
+	urldate = {2018-11-06},
+	journal = {Journal of Computational Physics},
+	author = {Tóth, Gábor},
+	month = jul,
+	year = {2000},
+	pages = {605--652},
+	file = {ScienceDirect Full Text PDF:/var/home/bprather/Zotero/storage/PIMNTZA9/Tóth - 2000 - The ∇·B=0 Constraint in Shock-Capturing Magnetohyd.pdf:application/pdf;ScienceDirect Snapshot:/var/home/bprather/Zotero/storage/5AJSGPLR/S0021999100965197.html:text/html}
 }
 
-@article{porth_event_2019,
-	title = {The {Event} {Horizon} {General} {Relativistic} {Magnetohydrodynamic} {Code} {Comparison} {Project}},
-	url = {http://arxiv.org/abs/1904.04923},
-	doi = {10.3847/1538-4365/ab29fd},
-	abstract = {Recent developments in compact object astrophysics, especially the discovery of merging neutron stars by LIGO, the imaging of the black hole in M87 by the Event Horizon Telescope (EHT) and high precision astrometry of the Galactic Center at close to the event horizon scale by the GRAVITY experiment motivate the development of numerical source models that solve the equations of general relativistic magnetohydrodynamics (GRMHD). Here we compare GRMHD solutions for the evolution of a magnetized accretion flow where turbulence is promoted by the magnetorotational instability from a set of nine GRMHD codes: Athena++, BHAC, Cosmos++, ECHO, H-AMR, iharm3D, HARM-Noble, IllinoisGRMHD and KORAL. Agreement between the codes improves as resolution increases, as measured by a consistently applied, specially developed set of code performance metrics. We conclude that the community of GRMHD codes is mature, capable, and consistent on these test problems.},
-	urldate = {2019-09-11},
-	journal = {arXiv:1904.04923 [astro-ph, physics:gr-qc]},
-	author = {Porth, Oliver and Chatterjee, Koushik and Narayan, Ramesh and Gammie, Charles F. and Mizuno, Yosuke and Anninos, Peter and Baker, John G. and Bugli, Matteo and Chan, Chi-kwan and Davelaar, Jordy and Del Zanna, Luca and Etienne, Zachariah B. and Fragile, P. Chris and Kelly, Bernard J. and Liska, Matthew and Markoff, Sera and McKinney, Jonathan C. and Mishra, Bhupendra and Noble, Scott C. and Olivares, Héctor and Prather, Ben and Rezzolla, Luciano and Ryan, Benjamin R. and Stone, James M. and Tomei, Niccolò and White, Christopher J. and Younsi, Ziri and Collaboration, The Event Horizon Telescope},
-	month = apr,
-	year = {2019},
-	note = {arXiv: 1904.04923},
-	keywords = {Astrophysics - High Energy Astrophysical Phenomena, General Relativity and Quantum Cosmology},
-	file = {arXiv.org Snapshot:/var/home/bprather/Zotero/storage/6JUBMMT8/1904.html:text/html;arXiv\:1904.04923 PDF:/var/home/bprather/Zotero/storage/52S4IC5S/Porth et al. - 2019 - The Event Horizon General Relativistic Magnetohydr.pdf:application/pdf;arXiv.org Snapshot:/var/home/bprather/Zotero/storage/UQ4VZCWB/1904.html:text/html;arXiv\:1904.04923 PDF:/var/home/bprather/Zotero/storage/GLCGUS5J/Porth et al. - 2019 - The Event Horizon General Relativistic Magnetohydr.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/33EEVD9W/meta.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/88IGT7SC/Porth et al. - 2019 - The Event Horizon General Relativistic Magnetohydr.pdf:application/pdf}
+@article{white_extension_2016,
+	title = {An {Extension} of the {Athena}++ {Code} {Framework} for {GRMHD} {Based} on {Advanced} {Riemann} {Solvers} and {Staggered}-mesh {Constrained} {Transport}},
+	volume = {225},
+	issn = {0067-0049},
+	url = {http://stacks.iop.org/0067-0049/225/i=2/a=22},
+	doi = {10.3847/0067-0049/225/2/22},
+	abstract = {We present a new general relativistic magnetohydrodynamics (GRMHD) code integrated into the Athena++ framework. Improving upon the techniques used in most GRMHD codes, ours allows the use of advanced, less diffusive Riemann solvers, in particular HLLC and HLLD. We also employ a staggered-mesh constrained transport algorithm suited for curvilinear coordinate systems in order to maintain the divergence-free constraint of the magnetic field. Our code is designed to work with arbitrary stationary spacetimes in one, two, or three dimensions, and we demonstrate its reliability through a number of tests. We also report on its promising performance and scalability.},
+	language = {en},
+	number = {2},
+	urldate = {2018-06-19},
+	journal = {The Astrophysical Journal Supplement Series},
+	author = {White, Christopher J. and Stone, James M. and Gammie, Charles F.},
+	year = {2016},
+	keywords = {accretion, black hole physics, relativistic processes, accretion disks, magnetohydrodynamics: MHD},
+	pages = {22},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/Y6PAWB23/White et al. - 2016 - An Extension of the Athena++ Code Framework for GR.pdf:application/pdf;IOP Full Text PDF:/var/home/bprather/Zotero/storage/SUX54NGP/White et al. - 2016 - An Extension of the Athena++ Code Framework for GR.pdf:application/pdf}
 }
 
-@article{abramowicz_foundations_2013,
-	title = {Foundations of {Black} {Hole} {Accretion} {Disk} {Theory}},
-	volume = {16},
-	issn = {1433-8351},
-	url = {https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5256006/},
-	doi = {10.12942/lrr-2013-1},
-	abstract = {This review covers the main aspects of black hole accretion disk theory. We begin with the view that one of the main goals of the theory is to better understand the nature of black holes themselves. In this light we discuss how accretion disks might reveal some of the unique signatures of strong gravity: the event horizon, the innermost stable circular orbit, and the ergosphere. We then review, from a first-principles perspective, the physical processes at play in accretion disks. This leads us to the four primary accretion disk models that we review: Polish doughnuts (thick disks), Shakura-Sunyaev (thin) disks, slim disks, and advection-dominated accretion flows (ADAFs). After presenting the models we discuss issues of stability, oscillations, and jets. Following our review of the analytic work, we take a parallel approach in reviewing numerical studies of black hole accretion disks. We finish with a few select applications that highlight particular astrophysical applications: measurements of black hole mass and spin, black hole vs. neutron star accretion disks, black hole accretion disk spectral states, and quasi-periodic oscillations (QPOs).},
+@article{porth_black_2017,
+	title = {The {Black} {Hole} {Accretion} {Code}},
+	volume = {4},
+	issn = {2197-7909},
+	url = {http://arxiv.org/abs/1611.09720},
+	doi = {10.1186/s40668-017-0020-2},
+	abstract = {We present the black hole accretion code (BHAC), a new multidimensional general-relativistic magnetohydrodynamics module for the MPI-AMRVAC framework. BHAC has been designed to solve the equations of ideal general-relativistic magnetohydrodynamics in arbitrary spacetimes and exploits adaptive mesh refinement techniques with an efficient block-based approach. Several spacetimes have already been implemented and tested. We demonstrate the validity of BHAC by means of various one-, two-, and three-dimensional test problems, as well as through a close comparison with the HARM3D code in the case of a torus accreting onto a black hole. The convergence of a turbulent accretion scenario is investigated with several diagnostics and we find accretion rates and horizon-penetrating fluxes to be convergent to within a few percent when the problem is run in three dimensions. Our analysis also involves the study of the corresponding thermal synchrotron emission, which is performed by means of a new general-relativistic radiative transfer code, BHOSS. The resulting synthetic intensity maps of accretion onto black holes are found to be convergent with increasing resolution and are anticipated to play a crucial role in the interpretation of horizon-scale images resulting from upcoming radio observations of the source at the Galactic Center.},
 	number = {1},
-	urldate = {2019-06-13},
-	journal = {Living Reviews in Relativity},
-	author = {Abramowicz, Marek A. and Fragile, P. Chris},
-	year = {2013},
-	pmid = {28179840},
-	pmcid = {PMC5256006},
-	file = {PubMed Central Full Text PDF:/var/home/bprather/Zotero/storage/2X87UV76/Abramowicz and Fragile - 2013 - Foundations of Black Hole Accretion Disk Theory.pdf:application/pdf}
+	urldate = {2018-06-06},
+	journal = {Computational Astrophysics and Cosmology},
+	author = {Porth, Oliver and Olivares, Hector and Mizuno, Yosuke and Younsi, Ziri and Rezzolla, Luciano and Moscibrodzka, Monika and Falcke, Heino and Kramer, Michael},
+	month = dec,
+	year = {2017},
+	note = {arXiv: 1611.09720},
+	keywords = {General Relativity and Quantum Cosmology, Astrophysics - High Energy Astrophysical Phenomena},
+	file = {arXiv\:1611.09720 PDF:/var/home/bprather/Zotero/storage/D62S9PU4/Porth et al. - 2017 - The Black Hole Accretion Code.pdf:application/pdf;arXiv.org Snapshot:/var/home/bprather/Zotero/storage/Z98GDWB5/1611.html:text/html;Full Text PDF:/var/home/bprather/Zotero/storage/CTP3ICDK/Porth et al. - 2017 - The black hole accretion code.pdf:application/pdf}
 }
 
-@article{shakura_black_1973,
-	title = {Black holes in binary systems. {Observational} appearance.},
-	volume = {24},
-	issn = {0004-6361},
-	url = {http://adsabs.harvard.edu/abs/1973A%26A....24..337S},
-	abstract = {Abstract image available at: 
-http://adsabs.harvard.edu/abs/1973A\&A....24..337S},
-	urldate = {2019-06-05},
-	journal = {Astronomy and Astrophysics},
-	author = {Shakura, N. I. and Sunyaev, R. A.},
-	year = {1973},
-	pages = {337--355},
-	file = {Shakura & Sunyaev 1973.pdf:/var/home/bprather/Zotero/storage/Z2PSFBXC/Shakura & Sunyaev 1973.pdf:application/pdf;Full Text PDF:/var/home/bprather/Zotero/storage/46MFBKLP/Shakura and Sunyaev - 1973 - Black holes in binary systems. Observational appea.pdf:application/pdf}
+@article{ressler_disc-jet_2017,
+	title = {The disc-jet symbiosis emerges: modelling the emission of {Sagittarius} {A}* with electron thermodynamics},
+	volume = {467},
+	issn = {0035-8711},
+	shorttitle = {The disc-jet symbiosis emerges},
+	url = {http://adsabs.harvard.edu/abs/2017MNRAS.467.3604R},
+	doi = {10.1093/mnras/stx364},
+	abstract = {We calculate the radiative properties of Sagittarius A* - spectral 
+energy distribution, variability and radio-infrared images - using the
+first 3D, physically motivated black hole accretion models that directly
+evolve the electron thermodynamics in general relativistic MHD
+simulations. These models reproduce the coupled disc-jet structure for
+the emission favoured by previous phenomenological analytic and
+numerical works. More specifically, we find that the low frequency radio
+emission is dominated by emission from a polar outflow while the
+emission above 100 GHz is dominated by the inner region of the accretion
+disc. The latter produces time variable near-infrared (NIR) and X-ray
+emission, with frequent flaring events (including IR flares without
+corresponding X-ray flares and IR flares with weak X-ray flares). The
+photon ring is clearly visible at 230 GHz and 2 μm, which is
+encouraging for future horizon-scale observations. We also show that
+anisotropic electron thermal conduction along magnetic field lines has a
+negligible effect on the radiative properties of our model. We conclude
+by noting limitations of our current generation of first-principles
+models, particularly that the outflow is closer to adiabatic than
+isothermal and thus underpredicts the low frequency radio emission.},
+	urldate = {2018-06-06},
+	journal = {Monthly Notices of the Royal Astronomical Society},
+	author = {Ressler, S. M. and Tchekhovskoy, A. and Quataert, E. and Gammie, C. F.},
+	month = may,
+	year = {2017},
+	keywords = {accretion, accretion discs, black hole physics, Galaxy: centre, relativistic processes, MHD},
+	pages = {3604--3619},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/CT5DTA69/Ressler et al. - 2017 - The disc-jet symbiosis emerges modelling the emis.pdf:application/pdf;Full Text PDF:/var/home/bprather/Zotero/storage/W8AW4K2V/Ressler et al. - 2017 - The disc-jet symbiosis emerges modelling the emis.pdf:application/pdf}
 }
 
-@inproceedings{novikov_astrophysics_1973,
-	title = {Astrophysics of black holes.},
-	url = {http://adsabs.harvard.edu/abs/1973blho.conf..343N},
-	abstract = {Not Available},
-	urldate = {2019-06-05},
-	author = {Novikov, I. D. and Thorne, K. S.},
-	year = {1973},
-	pages = {343--450},
-	file = {Novikov & Thorne 1973.pdf:/var/home/bprather/Zotero/storage/II4Y4FIJ/Novikov & Thorne 1973.pdf:application/pdf}
+@article{gammie_harm:_2003,
+	title = {{HARM}: {A} {Numerical} {Scheme} for {General} {Relativistic} {Magnetohydrodynamics}},
+	volume = {589},
+	issn = {0004-637X},
+	shorttitle = {{HARM}},
+	url = {http://iopscience.iop.org/article/10.1086/374594/meta},
+	doi = {10.1086/374594},
+	language = {en},
+	number = {1},
+	urldate = {2018-06-06},
+	journal = {The Astrophysical Journal},
+	author = {Gammie, Charles F. and McKinney, Jonathan C. and Tóth, Gábor},
+	month = may,
+	year = {2003},
+	pages = {444},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/8CLVNJRG/Gammie et al. - 2003 - HARM A Numerical Scheme for General Relativistic .pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/3EXM5UYW/374594.html:text/html}
+}
+
+@article{mckinney_measurement_2004,
+	title = {A {Measurement} of the {Electromagnetic} {Luminosity} of a {Kerr} {Black} {Hole}},
+	volume = {611},
+	issn = {0004-637X},
+	url = {http://iopscience.iop.org/article/10.1086/422244/meta},
+	doi = {10.1086/422244},
+	language = {en},
+	number = {2},
+	urldate = {2018-06-06},
+	journal = {The Astrophysical Journal},
+	author = {McKinney, Jonathan C. and Gammie, Charles F.},
+	month = aug,
+	year = {2004},
+	pages = {977},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/6X99JQND/McKinney and Gammie - 2004 - A Measurement of the Electromagnetic Luminosity of.pdf:application/pdf;Gammie04Omega.png:/var/home/bprather/Zotero/storage/32CJ884Y/Gammie04Omega.png:image/png;Snapshot:/var/home/bprather/Zotero/storage/787TEFXB/422244.html:text/html}
+}
+
+@article{fishbone_relativistic_1976,
+	title = {Relativistic fluid disks in orbit around {Kerr} black holes},
+	volume = {207},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/1976ApJ...207..962F},
+	doi = {10.1086/154565},
+	abstract = {The general solution of the relativistic Euler equations for an ideal fluid is presented for the special case of the stationary, axisymmetric, purely azimuthal flow of isentropic fluid in an arbitrary stationary, axisymmetric gravitational field. In leaving the spacetime metric unspecified, the option of imposing Einstein's equations, and thus of taking the effects of self-gravitation into account is retained. As a particular example in which self-gravitation is ignored, the structure of those fluid disks around Kerr black holes which are characterized by constant angular momentum per unit inertial mass is studied. For each allowable equation of state, these solutions describe a two-parameter family of disks which can orbit a given Kerr black hole. Special attention is given to the influence of the black hole's angular momentum upon the structure of the given family of disks. One notable feature these disks exhibit is their pronounced thickness in the direction perpendicular to the equatorial plane of the Kerr field.},
+	urldate = {2018-06-06},
+	journal = {The Astrophysical Journal},
+	author = {Fishbone, L. G. and Moncrief, V.},
+	month = aug,
+	year = {1976},
+	keywords = {Angular Momentum, Black Holes (Astronomy), Disks (Shapes), Euler Equations Of Motion, Flow Equations, Fluid Flow, Gravitational Fields, Isentropic Processes, Newton Theory, Relativistic Effects, Stellar Envelopes},
+	pages = {962--976},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/M22L462Q/Fishbone and Moncrief - 1976 - Relativistic fluid disks in orbit around Kerr blac.pdf:application/pdf}
+}
+
+@article{ryan_bhlight:_2015,
+	title = {bhlight: {General} {Relativistic} {Radiation} {Magnetohydrodynamics} with {Monte} {Carlo} {Transport}},
+	volume = {807},
+	issn = {0004-637X},
+	shorttitle = {bhlight},
+	url = {http://stacks.iop.org/0004-637X/807/i=1/a=31},
+	doi = {10.1088/0004-637X/807/1/31},
+	abstract = {We present bhlight , a numerical scheme for solving the equations of general relativistic radiation magnetohydrodynamics using a direct Monte Carlo solution of the frequency-dependent radiative transport equation. bhlight is designed to evolve black hole accretion flows at intermediate accretion rate, in the regime between the classical radiatively efficient disk and the radiatively inefficient accretion flow (RIAF), in which global radiative effects play a sub-dominant but non-negligible role in disk dynamics. We describe the governing equations, numerical method, idiosyncrasies of our implementation, and a suite of test and convergence results. We also describe example applications to radiative Bondi accretion and to a slowly accreting Kerr black hole in axisymmetry.},
+	language = {en},
+	number = {1},
+	urldate = {2018-06-05},
+	journal = {The Astrophysical Journal},
+	author = {Ryan, B. R. and Dolence, J. C. and Gammie, C. F.},
+	year = {2015},
+	pages = {31},
+	file = {IOP Full Text PDF:/var/home/bprather/Zotero/storage/ELW4VC48/Ryan et al. - 2015 - bhlight General Relativistic Radiation Magnetohyd.pdf:application/pdf}
+}
+
+@article{narayan_grmhd_2012,
+	title = {{GRMHD} simulations of magnetized advection-dominated accretion on a non-spinning black hole: role of outflows},
+	volume = {426},
+	issn = {0035-8711},
+	shorttitle = {{GRMHD} simulations of magnetized advection-dominated accretion on a non-spinning black hole},
+	url = {http://adsabs.harvard.edu/abs/2012MNRAS.426.3241N},
+	doi = {10.1111/j.1365-2966.2012.22002.x},
+	abstract = {We present results from two long-duration general relativistic 
+magneto-hydrodynamic (GRMHD) simulations of advection-dominated
+accretion around a non-spinning black hole. The first simulation was
+designed to avoid significant accumulation of magnetic flux around the
+black hole. This simulation was run for a time of 200 000
+GM/c3 and achieved inflow equilibrium out to a radius
+˜90 GM/c2. Even at this relatively large radius, the
+mass outflow rate M⊙ out is found to be only 60 per cent of the net
+mass inflow rate M⊙ BH into the black hole. The second simulation
+was designed to achieve substantial magnetic flux accumulation around
+the black hole in a magnetically arrested disc. This simulation was run
+for a shorter time of 100 000 GM/c3. Nevertheless, because
+the mean radial velocity was several times larger than in the first
+simulation, it reached inflow equilibrium out to a radius ˜170
+GM/c2. Here, M⊙ out becomes equal to M⊙ BH at r ˜
+160 GM/c2. Since the mass outflow rates in the two simulations do
+not show robust convergence with time, it is likely that the true
+outflow rates are lower than our estimates. The effect of black hole
+spin on mass outflow remains to be explored. Neither simulation shows
+strong evidence for convection, though a complete analysis including the
+effect of magnetic fields is left for the future.},
+	urldate = {2018-06-05},
+	journal = {Monthly Notices of the Royal Astronomical Society},
+	author = {Narayan, Ramesh and SÄ dowski, Aleksander and Penna, Robert F. and Kulkarni, Akshay K.},
+	month = nov,
+	year = {2012},
+	keywords = {accretion, accretion discs, black hole physics, galaxies: jets, methods: numerical, binaries: close, convection},
+	pages = {3241--3259},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/J98VMTNY/Narayan et al. - 2012 - GRMHD simulations of magnetized advection-dominate.pdf:application/pdf;Full Text PDF:/var/home/bprather/Zotero/storage/TVXMPZSY/Narayan et al. - 2012 - GRMHD simulations of magnetized advection-dominate.pdf:application/pdf}
+}
+
+@article{johnson_universal_2020,
+	title = {Universal interferometric signatures of a black hole’s photon ring},
+	volume = {6},
+	copyright = {Copyright © 2020 The Authors, some rights reserved; exclusive licensee American Association for the Advancement of Science. No claim to original U.S. Government Works. Distributed under a Creative Commons Attribution NonCommercial License 4.0 (CC BY-NC).. This is an open-access article distributed under the terms of the Creative Commons Attribution-NonCommercial license, which permits use, distribution, and reproduction in any medium, so long as the resultant use is not for commercial advantage and provided the original work is properly cited.},
+	issn = {2375-2548},
+	url = {https://advances.sciencemag.org/content/6/12/eaaz1310},
+	doi = {10.1126/sciadv.aaz1310},
+	abstract = {A black hole image contains a series of increasingly narrow rings measurable with progressively longer interferometers.
+A black hole image contains a series of increasingly narrow rings measurable with progressively longer interferometers.},
+	language = {en},
+	number = {12},
+	urldate = {2020-07-27},
+	journal = {Science Advances},
+	author = {Johnson, Michael D. and Lupsasca, Alexandru and Strominger, Andrew and Wong, George N. and Hadar, Shahar and Kapec, Daniel and Narayan, Ramesh and Chael, Andrew and Gammie, Charles F. and Galison, Peter and Palumbo, Daniel C. M. and Doeleman, Sheperd S. and Blackburn, Lindy and Wielgus, Maciek and Pesce, Dominic W. and Farah, Joseph R. and Moran, James M.},
+	month = mar,
+	year = {2020},
+	note = {Publisher: American Association for the Advancement of Science
+Section: Research Article},
+	pages = {eaaz1310},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/F3QUPGW4/Johnson et al. - 2020 - Universal interferometric signatures of a black ho.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/6Q5EGFZT/tab-pdf.html:text/html}
 }
 
 @article{howes_prescription_2010,
@@ -739,20 +596,6 @@ turbulent heating in accretion discs and the interstellar medium.},
 	keywords = {accretion, accretion discs, plasmas, turbulence, Galaxy: centred, ISM: kinematics and dynamics},
 	pages = {L104--L108},
 	file = {Full Text PDF:/var/home/bprather/Zotero/storage/LD6YFRXP/Howes - 2010 - A prescription for the turbulent heating of astrop.pdf:application/pdf}
-}
-
-@article{ricarte_decomposing_2020,
-	title = {Decomposing the {Internal} {Faraday} {Rotation} of {Black} {Hole} {Accretion} {Flows}},
-	url = {http://arxiv.org/abs/2009.02369},
-	abstract = {Faraday rotation has been seen at millimeter wavelengths in several low luminosity active galactic nuclei, including Event Horizon Telescope (EHT) targets M87* and Sgr A*. The observed rotation measure (RM) probes the density, magnetic field, and temperature of material integrated along the line of sight. To better understand how accretion disc conditions are reflected in the RM, we perform polarized radiative transfer calculations using a set of general relativistic magneto-hydrodynamic (GRMHD) simulations appropriate for M87*. We find that in spatially resolved millimetre wavelength images on event horizon scales, the RM can vary by orders of magnitude and even flip sign. The observational consequences of this spatial structure include significant time-variability, sign-flips, and non-\${\textbackslash}lambda{\textasciicircum}2\$ evolution of the polarization plane. For some models, we find that internal rotation measure can cause significant bandwidth depolarization even across the relatively narrow fractional bandwidths observed by the EHT. We decompose the linearly polarized emission in these models based on their RM and find that emission in front of the mid-plane can exhibit orders of magnitude less Faraday rotation than emission originating from behind the mid-plane or within the photon ring. We confirm that the spatially unresolved (i.e., image integrated) RM is a poor predictor of the accretion rate, with substantial scatter stemming from time variability and inclination effects. Models can be constrained with repeated observations to characterise time variability and the degree of non-\${\textbackslash}lambda{\textasciicircum}2\$ evolution of the polarization plane.},
-	urldate = {2020-09-28},
-	journal = {arXiv:2009.02369 [astro-ph]},
-	author = {Ricarte, Angelo and Prather, Ben S. and Wong, George N. and Narayan, Ramesh and Gammie, Charles and Johnson, Michael},
-	month = sep,
-	year = {2020},
-	note = {arXiv: 2009.02369},
-	keywords = {Astrophysics - High Energy Astrophysical Phenomena},
-	file = {arXiv Fulltext PDF:/var/home/bprather/Zotero/storage/9J4E2HUW/Ricarte et al. - 2020 - Decomposing the Internal Faraday Rotation of Black.pdf:application/pdf;arXiv.org Snapshot:/var/home/bprather/Zotero/storage/Y4LS9AJZ/2009.html:text/html}
 }
 
 @article{palumbo_discriminating_2020,
@@ -774,194 +617,171 @@ turbulent heating in accretion discs and the interstellar medium.},
 	file = {arXiv Fulltext PDF:/var/home/bprather/Zotero/storage/95XKFLBY/Palumbo et al. - 2020 - Discriminating Accretion States via Rotational Sym.pdf:application/pdf;arXiv.org Snapshot:/var/home/bprather/Zotero/storage/K2XDMPH8/2004.html:text/html}
 }
 
-@article{pringle_accretion_1981,
-	title = {Accretion discs in astrophysics},
-	volume = {19},
-	url = {http://adsabs.harvard.edu/abs/1981ARA%26A..19..137P},
-	doi = {10.1146/annurev.aa.19.090181.001033},
-	abstract = {Steady accretion disks are considered, and attention is given to the role of viscosity, radiation mechanisms, time dependence, instability, variability, and the inner boundary in the physics of accretion disks. The major uncertainties in accretion disk theory are the dissipation process (viscosity) and the emission process. It is noted that disk modeling is in some sense more an art than a science, and since a steady disk can be constructed for almost any combination of viscosity and radiation processes, the possibilities are almost endless. Conversely, it is likely that more can be learned about the properties of accretion disks in astrophysics by observation and subsequent modeling than by pure theorizing.},
-	urldate = {2020-10-31},
-	journal = {Annual Review of Astronomy and Astrophysics},
-	author = {Pringle, J. E.},
-	year = {1981},
-	keywords = {Astrophysics, Angular Momentum, Disks (Shapes), Radiative Transfer, Gravitational Effects, Stellar Mass Accretion, Circular Orbits, Rotating Fluids, Mass Transfer, Neutron Stars, Orbital Mechanics, Stellar Radiation, Viscosity},
-	pages = {137--162},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/VD47I65Y/Pringle - 1981 - Accretion discs in astrophysics.pdf:application/pdf}
+@article{etienne_illinoisgrmhd_2015,
+	title = {{IllinoisGRMHD}: an open-source, user-friendly {GRMHD} code for dynamical spacetimes},
+	volume = {32},
+	issn = {0264-9381},
+	shorttitle = {{IllinoisGRMHD}},
+	url = {https://doi.org/10.1088/0264-9381/32/17/175009},
+	doi = {10.1088/0264-9381/32/17/175009},
+	abstract = {In the extreme violence of merger and mass accretion, compact objects like black holes and neutron stars are thought to launch some of the most luminous outbursts of electromagnetic and gravitational wave energy in the Universe. Modeling these systems realistically is a central problem in theoretical astrophysics, but has proven extremely challenging, requiring the development of numerical relativity codes that solve Einstein's equations for the spacetime, coupled to the equations of general relativistic (ideal) magnetohydrodynamics (GRMHD) for the magnetized fluids. Over the past decade, the Illinois numerical relativity (ILNR) group's dynamical spacetime GRMHD code has proven itself as a robust and reliable tool for theoretical modeling of such GRMHD phenomena. However, the code was written ‘by experts and for experts’ of the code, with a steep learning curve that would severely hinder community adoption if it were open-sourced. Here we present IllinoisGRMHD, which is an open-source, highly extensible rewrite of the original closed-source GRMHD code of the ILNR group. Reducing the learning curve was the primary focus of this rewrite, with the goal of facilitating community involvement in the code's use and development, as well as the minimization of human effort in generating new science. IllinoisGRMHD also saves computer time, generating roundoff-precision identical output to the original code on adaptive-mesh grids, but nearly twice as fast at scales of hundreds to thousands of cores.},
+	language = {en},
+	number = {17},
+	urldate = {2021-01-29},
+	journal = {Classical and Quantum Gravity},
+	author = {Etienne, Zachariah B. and Paschalidis, Vasileios and Haas, Roland and Mösta, Philipp and Shapiro, Stuart L.},
+	month = aug,
+	year = {2015},
+	note = {Publisher: IOP Publishing},
+	pages = {175009},
+	file = {Full Text:/var/home/bprather/Zotero/storage/UQI2M2TE/Etienne et al. - 2015 - IllinoisGRMHD an open-source, user-friendly GRMHD.pdf:application/pdf}
 }
 
-@article{papaloizou_theory_1995,
-	title = {Theory {Of} {Accretion} {Disks} {I}: {Angular} {Momentum} {Transport} {Processes}},
-	volume = {33},
-	issn = {0066-4146},
-	shorttitle = {Theory {Of} {Accretion} {Disks} {I}},
-	url = {http://adsabs.harvard.edu/abs/1995ARA%26A..33..505P},
-	doi = {10.1146/annurev.aa.33.090195.002445},
-	abstract = {Accretion disk flow is a common phenomenon in astrophysics. It provides the nursery for planetary system formation and the channel for mass transfer in interacting binary stars. Such flows are also associated with the central engine for active galactic nuclei. Mass is
-redistributed in accretion disks as a consequence of angular momentum transfer. The identification of the dominant process involved is an important task in the development of accretion disk theory. Here, we review recent theoretical investigations on several important physical processes, including: 1. the removal of angular momentum from disks through hydromagnetic winds, 2. the amplification of local viscous stress through the onset of turbulence resulting from possible
-hydromagnetic, convective, or shear flow instabilities, 3. the transport of angular momentum carried by propagating waves, and 4. torque
-resulting from the presence of nonaxisymmetric unstable modes in self-gravitating and geometrically thick disks. Because of the technical nature of this subject, we present some of the mathematical formalisms in a pedagogical manner. We focus our attention on the physical
-discussion of the necessary conditions for each process to operate and the efficiency of angular momentum transfer to be expected. In Part II of this review, we shall present observational evidences and discuss applications of theoretical results in different astrophysical contexts.},
-	urldate = {2021-01-05},
-	journal = {Annual Review of Astronomy and Astrophysics},
-	author = {Papaloizou, J. C. B. and Lin, D. N. C.},
-	year = {1995},
-	pages = {505--540},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/2Q7SNCAQ/Papaloizou and Lin - 1995 - Theory Of Accretion Disks I Angular Momentum Tran.pdf:application/pdf}
-}
-
-@article{lin_theory_1996,
-	title = {Theory of {Accretion} {Disks} {II}: {Application} to {Observed} {Systems}},
-	volume = {34},
-	issn = {0066-4146},
-	shorttitle = {Theory of {Accretion} {Disks} {II}},
-	url = {http://adsabs.harvard.edu/abs/1996ARA%26A..34..703L},
-	doi = {10.1146/annurev.astro.34.1.703},
-	abstract = {Accretion disks are important for many astrophysical phenomena, including galactic nuclei, interacting binary stars, and young stellar objects. The central issue in the theory of accretion disks is to identify the dominant mechanisms that regulate angular momentum transfer and mass flow in a variety of contexts. In the first part of this review, we described some recent advances in the study of the physical processes that may be present in accretion disks. Concurrent with these theoretical developments, the arrival of high-resolution astronomical instruments has led to explosive progress on the observational side. In many cases, the study of accretion disks has evolved from their inferred presence based on circumstantial evidence to direct imaging and detailed spectral analyses. Here, we summarize the theoretical interpretation of these data. We review the constraints that may be imposed on the efficiency and nature of angular momentum transfer processes in a variety of astrophysical contexts.},
-	urldate = {2021-01-05},
-	journal = {Annual Review of Astronomy and Astrophysics},
-	author = {Lin, D. N. C. and Papaloizou, J. C. B.},
-	year = {1996},
-	pages = {703--748},
-	file = {Lin and Papaloizou - 1996 - THEORY OF ACCRETION DISKS II Application to Obser.pdf:/var/home/bprather/Zotero/storage/G6G9XS8I/Lin and Papaloizou - 1996 - THEORY OF ACCRETION DISKS II Application to Obser.pdf:application/pdf}
-}
-
-@article{balbus_powerful_1991,
-	title = {A powerful local shear instability in weakly magnetized disks. {I} - {Linear} analysis. {II} - {Nonlinear} evolution},
-	volume = {376},
+@article{pandya_polarized_2016,
+	title = {Polarized {Synchrotron} {Emissivities} and {Absorptivities} for {Relativistic} {Thermal}, {Power}-law, and {Kappa} {Distribution} {Functions}},
+	volume = {822},
 	issn = {0004-637X},
-	url = {http://adsabs.harvard.edu/abs/1991ApJ...376..214B},
-	doi = {10.1086/170270},
-	abstract = {A broad class of astronomical accretion disks is presently shown to be 
-dynamically unstable to axisymmetric disturbances in the presence of a
-weak magnetic field, an insight with consequently broad applicability to
-gaseous, differentially-rotating systems. In the first part of this
-work, a linear analysis is presented of the instability, which is local
-and extremely powerful; the maximum growth rate, which is of the order
-of the angular rotation velocity, is independent of the strength of the
-magnetic field. Fluid motions associated with the instability directly
-generate both poloidal and toroidal field components. In the second part
-of this investigation, the scaling relation between the instability's
-wavenumber and the Alfven velocity is demonstrated, and the independence
-of the maximum growth rate from magnetic field strength is confirmed.},
-	urldate = {2021-01-14},
+	url = {http://adsabs.harvard.edu/abs/2016ApJ...822...34P},
+	doi = {10.3847/0004-637X/822/1/34},
+	abstract = {Synchrotron emission and absorption determine the observational 
+appearances of many astronomical systems. In this paper, we describe a
+numerical scheme for calculating synchrotron emissivities and
+absorptivities in all four Stokes parameters for arbitrary gyrotropic
+electron distribution functions, building on earlier work by Leung,
+Gammie, and Noble. We use this technique to evaluate the emissivities
+and the absorptivities for a thermal (Maxwell-Jüttner),
+isotropic power-law, and an isotropic kappa distribution function. The
+latter contains a power-law tail at high particle energies that smoothly
+merges with a thermal core at low energies, as is characteristic of
+observed particle spectra in collisionless plasmas. We provide fitting
+formulae and error bounds on the fitting formulae for use in codes that
+solve the radiative transfer equation. The numerical method and the
+fitting formulae are implemented in a compact C library called symphony.
+We find that the kappa distribution has a source function that is
+indistinguishable from a thermal spectrum at low frequency and
+transitions to the characteristic self-absorbed synchrotron spectrum,
+{\textbackslash}propto \{ν \}5/2, at high frequency; the linear
+polarization fraction for a thermal spectrum is near unity at high
+frequency; and all distributions produce O(10\%) circular polarization at
+low frequency for lines of sight sufficiently close to the magnetic
+field vector.},
+	urldate = {2021-01-20},
 	journal = {The Astrophysical Journal},
-	author = {Balbus, Steven A. and Hawley, John F.},
-	month = jul,
-	year = {1991},
-	keywords = {Accretion Disks, Computational Astrophysics, Stellar Mass Accretion, Boussinesq Approximation, Linear Systems, Magnetohydrodynamic Stability, Stellar Magnetic Fields},
-	pages = {214--233},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/I86P69XS/Balbus and Hawley - 1991 - A powerful local shear instability in weakly magne.pdf:application/pdf}
-}
-
-@article{grete_k-athena_2019,
-	title = {K-{Athena}: a performance portable structured grid finite volume magnetohydrodynamics code},
-	volume = {1905},
-	shorttitle = {K-{Athena}},
-	url = {http://adsabs.harvard.edu/abs/2019arXiv190504341G},
-	abstract = {Large scale simulations are a key pillar of modern research and require 
-ever-increasing computational resources. Different novel manycore
-architectures have emerged in recent years on the way towards the
-exascale era. Performance portability is required to prevent repeated
-non-trivial refactoring of a code for different architectures. We
-combine Athena++, an existing magnetohydrodynamics (MHD) CPU code, with
-Kokkos, a performance portable on-node parallel programming paradigm,
-into K-Athena to allow efficient simulations on multiple architectures
-using a single codebase. We present profiling and scaling results for
-different platforms including Intel Skylake CPUs, Intel Xeon Phis, and
-NVIDIA GPUs. K-Athena achieves \${\textgreater}10{\textasciicircum}8\$ cell-updates/s on a single
-V100 GPU for second-order double precision MHD calculations, and a
-speedup of 30 on up to 24,576 GPUs on Summit (compared to 172,032 CPU
-cores), reaching \$1.94{\textbackslash}times10{\textasciicircum}\{12\}\$ total cell-updates/s at 76\%
-parallel efficiency. Using a roofline analysis we demonstrate that the
-overall performance is currently limited by DRAM bandwidth and calculate
-a performance portability metric of 62.8\%. Finally, we present the
-implementation strategies used and the challenges encountered in
-maximizing performance. This will provide other research groups with a
-straightforward approach to prepare their own codes for the exascale
-era. K-Athena is available at https://gitlab.com/pgrete/kathena .},
-	urldate = {2021-01-14},
-	journal = {arXiv e-prints},
-	author = {Grete, Philipp and Glines, Forrest W. and O'Shea, Brian W.},
+	author = {Pandya, Alex and Zhang, Zhaowei and Chandra, Mani and Gammie, Charles F.},
 	month = may,
-	year = {2019},
-	keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, and Cluster Computing, Computer Science - Distributed, Computer Science - Performance, Parallel, Physics - Computational Physics},
-	pages = {arXiv:1905.04341},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/NCNXGUEI/Grete et al. - 2019 - K-Athena a performance portable structured grid f.pdf:application/pdf}
+	year = {2016},
+	keywords = {radiative transfer, relativistic processes, radiation mechanisms: general, plasmas, polarization},
+	pages = {34},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/8A5LRJGP/Pandya et al. - 2016 - Polarized Synchrotron Emissivities and Absorptivit.pdf:application/pdf}
 }
 
-@article{carter_edwards_kokkos_2014,
-	series = {Domain-{Specific} {Languages} and {High}-{Level} {Frameworks} for {High}-{Performance} {Computing}},
-	title = {Kokkos: {Enabling} manycore performance portability through polymorphic memory access patterns},
-	volume = {74},
-	issn = {0743-7315},
-	shorttitle = {Kokkos},
-	url = {http://www.sciencedirect.com/science/article/pii/S0743731514001257},
-	doi = {10.1016/j.jpdc.2014.07.003},
-	abstract = {The manycore revolution can be characterized by increasing thread counts, decreasing memory per thread, and diversity of continually evolving manycore architectures. High performance computing (HPC) applications and libraries must exploit increasingly finer levels of parallelism within their codes to sustain scalability on these devices. A major obstacle to performance portability is the diverse and conflicting set of constraints on memory access patterns across devices. Contemporary portable programming models address manycore parallelism (e.g., OpenMP, OpenACC, OpenCL) but fail to address memory access patterns. The Kokkos C++ library enables applications and domain libraries to achieve performance portability on diverse manycore architectures by unifying abstractions for both fine-grain data parallelism and memory access patterns. In this paper we describe Kokkos’ abstractions, summarize its application programmer interface (API), present performance results for unit-test kernels and mini-applications, and outline an incremental strategy for migrating legacy C++ codes to Kokkos. The Kokkos library is under active research and development to incorporate capabilities from new generations of manycore architectures, and to address a growing list of applications and domain libraries.},
-	language = {en},
-	number = {12},
-	urldate = {2021-01-14},
-	journal = {Journal of Parallel and Distributed Computing},
-	author = {Carter Edwards, H. and Trott, Christian R. and Sunderland, Daniel},
-	month = dec,
-	year = {2014},
-	keywords = {GPU, Manycore, Mini-application, Multidimensional array, Parallel computing, Performance portability, Thread parallelism},
-	pages = {3202--3216},
-	file = {ScienceDirect Full Text PDF:/var/home/bprather/Zotero/storage/TE7Q7BUL/Carter Edwards et al. - 2014 - Kokkos Enabling manycore performance portability .pdf:application/pdf;ScienceDirect Snapshot:/var/home/bprather/Zotero/storage/WXWUX84Y/S0743731514001257.html:text/html}
+@article{moscibrodzka_general_2016,
+	title = {General relativistic magnetohydrodynamical simulations of the jet in {M} 87},
+	volume = {586},
+	issn = {0004-6361},
+	url = {http://adsabs.harvard.edu/abs/2016A%26A...586A..38M},
+	doi = {10.1051/0004-6361/201526630},
+	abstract = {Context. The connection between black hole, accretion disk, and radio jet can be constrained best by fitting models to observations of nearby low-luminosity galactic nuclei, in particular the well-studied sources Sgr A* and M 87. There has been considerable progress in modeling the central engine of active galactic nuclei by an accreting supermassive black hole coupled to a relativistic plasma jet. However, can a single model be applied to a range of black hole masses and accretion rates? Aims: Here we want to compare the latest three-dimensional numerical model, originally developed for Sgr A* in the center of the Milky Way, to radio observations of the much more powerful and more massive black hole in M 87. Methods: We postprocess
+three-dimensional GRMHD models of a jet-producing radiatively
+inefficient accretion flow around a spinning black hole using
+relativistic radiative transfer and ray-tracing to produce model spectra and images. As a key new ingredient in these models, we allow the proton-electron coupling in these simulations depend on the magnetic properties of the plasma. Results: We find that the radio emission in M 87 is described well by a combination of a two-temperature accretion flow and a hot single-temperature jet. Most of the radio emission in our simulations comes from the jet sheath. The model fits the basic observed characteristics of the M 87 radio core: it is "edge-brightened", starts subluminally, has a flat spectrum, and increases in size with wavelength. The best fit model has a
+mass-accretion rate of Ṁ {\textasciitilde} 9 ×
+10-3M⊙ yr-1 and a total jet power of Pj {\textasciitilde} 1043 erg s-1. Emission at λ = 1.3 mm is produced by the counter-jet close to the event
+horizon. Its characteristic crescent shape surrounding the black hole shadow could be resolved by future millimeter-wave VLBI experiments. Conclusions: The model was successfully derived from one for the supermassive black hole in the center of the Milky Way by appropriately scaling mass and accretion rate. This suggests the possibility that this model could also apply to a wider range of low-luminosity black holes.},
+	urldate = {2021-01-20},
+	journal = {Astronomy and Astrophysics},
+	author = {Mościbrodzka, Monika and Falcke, Heino and Shiokawa, Hotaka},
+	month = feb,
+	year = {2016},
+	keywords = {accretion, black hole physics, galaxies: jets, relativistic processes, accretion disks, galaxies: nuclei},
+	pages = {A38},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/DGPST9S9/Mościbrodzka et al. - 2016 - General relativistic magnetohydrodynamical simulat.pdf:application/pdf}
 }
 
-@article{narayan_magnetically_2003,
-	title = {Magnetically {Arrested} {Disk}: an {Energetically} {Efficient} {Accretion} {Flow}},
-	volume = {55},
-	issn = {0004-6264},
-	shorttitle = {Magnetically {Arrested} {Disk}},
-	url = {https://doi.org/10.1093/pasj/55.6.L69},
-	doi = {10.1093/pasj/55.6.L69},
-	abstract = {We consider an accretion flow model originally proposed by Bisnovatyi-Kogan and Ruzmaikin (1974), which has been confirmed in recent 3D MHD simulations. In the model, the accreting gas drags in a strong poloidal magnetic field to the center such that the accumulated field disrupts the axisymmetric accretion flow at a relatively large radius. Inside the disruption radius, the gas accretes as discrete blobs or streams with a velocity much less than the free-fall velocity. Almost the entire rest mass energy of the gas is released as heat, radiation and mechanical/magnetic energy. Even for a non-rotating black hole, the efficiency of converting mass to energy is of order 50\% or higher. The model is thus a practical analog of an idealized engine proposed by Geroch and Bekenstein.},
-	number = {6},
-	urldate = {2021-01-14},
-	journal = {Publications of the Astronomical Society of Japan},
-	author = {Narayan, Ramesh and Igumenshchev, Igor V. and Abramowicz, Marek A.},
-	month = dec,
-	year = {2003},
-	pages = {L69--L72},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/H2NWPYW9/Narayan et al. - 2003 - Magnetically Arrested Disk an Energetically Effic.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/Q9JIAQ4P/2055460.html:text/html}
-}
-
-@article{balsara_higher-order_2017,
-	title = {Higher-order accurate space-time schemes for computational astrophysics—{Part} {I}: finite volume methods},
-	volume = {3},
-	issn = {2365-0524},
-	shorttitle = {Higher-order accurate space-time schemes for computational astrophysics—{Part} {I}},
-	url = {https://doi.org/10.1007/s41115-017-0002-8},
-	doi = {10.1007/s41115-017-0002-8},
-	abstract = {As computational astrophysics comes under pressure to become a precision science, there is an increasing need to move to high accuracy schemes for computational astrophysics. The algorithmic needs of computational astrophysics are indeed very special. The methods need to be robust and preserve the positivity of density and pressure. Relativistic flows should remain sub-luminal. These requirements place additional pressures on a computational astrophysics code, which are usually not felt by a traditional fluid dynamics code. Hence the need for a specialized review. The focus here is on weighted essentially non-oscillatory (WENO) schemes, discontinuous Galerkin (DG) schemes and PNPM schemes. WENO schemes are higher order extensions of traditional second order finite volume schemes. At third order, they are most similar to piecewise parabolic method schemes, which are also included. DG schemes evolve all the moments of the solution, with the result that they are more accurate than WENO schemes. PNPM schemes occupy a compromise position between WENO and DG schemes. They evolve an Nth order spatial polynomial, while reconstructing higher order terms up to Mth order. As a result, the timestep can be larger. Time-dependent astrophysical codes need to be accurate in space and time with the result that the spatial and temporal accuracies must be matched. This is realized with the help of strong stability preserving Runge–Kutta schemes and ADER (Arbitrary DERivative in space and time) schemes, both of which are also described. The emphasis of this review is on computer-implementable ideas, not necessarily on the underlying theory.},
-	language = {en},
-	number = {1},
-	urldate = {2021-01-18},
-	journal = {Living Reviews in Computational Astrophysics},
-	author = {Balsara, Dinshaw S.},
-	month = dec,
-	year = {2017},
-	pages = {2},
-	file = {Springer Full Text PDF:/var/home/bprather/Zotero/storage/PYZF56Z9/Balsara - 2017 - Higher-order accurate space-time schemes for compu.pdf:application/pdf}
-}
-
-@article{petersen_non-thermal_2020,
-	title = {Non-thermal models for infrared flares from {Sgr} {A}*},
-	volume = {494},
-	issn = {0035-8711},
-	url = {https://doi.org/10.1093/mnras/staa826},
-	doi = {10.1093/mnras/staa826},
-	abstract = {Recent observations with mm very long baseline interferometry (mm-VLBI) and near-infrared (NIR) interferometry provide mm images and NIR centroid proper motion for Sgr A*. Of particular interest are the NIR flares that have more than an order of magnitude higher flux density than the quiescent state. Here, we model the flares using time-dependent, axisymmetric, general relativistic magnetohydrodynamic (GRMHD) simulations with an electron distribution function that includes a small, variable, non-thermal component motivated by magnetic reconnection models. The models simultaneously match the observed mm mean flux density, mm image size, NIR quiescent flux density, NIR flare flux density, and NIR spectral slope. They also provide a better fit to the observed NIR flux density probability density function than previously reported models by reproducing the power-law tail at high flux density, though with some discrepancy at low flux density. Further, our modelled NIR image centroid shows very little movement: centroid excursions of more than 10 μas (the resolution of GRAVITY) are rare and uncorrelated with flux.},
-	number = {4},
-	urldate = {2021-01-18},
-	journal = {Monthly Notices of the Royal Astronomical Society},
-	author = {Petersen, Eric and Gammie, Charles},
+@article{gammie_formalism_2012,
+	title = {A {Formalism} for {Covariant} {Polarized} {Radiative} {Transport} by {Ray} {Tracing}},
+	volume = {752},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/2012ApJ...752..123G},
+	doi = {10.1088/0004-637X/752/2/123},
+	abstract = {We write down a covariant formalism for polarized radiative transfer appropriate for ray tracing through a turbulent plasma. The polarized radiation field is represented by the polarization tensor (coherency matrix) N αβ ≡ langa α
+ k a*β k rang, where
+ak is a Fourier coefficient for the vector potential. Using Maxwell's equations, the Liouville-Vlasov equation, and the WKB
+approximation, we show that the transport equation in vacuo is k μ∇μ N αβ = 0. We
+show that this is equivalent to Broderick \& Blandford's formalism based on invariant Stokes parameters and a rotation coefficient, and suggest a modification that may reduce truncation error in some
+situations. Finally, we write down several alternative approaches to integrating the transfer equation.},
+	urldate = {2021-01-19},
+	journal = {The Astrophysical Journal},
+	author = {Gammie, Charles F. and Leung, Po Kin},
 	month = jun,
-	year = {2020},
-	pages = {5923--5935},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/2T6WG2RJ/Petersen and Gammie - 2020 - Non-thermal models for infrared flares from Sgr A.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/MT3T6PXJ/5827645.html:text/html}
+	year = {2012},
+	keywords = {black hole physics, radiative transfer, relativistic processes, plasmas, polarization},
+	pages = {123},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/KXMMQ5QJ/Gammie and Leung - 2012 - A Formalism for Covariant Polarized Radiative Tran.pdf:application/pdf}
+}
+
+@article{schnittman_x-ray_2009,
+	title = {X-ray {Polarization} from {Accreting} {Black} {Holes}: {The} {Thermal} {State}},
+	volume = {701},
+	issn = {0004-637X},
+	shorttitle = {X-ray {Polarization} from {Accreting} {Black} {Holes}},
+	url = {http://adsabs.harvard.edu/abs/2009ApJ...701.1175S},
+	doi = {10.1088/0004-637X/701/2/1175},
+	abstract = {We present new calculations of X-ray polarization from black hole (BH) accretion disks in the thermally dominated state, using a Monte Carlo ray-tracing code in full general relativity. In contrast to many previously published studies, our approach allows us to include
+returning radiation that is deflected by the strong-field gravity of the BH and scatters off of the disk before reaching a distant observer. Although carrying a relatively small fraction of the total observed flux, the scattered radiation tends to be highly polarized and in a direction perpendicular to the direct radiation Agol \& Krolik. For moderately large spin parameters (a/M gsim 0.9), this scattered
+returning radiation dominates the polarization signal at energies above the thermal peak, giving a net rotation in the polarization angle of 90°. We show how these new features of the polarization spectra from BHs in the thermal state may be developed into a powerful tool for measuring BH spin and probing the gas flow in the innermost disk. In addition to determining the emission profile, polarization observations can be used to constrain other properties of the system such as BH mass, inclination, and distance. New instruments currently under development should be able to exploit this tool in the near future.},
+	urldate = {2021-01-19},
+	journal = {The Astrophysical Journal},
+	author = {Schnittman, Jeremy D. and Krolik, Julian H.},
+	month = aug,
+	year = {2009},
+	keywords = {black hole physics, radiative transfer, polarization, X-rays: binaries},
+	pages = {1175--1187},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/MERUAE5I/Schnittman and Krolik - 2009 - X-ray Polarization from Accreting Black Holes The.pdf:application/pdf}
+}
+
+@article{bisnovatyi-kogan_accretion_1974,
+	title = {The {Accretion} of {Matter} by a {Collapsing} {Star} in the {Presence} of a {Magnetic} {Field}},
+	volume = {28},
+	issn = {0004-640X},
+	url = {http://adsabs.harvard.edu/abs/1974Ap%26SS..28...45B},
+	doi = {10.1007/BF00642237},
+	abstract = {The exact nonstationary solution for the variation of the magnetic field 
+in the Schwarzschild metric with a given spherically symmetric flow is
+obtained. Initially a homogeneous magnetic field increases with time,
+changing into a quasi-radial field. On the assumption of equipartition
+between the magnetic and kinetic energies of a falling gas, in the
+relativistic case, estimates of the stationary field and the intensity
+of synchrotron radiation are presented. A considerable part of the
+radiation is formed in the relativistic regionr≲(2.5 to 7.7)r 
+g (r g is the gravitational radius of a black hole).
+Estimates are made for radiation from the relativistic region in the
+case of disc type accretion.},
+	urldate = {2021-01-19},
+	journal = {Astrophysics and Space Science},
+	author = {Bisnovatyi-Kogan, G. S. and Ruzmaikin, A. A.},
+	month = may,
+	year = {1974},
+	pages = {45--59},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/YE7IG3UJ/Bisnovatyi-Kogan and Ruzmaikin - 1974 - The Accretion of Matter by a Collapsing Star in th.pdf:application/pdf}
+}
+
+@article{noble_simulating_2007,
+	title = {Simulating the emission and outflows from accretion discs},
+	volume = {24},
+	issn = {0264-9381},
+	url = {http://adsabs.harvard.edu/abs/2007CQGra..24S.259N},
+	doi = {10.1088/0264-9381/24/12/S17},
+	abstract = {The radio source Sagittarius A* (Sgr A*) is believed to be a hot, inhomogeneous, magnetized plasma flowing near the event horizon of the 3.6 × 106 Modot black hole at the galactic centre. At a distance of 8 kpc (sime 2.5 × 1022 cm) the black hole would be among the largest black holes as judged by angular size. Recent observations are consistent with the idea that the
+millimetre and sub-millimetre photons are dominated by optically thin, thermal synchrotron emission. Anticipating future Very Long Baseline Interferometry (VLBI) observations of Sgr A* at these wavelengths, we present here the first dynamically self-consistent models of millimetre and sub-millimetre emission from Sgr A* based on general relativistic numerical simulations of the accretion flow. Angle-dependent spectra are calculated assuming a thermal distribution of electrons at the baryonic temperature dictated by the simulation and the accretion rate, which acts as a free parameter in our model. The effects of varying model parameters (black hole spin and inclination of the spin to the line of sight) and source variability on the spectrum are shown. We find that the accretion rate value needed to match our calculated millimetre flux to the observed flux is consistent with constraints on the accretion rate inferred from detections of the rotation measure. We also describe the relativistic jet that is launched along the black hole spin axis by the accretion disc and evolves to scales of
+{\textasciitilde}103GMc-2, where M is the mass of the black hole.},
+	urldate = {2021-01-19},
+	journal = {Classical and Quantum Gravity},
+	author = {Noble, Scott C. and Leung, Po Kin and Gammie, Charles F. and Book, Laura G.},
+	month = jun,
+	year = {2007},
+	pages = {S259--S274},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/4SZTGCUF/Noble et al. - 2007 - Simulating the emission and outflows from accretio.pdf:application/pdf}
 }
 
 @article{narayan_advection-dominated_1995,
@@ -1002,171 +822,373 @@ stars. Advection-dominated accretion is therefore more likely to occur in accret
 	file = {Full Text PDF:/var/home/bprather/Zotero/storage/6MUKQ4N5/Narayan and Yi - 1995 - Advection-dominated Accretion Underfed Black Hole.pdf:application/pdf}
 }
 
-@article{noble_simulating_2007,
-	title = {Simulating the emission and outflows from accretion discs},
-	volume = {24},
-	issn = {0264-9381},
-	url = {http://adsabs.harvard.edu/abs/2007CQGra..24S.259N},
-	doi = {10.1088/0264-9381/24/12/S17},
-	abstract = {The radio source Sagittarius A* (Sgr A*) is believed to be a hot, inhomogeneous, magnetized plasma flowing near the event horizon of the 3.6 × 106 Modot black hole at the galactic centre. At a distance of 8 kpc (sime 2.5 × 1022 cm) the black hole would be among the largest black holes as judged by angular size. Recent observations are consistent with the idea that the
-millimetre and sub-millimetre photons are dominated by optically thin, thermal synchrotron emission. Anticipating future Very Long Baseline Interferometry (VLBI) observations of Sgr A* at these wavelengths, we present here the first dynamically self-consistent models of millimetre and sub-millimetre emission from Sgr A* based on general relativistic numerical simulations of the accretion flow. Angle-dependent spectra are calculated assuming a thermal distribution of electrons at the baryonic temperature dictated by the simulation and the accretion rate, which acts as a free parameter in our model. The effects of varying model parameters (black hole spin and inclination of the spin to the line of sight) and source variability on the spectrum are shown. We find that the accretion rate value needed to match our calculated millimetre flux to the observed flux is consistent with constraints on the accretion rate inferred from detections of the rotation measure. We also describe the relativistic jet that is launched along the black hole spin axis by the accretion disc and evolves to scales of
-{\textasciitilde}103GMc-2, where M is the mass of the black hole.},
-	urldate = {2021-01-19},
-	journal = {Classical and Quantum Gravity},
-	author = {Noble, Scott C. and Leung, Po Kin and Gammie, Charles F. and Book, Laura G.},
+@article{petersen_non-thermal_2020,
+	title = {Non-thermal models for infrared flares from {Sgr} {A}*},
+	volume = {494},
+	issn = {0035-8711},
+	url = {https://doi.org/10.1093/mnras/staa826},
+	doi = {10.1093/mnras/staa826},
+	abstract = {Recent observations with mm very long baseline interferometry (mm-VLBI) and near-infrared (NIR) interferometry provide mm images and NIR centroid proper motion for Sgr A*. Of particular interest are the NIR flares that have more than an order of magnitude higher flux density than the quiescent state. Here, we model the flares using time-dependent, axisymmetric, general relativistic magnetohydrodynamic (GRMHD) simulations with an electron distribution function that includes a small, variable, non-thermal component motivated by magnetic reconnection models. The models simultaneously match the observed mm mean flux density, mm image size, NIR quiescent flux density, NIR flare flux density, and NIR spectral slope. They also provide a better fit to the observed NIR flux density probability density function than previously reported models by reproducing the power-law tail at high flux density, though with some discrepancy at low flux density. Further, our modelled NIR image centroid shows very little movement: centroid excursions of more than 10 μas (the resolution of GRAVITY) are rare and uncorrelated with flux.},
+	number = {4},
+	urldate = {2021-01-18},
+	journal = {Monthly Notices of the Royal Astronomical Society},
+	author = {Petersen, Eric and Gammie, Charles},
 	month = jun,
-	year = {2007},
-	pages = {S259--S274},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/4SZTGCUF/Noble et al. - 2007 - Simulating the emission and outflows from accretio.pdf:application/pdf}
+	year = {2020},
+	pages = {5923--5935},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/2T6WG2RJ/Petersen and Gammie - 2020 - Non-thermal models for infrared flares from Sgr A.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/MT3T6PXJ/5827645.html:text/html}
 }
 
-@article{bisnovatyi-kogan_accretion_1974,
-	title = {The {Accretion} of {Matter} by a {Collapsing} {Star} in the {Presence} of a {Magnetic} {Field}},
-	volume = {28},
-	issn = {0004-640X},
-	url = {http://adsabs.harvard.edu/abs/1974Ap%26SS..28...45B},
-	doi = {10.1007/BF00642237},
-	abstract = {The exact nonstationary solution for the variation of the magnetic field 
-in the Schwarzschild metric with a given spherically symmetric flow is
-obtained. Initially a homogeneous magnetic field increases with time,
-changing into a quasi-radial field. On the assumption of equipartition
-between the magnetic and kinetic energies of a falling gas, in the
-relativistic case, estimates of the stationary field and the intensity
-of synchrotron radiation are presented. A considerable part of the
-radiation is formed in the relativistic regionr≲(2.5 to 7.7)r 
-g (r g is the gravitational radius of a black hole).
-Estimates are made for radiation from the relativistic region in the
-case of disc type accretion.},
-	urldate = {2021-01-19},
-	journal = {Astrophysics and Space Science},
-	author = {Bisnovatyi-Kogan, G. S. and Ruzmaikin, A. A.},
-	month = may,
-	year = {1974},
-	pages = {45--59},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/YE7IG3UJ/Bisnovatyi-Kogan and Ruzmaikin - 1974 - The Accretion of Matter by a Collapsing Star in th.pdf:application/pdf}
-}
-
-@article{schnittman_x-ray_2009,
-	title = {X-ray {Polarization} from {Accreting} {Black} {Holes}: {The} {Thermal} {State}},
-	volume = {701},
-	issn = {0004-637X},
-	shorttitle = {X-ray {Polarization} from {Accreting} {Black} {Holes}},
-	url = {http://adsabs.harvard.edu/abs/2009ApJ...701.1175S},
-	doi = {10.1088/0004-637X/701/2/1175},
-	abstract = {We present new calculations of X-ray polarization from black hole (BH) accretion disks in the thermally dominated state, using a Monte Carlo ray-tracing code in full general relativity. In contrast to many previously published studies, our approach allows us to include
-returning radiation that is deflected by the strong-field gravity of the BH and scatters off of the disk before reaching a distant observer. Although carrying a relatively small fraction of the total observed flux, the scattered radiation tends to be highly polarized and in a direction perpendicular to the direct radiation Agol \& Krolik. For moderately large spin parameters (a/M gsim 0.9), this scattered
-returning radiation dominates the polarization signal at energies above the thermal peak, giving a net rotation in the polarization angle of 90°. We show how these new features of the polarization spectra from BHs in the thermal state may be developed into a powerful tool for measuring BH spin and probing the gas flow in the innermost disk. In addition to determining the emission profile, polarization observations can be used to constrain other properties of the system such as BH mass, inclination, and distance. New instruments currently under development should be able to exploit this tool in the near future.},
-	urldate = {2021-01-19},
-	journal = {The Astrophysical Journal},
-	author = {Schnittman, Jeremy D. and Krolik, Julian H.},
-	month = aug,
-	year = {2009},
-	keywords = {black hole physics, radiative transfer, polarization, X-rays: binaries},
-	pages = {1175--1187},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/MERUAE5I/Schnittman and Krolik - 2009 - X-ray Polarization from Accreting Black Holes The.pdf:application/pdf}
-}
-
-@article{gammie_formalism_2012,
-	title = {A {Formalism} for {Covariant} {Polarized} {Radiative} {Transport} by {Ray} {Tracing}},
-	volume = {752},
-	issn = {0004-637X},
-	url = {http://adsabs.harvard.edu/abs/2012ApJ...752..123G},
-	doi = {10.1088/0004-637X/752/2/123},
-	abstract = {We write down a covariant formalism for polarized radiative transfer appropriate for ray tracing through a turbulent plasma. The polarized radiation field is represented by the polarization tensor (coherency matrix) N αβ ≡ langa α
- k a*β k rang, where
-ak is a Fourier coefficient for the vector potential. Using Maxwell's equations, the Liouville-Vlasov equation, and the WKB
-approximation, we show that the transport equation in vacuo is k μ$\nabla$μ N αβ = 0. We
-show that this is equivalent to Broderick \& Blandford's formalism based on invariant Stokes parameters and a rotation coefficient, and suggest a modification that may reduce truncation error in some
-situations. Finally, we write down several alternative approaches to integrating the transfer equation.},
-	urldate = {2021-01-19},
-	journal = {The Astrophysical Journal},
-	author = {Gammie, Charles F. and Leung, Po Kin},
-	month = jun,
-	year = {2012},
-	keywords = {black hole physics, relativistic processes, radiative transfer, plasmas, polarization},
-	pages = {123},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/KXMMQ5QJ/Gammie and Leung - 2012 - A Formalism for Covariant Polarized Radiative Tran.pdf:application/pdf}
-}
-
-@article{moscibrodzka_general_2016,
-	title = {General relativistic magnetohydrodynamical simulations of the jet in {M} 87},
-	volume = {586},
-	issn = {0004-6361},
-	url = {http://adsabs.harvard.edu/abs/2016A%26A...586A..38M},
-	doi = {10.1051/0004-6361/201526630},
-	abstract = {Context. The connection between black hole, accretion disk, and radio jet can be constrained best by fitting models to observations of nearby low-luminosity galactic nuclei, in particular the well-studied sources Sgr A* and M 87. There has been considerable progress in modeling the central engine of active galactic nuclei by an accreting supermassive black hole coupled to a relativistic plasma jet. However, can a single model be applied to a range of black hole masses and accretion rates? Aims: Here we want to compare the latest three-dimensional numerical model, originally developed for Sgr A* in the center of the Milky Way, to radio observations of the much more powerful and more massive black hole in M 87. Methods: We postprocess
-three-dimensional GRMHD models of a jet-producing radiatively
-inefficient accretion flow around a spinning black hole using
-relativistic radiative transfer and ray-tracing to produce model spectra and images. As a key new ingredient in these models, we allow the proton-electron coupling in these simulations depend on the magnetic properties of the plasma. Results: We find that the radio emission in M 87 is described well by a combination of a two-temperature accretion flow and a hot single-temperature jet. Most of the radio emission in our simulations comes from the jet sheath. The model fits the basic observed characteristics of the M 87 radio core: it is "edge-brightened", starts subluminally, has a flat spectrum, and increases in size with wavelength. The best fit model has a
-mass-accretion rate of Ṁ {\textasciitilde} 9 ×
-10-3M⊙ yr-1 and a total jet power of Pj {\textasciitilde} 1043 erg s-1. Emission at λ = 1.3 mm is produced by the counter-jet close to the event
-horizon. Its characteristic crescent shape surrounding the black hole shadow could be resolved by future millimeter-wave VLBI experiments. Conclusions: The model was successfully derived from one for the supermassive black hole in the center of the Milky Way by appropriately scaling mass and accretion rate. This suggests the possibility that this model could also apply to a wider range of low-luminosity black holes.},
-	urldate = {2021-01-20},
-	journal = {Astronomy and Astrophysics},
-	author = {Mościbrodzka, Monika and Falcke, Heino and Shiokawa, Hotaka},
-	month = feb,
-	year = {2016},
-	keywords = {accretion, accretion disks, black hole physics, galaxies: jets, galaxies: nuclei, relativistic processes},
-	pages = {A38},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/DGPST9S9/Mościbrodzka et al. - 2016 - General relativistic magnetohydrodynamical simulat.pdf:application/pdf}
-}
-
-@article{pandya_polarized_2016,
-	title = {Polarized {Synchrotron} {Emissivities} and {Absorptivities} for {Relativistic} {Thermal}, {Power}-law, and {Kappa} {Distribution} {Functions}},
-	volume = {822},
-	issn = {0004-637X},
-	url = {http://adsabs.harvard.edu/abs/2016ApJ...822...34P},
-	doi = {10.3847/0004-637X/822/1/34},
-	abstract = {Synchrotron emission and absorption determine the observational 
-appearances of many astronomical systems. In this paper, we describe a
-numerical scheme for calculating synchrotron emissivities and
-absorptivities in all four Stokes parameters for arbitrary gyrotropic
-electron distribution functions, building on earlier work by Leung,
-Gammie, and Noble. We use this technique to evaluate the emissivities
-and the absorptivities for a thermal (Maxwell-Jüttner),
-isotropic power-law, and an isotropic kappa distribution function. The
-latter contains a power-law tail at high particle energies that smoothly
-merges with a thermal core at low energies, as is characteristic of
-observed particle spectra in collisionless plasmas. We provide fitting
-formulae and error bounds on the fitting formulae for use in codes that
-solve the radiative transfer equation. The numerical method and the
-fitting formulae are implemented in a compact C library called symphony.
-We find that the kappa distribution has a source function that is
-indistinguishable from a thermal spectrum at low frequency and
-transitions to the characteristic self-absorbed synchrotron spectrum,
-{\textbackslash}propto \{ν \}5/2, at high frequency; the linear
-polarization fraction for a thermal spectrum is near unity at high
-frequency; and all distributions produce O(10\%) circular polarization at
-low frequency for lines of sight sufficiently close to the magnetic
-field vector.},
-	urldate = {2021-01-20},
-	journal = {The Astrophysical Journal},
-	author = {Pandya, Alex and Zhang, Zhaowei and Chandra, Mani and Gammie, Charles F.},
-	month = may,
-	year = {2016},
-	keywords = {relativistic processes, radiative transfer, radiation mechanisms: general, plasmas, polarization},
-	pages = {34},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/8A5LRJGP/Pandya et al. - 2016 - Polarized Synchrotron Emissivities and Absorptivit.pdf:application/pdf}
-}
-
-@article{etienne_illinoisgrmhd_2015,
-	title = {{IllinoisGRMHD}: an open-source, user-friendly {GRMHD} code for dynamical spacetimes},
-	volume = {32},
-	issn = {0264-9381},
-	shorttitle = {{IllinoisGRMHD}},
-	url = {https://doi.org/10.1088/0264-9381/32/17/175009},
-	doi = {10.1088/0264-9381/32/17/175009},
-	abstract = {In the extreme violence of merger and mass accretion, compact objects like black holes and neutron stars are thought to launch some of the most luminous outbursts of electromagnetic and gravitational wave energy in the Universe. Modeling these systems realistically is a central problem in theoretical astrophysics, but has proven extremely challenging, requiring the development of numerical relativity codes that solve Einstein's equations for the spacetime, coupled to the equations of general relativistic (ideal) magnetohydrodynamics (GRMHD) for the magnetized fluids. Over the past decade, the Illinois numerical relativity (ILNR) group's dynamical spacetime GRMHD code has proven itself as a robust and reliable tool for theoretical modeling of such GRMHD phenomena. However, the code was written ‘by experts and for experts’ of the code, with a steep learning curve that would severely hinder community adoption if it were open-sourced. Here we present IllinoisGRMHD, which is an open-source, highly extensible rewrite of the original closed-source GRMHD code of the ILNR group. Reducing the learning curve was the primary focus of this rewrite, with the goal of facilitating community involvement in the code's use and development, as well as the minimization of human effort in generating new science. IllinoisGRMHD also saves computer time, generating roundoff-precision identical output to the original code on adaptive-mesh grids, but nearly twice as fast at scales of hundreds to thousands of cores.},
+@article{balsara_higher-order_2017,
+	title = {Higher-order accurate space-time schemes for computational astrophysics—{Part} {I}: finite volume methods},
+	volume = {3},
+	issn = {2365-0524},
+	shorttitle = {Higher-order accurate space-time schemes for computational astrophysics—{Part} {I}},
+	url = {https://doi.org/10.1007/s41115-017-0002-8},
+	doi = {10.1007/s41115-017-0002-8},
+	abstract = {As computational astrophysics comes under pressure to become a precision science, there is an increasing need to move to high accuracy schemes for computational astrophysics. The algorithmic needs of computational astrophysics are indeed very special. The methods need to be robust and preserve the positivity of density and pressure. Relativistic flows should remain sub-luminal. These requirements place additional pressures on a computational astrophysics code, which are usually not felt by a traditional fluid dynamics code. Hence the need for a specialized review. The focus here is on weighted essentially non-oscillatory (WENO) schemes, discontinuous Galerkin (DG) schemes and PNPM schemes. WENO schemes are higher order extensions of traditional second order finite volume schemes. At third order, they are most similar to piecewise parabolic method schemes, which are also included. DG schemes evolve all the moments of the solution, with the result that they are more accurate than WENO schemes. PNPM schemes occupy a compromise position between WENO and DG schemes. They evolve an Nth order spatial polynomial, while reconstructing higher order terms up to Mth order. As a result, the timestep can be larger. Time-dependent astrophysical codes need to be accurate in space and time with the result that the spatial and temporal accuracies must be matched. This is realized with the help of strong stability preserving Runge–Kutta schemes and ADER (Arbitrary DERivative in space and time) schemes, both of which are also described. The emphasis of this review is on computer-implementable ideas, not necessarily on the underlying theory.},
 	language = {en},
-	number = {17},
-	urldate = {2021-01-29},
-	journal = {Classical and Quantum Gravity},
-	author = {Etienne, Zachariah B. and Paschalidis, Vasileios and Haas, Roland and Mösta, Philipp and Shapiro, Stuart L.},
-	month = aug,
-	year = {2015},
+	number = {1},
+	urldate = {2021-01-18},
+	journal = {Living Reviews in Computational Astrophysics},
+	author = {Balsara, Dinshaw S.},
+	month = dec,
+	year = {2017},
+	pages = {2},
+	file = {Springer Full Text PDF:/var/home/bprather/Zotero/storage/PYZF56Z9/Balsara - 2017 - Higher-order accurate space-time schemes for compu.pdf:application/pdf}
+}
+
+@article{narayan_magnetically_2003,
+	title = {Magnetically {Arrested} {Disk}: an {Energetically} {Efficient} {Accretion} {Flow}},
+	volume = {55},
+	issn = {0004-6264},
+	shorttitle = {Magnetically {Arrested} {Disk}},
+	url = {https://doi.org/10.1093/pasj/55.6.L69},
+	doi = {10.1093/pasj/55.6.L69},
+	abstract = {We consider an accretion flow model originally proposed by Bisnovatyi-Kogan and Ruzmaikin (1974), which has been confirmed in recent 3D MHD simulations. In the model, the accreting gas drags in a strong poloidal magnetic field to the center such that the accumulated field disrupts the axisymmetric accretion flow at a relatively large radius. Inside the disruption radius, the gas accretes as discrete blobs or streams with a velocity much less than the free-fall velocity. Almost the entire rest mass energy of the gas is released as heat, radiation and mechanical/magnetic energy. Even for a non-rotating black hole, the efficiency of converting mass to energy is of order 50\% or higher. The model is thus a practical analog of an idealized engine proposed by Geroch and Bekenstein.},
+	number = {6},
+	urldate = {2021-01-14},
+	journal = {Publications of the Astronomical Society of Japan},
+	author = {Narayan, Ramesh and Igumenshchev, Igor V. and Abramowicz, Marek A.},
+	month = dec,
+	year = {2003},
+	pages = {L69--L72},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/H2NWPYW9/Narayan et al. - 2003 - Magnetically Arrested Disk an Energetically Effic.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/Q9JIAQ4P/2055460.html:text/html}
+}
+
+@article{carter_edwards_kokkos_2014,
+	series = {Domain-{Specific} {Languages} and {High}-{Level} {Frameworks} for {High}-{Performance} {Computing}},
+	title = {Kokkos: {Enabling} manycore performance portability through polymorphic memory access patterns},
+	volume = {74},
+	issn = {0743-7315},
+	shorttitle = {Kokkos},
+	url = {http://www.sciencedirect.com/science/article/pii/S0743731514001257},
+	doi = {10.1016/j.jpdc.2014.07.003},
+	abstract = {The manycore revolution can be characterized by increasing thread counts, decreasing memory per thread, and diversity of continually evolving manycore architectures. High performance computing (HPC) applications and libraries must exploit increasingly finer levels of parallelism within their codes to sustain scalability on these devices. A major obstacle to performance portability is the diverse and conflicting set of constraints on memory access patterns across devices. Contemporary portable programming models address manycore parallelism (e.g., OpenMP, OpenACC, OpenCL) but fail to address memory access patterns. The Kokkos C++ library enables applications and domain libraries to achieve performance portability on diverse manycore architectures by unifying abstractions for both fine-grain data parallelism and memory access patterns. In this paper we describe Kokkos’ abstractions, summarize its application programmer interface (API), present performance results for unit-test kernels and mini-applications, and outline an incremental strategy for migrating legacy C++ codes to Kokkos. The Kokkos library is under active research and development to incorporate capabilities from new generations of manycore architectures, and to address a growing list of applications and domain libraries.},
+	language = {en},
+	number = {12},
+	urldate = {2021-01-14},
+	journal = {Journal of Parallel and Distributed Computing},
+	author = {Carter Edwards, H. and Trott, Christian R. and Sunderland, Daniel},
+	month = dec,
+	year = {2014},
+	keywords = {GPU, Manycore, Mini-application, Multidimensional array, Parallel computing, Performance portability, Thread parallelism},
+	pages = {3202--3216},
+	file = {ScienceDirect Full Text PDF:/var/home/bprather/Zotero/storage/TE7Q7BUL/Carter Edwards et al. - 2014 - Kokkos Enabling manycore performance portability .pdf:application/pdf;ScienceDirect Snapshot:/var/home/bprather/Zotero/storage/WXWUX84Y/S0743731514001257.html:text/html}
+}
+
+@article{balbus_powerful_1991,
+	title = {A powerful local shear instability in weakly magnetized disks. {I} - {Linear} analysis. {II} - {Nonlinear} evolution},
+	volume = {376},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/1991ApJ...376..214B},
+	doi = {10.1086/170270},
+	abstract = {A broad class of astronomical accretion disks is presently shown to be 
+dynamically unstable to axisymmetric disturbances in the presence of a
+weak magnetic field, an insight with consequently broad applicability to
+gaseous, differentially-rotating systems. In the first part of this
+work, a linear analysis is presented of the instability, which is local
+and extremely powerful; the maximum growth rate, which is of the order
+of the angular rotation velocity, is independent of the strength of the
+magnetic field. Fluid motions associated with the instability directly
+generate both poloidal and toroidal field components. In the second part
+of this investigation, the scaling relation between the instability's
+wavenumber and the Alfven velocity is demonstrated, and the independence
+of the maximum growth rate from magnetic field strength is confirmed.},
+	urldate = {2021-01-14},
+	journal = {The Astrophysical Journal},
+	author = {Balbus, Steven A. and Hawley, John F.},
+	month = jul,
+	year = {1991},
+	keywords = {Stellar Mass Accretion, Computational Astrophysics, Accretion Disks, Boussinesq Approximation, Linear Systems, Magnetohydrodynamic Stability, Stellar Magnetic Fields},
+	pages = {214--233},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/I86P69XS/Balbus and Hawley - 1991 - A powerful local shear instability in weakly magne.pdf:application/pdf}
+}
+
+@article{lin_theory_1996,
+	title = {Theory of {Accretion} {Disks} {II}: {Application} to {Observed} {Systems}},
+	volume = {34},
+	issn = {0066-4146},
+	shorttitle = {Theory of {Accretion} {Disks} {II}},
+	url = {http://adsabs.harvard.edu/abs/1996ARA%26A..34..703L},
+	doi = {10.1146/annurev.astro.34.1.703},
+	abstract = {Accretion disks are important for many astrophysical phenomena, including galactic nuclei, interacting binary stars, and young stellar objects. The central issue in the theory of accretion disks is to identify the dominant mechanisms that regulate angular momentum transfer and mass flow in a variety of contexts. In the first part of this review, we described some recent advances in the study of the physical processes that may be present in accretion disks. Concurrent with these theoretical developments, the arrival of high-resolution astronomical instruments has led to explosive progress on the observational side. In many cases, the study of accretion disks has evolved from their inferred presence based on circumstantial evidence to direct imaging and detailed spectral analyses. Here, we summarize the theoretical interpretation of these data. We review the constraints that may be imposed on the efficiency and nature of angular momentum transfer processes in a variety of astrophysical contexts.},
+	urldate = {2021-01-05},
+	journal = {Annual Review of Astronomy and Astrophysics},
+	author = {Lin, D. N. C. and Papaloizou, J. C. B.},
+	year = {1996},
+	pages = {703--748},
+	file = {Lin and Papaloizou - 1996 - THEORY OF ACCRETION DISKS II Application to Obser.pdf:/var/home/bprather/Zotero/storage/G6G9XS8I/Lin and Papaloizou - 1996 - THEORY OF ACCRETION DISKS II Application to Obser.pdf:application/pdf}
+}
+
+@article{papaloizou_theory_1995,
+	title = {Theory {Of} {Accretion} {Disks} {I}: {Angular} {Momentum} {Transport} {Processes}},
+	volume = {33},
+	issn = {0066-4146},
+	shorttitle = {Theory {Of} {Accretion} {Disks} {I}},
+	url = {http://adsabs.harvard.edu/abs/1995ARA%26A..33..505P},
+	doi = {10.1146/annurev.aa.33.090195.002445},
+	abstract = {Accretion disk flow is a common phenomenon in astrophysics. It provides the nursery for planetary system formation and the channel for mass transfer in interacting binary stars. Such flows are also associated with the central engine for active galactic nuclei. Mass is
+redistributed in accretion disks as a consequence of angular momentum transfer. The identification of the dominant process involved is an important task in the development of accretion disk theory. Here, we review recent theoretical investigations on several important physical processes, including: 1. the removal of angular momentum from disks through hydromagnetic winds, 2. the amplification of local viscous stress through the onset of turbulence resulting from possible
+hydromagnetic, convective, or shear flow instabilities, 3. the transport of angular momentum carried by propagating waves, and 4. torque
+resulting from the presence of nonaxisymmetric unstable modes in self-gravitating and geometrically thick disks. Because of the technical nature of this subject, we present some of the mathematical formalisms in a pedagogical manner. We focus our attention on the physical
+discussion of the necessary conditions for each process to operate and the efficiency of angular momentum transfer to be expected. In Part II of this review, we shall present observational evidences and discuss applications of theoretical results in different astrophysical contexts.},
+	urldate = {2021-01-05},
+	journal = {Annual Review of Astronomy and Astrophysics},
+	author = {Papaloizou, J. C. B. and Lin, D. N. C.},
+	year = {1995},
+	pages = {505--540},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/2Q7SNCAQ/Papaloizou and Lin - 1995 - Theory Of Accretion Disks I Angular Momentum Tran.pdf:application/pdf}
+}
+
+@article{pringle_accretion_1981,
+	title = {Accretion discs in astrophysics},
+	volume = {19},
+	url = {http://adsabs.harvard.edu/abs/1981ARA%26A..19..137P},
+	doi = {10.1146/annurev.aa.19.090181.001033},
+	abstract = {Steady accretion disks are considered, and attention is given to the role of viscosity, radiation mechanisms, time dependence, instability, variability, and the inner boundary in the physics of accretion disks. The major uncertainties in accretion disk theory are the dissipation process (viscosity) and the emission process. It is noted that disk modeling is in some sense more an art than a science, and since a steady disk can be constructed for almost any combination of viscosity and radiation processes, the possibilities are almost endless. Conversely, it is likely that more can be learned about the properties of accretion disks in astrophysics by observation and subsequent modeling than by pure theorizing.},
+	urldate = {2020-10-31},
+	journal = {Annual Review of Astronomy and Astrophysics},
+	author = {Pringle, J. E.},
+	year = {1981},
+	keywords = {Astrophysics, Angular Momentum, Gravitational Effects, Stellar Mass Accretion, Circular Orbits, Rotating Fluids, Radiative Transfer, Disks (Shapes), Mass Transfer, Neutron Stars, Orbital Mechanics, Stellar Radiation, Viscosity},
+	pages = {137--162},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/VD47I65Y/Pringle - 1981 - Accretion discs in astrophysics.pdf:application/pdf}
+}
+
+@article{bowen_quasi-periodic_2018,
+	title = {Quasi-periodic {Behavior} of {Mini}-disks in {Binary} {Black} {Holes} {Approaching} {Merger}},
+	volume = {853},
+	issn = {2041-8205},
+	url = {http://iopscience.iop.org/article/10.3847/2041-8213/aaa756/meta},
+	doi = {10.3847/2041-8213/aaa756},
+	language = {en},
+	number = {1},
+	urldate = {2021-04-12},
+	journal = {The Astrophysical Journal Letters},
+	author = {Bowen, Dennis B. and Mewes, Vassilios and Campanelli, Manuela and Noble, Scott C. and Krolik, Julian H. and Zilhão, Miguel},
+	month = jan,
+	year = {2018},
 	note = {Publisher: IOP Publishing},
-	pages = {175009},
-	file = {Full Text:/var/home/bprather/Zotero/storage/UQI2M2TE/Etienne et al. - 2015 - IllinoisGRMHD an open-source, user-friendly GRMHD.pdf:application/pdf}
+	pages = {L17},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/8ZI5DRHA/Bowen et al. - 2018 - Quasi-periodic Behavior of Mini-disks in Binary Bl.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/L3V6BSU2/aaa756.html:text/html}
+}
+
+@article{zilhao_dynamic_2014,
+	title = {Dynamic fisheye grids for binary black hole simulations},
+	volume = {31},
+	issn = {0264-9381},
+	url = {https://iopscience.iop.org/article/10.1088/0264-9381/31/6/065013/meta},
+	doi = {10.1088/0264-9381/31/6/065013},
+	language = {en},
+	number = {6},
+	urldate = {2021-04-12},
+	journal = {Classical and Quantum Gravity},
+	author = {Zilhão, Miguel and Noble, Scott C.},
+	month = feb,
+	year = {2014},
+	note = {Publisher: IOP Publishing},
+	pages = {065013},
+	file = {Snapshot:/var/home/bprather/Zotero/storage/KHEN8MT4/065013.html:text/html;Submitted Version:/var/home/bprather/Zotero/storage/FL5FI6YE/Zilhão and Noble - 2014 - Dynamic fisheye grids for binary black hole simula.pdf:application/pdf}
+}
+
+@article{noble_direct_2009,
+	title = {{DIRECT} {CALCULATION} {OF} {THE} {RADIATIVE} {EFFICIENCY} {OF} {AN} {ACCRETION} {DISK} {AROUND} {A} {BLACK} {HOLE}},
+	volume = {692},
+	issn = {0004-637X},
+	url = {https://doi.org/10.1088/0004-637x/692/1/411},
+	doi = {10.1088/0004-637X/692/1/411},
+	abstract = {Numerical simulation of magnetohydrodynamic (MHD) turbulence makes it possible to study accretion dynamics in detail. However, special effort is required to connect inflow dynamics (dependent largely on angular momentum transport) to radiation (dependent largely on thermodynamics and photon diffusion). To this end, we extend the flux-conservative, general relativistic MHD (GRMHD) code HARM from axisymmetry to full three dimensions. The use of an energy conserving algorithm allows the energy dissipated in the course of relativistic accretion to be captured as heat. The inclusion of a simple optically thin cooling function permits explicit control of the simulated disk's geometric thickness as well as a direct calculation of both the amplitude and location of the radiative cooling associated with the accretion stresses. Fully relativistic ray-tracing is used to compute the luminosity received by distant observers. For a disk with aspect ratio H/r ≃ 0.1 accreting onto a black hole with spin parameter a/M = 0.9, we find that there is significant dissipation beyond that predicted by the classical Novikov–Thorne model. However, much of it occurs deep in the potential, where photon capture and gravitational redshifting can strongly limit the net photon energy escaping to infinity. In addition, with these parameters and this radiation model, significant thermal and magnetic energy remains with the gas and is accreted by the black hole. In our model, the net luminosity reaching infinity is 6\% greater than the Novikov–Thorne prediction. If the accreted thermal energy were wholly radiated, the total luminosity of the accretion flow would be ≃20\% greater than the Novikov–Thorne value.},
+	language = {en},
+	number = {1},
+	urldate = {2021-04-12},
+	journal = {The Astrophysical Journal},
+	author = {Noble, Scott C. and Krolik, Julian H. and Hawley, John F.},
+	month = feb,
+	year = {2009},
+	note = {Publisher: American Astronomical Society},
+	pages = {411--421},
+	file = {IOP Full Text PDF:/var/home/bprather/Zotero/storage/RHZPREDV/Noble et al. - 2009 - DIRECT CALCULATION OF THE RADIATIVE EFFICIENCY OF .pdf:application/pdf}
+}
+
+@article{noble_circumbinary_2012,
+	title = {Circumbinary {Magnetohydrodynamic} {Accretion} into {Inspiraling} {Binary} {Black} {Holes}},
+	volume = {755},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/2012ApJ...755...51N},
+	doi = {10.1088/0004-637X/755/1/51},
+	abstract = {We have simulated the magnetohydrodynamic evolution of a circumbinary disk surrounding an equal-mass binary comprising two non-spinning black holes during the period in which the disk inflow time is comparable to the binary evolution time due to gravitational radiation. Both the changing spacetime and the binary orbital evolution are described by an innovative technique utilizing high-order post-Newtonian approximations. Prior to the beginning of the inspiral, the structure of the
+circumbinary disk is predicted well by extrapolation from Newtonian results: a gap of roughly two binary separation radii is cleared, and matter piles up at the outer edge of this gap as inflow is retarded by torques exerted by the binary; the accretion rate is roughly half its value at large radius. During inspiral, the inner edge of the disk initially moves inward in coordination with the shrinking binary, but—as the orbital evolution accelerates—the inward motion
+of the disk edge falls behind the rate of binary compression. In this stage, the binary torque falls substantially, but the accretion rate decreases by only 10\%-20\%. When the binary separation is tens of gravitational radii, the rest-mass efficiency of disk radiation is a few percent, suggesting that supermassive binary black holes could be very luminous at this stage of their evolution. Inner disk heating is modulated at a beat frequency comparable to the binary orbital
+frequency. However, a disk with sufficient surface density to be luminous may be optically thick, suppressing periodic modulation of the luminosity.},
+	urldate = {2021-04-12},
+	journal = {The Astrophysical Journal},
+	author = {Noble, Scott C. and Mundim, Bruno C. and Nakano, Hiroyuki and Krolik, Julian H. and Campanelli, Manuela and Zlochower, Yosef and Yunes, Nicolás},
+	month = aug,
+	year = {2012},
+	keywords = {accretion, black hole physics, accretion disks, magnetohydrodynamics: MHD, galaxies: nuclei},
+	pages = {51},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/88PJT9LN/Noble et al. - 2012 - Circumbinary Magnetohydrodynamic Accretion into In.pdf:application/pdf}
+}
+
+@article{londrillo_divergence-free_2004,
+	title = {On the divergence-free condition in {Godunov}-type schemes for ideal magnetohydrodynamics: the upwind constrained transport method},
+	volume = {195},
+	issn = {0021-9991},
+	shorttitle = {On the divergence-free condition in {Godunov}-type schemes for ideal magnetohydrodynamics},
+	url = {http://adsabs.harvard.edu/abs/2004JCoPh.195...17L},
+	doi = {10.1016/j.jcp.2003.09.016},
+	abstract = {We present a general framework to design Godunov-type schemes for 
+multidimensional ideal magnetohydrodynamic (MHD) systems, having the
+divergence-free relation and the related properties of the magnetic
+field B as built-in conditions. Our approach mostly relies on the
+constrained transport (CT) discretization technique for the magnetic
+field components, originally developed for the linear induction
+equation, which assures [∇.B]num=0 and its preservation
+in time to within machine accuracy in a finite-volume setting. We show
+that the CT formalism, when fully exploited, can be used as a general
+guideline to design the reconstruction procedures of the B vector field,
+to adapt standard upwind procedures for the momentum and energy
+equations, avoiding the onset of numerical monopoles of O(1) size, and
+to formulate approximate Riemann solvers for the induction equation.
+This general framework will be named here upwind constrained transport
+(UCT). To demonstrate the versatility of our method, we apply it to a
+variety of schemes, which are finally validated numerically and
+compared: a novel implementation for the MHD case of the second-order
+Roe-type positive scheme by Liu and Lax [J. Comput. Fluid Dyn. 5 (1996)
+133], and both the second- and third-order versions of a central-type
+MHD scheme presented by Londrillo and Del Zanna [Astrophys. J. 530
+(2000) 508], where the basic UCT strategies have been first outlined.},
+	urldate = {2021-04-12},
+	journal = {Journal of Computational Physics},
+	author = {Londrillo, P. and del Zanna, L.},
+	month = mar,
+	year = {2004},
+	pages = {17--48},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/RRG2ZR2U/Londrillo and del Zanna - 2004 - On the divergence-free condition in Godunov-type s.pdf:application/pdf}
+}
+
+@article{londrillo_high-order_2000,
+	title = {High-{Order} {Upwind} {Schemes} for {Multidimensional} {Magnetohydrodynamics}},
+	volume = {530},
+	issn = {0004-637X},
+	url = {http://iopscience.iop.org/article/10.1086/308344/meta},
+	doi = {10.1086/308344},
+	language = {en},
+	number = {1},
+	urldate = {2021-04-12},
+	journal = {The Astrophysical Journal},
+	author = {Londrillo, P. and Zanna, L. Del},
+	month = feb,
+	year = {2000},
+	note = {Publisher: IOP Publishing},
+	pages = {508},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/G6E773S8/Londrillo and Zanna - 2000 - High-Order Upwind Schemes for Multidimensional Mag.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/BKRLZU4P/308344.html:text/html}
+}
+
+@article{anninos_cosmos_2005,
+	title = {Cosmos++: {Relativistic} {Magnetohydrodynamics} on {Unstructured} {Grids} with {Local} {Adaptive} {Refinement}},
+	volume = {635},
+	issn = {0004-637X},
+	shorttitle = {Cosmos++},
+	url = {http://iopscience.iop.org/article/10.1086/497294/meta},
+	doi = {10.1086/497294},
+	language = {en},
+	number = {1},
+	urldate = {2021-04-12},
+	journal = {The Astrophysical Journal},
+	author = {Anninos, Peter and Fragile, P. Chris and Salmonson, Jay D.},
+	month = dec,
+	year = {2005},
+	note = {Publisher: IOP Publishing},
+	pages = {723},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/EM8ZNA7J/Anninos et al. - 2005 - Cosmos++ Relativistic Magnetohydrodynamics on Uns.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/LCT5M8FZ/497294.html:text/html}
+}
+
+@article{fragile_numerical_2014,
+	title = {Numerical {Simulations} of {Optically} {Thick} {Accretion} onto a {Black} {Hole}. {II}. {Rotating} {Flow}},
+	volume = {796},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/2014ApJ...796...22F},
+	doi = {10.1088/0004-637X/796/1/22},
+	abstract = {In this paper, we report on recent upgrades to our general relativistic 
+radiation magnetohydrodynamics code, Cosmos++, including the development
+of a new primitive inversion scheme and a hybrid implicit-explicit
+solver with a more general M 1 closure relation for the
+radiation equations. The new hybrid solver helps stabilize the treatment
+of the radiation source terms, while the new closure allows for a much
+broader range of optical depths to be considered. These changes allow us
+to expand by orders of magnitude the range of temperatures, opacities,
+and mass accretion rates, and move a step closer toward our goal of
+performing global simulations of radiation-pressure-dominated black hole
+accretion disks. In this work, we test and validate the new method
+against an array of problems. We also demonstrate its ability to handle
+super-Eddington, quasi-spherical accretion. Even with just a single
+proof-of-principle simulation, we already see tantalizing hints of the
+interesting phenomenology associated with the coupling of radiation and
+gas in super-Eddington accretion flows.},
+	urldate = {2021-04-12},
+	journal = {The Astrophysical Journal},
+	author = {Fragile, P. Chris and Olejar, Ally and Anninos, Peter},
+	month = nov,
+	year = {2014},
+	keywords = {accretion, black hole physics, radiative transfer, methods: numerical, accretion disks, magnetohydrodynamics: MHD},
+	pages = {22},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/2G4PBS4C/Fragile et al. - 2014 - Numerical Simulations of Optically Thick Accretion.pdf:application/pdf}
+}
+
+@article{fragile_numerical_2012,
+	title = {Numerical {Simulations} of {Optically} {Thick} {Accretion} onto a {Black} {Hole}. {I}. {Spherical} {Case}},
+	volume = {201},
+	issn = {0067-0049},
+	url = {http://adsabs.harvard.edu/abs/2012ApJS..201....9F},
+	doi = {10.1088/0067-0049/201/2/9},
+	abstract = {Modeling the radiation generated by accreting matter is an important 
+step toward realistic simulations of black hole accretion disks,
+especially at high accretion rates. To this end, we have recently added
+radiation transport to the existing general relativistic
+magnetohydrodynamic code, Cosmos++. However, before attempting to model
+radiative accretion disks, we have tested the new code using a series of
+shock tube and Bondi (spherical inflow) problems. The four radiative
+shock tube tests, first presented by Farris et al., have known analytic
+solutions, allowing us to calculate errors and convergence rates for our
+code. The Bondi problem only has an analytic solution when radiative
+processes are ignored, but it is pertinent because it is closer to the
+physics we ultimately want to study. In our simulations, we include
+Thomson scattering and thermal bremsstrahlung in the opacity, focusing
+exclusively on the super-Eddington regime. Unlike accretion onto bodies
+with solid surfaces, super-Eddington accretion onto black holes does not
+produce super-Eddington luminosity. In our examples, despite accreting
+at up to 300 times the Eddington rate, our measured luminosity is always
+several orders of magnitude below Eddington.},
+	urldate = {2021-04-12},
+	journal = {The Astrophysical Journal Supplement Series},
+	author = {Fragile, P. Chris and Gillespie, Anna and Monahan, Timothy and Rodriguez, Marco and Anninos, Peter},
+	month = aug,
+	year = {2012},
+	keywords = {accretion, black hole physics, radiative transfer, methods: numerical, accretion disks, magnetohydrodynamics: MHD},
+	pages = {9},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/W2DIUY2V/Fragile et al. - 2012 - Numerical Simulations of Optically Thick Accretion.pdf:application/pdf}
 }
 
 @article{ressler_electron_2015,
@@ -1209,242 +1231,206 @@ these applications will be explored in future work.},
 	author = {Ressler, S. M. and Tchekhovskoy, A. and Quataert, E. and Chandra, M. and Gammie, C. F.},
 	month = dec,
 	year = {2015},
-	keywords = {galaxies: jets, galaxies: nuclei, Galaxy: centre, MHD, stars: black holes},
+	keywords = {galaxies: jets, Galaxy: centre, MHD, galaxies: nuclei, stars: black holes},
 	pages = {1848--1870},
 	file = {Full Text PDF:/var/home/bprather/Zotero/storage/WCJXUBIW/Ressler et al. - 2015 - Electron thermodynamics in GRMHD simulations of lo.pdf:application/pdf}
 }
 
-@article{fragile_numerical_2012,
-	title = {Numerical {Simulations} of {Optically} {Thick} {Accretion} onto a {Black} {Hole}. {I}. {Spherical} {Case}},
-	volume = {201},
-	issn = {0067-0049},
-	url = {http://adsabs.harvard.edu/abs/2012ApJS..201....9F},
-	doi = {10.1088/0067-0049/201/2/9},
-	abstract = {Modeling the radiation generated by accreting matter is an important 
-step toward realistic simulations of black hole accretion disks,
-especially at high accretion rates. To this end, we have recently added
-radiation transport to the existing general relativistic
-magnetohydrodynamic code, Cosmos++. However, before attempting to model
-radiative accretion disks, we have tested the new code using a series of
-shock tube and Bondi (spherical inflow) problems. The four radiative
-shock tube tests, first presented by Farris et al., have known analytic
-solutions, allowing us to calculate errors and convergence rates for our
-code. The Bondi problem only has an analytic solution when radiative
-processes are ignored, but it is pertinent because it is closer to the
-physics we ultimately want to study. In our simulations, we include
-Thomson scattering and thermal bremsstrahlung in the opacity, focusing
-exclusively on the super-Eddington regime. Unlike accretion onto bodies
-with solid surfaces, super-Eddington accretion onto black holes does not
-produce super-Eddington luminosity. In our examples, despite accreting
-at up to 300 times the Eddington rate, our measured luminosity is always
-several orders of magnitude below Eddington.},
-	urldate = {2021-04-12},
-	journal = {The Astrophysical Journal Supplement Series},
-	author = {Fragile, P. Chris and Gillespie, Anna and Monahan, Timothy and Rodriguez, Marco and Anninos, Peter},
-	month = aug,
-	year = {2012},
-	keywords = {accretion, accretion disks, black hole physics, magnetohydrodynamics: MHD, methods: numerical, radiative transfer},
-	pages = {9},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/W2DIUY2V/Fragile et al. - 2012 - Numerical Simulations of Optically Thick Accretion.pdf:application/pdf}
+@article{liska_large-scale_2020,
+	title = {Large-scale poloidal magnetic field dynamo leads to powerful jets in {GRMHD} simulations of black hole accretion with toroidal field},
+	volume = {494},
+	issn = {0035-8711},
+	url = {http://adsabs.harvard.edu/abs/2020MNRAS.494.3656L},
+	doi = {10.1093/mnras/staa955},
+	abstract = {Accreting black holes (BHs) launch relativistic collimated jets, across 
+many decades in luminosity and mass, suggesting the jet launching
+mechanism is universal, robust, and scale-free. Theoretical models and
+general relativistic magnetohydrodynamic (GRMHD) simulations indicate
+that the key jet-making ingredient is large-scale poloidal magnetic
+flux. However, its origin is uncertain, and it is unknown if it can be
+generated in situ or dragged inward from the ambient medium. Here, we
+use the GPU-accelerated GRMHD code H-AMR to study global 3D BH accretion
+at unusually high resolutions more typical of local shearing box
+simulations. We demonstrate that turbulence in a radially extended
+accretion disc can generate large-scale poloidal magnetic flux in situ,
+even when starting from a purely toroidal magnetic field. The flux
+accumulates around the BH till it becomes dynamically important, leads
+to a magnetically arrested disc (MAD), and launches relativistic jets
+that are more powerful than the accretion flow. The jet power exceeds
+that of previous GRMHD toroidal field simulations by a factor of 10 000.
+The jets do not show significant kink or pinch instabilities, accelerate
+to γ ∼ 10 over three decades in distance, and follow a
+collimation profile similar to the observed M87 jet.},
+	urldate = {2021-05-14},
+	journal = {Monthly Notices of the Royal Astronomical Society},
+	author = {Liska, M. and Tchekhovskoy, A. and Quataert, E.},
+	month = may,
+	year = {2020},
+	keywords = {accretion, accretion discs, black hole physics, galaxies: jets, methods: numerical, MHD},
+	pages = {3656--3662},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/W5824UBX/Liska et al. - 2020 - Large-scale poloidal magnetic field dynamo leads t.pdf:application/pdf}
 }
 
-@article{fragile_numerical_2014,
-	title = {Numerical {Simulations} of {Optically} {Thick} {Accretion} onto a {Black} {Hole}. {II}. {Rotating} {Flow}},
-	volume = {796},
-	issn = {0004-637X},
-	url = {http://adsabs.harvard.edu/abs/2014ApJ...796...22F},
-	doi = {10.1088/0004-637X/796/1/22},
-	abstract = {In this paper, we report on recent upgrades to our general relativistic 
-radiation magnetohydrodynamics code, Cosmos++, including the development
-of a new primitive inversion scheme and a hybrid implicit-explicit
-solver with a more general M 1 closure relation for the
-radiation equations. The new hybrid solver helps stabilize the treatment
-of the radiation source terms, while the new closure allows for a much
-broader range of optical depths to be considered. These changes allow us
-to expand by orders of magnitude the range of temperatures, opacities,
-and mass accretion rates, and move a step closer toward our goal of
-performing global simulations of radiation-pressure-dominated black hole
-accretion disks. In this work, we test and validate the new method
-against an array of problems. We also demonstrate its ability to handle
-super-Eddington, quasi-spherical accretion. Even with just a single
-proof-of-principle simulation, we already see tantalizing hints of the
-interesting phenomenology associated with the coupling of radiation and
-gas in super-Eddington accretion flows.},
-	urldate = {2021-04-12},
-	journal = {The Astrophysical Journal},
-	author = {Fragile, P. Chris and Olejar, Ally and Anninos, Peter},
-	month = nov,
-	year = {2014},
-	keywords = {accretion, accretion disks, black hole physics, magnetohydrodynamics: MHD, methods: numerical, radiative transfer},
-	pages = {22},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/2G4PBS4C/Fragile et al. - 2014 - Numerical Simulations of Optically Thick Accretion.pdf:application/pdf}
-}
-
-@article{anninos_cosmos_2005,
-	title = {Cosmos++: {Relativistic} {Magnetohydrodynamics} on {Unstructured} {Grids} with {Local} {Adaptive} {Refinement}},
-	volume = {635},
-	issn = {0004-637X},
-	shorttitle = {Cosmos++},
-	url = {http://iopscience.iop.org/article/10.1086/497294/meta},
-	doi = {10.1086/497294},
-	language = {en},
-	number = {1},
-	urldate = {2021-04-12},
-	journal = {The Astrophysical Journal},
-	author = {Anninos, Peter and Fragile, P. Chris and Salmonson, Jay D.},
-	month = dec,
-	year = {2005},
-	note = {Publisher: IOP Publishing},
-	pages = {723},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/EM8ZNA7J/Anninos et al. - 2005 - Cosmos++ Relativistic Magnetohydrodynamics on Uns.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/LCT5M8FZ/497294.html:text/html}
-}
-
-@article{londrillo_high-order_2000,
-	title = {High-{Order} {Upwind} {Schemes} for {Multidimensional} {Magnetohydrodynamics}},
-	volume = {530},
-	issn = {0004-637X},
-	url = {http://iopscience.iop.org/article/10.1086/308344/meta},
-	doi = {10.1086/308344},
-	language = {en},
-	number = {1},
-	urldate = {2021-04-12},
-	journal = {The Astrophysical Journal},
-	author = {Londrillo, P. and Zanna, L. Del},
-	month = feb,
-	year = {2000},
-	note = {Publisher: IOP Publishing},
-	pages = {508},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/G6E773S8/Londrillo and Zanna - 2000 - High-Order Upwind Schemes for Multidimensional Mag.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/BKRLZU4P/308344.html:text/html}
-}
-
-@article{londrillo_divergence-free_2004,
-	title = {On the divergence-free condition in {Godunov}-type schemes for ideal magnetohydrodynamics: the upwind constrained transport method},
-	volume = {195},
-	issn = {0021-9991},
-	shorttitle = {On the divergence-free condition in {Godunov}-type schemes for ideal magnetohydrodynamics},
-	url = {http://adsabs.harvard.edu/abs/2004JCoPh.195...17L},
-	doi = {10.1016/j.jcp.2003.09.016},
-	abstract = {We present a general framework to design Godunov-type schemes for 
-multidimensional ideal magnetohydrodynamic (MHD) systems, having the
-divergence-free relation and the related properties of the magnetic
-field B as built-in conditions. Our approach mostly relies on the
-constrained transport (CT) discretization technique for the magnetic
-field components, originally developed for the linear induction
-equation, which assures [∇.B]num=0 and its preservation
-in time to within machine accuracy in a finite-volume setting. We show
-that the CT formalism, when fully exploited, can be used as a general
-guideline to design the reconstruction procedures of the B vector field,
-to adapt standard upwind procedures for the momentum and energy
-equations, avoiding the onset of numerical monopoles of O(1) size, and
-to formulate approximate Riemann solvers for the induction equation.
-This general framework will be named here upwind constrained transport
-(UCT). To demonstrate the versatility of our method, we apply it to a
-variety of schemes, which are finally validated numerically and
-compared: a novel implementation for the MHD case of the second-order
-Roe-type positive scheme by Liu and Lax [J. Comput. Fluid Dyn. 5 (1996)
-133], and both the second- and third-order versions of a central-type
-MHD scheme presented by Londrillo and Del Zanna [Astrophys. J. 530
-(2000) 508], where the basic UCT strategies have been first outlined.},
-	urldate = {2021-04-12},
-	journal = {Journal of Computational Physics},
-	author = {Londrillo, P. and del Zanna, L.},
-	month = mar,
-	year = {2004},
-	pages = {17--48},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/RRG2ZR2U/Londrillo and del Zanna - 2004 - On the divergence-free condition in Godunov-type s.pdf:application/pdf}
-}
-
-@article{noble_primitive_2006-1,
-	title = {Primitive {Variable} {Solvers} for {Conservative} {General} {Relativistic} {Magnetohydrodynamics}},
-	volume = {641},
-	issn = {0004-637X},
-	url = {http://iopscience.iop.org/article/10.1086/500349/meta},
-	doi = {10.1086/500349},
-	language = {en},
-	number = {1},
-	urldate = {2021-04-12},
-	journal = {The Astrophysical Journal},
-	author = {Noble, Scott C. and Gammie, Charles F. and McKinney, Jonathan C. and Zanna, Luca Del},
-	month = apr,
-	year = {2006},
-	note = {Publisher: IOP Publishing},
-	pages = {626},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/S46S9FIK/Noble et al. - 2006 - Primitive Variable Solvers for Conservative Genera.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/DBTWL9PV/500349.html:text/html}
-}
-
-@article{noble_circumbinary_2012,
-	title = {Circumbinary {Magnetohydrodynamic} {Accretion} into {Inspiraling} {Binary} {Black} {Holes}},
-	volume = {755},
-	issn = {0004-637X},
-	url = {http://adsabs.harvard.edu/abs/2012ApJ...755...51N},
-	doi = {10.1088/0004-637X/755/1/51},
-	abstract = {We have simulated the magnetohydrodynamic evolution of a circumbinary disk surrounding an equal-mass binary comprising two non-spinning black holes during the period in which the disk inflow time is comparable to the binary evolution time due to gravitational radiation. Both the changing spacetime and the binary orbital evolution are described by an innovative technique utilizing high-order post-Newtonian approximations. Prior to the beginning of the inspiral, the structure of the
-circumbinary disk is predicted well by extrapolation from Newtonian results: a gap of roughly two binary separation radii is cleared, and matter piles up at the outer edge of this gap as inflow is retarded by torques exerted by the binary; the accretion rate is roughly half its value at large radius. During inspiral, the inner edge of the disk initially moves inward in coordination with the shrinking binary, but—as the orbital evolution accelerates—the inward motion
-of the disk edge falls behind the rate of binary compression. In this stage, the binary torque falls substantially, but the accretion rate decreases by only 10\%-20\%. When the binary separation is tens of gravitational radii, the rest-mass efficiency of disk radiation is a few percent, suggesting that supermassive binary black holes could be very luminous at this stage of their evolution. Inner disk heating is modulated at a beat frequency comparable to the binary orbital
-frequency. However, a disk with sufficient surface density to be luminous may be optically thick, suppressing periodic modulation of the luminosity.},
-	urldate = {2021-04-12},
-	journal = {The Astrophysical Journal},
-	author = {Noble, Scott C. and Mundim, Bruno C. and Nakano, Hiroyuki and Krolik, Julian H. and Campanelli, Manuela and Zlochower, Yosef and Yunes, Nicolás},
-	month = aug,
-	year = {2012},
-	keywords = {accretion, accretion disks, black hole physics, galaxies: nuclei, magnetohydrodynamics: MHD},
-	pages = {51},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/88PJT9LN/Noble et al. - 2012 - Circumbinary Magnetohydrodynamic Accretion into In.pdf:application/pdf}
-}
-
-@article{noble_direct_2009,
-	title = {{DIRECT} {CALCULATION} {OF} {THE} {RADIATIVE} {EFFICIENCY} {OF} {AN} {ACCRETION} {DISK} {AROUND} {A} {BLACK} {HOLE}},
-	volume = {692},
-	issn = {0004-637X},
-	url = {https://doi.org/10.1088/0004-637x/692/1/411},
-	doi = {10.1088/0004-637X/692/1/411},
-	abstract = {Numerical simulation of magnetohydrodynamic (MHD) turbulence makes it possible to study accretion dynamics in detail. However, special effort is required to connect inflow dynamics (dependent largely on angular momentum transport) to radiation (dependent largely on thermodynamics and photon diffusion). To this end, we extend the flux-conservative, general relativistic MHD (GRMHD) code HARM from axisymmetry to full three dimensions. The use of an energy conserving algorithm allows the energy dissipated in the course of relativistic accretion to be captured as heat. The inclusion of a simple optically thin cooling function permits explicit control of the simulated disk's geometric thickness as well as a direct calculation of both the amplitude and location of the radiative cooling associated with the accretion stresses. Fully relativistic ray-tracing is used to compute the luminosity received by distant observers. For a disk with aspect ratio H/r ≃ 0.1 accreting onto a black hole with spin parameter a/M = 0.9, we find that there is significant dissipation beyond that predicted by the classical Novikov–Thorne model. However, much of it occurs deep in the potential, where photon capture and gravitational redshifting can strongly limit the net photon energy escaping to infinity. In addition, with these parameters and this radiation model, significant thermal and magnetic energy remains with the gas and is accreted by the black hole. In our model, the net luminosity reaching infinity is 6\% greater than the Novikov–Thorne prediction. If the accreted thermal energy were wholly radiated, the total luminosity of the accretion flow would be ≃20\% greater than the Novikov–Thorne value.},
-	language = {en},
-	number = {1},
-	urldate = {2021-04-12},
-	journal = {The Astrophysical Journal},
-	author = {Noble, Scott C. and Krolik, Julian H. and Hawley, John F.},
-	month = feb,
-	year = {2009},
-	note = {Publisher: American Astronomical Society},
-	pages = {411--421},
-	file = {IOP Full Text PDF:/var/home/bprather/Zotero/storage/RHZPREDV/Noble et al. - 2009 - DIRECT CALCULATION OF THE RADIATIVE EFFICIENCY OF .pdf:application/pdf}
-}
-
-@article{zilhao_dynamic_2014,
-	title = {Dynamic fisheye grids for binary black hole simulations},
-	volume = {31},
-	issn = {0264-9381},
-	url = {https://iopscience.iop.org/article/10.1088/0264-9381/31/6/065013/meta},
-	doi = {10.1088/0264-9381/31/6/065013},
-	language = {en},
-	number = {6},
-	urldate = {2021-04-12},
-	journal = {Classical and Quantum Gravity},
-	author = {Zilhão, Miguel and Noble, Scott C.},
-	month = feb,
-	year = {2014},
-	note = {Publisher: IOP Publishing},
-	pages = {065013},
-	file = {Snapshot:/var/home/bprather/Zotero/storage/KHEN8MT4/065013.html:text/html;Submitted Version:/var/home/bprather/Zotero/storage/FL5FI6YE/Zilhão and Noble - 2014 - Dynamic fisheye grids for binary black hole simula.pdf:application/pdf}
-}
-
-@article{bowen_quasi-periodic_2018,
-	title = {Quasi-periodic {Behavior} of {Mini}-disks in {Binary} {Black} {Holes} {Approaching} {Merger}},
-	volume = {853},
-	issn = {2041-8205},
-	url = {http://iopscience.iop.org/article/10.3847/2041-8213/aaa756/meta},
-	doi = {10.3847/2041-8213/aaa756},
-	language = {en},
-	number = {1},
-	urldate = {2021-04-12},
-	journal = {The Astrophysical Journal Letters},
-	author = {Bowen, Dennis B. and Mewes, Vassilios and Campanelli, Manuela and Noble, Scott C. and Krolik, Julian H. and Zilhão, Miguel},
+@article{kawazura_thermal_2019,
+	title = {Thermal disequilibration of ions and electrons by collisionless plasma turbulence},
+	volume = {116},
+	issn = {0027-8424},
+	url = {http://adsabs.harvard.edu/abs/2019PNAS..116..771K},
+	doi = {10.1073/pnas.1812491116},
+	abstract = {Does overall thermal equilibrium exist between ions and electrons in a 
+weakly collisional, magnetized, turbulent plasma? And, if not, how is
+thermal energy partitioned between ions and electrons? This is a
+fundamental question in plasma physics, the answer to which is also
+crucial for predicting the properties of far-distant astronomical
+objects such as accretion disks around black holes. In the context of
+disks, this question was posed nearly two decades ago and has since
+generated a sizeable literature. Here we provide the answer for the case
+in which energy is injected into the plasma via Alfvénic
+turbulence: Collisionless turbulent heating typically acts to
+disequilibrate the ion and electron temperatures. Numerical simulations
+using a hybrid fluid-gyrokinetic model indicate that the ion-electron
+heating-rate ratio is an increasing function of the thermal-to-magnetic
+energy ratio, βi: It ranges from ∼0.05 at βi=0.1 to at
+least 30 for βi≳10. This energy partition is approximately
+insensitive to the ion-to-electron temperature ratio Ti/Te. Thus, in the
+absence of other equilibrating mechanisms, a collisionless plasma system
+heated via Alfvénic turbulence will tend toward a nonequilibrium
+state in which one of the species is significantly hotter than the
+other, i.e., hotter ions at high βi and hotter electrons at low
+βi. Spectra of electromagnetic fields and the ion distribution
+function in 5D phase space exhibit an interesting new magnetically
+dominated regime at high βi and a tendency for the ion heating to
+be mediated by nonlinear phase mixing (“entropy cascade”)
+when βi≲1 and by linear phase mixing (Landau damping) when
+βi≫1.},
+	urldate = {2021-05-14},
+	journal = {Proceedings of the National Academy of Science},
+	author = {Kawazura, Yohei and Barnes, Michael and Schekochihin, Alexander A.},
 	month = jan,
-	year = {2018},
-	note = {Publisher: IOP Publishing},
-	pages = {L17},
-	file = {Full Text PDF:/var/home/bprather/Zotero/storage/8ZI5DRHA/Bowen et al. - 2018 - Quasi-periodic Behavior of Mini-disks in Binary Bl.pdf:application/pdf;Snapshot:/var/home/bprather/Zotero/storage/L3V6BSU2/aaa756.html:text/html}
+	year = {2019},
+	pages = {771--776},
+	file = {Full Text PDF:/var/home/bprather/Zotero/storage/5Q6QWIIZ/Kawazura et al. - 2019 - Thermal disequilibration of ions and electrons by .pdf:application/pdf}
+}
+
+@article{white_resolution_2019,
+	title = {A {Resolution} {Study} of {Magnetically} {Arrested} {Disks}},
+	volume = {874},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/2019ApJ...874..168W},
+	doi = {10.3847/1538-4357/ab0c0c},
+	abstract = {We investigate numerical convergence in simulations of magnetically arrested disks around spinning black holes. Using the
+general-relativistic magnetohydrodynamics code Athena++, we study the same system at four resolutions (up to an effective 512 × 256
+× 512 cells) and with two different spatial reconstruction
+algorithms. The accretion rate and general large-scale structure of the flow agree across the simulations. This includes the amount of magnetic flux accumulated in the saturated state and the ensuing suppression of the magnetorotational instability from the strong field. The energy of the jet and the efficiency with which spin energy is extracted via the Blandford-Znajek process also show convergence. However the
+spatial structure of the jet shows variation across the set of grids employed, as do the Lorentz factors. Small-scale features of the turbulence, as measured by correlation lengths, are not fully converged. Despite convergence of a number of aspects of the flow, modeling of synchrotron emission shows that variability is not converged and decreases with increasing resolution even at our highest resolutions.},
+	urldate = {2021-05-14},
+	journal = {The Astrophysical Journal},
+	author = {White, Christopher J. and Stone, James M. and Quataert, Eliot},
+	month = apr,
+	year = {2019},
+	keywords = {accretion, accretion disks, black hole physics, magnetohydrodynamics: MHD, relativistic processes},
+	pages = {168},
+	file = {Submitted Version:/var/home/bprather/Zotero/storage/AS937W9E/White et al. - 2019 - A Resolution Study of Magnetically Arrested Disks.pdf:application/pdf}
+}
+
+@article{ricarte_decomposing_2020,
+	title = {Decomposing the internal faraday rotation of black hole accretion flows},
+	volume = {498},
+	issn = {0035-8711},
+	url = {http://adsabs.harvard.edu/abs/2020MNRAS.498.5468R},
+	doi = {10.1093/mnras/staa2692},
+	abstract = {Faraday rotation has been seen at millimeter wavelengths in several low-luminosity active galactic nuclei, including Event Horizon Telescope (EHT) targets M87* and Sgr A*. The observed rotation measure (RM) probes the density, magnetic field, and temperature of material integrated along the line of sight. To better understand how accretion disc conditions are reflected in the RM, we perform polarized radiative transfer calculations using a set of general relativistic
+magnetohydrodynamic (GRMHD) simulations appropriate for M87*. We find that in spatially resolved millimetre wavelength images on event horizon scales, the RM can vary by orders of magnitude and even flip sign. The observational consequences of this spatial structure include significant time-variability, sign-flips, and non-λ2 evolution of the polarization plane. For some models, we find that internal RM can cause significant bandwidth depolarization even across the relatively narrow fractional bandwidths observed by the EHT. We decompose the linearly polarized emission in these models based on their RM and find that emission in front of the mid-plane can exhibit orders of magnitude less Faraday rotation than emission originating from behind the
+mid-plane or within the photon ring. We confirm that the spatially unresolved (i.e. image integrated) RM is a poor predictor of the accretion rate, with substantial scatter stemming from time variability and inclination effects. Models can be constrained with repeated observations to characterize time variability and the degree of
+non-λ2 evolution of the polarization plane.},
+	urldate = {2021-05-14},
+	journal = {Monthly Notices of the Royal Astronomical Society},
+	author = {Ricarte, Angelo and Prather, Ben S. and Wong, George N. and Narayan, Ramesh and Gammie, Charles and Johnson, Michael D.},
+	month = nov,
+	year = {2020},
+	keywords = {accretion, accretion discs, black hole physics, galaxies: individual (M87), magnetohydrodynamics (MHD), polarization, techniques: polarimetric},
+	pages = {5468--5488},
+	file = {Submitted Version:/var/home/bprather/Zotero/storage/9C9QKNQT/Ricarte et al. - 2020 - Decomposing the internal faraday rotation of black.pdf:application/pdf}
+}
+
+@article{grete_k-athena_2021,
+	title = {K-{Athena}: {A} {Performance} {Portable} {Structured} {Grid} {Finite} {Volume} {Magnetohydrodynamics} {Code}},
+	volume = {32},
+	issn = {1558-2183},
+	shorttitle = {K-{Athena}},
+	doi = {10.1109/TPDS.2020.3010016},
+	abstract = {Large scale simulations are a key pillar of modern research and require ever-increasing computational resources. Different novel manycore architectures have emerged in recent years on the way towards the exascale era. Performance portability is required to prevent repeated non-trivial refactoring of a code for different architectures. We combine ATHENA++, an existing magnetohydrodynamics (MHD) CPU code, with KOKKOS, a performance portable on-node parallel programming paradigm, into K-ATHENA to allow efficient simulations on multiple architectures using a single codebase. We present profiling and scaling results for different platforms including Intel Skylake CPUs, Intel Xeon Phis, and NVIDIA GPUs. K-ATHENA achieves {\textgreater} 108 cell-updates/s on a single V100 GPU for second-order double precision MHD calculations, and a speedup of 30 on up to 24 576 GPUs on Summit (compared to 172,032 CPU cores), reaching 1:94 × 1012 total cell-updates/s at 76 percent parallel efficiency. Using a roofline analysis we demonstrate that the overall performance is currently limited by DRAM bandwidth and calculate a performance portability metric of 62.8 percent. Finally, we present the implementation strategies used and the challenges encountered in maximizing performance. This will provide other research groups with a straightforward approach to prepare their own codes for the exascale era. K-ATHENA is available at https://gitlab.com/pgrete/kathena.},
+	number = {1},
+	journal = {IEEE Transactions on Parallel and Distributed Systems},
+	author = {Grete, Philipp and Glines, Forrest W. and O'Shea, Brian W.},
+	month = jan,
+	year = {2021},
+	note = {Conference Name: IEEE Transactions on Parallel and Distributed Systems},
+	keywords = {C++ languages, Computer architecture, D.2.8.b performance measures, D.3.2.d concurrent, distributed and parallel languages, Graphics processing units, I.6.8.h parallel, J.2.c astronomy, J.2.i physics, Kernel, Magnetohydrodynamics, Message systems, Programming},
+	pages = {85--97},
+	file = {IEEE Xplore Abstract Record:/var/home/bprather/Zotero/storage/QQX4728Y/9143480.html:text/html;Submitted Version:/var/home/bprather/Zotero/storage/JBARII8U/Grete et al. - 2021 - K-Athena A Performance Portable Structured Grid F.pdf:application/pdf}
+}
+
+@article{gelles_role_2021,
+	title = {The {Role} of {Adaptive} {Ray} {Tracing} in {Analyzing} {Black} {Hole} {Structure}},
+	volume = {912},
+	issn = {0004-637X},
+	url = {https://doi.org/10.3847/1538-4357/abee13},
+	doi = {10.3847/1538-4357/abee13},
+	abstract = {The recent advent of the Event Horizon Telescope (EHT) has made direct imaging of supermassive black holes a reality. Simulated images of black holes produced via general relativistic ray tracing and radiative transfer provide a key counterpart to these observational efforts. Black hole images have a wide range of physically interesting image structures, ranging from extremely fine scales in their lensed “photon rings” to the very large scales in their relativistic jets. The multiscale nature of the black hole system is therefore suitable for a multiscale approach to generate simulated images that capture all key elements of the system. Here, we present a prescription for adaptive ray tracing, which enables efficient computation of extremely high-resolution images of black holes. Using the polarized ray-tracing code ipole, we image a combination of semianalytic and general relativistic magnetohydrodynamic (GRMHD) models, and we show that images can be reproduced with a mean squared error of less than 0.1\% even after tracing 12× fewer rays. We then use adaptive ray tracing to explore the properties of the photon ring. We illustrate the behavior of individual subrings in GRMHD simulations, and we explore their signatures in interferometric visibilities.},
+	language = {en},
+	number = {1},
+	urldate = {2021-05-14},
+	journal = {The Astrophysical Journal},
+	author = {Gelles, Z. and Prather, B. S. and Palumbo, D. C. M. and Johnson, M. D. and Wong, G. N. and Georgiev, B.},
+	month = may,
+	year = {2021},
+	note = {Publisher: American Astronomical Society},
+	pages = {39},
+	file = {IOP Full Text PDF:/var/home/bprather/Zotero/storage/CR6UC9RL/Gelles et al. - 2021 - The Role of Adaptive Ray Tracing in Analyzing Blac.pdf:application/pdf}
+}
+
+@article{liska_h-amr_2019,
+	title = {H-{AMR}: {A} {New} {GPU}-accelerated {GRMHD} {Code} for {Exascale} {Computing} {With} {3D} {Adaptive} {Mesh} {Refinement} and {Local} {Adaptive} {Time}-stepping},
+	shorttitle = {H-{AMR}},
+	url = {http://arxiv.org/abs/1912.10192},
+	abstract = {General-relativistic magnetohydrodynamic (GRMHD) simulations have revolutionized our understanding of black-hole accretion. Here, we present a GPU-accelerated GRMHD code H-AMR with multi-faceted optimizations that, collectively, accelerate computation by 2-5 orders of magnitude for a wide range of applications. Firstly, it involves a novel implementation of a spherical-polar grid with 3D adaptive mesh refinement that operates in each of the 3 dimensions independently. This allows us to circumvent the Courant condition near the polar singularity, which otherwise cripples high-res computational performance. Secondly, we demonstrate that local adaptive time-stepping (LAT) on a logarithmic spherical-polar grid accelerates computation by a factor of \${\textbackslash}lesssim10\$ compared to traditional hierarchical time-stepping approaches. Jointly, these unique features lead to an effective speed of \${\textbackslash}sim10{\textasciicircum}9\$ zone-cycles-per-second-per-node on 5,400 NVIDIA V100 GPUs (i.e., 900 nodes of the OLCF Summit supercomputer). We demonstrate its computational performance by presenting the first GRMHD simulation of a tilted thin accretion disk threaded by a toroidal magnetic field around a rapidly spinning black hole. With an effective resolution of \$13\$,\$440{\textbackslash}times4\$,\$608{\textbackslash}times8\$,\$092\$ cells, and a total of \${\textbackslash}lesssim22\$ billion cells and \${\textbackslash}sim0.65{\textbackslash}times10{\textasciicircum}8\$ timesteps, it is among the largest astrophysical simulations ever performed. We find that frame-dragging by the black hole tears up the disk into two independently precessing sub-disks. The innermost sub-disk rotation axis intermittently aligns with the black hole spin, demonstrating for the first time that such long-sought alignment is possible in the absence of large-scale poloidal magnetic fields.},
+	urldate = {2021-05-14},
+	journal = {arXiv:1912.10192 [astro-ph]},
+	author = {Liska, Matthew and Chatterjee, Koushik and Tchekhovskoy, Alexander and Yoon, Doosoo and van Eijnatten, David and Hesp, Casper and Markoff, Sera and Ingram, Adam and van der Klis, Michiel},
+	month = dec,
+	year = {2019},
+	note = {arXiv: 1912.10192},
+	keywords = {Astrophysics - Astrophysics of Galaxies, Astrophysics - High Energy Astrophysical Phenomena, Astrophysics - Solar and Stellar Astrophysics},
+	file = {arXiv Fulltext PDF:/var/home/bprather/Zotero/storage/6LJYT895/Liska et al. - 2019 - H-AMR A New GPU-accelerated GRMHD Code for Exasca.pdf:application/pdf;arXiv.org Snapshot:/var/home/bprather/Zotero/storage/TV6TTSEG/1912.html:text/html}
+}
+
+@article{tiede_variational_2020,
+	title = {Variational {Image} {Feature} {Extraction} for the {EHT}},
+	url = {http://arxiv.org/abs/2012.07889},
+	abstract = {Imaging algorithms form powerful analysis tools for VLBI data analysis. However, these tools cannot measure certain image features (e.g., ring diameter) by their non-parametric nature. This is unfortunate since these image features are often related to astrophysically relevant quantities such as black hole mass. This paper details a new general image feature extraction technique that applies to a wide variety of VLBI image reconstructions called variational image domain analysis. Unlike previous tools, variational image domain analysis can be applied to any image reconstruction regardless of its structure. To demonstrate its flexibility, we analyze thousands of reconstructions from previous EHT synthetic datasets and recover image features such as diameter, orientation, and asymmetry. By measuring these features, VIDA can help extract astrophysically relevant quantities such as the mass and orientation of M 87.},
+	urldate = {2021-05-14},
+	journal = {arXiv:2012.07889 [astro-ph]},
+	author = {Tiede, Paul and Broderick, Avery E. and Palumbo, Daniel C. M.},
+	month = dec,
+	year = {2020},
+	note = {arXiv: 2012.07889},
+	keywords = {Astrophysics - High Energy Astrophysical Phenomena, Astrophysics - Instrumentation and Methods for Astrophysics},
+	file = {arXiv Fulltext PDF:/var/home/bprather/Zotero/storage/WKTNDPCB/Tiede et al. - 2020 - Variational Image Feature Extraction for the EHT.pdf:application/pdf;arXiv.org Snapshot:/var/home/bprather/Zotero/storage/YZ8VRNME/2012.html:text/html}
+}
+
+@article{lin_feature_2020,
+	title = {Feature {Extraction} on {Synthetic} {Black} {Hole} {Images}},
+	url = {http://arxiv.org/abs/2007.00794},
+	abstract = {The Event Horizon Telescope (EHT) recently released the first horizon-scale images of the black hole in M87. Combined with other astronomical data, these images constrain the mass and spin of the hole as well as the accretion rate and magnetic flux trapped on the hole. An important question for EHT is how well key parameters such as spin and trapped magnetic flux can be extracted from present and future EHT data alone. Here we explore parameter extraction using a neural network trained on high resolution synthetic images drawn from state-of-the-art simulations. We find that the neural network is able to recover spin and flux with high accuracy. We are particularly interested in interpreting the neural network output and understanding which features are used to identify, e.g., black hole spin. Using feature maps, we find that the network keys on low surface brightness features in particular.},
+	urldate = {2021-05-14},
+	journal = {arXiv:2007.00794 [astro-ph]},
+	author = {Lin, Joshua Yao-Yu and Wong, George N. and Prather, Ben S. and Gammie, Charles F.},
+	month = jul,
+	year = {2020},
+	note = {arXiv: 2007.00794},
+	keywords = {Astrophysics - High Energy Astrophysical Phenomena},
+	file = {arXiv Fulltext PDF:/var/home/bprather/Zotero/storage/PEE7IUS5/Lin et al. - 2020 - Feature Extraction on Synthetic Black Hole Images.pdf:application/pdf;arXiv.org Snapshot:/var/home/bprather/Zotero/storage/BBNHE4RF/2007.html:text/html}
 }
 @ARTICLE{PaperI,
        author = {{Event Horizon Telescope Collaboration} and {Akiyama}, Kazunori and
