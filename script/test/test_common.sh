@@ -75,20 +75,18 @@ verify() {
   cp ../../../analysis/*.py .
   python3 plot_diff.py $LAST_DUMP last_dump_gold.h5 differences_$PROB
 
-  # Print verification to file
-  exec > verification_$PROB.txt 2>&1
-  set -x
-
-  grep restart out_firsttime.txt
-  grep restart out_secondtime.txt
-
   # Diff first dumps for a sanity check
-  h5diff first_dump_gold.h5 dumps/dump_00000000.h5
-  h5diff first_restart_gold.h5 restarts/restart_00000001.h5
+  # TODO bring back for some tests?
+  #h5diff first_dump_gold.h5 dumps/dump_00000000.h5
+  #h5diff first_restart_gold.h5 restarts/restart_00000001.h5
 
   # Diff last dumps
-  h5diff last_dump_gold.h5 $LAST_DUMP
-  # These are useful for debugging
-  #h5diff --delta=1e-12 last_dump_gold.h5 $LAST_DUMP
-  #h5diff --delta=1e-8 last_dump_gold.h5 $LAST_DUMP
+  echo "1e-8"
+  h5diff --delta=1e-8 last_dump_gold.h5 $LAST_DUMP
+  echo "1e-12"
+  h5diff --delta=1e-10 last_dump_gold.h5 $LAST_DUMP
+  #echo "Binary identical"
+  #h5diff last_dump_gold.h5 $LAST_DUMP
+
+  cd -
 }

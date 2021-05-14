@@ -17,16 +17,17 @@
 
 double C1, C2, n;
 
-double rs;
+// Use internal mdot variable so as not to get re-calculated/overwritten
+double rs, mdot_bondi;
 void set_problem_params() {
-  set_param("mdot", &mdot);
+  set_param("mdot", &mdot_bondi);
   set_param("rs", &rs);
   set_param("Rhor", &Rhor);
 }
 
 void save_problem_data(hid_t string_type){
         hdf5_write_single_val("bondi", "PROB", string_type);
-        hdf5_write_single_val(&mdot, "mdot", H5T_IEEE_F64LE);
+        hdf5_write_single_val(&mdot_bondi, "mdot", H5T_IEEE_F64LE);
         hdf5_write_single_val(&rs, "rs", H5T_IEEE_F64LE);
 }
 
@@ -115,11 +116,11 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
     n = 1./(gam - 1.);
 
     // Solution constants
-    double uc = sqrt(mdot/(2.*rs));
+    double uc = sqrt(mdot_bondi/(2.*rs));
     double Vc = -sqrt(pow(uc,2)/(1. - 3.*pow(uc,2)));
     double Tc = -n*pow(Vc,2)/((n + 1.)*(n*pow(Vc,2) - 1.));
     C1 = uc*pow(rs,2)*pow(Tc,n);
-    C2 = pow(1. + (1. + n)*Tc,2)*(1. - 2.*mdot/rs + pow(C1,2)/
+    C2 = pow(1. + (1. + n)*Tc,2)*(1. - 2.*mdot_bondi/rs + pow(C1,2)/
        (pow(rs,4)*pow(Tc,2*n)));
 
     firstc = 0;
@@ -197,7 +198,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   if (DEBUG && mpi_io_proc()) {
     printf("a = %e Rhor = %e\n", a, Rhor);
 
-    printf("mdot = %e\n", mdot);
+    printf("mdot = %e\n", mdot_bondi);
     printf("rs   = %e\n", rs);
     printf("n    = %e\n", n);
     printf("C1   = %e\n", C1);
