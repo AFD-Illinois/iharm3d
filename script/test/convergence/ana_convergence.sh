@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
 OUT_DIR=results_$1
 BASEDIR=../../..

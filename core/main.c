@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
   }
   // In case we're restarting and these changed
   tdump = t + DTd;
+  tfull = t + DTf;
   tlog = t + DTl;
 
   // Initial diagnostics
@@ -155,9 +156,17 @@ int main(int argc, char *argv[])
 
     // File I/O with set frequencies
     if (t < tf) {
-      if (t >= tdump) {
+      if (t >= tfull) {
+        diag(G, S, DIAG_FULL_DUMP);
         dumpThisStep = 1;
-        diag(G, S, DIAG_DUMP);
+        tfull += DTf;
+      }
+      if (t >= tdump) {
+        // Unless we already did a full dump...
+        if (!dumpThisStep)
+          diag(G, S, DIAG_DUMP);
+        // If we did full-dump, 
+        dumpThisStep = 1;
         tdump += DTd;
       }
       if (t >= tlog) {

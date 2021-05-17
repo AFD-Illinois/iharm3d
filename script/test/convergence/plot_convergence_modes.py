@@ -105,6 +105,16 @@ for n in range(len(MODES)):
 
   os.chdir('../plots')
 
+  # RECORD VALUES
+  outf = open("data_"+NAMES[MODES[n]]+".csv", "w")
+  outf.write("#res,rho,u,u1,u2,u3,B1,B2,B3\n")
+  for i in range(len(L1[n,:,0])):
+    outf.write("{},".format(RES[i]))
+    for k in range(NVAR):
+      outf.write("{},".format(L1[n,i,k]))
+    outf.write("\n")
+  outf.close()
+
   # MAKE PLOTS
   fig = plt.figure(figsize=(16.18,10))
 
@@ -123,3 +133,12 @@ for n in range(len(MODES)):
   plt.legend(loc=1)
   plt.savefig('mhdmodes3d_' + NAMES[MODES[n]] + '.png', bbox_inches='tight')
 
+print("Modes problem fitted convergences:")
+print(powerfits)
+
+if (np.any(powerfits < -2.1) or
+    np.any(np.logical_and(powerfits > -1.9, powerfits < -0.1)) or
+    np.any(powerfits > 0.1)):
+    exit(1)
+else:
+    exit(0)

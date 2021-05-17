@@ -1,9 +1,10 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
 source ../test_common.sh
 
 PROB=${1:-torus}
-MADS=${2:-0}
 
 # Must be just a name for now
 OUT_DIR=results_$PROB
@@ -18,9 +19,9 @@ mkdir -p $OUT_DIR
 # Give the system a reasonable size to limit runtime
 # Bondi problem is 2D
 if [ "$PROB" == "bondi" ]; then
-  set_problem_size 256 256 1
+  set_problem_size 128 128 1
 else
-  set_problem_size 96 48 48
+  set_problem_size 96 32 16
 fi
 
 # Give a relatively short endpoint
@@ -32,7 +33,7 @@ then
   set_run_dbl u_jitter 0.0
 fi
 
-for i in $MADS
+for i in 0 1
 do
 
   rm -rf $OUT_DIR/dumps $OUT_DIR/restarts $OUT_DIR/*.h5
@@ -44,7 +45,10 @@ do
   if [ $PROB == "torus" ]
   then 
     set_run_int mad_type $i
-    echo "First run of torus problem, mad_type $i..."
+    echo "First run of $PROB problem, mad_type $i..."
+  elif [ $PROB == "mhdmodes" ]
+  then
+    echo "First run of $PROB problem, mode $i..."
   else
     echo "First run of $PROB problem..."
   fi
@@ -69,11 +73,5 @@ do
   echo "Done!"
 
   verify $PROB
-
-  if [ $PROB == "torus" ]
-  then
-    mv $OUT_DIR/verification_torus.txt $OUT_DIR/verification_torus_$i.txt
-    mv $OUT_DIR/differences_torus.png $OUT_DIR/differences_torus_$i.png
-  fi
 
 done
