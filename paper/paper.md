@@ -56,7 +56,7 @@ Numerical simulations are crucial in modeling observations of active galactic nu
 
 Multiple codes already exist for solving the ideal GRMHD equations on regular Eulerian meshes in 3D, including:
 
-- Athena++ (@white_extension_2016)
+- Athena++ (@stone_athena_2020, @white_extension_2016)
 - BHAC (@porth_black_2017)
 - Cosmos++ (@anninos_cosmos_2005, @fragile_numerical_2012, @fragile_numerical_2014)
 - ECHO (@londrillo_high-order_2000, @londrillo_divergence-free_2004)
