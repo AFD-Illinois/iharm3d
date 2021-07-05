@@ -61,7 +61,7 @@ The [Fishbone-Moncrief](https://doi.org/10.1086/154565)(FM) torus is the ubiquit
 ```bash
 $ make -f IHARM3D_DIRECTORY/makefile PROB=torus
 ```
-   where IHARM3D_DIRECTORY is the path to your local `iharm3d` repository that contains the makefile. The output directory is where, as explained in the section above, the harm executable is created along with the `build_archive`. `build_archive` contains the source files necessary to run `iharm3d` along with the problem-specific compile-time parameter file, `parameters.h` and problem initialization file, `problem.c`.
+where IHARM3D_DIRECTORY is the path to your local `iharm3d` repository that contains the makefile. The output directory is where, as explained in the section  above, the harm executable is created along with the `build_archive`. `build_archive` contains the source files necessary to run `iharm3d` along with the problem-specific compile-time parameter file, `parameters.h` and problem initialization file, `problem.c`.
 
 2. Modify compile-time parameters in `build_archive/parameters.h`. These typically include (i) the grid size `NiTOT`; (ii) number of MPI ranks `NiCPU`; (iii) density and internal energy floors, `BSQORHOMAX`, `UORHOMAX`, `BSQOUMAX`; (iv) the reconstruction scheme `RECONSTRUCTION`. NOTE: If you're running `iharm3d` on your local system, it is recommended that the FM problem is run at a low resolution or a 2D problem is executed (set `N3TOT` to 1).
 
@@ -69,7 +69,20 @@ $ make -f IHARM3D_DIRECTORY/makefile PROB=torus
 
 4. Copy any of the parameter files located at `IHARM3D_DIRECTORY/prob/torus/` labelled param_sane.dat or param_mad.dat to the output directory and rename the file as `param.dat`. This contains the runtime parameters for the FM torus (eg: duration of run, domain size, output file cadence, fluid properties, FM torus size, FMKS grid geometry). NOTE: It is again recommended to set `tf` to a reasonable value if you're running the problem on your local computer.
 
-5. Submitting the run: Once the parameter
+5. Submitting the run: Once the runtime parameters have been updated, you're good to run the FM problem. The command to launch the run depends on the capabilities of your system,
+   (i) If you're executing the problem on your local system or a remote computer with a single node, you do not need the MPI dependency and following command should suffice (run from output directory),
+   
+   ```bash
+   $ ./harm -p param.dat >LOG_FILE
+   ```
+   where the runtime log is redirected to `LOG_FILE`. If `STDOUT` is not redirected, the runtime log will be printed on the terminal. NOTE: You can set the number of cores over which you want `iharm3d` to execute by modifying the environment variable, `OMP_NUM_THREADS` pre-compilation. If not provided, `iharm3d` by default is run across all cores available.
+   
+   (ii) If you're running the problem on a HPCC, you may have multiple nodes at your disposal. In this case, you can use an MPI implementation to parallelize the jobs across several nodes. The exact command to launch `harm` depends on the MPI implementation. If you arer running `iharm3d` on a TACC system (which has the SLURM job scheduler), you may find the various job submission scripts located at `IHARM3D_DIRECTORY/scripts/submit` useful. You can submit the job on any TACC machine as,
+   
+   ```bash
+   $sbatch -N (NODES) -p (QUEUE) IHARM3D_DIRECTORY/scripts/submit/SUBMIT_SCRIPT.sb
+   ```
+   where `SUBMIT_SCRIPT.sb` is the job submission script that varies in accordance with the TACC system you're logged into. 
 
 
 ## Hacking
