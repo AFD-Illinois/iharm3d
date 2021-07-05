@@ -56,7 +56,7 @@ with job submission scripts for SLURM in the TACC environment, adaptable for a l
 
 The [Fishbone-Moncrief](https://doi.org/10.1086/154565)(FM) torus is the ubiquitous initial condition for modelling compact radio sources such as M87* and SgrA*. The FM problem can be simulated on `iharm3d` by using the `-PROB=torus` flag while making the program, and specifying the problem-specific parameters (compile-time and run-time) in `parameters.h` (in the build archive) and an additional parameter file which, by default `iharm3d` assumes to be named `param.dat`. The following steps outline the commands to compile and execute the problem. They presuppose that all the necessary dependencies (eg: OpenMP, MPI, phdf5, GSL) are installed and the directory variables and flags in `makefile` are pointing to them correctly.
 
-1. Invoke the make command from the output directory, 
+1. Invoke the make command from the output directory,
 
 ```bash
 $ make -f IHARM3D_DIRECTORY/makefile PROB=torus
