@@ -54,7 +54,7 @@ with job submission scripts for SLURM in the TACC environment, adaptable for a l
 
 ## Running a Fishbone-Moncrief torus
 
-The [Fishbone-Moncrief](https://doi.org/10.1086/154565)(FM) torus is the ubiquitous initial condition for modelling compact radio sources such as M87* and SgrA*. The FM problem can be simulated on `iharm3d` by using the `-PROB=torus` flag while making the program, and specifying the problem-specific parameters (compile-time and run-time) in `parameters.h` (in the build archive) and an additional parameter file which, by default `iharm3d` assumes to be named `param.dat`. The following steps outline the commands to compile and execute the problem. They presuppose that all the necessary dependencies (eg: OpenMP, MPI, phdf5, GSL) are installed and the directory variables and flags in `makefile` are pointing to them correctly.
+The [Fishbone-Moncrief](https://doi.org/10.1086/154565)(FM) torus is the ubiquitous initial condition for modelling compact radio sources such as M87* and SgrA*. The FM problem can be simulated on `iharm3d` by passing the command line argument`PROB=torus`, while making the program, and specifying problem-specific parameters (compile-time and run-time) in `parameters.h` (in the build archive) and an additional parameter file which, by default `iharm3d` assumes to be named `param.dat`.  Presupposing that all the necessary dependencies (eg: OpenMP, MPI, phdf5, GSL) are installed and the directory variables and flags in `makefile` are pointing to them correctly, the following steps outline the commands to compile and execute the problem:
 
 1. Invoke the make command from the output directory,
 
@@ -70,14 +70,14 @@ where IHARM3D_DIRECTORY is the path to your local `iharm3d` repository that cont
 4. Copy any of the parameter files located at `IHARM3D_DIRECTORY/prob/torus/` labelled param_sane.dat or param_mad.dat to the output directory and rename the file as `param.dat`. This contains the runtime parameters for the FM torus (eg: duration of run, domain size, output file cadence, fluid properties, FM torus size, FMKS grid geometry). NOTE: It is again recommended to set `tf` to a reasonable value if you're running the problem on your local computer.
 
 5. Submitting the run: Once the runtime parameters have been updated, you're good to run the FM problem. The command to launch the run depends on the capabilities of your system,
-   (i) If you're executing the problem on your local system or a remote computer with a single node, you do not need the MPI dependency and following command should suffice (run from output directory),
+   (i) If you're executing the problem on a single-node system, you do not need the MPI dependency and following command should suffice (run from output directory),
    
    ```bash
    $ ./harm -p param.dat >LOG_FILE
    ```
-   where the runtime log is redirected to `LOG_FILE`. If `STDOUT` is not redirected, the runtime log will be printed on the terminal. NOTE: You can set the number of cores over which you want `iharm3d` to execute by modifying the environment variable, `OMP_NUM_THREADS` pre-compilation. If not provided, `iharm3d` by default is run across all cores available.
+   where the runtime log is redirected to `LOG_FILE`. If `STDOUT` is not redirected, the runtime log will be printed on the terminal. NOTE: You can set the number of cores over which you want `iharm3d` to execute by modifying the environment variable, `OMP_NUM_THREADS` during pre-compilation. If not provided, the problem by default will be run across all cores available.
    
-   (ii) If you're running the problem on a HPCC, you may have multiple nodes at your disposal. In this case, you can use an MPI implementation to parallelize the jobs across several nodes. The exact command to launch `harm` depends on the MPI implementation. If you arer running `iharm3d` on a TACC system (which has the SLURM job scheduler), you may find the various job submission scripts located at `IHARM3D_DIRECTORY/scripts/submit` useful. You can submit the job on any TACC machine as,
+   (ii) If you're running the problem on a multi-node system, you can utilize `iharm3d`'s MPI functionality to parallelize the job across several nodes. The exact command to launch `harm` depends on the MPI implementation. If you are running `iharm3d` on a TACC system (which has the SLURM job scheduler), you may find the various job submission scripts located at `IHARM3D_DIRECTORY/scripts/submit` useful. You can submit the job on any TACC machine as,
    
    ```bash
    $sbatch -N (NODES) -p (QUEUE) IHARM3D_DIRECTORY/scripts/submit/SUBMIT_SCRIPT.sb
