@@ -5,7 +5,7 @@ CC = h5pcc
 ifneq (,$(findstring icc,$(shell $(CC) --version)))
 
 	ifneq (,$(findstring 18.0,$(shell $(CC) --version)))
-		GSL_DIR = /opt/apps/intel18/gsl/2.3
+		GSL_DIR = /opt/apps/intel18/gsl/2.6
 	else
 		GSL_DIR = /opt/apps/intel17/gsl/2.3
 	endif
@@ -23,7 +23,7 @@ endif
 
 ifneq (,$(findstring gcc,$(shell $(CC) --version)))
 
-	GSL_DIR = /opt/apps/gcc7_1/gsl/2.3/
+	GSL_DIR = /opt/apps/gcc7_1/gsl/2.6/
 
 	CC = h5pcc -shlib
 	

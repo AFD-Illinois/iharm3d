@@ -8,6 +8,7 @@
 
 #include "bl_coord.h"
 #include "decs.h"
+#include "hdf5_utils.h"
 
 // Rootfinding for analytic Bondi solution
 #include <gsl/gsl_errno.h>
@@ -21,6 +22,12 @@ void set_problem_params() {
   set_param("mdot", &mdot);
   set_param("rs", &rs);
   set_param("Rhor", &Rhor);
+}
+
+void save_problem_data(hid_t string_type){
+        hdf5_write_single_val("bondi", "PROB", string_type);
+        hdf5_write_single_val(&mdot, "mdot", H5T_IEEE_F64LE);
+        hdf5_write_single_val(&rs, "rs", H5T_IEEE_F64LE);
 }
 
 // Adapted from M. Chandra

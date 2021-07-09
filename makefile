@@ -34,6 +34,12 @@ endif
 ifneq (,$(findstring theta,$(HOST)))
         -include $(MAKEFILE_PATH)/machines/theta.make
 endif
+ifneq (,$(findstring frontera,$(HOST)))
+        -include $(MAKEFILE_PATH)/machines/frontera.make
+endif
+ifneq (,$(findstring beginsbh,begins$(HOST)))
+        -include $(MAKEFILE_PATH)/machines/bh.make
+endif
 -include $(MAKEFILE_PATH)/machines/$(HOST).make
 
 # Everything below this should be static
@@ -115,6 +121,12 @@ vtune: build
 clean:
 	@echo "Cleaning build files..."
 	@rm -f $(EXE) $(OBJ)
+
+distclean: clean
+	@echo "Cleaning config files..."
+	@rm -rf build_archive
+
+archive-invalidation: distclean
 
 $(EXE): $(ARC_DIR)/$(EXE)
 	@cp $(ARC_DIR)/$(EXE) .
