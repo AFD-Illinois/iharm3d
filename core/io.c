@@ -27,6 +27,15 @@
 
 void dump(struct GridGeom *G, struct FluidState *S)
 {
+  dump_backend(G, S, IO_REGULAR);
+}
+void dump_full(struct GridGeom *G, struct FluidState *S)
+{
+  dump_backend(G, S, IO_FULL);
+}
+
+void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
+{
   timer_start(TIMER_IO);
 
   static GridDouble *data;
@@ -48,7 +57,12 @@ void dump(struct GridGeom *G, struct FluidState *S)
   //Don't re-dump the grid after a restart
   if (dump_cnt == 0) dump_grid(G);
 
-  sprintf(fname, "dumps/dump_%08d.h5", dump_cnt);
+  if (type == IO_ABORT) {
+    sprintf(fname, "dumps/dump_abort.h5");    
+  } else {
+    sprintf(fname, "dumps/dump_%08d.h5", dump_cnt);
+  }
+
   if(mpi_io_proc()) fprintf(stdout, "DUMP %s\n", fname);
 
   hdf5_create(fname);
@@ -153,7 +167,7 @@ void dump(struct GridGeom *G, struct FluidState *S)
 
   hdf5_set_directory("/");
 
-  int is_full_dump = 1; // TODO do partial/full dumps
+  int is_full_dump = (type == IO_FULL);
   hdf5_write_single_val(&is_full_dump, "is_full_dump", H5T_STD_I32LE);
   hdf5_write_single_val(&t, "t", H5T_IEEE_F64LE);
   hdf5_add_units("t", "code");

@@ -158,11 +158,18 @@
 #define MINKOWSKI (0)
 #define MKS       (1)
 
+// Flag denoting output type
+#define IO_REGULAR (1)
+#define IO_ABORT (2)
+#define IO_FULL (3)
+
 // Diagnostic calls
 #define DIAG_INIT  (0)
 #define DIAG_DUMP  (1)
 #define DIAG_LOG   (2)
 #define DIAG_FINAL (3)
+#define DIAG_ABORT (4)
+#define DIAG_FULL_DUMP (5)
 
 // Failure modes
 // TODO find+eliminate uses
@@ -280,7 +287,7 @@ extern double DTl;
 extern int DTr;
 extern int DTp;
 extern int dump_cnt;
-extern double tdump, tlog;
+extern double tdump, tfull, tlog;
 
 // Diagnostics
 extern double mdot, edot, ldot;
@@ -440,6 +447,8 @@ void flux_ct(struct FluidFlux *F);
 // io.c
 void init_io();
 void dump(struct GridGeom *G, struct FluidState *S);
+void dump_full(struct GridGeom *G, struct FluidState *S);
+void dump_backend(struct GridGeom *G, struct FluidState *S, int type);
 void dump_grid(struct GridGeom *G);
 
 // metric.c
@@ -524,6 +533,7 @@ void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir);
 
 // restart.c
 void restart_write(struct FluidState *S);
+void restart_write_backend(struct FluidState *S, int type);
 void restart_read(char *fname, struct FluidState *S);
 int restart_init(struct GridGeom *G, struct FluidState *S);
 

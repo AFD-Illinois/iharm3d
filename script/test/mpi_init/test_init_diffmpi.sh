@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
 source ../test_common.sh
 
@@ -18,9 +20,9 @@ mkdir -p $OUT_DIR
 # Give the system a reasonable size to limit runtime
 # Bondi problem is 2D
 if [ "$PROB" == "bondi" ]; then
-  set_problem_size 256 256 1
+  set_problem_size 128 128 1
 else
-  set_problem_size 96 48 48
+  set_problem_size 96 32 16
 fi
 
 # Give a relatively short endpoint

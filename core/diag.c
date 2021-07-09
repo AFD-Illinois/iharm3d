@@ -127,10 +127,18 @@ void diag(struct GridGeom *G, struct FluidState *S, int call_code)
   double jet_EM_flux = mpi_reduce(jet_EM_flux_proc);
   double lum_eht = mpi_reduce(lum_eht_proc);
 
-  if ((call_code == DIAG_INIT && !is_restart) ||
+
+  if (call_code == DIAG_FULL_DUMP) {
+    dump_full(G, S);
+    dump_cnt++;
+  } else if ((call_code == DIAG_INIT && !is_restart) ||
     call_code == DIAG_DUMP || call_code == DIAG_FINAL) {
     dump(G, S);
     dump_cnt++;
+  }
+
+  if (call_code == DIAG_ABORT) {
+    dump_backend(G, S, IO_ABORT);
   }
 
   if (call_code == DIAG_INIT || call_code == DIAG_LOG ||

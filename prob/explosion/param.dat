@@ -1,14 +1,14 @@
 ### RUNTIME PARAMETERS ###
 
 # COORDINATES
-[dbl] tf = 5.0
+[dbl] tf = 4.0
 [dbl] dt = 1.0e-06
-[dbl] x1Min = 0.0
-[dbl] x1Max = 1.0
-[dbl] x2Min = 0.0
-[dbl] x2Max = 1.0
-[dbl] x3Min = 0.0
-[dbl] x3Max = 1.0
+[dbl] x1Min = -6.0
+[dbl] x1Max = 6.0
+[dbl] x2Min = -6.0
+[dbl] x2Max = 6.0
+[dbl] x3Min = -6.0
+[dbl] x3Max = 6.0
 
 # FLUID
 [dbl] gam = 1.333333
@@ -29,4 +29,4 @@
 [dbl] tptemax = 1000.0
 
 # PROBLEM
-[int] nmode = 3
+[dbl] Bx = 1.0

@@ -47,6 +47,14 @@ print("Powerfit: {} L1: {}".format(powerfit, L1))
 
 os.chdir('../plots/')
 
+# RECORD VALUES
+outf = open("data_bondi.csv", "w")
+outf.write("#res,rho\n")
+for i in range(len(L1)):
+  outf.write("{},{}\n".format(RES[i],L1[i]))
+outf.close()
+
+
 # MAKE PLOTS
 fig = plt.figure(figsize=(16.18,10))
 
@@ -64,3 +72,7 @@ plt.title("BONDI")
 plt.legend(loc=1)
 plt.savefig('bondi.png', bbox_inches='tight')
 
+if powerfit < -2.1 or powerfit > -1.9:
+    exit(1)
+else:
+    exit(0)

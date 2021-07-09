@@ -1,8 +1,10 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
 source ../test_common.sh
 
-SZ=$1
+SZ=${1:-192}
 # Must be just a name for now
 OUT_DIR=results_torus_$SZ
 RESOURCE_DIR=~/test-resources

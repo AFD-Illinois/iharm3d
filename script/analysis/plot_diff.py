@@ -62,7 +62,7 @@ def plot_diff_xz(ax, var, rel=False, lim=None):
 # Plot the difference
 nxplot = 4
 nyplot = 3
-vars = list(hdr['prim_names'])+['fail','divB']
+vars = list(hdr['prim_names']) #+['fail','divB'] # Need to take diffs of non-full dumps
 
 fig = plt.figure(figsize=(FIGX, FIGY))
 for i,name in enumerate(vars):

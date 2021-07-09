@@ -45,7 +45,7 @@ double DTl;
 int DTr;
 int DTp;
 int dump_cnt;
-double tdump, tlog;
+double tdump, tfull, tlog;
 
 // derived logged output
 double mdot, edot, ldot;
