@@ -70,7 +70,7 @@ def plot(n):
 
   if movie_type == "simplest":
     # Simplest movie: just RHO
-    ax_slc = [plt.subplot(1,2,1), plt.subplot(1,2,2)]
+    ax_slc = [fig.add_subplot(1,2,1), fig.add_subplot(1,2,2)]
     bplt.plot_xz(ax_slc[0], geom, np.log10(dump['RHO']),
                      label="", vmin=rho_l, vmax=rho_h, window=window,
                      xlabel=False, ylabel=False, xticks=False, yticks=False,
@@ -86,21 +86,21 @@ def plot(n):
   elif movie_type == "simpler":
     # Simpler movie: RHO and phi
     gs = gridspec.GridSpec(2, 2, height_ratios=[6, 1], width_ratios=[16,17])
-    ax_slc = [fig.subplot(gs[0,0]), fig.subplot(gs[0,1])]
-    ax_flux = [fig.subplot(gs[1,:])]
+    ax_slc = [fig.add_subplot(gs[0,0]), fig.add_subplot(gs[0,1])]
+    ax_flux = [fig.add_subplot(gs[1,:])]
     bplt.plot_slices(ax_slc[0], ax_slc[1], geom, dump, np.log10(dump['RHO']),
                      label=r"$\log_{10}(\rho)$", vmin=rho_l, vmax=rho_h, window=window,
                      overlay_field=False, cmap='jet')
-    bplt.diag_plot(ax_flux[0], diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI, xlabel=False)
+    bplt.diag_plot(ax_flux[0], diag, 'Phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI, xlabel=False)
   elif movie_type == "simple":
     # Simple movie: RHO mdot phi
     gs = gridspec.GridSpec(3, 2, height_ratios=[4, 1, 1])
-    ax_slc = [fig.subplot(gs[0,0]), fig.subplot(gs[0,1])]
-    ax_flux = [fig.subplot(gs[1,:]), fig.subplot(gs[2,:])]
+    ax_slc = [fig.add_subplot(gs[0,0]), fig.add_subplot(gs[0,1])]
+    ax_flux = [fig.add_subplot(gs[1,:]), fig.add_subplot(gs[2,:])]
     bplt.plot_slices(ax_slc[0], ax_slc[1], geom, dump, np.log10(dump['RHO']),
                      label=r"$\log_{10}(\rho)$", vmin=rho_l, vmax=rho_h, window=window, cmap='jet')
-    bplt.diag_plot(ax_flux[0], diag, 'mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
-    bplt.diag_plot(ax_flux[1], diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
+    bplt.diag_plot(ax_flux[0], diag, 'Mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
+    bplt.diag_plot(ax_flux[1], diag, 'Phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
   elif movie_type == "radial":
 
     # TODO just record these in analysis output...
@@ -115,7 +115,7 @@ def plot(n):
     Ptot_r = eht_profile(geom, Pg + Pb, jmin, jmax)
     betainv_r = eht_profile(geom, Pb/Pg, jmin, jmax)
 
-    ax_slc = lambda i: plt.subplot(2, 3, i)
+    ax_slc = lambda i: fig.add_subplot(2, 3, i)
     bplt.radial_plot(ax_slc(1), geom, rho_r, ylabel=r"$<\rho>$", logy=True, ylim=[1.e-2, 1.e0])
     bplt.radial_plot(ax_slc(2), geom, Pg_r, ylabel=r"$<P_g>$", logy=True, ylim=[1.e-6, 1.e-2])
     bplt.radial_plot(ax_slc(3), geom, B_r, ylabel=r"$<|B|>$", logy=True, ylim=[1.e-4, 1.e-1])
@@ -124,7 +124,7 @@ def plot(n):
     bplt.radial_plot(ax_slc(6), geom, betainv_r, ylabel=r"$<\beta^{-1}>$", logy=True, ylim=[1.e-2, 1.e1])
   
   elif movie_type == "fluxes_cap":
-    axes = [plt.subplot(2, 2, i) for i in range(1,5)]
+    axes = [fig.add_subplot(2, 2, i) for i in range(1,5)]
     bplt.plot_thphi(axes[0], geom, np.log10(d_fns['FE'](dump)[iBZ,:,:]), iBZ, vmin=-8, vmax=-4, label =r"FE $\theta-\phi$ slice")
     bplt.plot_thphi(axes[1], geom, np.log10(d_fns['FM'](dump)[iBZ,:,:]), iBZ, vmin=-8, vmax=-4, label =r"FM $\theta-\phi$ slice")
     bplt.plot_thphi(axes[2], geom, np.log10(d_fns['FL'](dump)[iBZ,:,:]), iBZ, vmin=-8, vmax=-4, label =r"FL $\theta-\phi$ slice")
@@ -149,17 +149,17 @@ def plot(n):
   
   elif movie_type == "rho_cap":
     # Note cmaps are different between left 2 and right plot, due to the latter being far away from EH
-    bplt.plot_slices(plt.subplot(1,3,1), plt.subplot(1,3,2), geom, dump, np.log10(dump['RHO']),
+    bplt.plot_slices(fig.add_subplot(1,3,1), fig.add_subplot(1,3,2), geom, dump, np.log10(dump['RHO']),
                    label=r"$\log_{10}(\rho)$", vmin=-3, vmax=2, cmap='jet')
-    bplt.overlay_contours(plt.subplot(1,3,1), geom, geom['r'], [rBZ], color='k')
-    bplt.plot_thphi(plt.subplot(1,3,3), geom, np.log10(dump['RHO'][iBZ,:,:]), iBZ, vmin=-4, vmax=1, label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice r="+str(rBZ))
+    bplt.overlay_contours(fig.add_subplot(1,3,1), geom, geom['r'], [rBZ], color='k')
+    bplt.plot_thphi(fig.add_subplot(1,3,3), geom, np.log10(dump['RHO'][iBZ,:,:]), iBZ, vmin=-4, vmax=1, label=r"$\log_{10}(\rho)$ $\theta-\phi$ slice r="+str(rBZ))
   
   elif movie_type == "funnel_wall":
     rKH = 20
     iKH = i_of(geom, rKH)
     win=[0,rBZ/2,0,rBZ]
     gs = gridspec.GridSpec(1, 3, width_ratios=[1,1,1])
-    axes = [plt.subplot(gs[0,i]) for i in range(3)]
+    axes = [fig.add_subplot(gs[0,i]) for i in range(3)]
     bplt.plot_xz(axes[0], geom, np.log10(dump['RHO']),
                    label=r"$\log_{10}(\rho)$", vmin=-3, vmax=2, cmap='jet', window=win, shading='flat')
     
@@ -185,8 +185,8 @@ def plot(n):
       awindow = [0,1,0,1]
       bwindow = [0,rBZ/2,-rBZ/2,rBZ/2]
     rlevels = [10, 20, 40, 80]
-    axes = [plt.subplot(2,3,1), plt.subplot(2,3,2), plt.subplot(2,3,4), plt.subplot(2,3,5)]
-    bigaxis = plt.subplot(1,3,3)
+    axes = [fig.add_subplot(2,3,1), fig.add_subplot(2,3,2), fig.add_subplot(2,3,4), fig.add_subplot(2,3,5)]
+    bigaxis = fig.add_subplot(1,3,3)
     for ax,rlevel in zip(axes, rlevels):
       bplt.plot_thphi(ax, geom, np.log10(dump['RHO'][i_of(geom, rlevel),:,:]), i_of(geom, rlevel),
                      label=r"$\log_{10}(\rho) (r = "+str(rlevel)+")$", vmin=-3, vmax=2, cmap='jet', shading='flat',
@@ -202,8 +202,8 @@ def plot(n):
     bplt.overlay_contours(bigaxis, geom, geom['r'][:,:,0], levels=rlevels, color='r')
 
   else: # All other movie types share a layout
-    ax_slc = lambda i: plt.subplot(2, 4, i)
-    ax_flux = lambda i: plt.subplot(4, 2, i)
+    ax_slc = lambda i: fig.add_subplot(2, 4, i)
+    ax_flux = lambda i: fig.add_subplot(4, 2, i)
     if movie_type == "traditional":
       # Usual movie: RHO beta fluxes
       # CUTS
@@ -212,8 +212,8 @@ def plot(n):
       bplt.plot_slices(ax_slc(5), ax_slc(6), geom, dump, np.log10(dump['beta']),
                        label=r"$\beta$", vmin=-2, vmax=2, cmap='RdBu_r')
       # FLUXES
-      bplt.diag_plot(ax_flux(2), diag, 'mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
-      bplt.diag_plot(ax_flux(4), diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
+      bplt.diag_plot(ax_flux(2), diag, 'Mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
+      bplt.diag_plot(ax_flux(4), diag, 'Phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
       # Mixins:
       # Zoomed in RHO
       bplt.plot_slices(ax_slc(7), ax_slc(8), geom, dump, np.log10(dump['RHO']),
@@ -250,8 +250,8 @@ def plot(n):
                        label=r"$T^0_0$ Integrated", vmin=0, vmax=3000, arrspace=True, integrate=True)
 
       # Usual fluxes for reference
-      bplt.diag_plot(ax_flux[1], diag, 'mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
-      #bplt.diag_plot(ax_flux[3], diag, 'phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
+      bplt.diag_plot(ax_flux[1], diag, 'Mdot', dump['t'], ylabel=r"$\dot{M}$", logy=LOG_MDOT)
+      #bplt.diag_plot(ax_flux[3], diag, 'Phi_b', dump['t'], ylabel=r"$\phi_{BH}$", logy=LOG_PHI)
 
       # Radial conservation plots
       E_r = sum_shell(geom,Tmixed(geom, dump, 0,0))
@@ -277,7 +277,7 @@ def plot(n):
       bplt.diag_plot(ax, diag, dump, 'sigma_max', 'sigma_max')
     
     elif movie_type in d_fns: # Hail mary for plotting new functions one at a time
-      axes = [plt.subplot(1,2,1), plt.subplot(1,2,2)]
+      axes = [fig.add_subplot(1,2,1), fig.add_subplot(1,2,2)]
       win=[l*2 for l in window]
       var = d_fns[movie_type](dump)
       bplt.plot_slices(axes[0], axes[1], geom, dump, np.log10(var), vmin=-3, vmax=3, cmap='Reds', window=win)

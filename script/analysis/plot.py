@@ -54,6 +54,7 @@ def flatten_xy(array, average=False, loop=True):
     slice = np.mean(array, axis=1)
   else:
     slice = array[:,array.shape[1]//2,:]
+    loop = False
   
   if loop:
     return loop_phi(slice)
