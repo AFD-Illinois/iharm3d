@@ -63,7 +63,7 @@ $ make -f IHARM3D_DIRECTORY/makefile PROB=torus
 ```
 where IHARM3D_DIRECTORY is the path to your local `iharm3d` repository that contains the makefile. The output directory is where, as explained in the section  above, the harm executable is created along with the `build_archive`. `build_archive` contains the source files necessary to run `iharm3d` along with the problem-specific compile-time parameter file, `parameters.h` and problem initialization file, `problem.c`.
 
-2. Modify compile-time parameters in `build_archive/parameters.h`. These typically include (i) the grid size `NiTOT`; (ii) number of MPI ranks `NiCPU`; (iii) density and internal energy floors: `BSQORHOMAX`, `UORHOMAX`, `BSQOUMAX`; (iv) the reconstruction scheme `RECONSTRUCTION`. NOTE: If you're running `iharm3d` on your local system, it is recommended that the FM problem is run at a low resolution or a 2D problem is executed (set `N3TOT` to 1).
+2. Modify compile-time parameters in `build_archive/parameters.h`. These typically include (i) the grid size `NiTOT`; (ii) number of MPI ranks `NiCPU`; (iii) density and internal energy floors: `BSQORHOMAX`, `UORHOMAX`, `BSQOUMAX`; (iv) the reconstruction scheme `RECONSTRUCTION`. NOTE: If you're running `iharm3d` on your local system, it is recommended that the FM problem is run at a low resolution or a 2D problem is executed (set `N3TOT` to 1).  You may also want to lower the problem size by setting `N1TOT`, `N2TOT`, and `N3TOT`, e.g. to 128x128x1.  A strict minimum is placed on `N1TOT` based on the domain size, usually ~90 grid zones or greater.  This is in order to place enough gridzones inside the event horizon to causally disconnect the observable fluid from the inner boundary.
 
 3. If the compile-time parameters have been modified or the C code in any of the source files in `build_archive` has been edited, the harm executable must be remade with the same command as in (1) from the output directory.
 
@@ -83,6 +83,14 @@ where IHARM3D_DIRECTORY is the path to your local `iharm3d` repository that cont
    $sbatch -N (NODES) -p (QUEUE) IHARM3D_DIRECTORY/scripts/submit/SUBMIT_SCRIPT.sb
    ```
    where `SUBMIT_SCRIPT.sb` is the job submission script that varies in accordance with the TACC system you're logged into. 
+
+## Plotting Results
+
+After running, HDF5-format snapshots of the primitive variables will be placed in the `dumps/` directory (full format spec is [here](https://github.com/AFD-Illinois/docs/wiki/GRMHD-Output-Format)). Various functions for plotting the results can be found in `script/analysis/`.  One can generate the summary statistics required by movies by running `python script/analysis/eht_analysis.py dumps/`, renaming the result to `eht_out.p`.  Then full movies of various kinds can be generated with `python script/analysis/movie.py traditional dumps/ 0 1000`, where the latter numbers mark the time to start and end the movie, in simulation time units.
+
+Most plotted output consists of a poloidal and toroidal slice of a given variable, taken poloidally (x-z) at phi of 0 and pi, or in the midplane at theta of pi/2.
+
+Note that analysis scripts require at least `numpy`, `h5py`, and `matplotlib`.  More advanced plotting and calculations should use the more recent tools in [pyHARM](https://github.com/afd-illinois/pyharm).
 
 ## Hacking
 Notes that may save you time in reading the source code:
