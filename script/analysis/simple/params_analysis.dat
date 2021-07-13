@@ -1,0 +1,14 @@
+# Set analysis script-specific params
+# A better option than hard-coding in the script or passing as command line arguments
+
+# Problem to analyze, must be 'torus' or 'mhdmodes' or 'bondi'
+PROB torus
+
+# Problem dimension, must be 3 or 2 (NOTE: if PROB is set to bondi, analysis script by default assumes NDIMS to be 2)
+NDIMS 2
+
+# Path to dumps directory
+DUMPSDIR ./dumps
+
+# Path to plots directory
+PLOTSDIR ./plots
