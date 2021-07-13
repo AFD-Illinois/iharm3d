@@ -84,6 +84,22 @@ where IHARM3D_DIRECTORY is the path to your local `iharm3d` repository that cont
    ```
    where `SUBMIT_SCRIPT.sb` is the job submission script that varies in accordance with the TACC system you're logged into. 
 
+## Basic plots
+
+Having run the desired problem, one can use the `basic_analysis.py` script at `scripts/analysis/simple` to generate simple plots. To do this,
+
+1. Update `params_analysis.dat` in `scripts/analysis/simple` to match your problem. NOTE: `DUMPSDIR` must be a path to the dump files and `PLOTSDIR` must be a path to the directory where you wish to save the plots.
+2. Run `basic_analysis.py` as,
+
+```bash
+$python3 basic_analysis.py -p path/to/params_analysis/file
+```
+The script by default parallelizes the analysis by using python's `multiprocessing` module. You can get around this by setting `nthreads` to `1` in main. For the 3D `torus` problem, it plots the density and plasma beta-inverse (magnetic pressure/gas pressure) in the XZ (poloidal) and XY (toroidal) plane. It overlays the poloidal density plot with magnetic field lines. For the 2D `torus` problem, it generates similar poloidal plots. If you're using the script on the output of a `bondi` problem, it will generate the poloidal density plot. Note that the `bondi` problem in `iharm3d` is unmagnetized and it wouldn't make sense to plot plasma beta-inverse. Finally, the script plots the density in XZ and XY plane for the `mhdmodes` problem.
+
+We hope that this script sheds some light on the way data is stored in the dump files and grid file (a more detailed summary can be found [here](https://github.com/AFD-Illinois/docs/wiki/GRMHD-Output-Format) and [here](https://github.com/AFD-Illinois/docs/wiki/Grid-Output-Format), and acts as a primer for the calculations performed to compute various qunatities of interest, and generate simple plots. 
+
+If you're looking for a more complete set of scripts that calculates and plots a near-exhaustive list of relevant GRMHD diagnostics, have a look at [pyHARM](https://github.com/AFD-Illinois/pyHARM).
+
 ## Hacking
 Notes that may save you time in reading the source code:
 * Grid coordinates match physical coordinates i => x^1, j => x^2, k => x^3.  However, they are indexed backward
