@@ -86,11 +86,11 @@ def plotting_bfield_lines(ax,B1,B2,nlines=20):
     xp = xz_slice(grid['x'], patch_pole=True)
     zp = xz_slice(grid['z'])
     B1_phi_avg = B1.mean(axis=-1) 
-    B2_phi_avg = B1.mean(axis=-1)
+    B2_phi_avg = B2.mean(axis=-1)
     AJ_phi = np.zeros([2*grid['n1'],grid['n2']]) 
     for j in range(grid['n2']):
         for i in range(grid['n1']):
-            AJ_phi[grid['n1']-1-i,j] = AJ_phi[i+grid['n1'],j] = (np.trapz(grid['gdet'][:i,j,0]*B2_phi_avg[:i,j],dx=grid['dx1']) - np.trapz(grid['gdet'][i,j:,0]*B1_phi_avg[i,j:],dx=grid['dx2']))
+            AJ_phi[grid['n1']-1-i,j] = AJ_phi[i+grid['n1'],j] = (np.trapz(grid['gdet'][:i,j,0]*B2_phi_avg[:i,j],dx=grid['dx1']) - np.trapz(grid['gdet'][i,:j,0]*B1_phi_avg[i,:j],dx=grid['dx2']))
     AJ_phi -=AJ_phi.min()
     levels = np.linspace(0,AJ_phi.max(),nlines*2)
     ax.contour(xp, zp, AJ_phi, levels=levels, colors='k')
