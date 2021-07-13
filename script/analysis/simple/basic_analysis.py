@@ -109,7 +109,7 @@ def analysis_mhdmodes(dumpval, cmap='jet', vmin=-4e-5, vmax=4e-5, domain = [0,1,
     fig = plt.figure(figsize=(16,9))
     heights = [1,5]
     gs = gridspec.GridSpec(nrows=2, ncols=2, height_ratios=heights, figure=fig)
-    
+
     ax0 = fig.add_subplot(gs[0,:])
     ax0.annotate('t= '+str(t),xy=(0.5,0.5),xycoords='axes fraction',va='center',ha='center',fontsize='x-large')
     ax0.axis("off")
@@ -161,7 +161,7 @@ def analysis_bondi(dumpval, cmap='jet', vmin=-3, vmax=-1, domain = [-20,0,-20,20
     fig = plt.figure(figsize=(16,9))
     heights = [1,5]
     gs = gridspec.GridSpec(nrows=2, ncols=1, height_ratios=heights, figure=fig)
-    
+
     ax0 = fig.add_subplot(gs[0,0])
     ax0.annotate('t= '+str(t),xy=(0.5,0.5),xycoords='axes fraction',va='center',ha='center',fontsize='x-large')
     ax0.axis("off")
@@ -225,7 +225,7 @@ def analysis_torus2d(dumpval, cmap='jet', vmin=-5, vmax=0, domain = [-50,0,-50,5
     fig = plt.figure(figsize=(16,9))
     heights = [1,5]
     gs = gridspec.GridSpec(nrows=2, ncols=2, height_ratios=heights, figure=fig)
-    
+
     ax0 = fig.add_subplot(gs[0,:])
     ax0.annotate('t= '+str(t),xy=(0.5,0.5),xycoords='axes fraction',va='center',ha='center',fontsize='x-large')
     ax0.axis("off")
@@ -260,7 +260,7 @@ def analysis_torus2d(dumpval, cmap='jet', vmin=-5, vmax=0, domain = [-50,0,-50,5
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(betainvpolplot, cax=cax)
-    
+
     plt.tight_layout()
     plt.savefig(os.path.join(globalvars['PLOTSDIR'],'{}_basic_plot_{:04d}.png'.format(globalvars['PROB'],dumpval)))
     plt.close()
@@ -301,7 +301,7 @@ def analysis_torus3d(dumpval, cmap='jet', vmin=-5, vmax=0, domain = [-50,50,-50,
     zp = xz_slice(grid['z'])
     rhop = xz_slice(logrho)
     betainvp = xz_slice(logbetainv)
-    
+
     xt = xy_slice(grid['x'])
     yt = xy_slice(grid['y'],patch_phi=True)
     rhot = xy_slice(logrho)
@@ -310,7 +310,7 @@ def analysis_torus3d(dumpval, cmap='jet', vmin=-5, vmax=0, domain = [-50,50,-50,
     fig = plt.figure(figsize=(16,9))
     heights = [1,5,5]
     gs = gridspec.GridSpec(nrows=3, ncols=2, height_ratios=heights, figure=fig)
-    
+
     ax0 = fig.add_subplot(gs[0,:])
     ax0.annotate('t= '+str(t),xy=(0.5,0.5),xycoords='axes fraction',va='center',ha='center',fontsize='x-large')
     ax0.axis("off")
@@ -375,24 +375,29 @@ def analysis_torus3d(dumpval, cmap='jet', vmin=-5, vmax=0, domain = [-50,50,-50,
     divider = make_axes_locatable(ax4)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(betainvtorplot, cax=cax)
-    
+
     plt.tight_layout()
     plt.savefig(os.path.join(globalvars['PLOTSDIR'],'{}_basic_plot_{:04d}.png'.format(globalvars['PROB'],dumpval)))
     plt.close()
 
 # main(): Reads param file, writes grid dict and calls analysis function
 if __name__=="__main__":
-    if sys.argv[1]=='-p':
+    if len(sys.argv) > 1 and sys.argv[1]=='-p':
         fparams_name = sys.argv[2]
     else:
         sys.exit('No param file provided')
-    
+
     # Reading the param file
     with open(fparams_name,'r') as fparams:
         lines = fparams.readlines()
         for line in lines:
             if line[0]=='#' or line.isspace(): pass
             elif line.split()[0] in globalvars_keys: globalvars[line.split()[0]]=line.split()[-1]
+
+    # Creating the output directory if it doesn't exist
+    if not os.path.exists(globalvars['PLOTSDIR']):
+        os.makedirs(globalvars['PLOTSDIR'])
+
     # Calculating total dump files
     dstart = int(sorted(os.listdir(globalvars['DUMPSDIR']))[0][-7:-3])
     dend = int(sorted(list(filter(lambda dump: 'dump' in dump,os.listdir(globalvars['DUMPSDIR']))))[-1][-7:-3])
@@ -451,14 +456,14 @@ if __name__=="__main__":
     # Calling analysis function for mhdmodes
     if globalvars['PROB']=='mhdmodes':
         run_parallel(analysis_mhdmodes,dlist,nthreads)
-    
+
     # Calling analysis function for bondi
     if globalvars['PROB']=='bondi':
         if globalvars['NDIMS']=='2':
             run_parallel(analysis_bondi,dlist,nthreads)
         else:
             print('Bondi problem => NDIMS=2')
-    
+
     # Calling analysis function for torus2d
     if globalvars['PROB']=='torus' and globalvars['NDIMS']=='2':
         run_parallel(analysis_torus2d,dlist,nthreads)

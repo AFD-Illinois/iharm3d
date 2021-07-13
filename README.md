@@ -92,7 +92,7 @@ Having run the desired problem, one can use the `basic_analysis.py` script at `s
 2. Run `basic_analysis.py` as,
 
 ```bash
-$python3 basic_analysis.py -p path/to/params_analysis/file
+$python3 script/analysis/simple/basic_analysis.py -p script/analysis/simple/params_analysis.dat
 ```
 The script by default parallelizes the analysis by using python's `multiprocessing` module. You can get around this by setting `nthreads` to `1` in main. For the 3D `torus` problem, it plots the density and plasma beta-inverse (magnetic pressure/gas pressure) in the XZ (poloidal) and XY (toroidal) plane. It overlays the poloidal density plot with magnetic field lines. For the 2D `torus` problem, it generates similar poloidal plots. If you're using the script on the output of a `bondi` problem, it will generate the poloidal density plot. Note that the `bondi` problem in `iharm3d` is unmagnetized and it wouldn't make sense to plot plasma beta-inverse. Finally, the script plots the density in XZ and XY plane for the `mhdmodes` problem.
 

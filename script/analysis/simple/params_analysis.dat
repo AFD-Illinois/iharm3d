@@ -8,7 +8,7 @@ PROB torus
 NDIMS 2
 
 # Path to dumps directory
-DUMPSDIR /home/vdhruv2/torus2d/dumps
+DUMPSDIR ./dumps
 
 # Path to plots directory
-PLOTSDIR /home/vdhruv2/basic_analysis/plotsdir
+PLOTSDIR ./plots
