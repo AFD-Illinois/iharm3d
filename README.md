@@ -109,3 +109,6 @@ as well as the presence of border "ghost" zones, easier to manage
 given `typedef`s in order to allocate their backing memory contiguously
 * Comments are sparse, and usually concern implementation details, not algorithmic operation. See
 [iharm2d_v3](https://github.com/AFD-Illinois/iharm2d_v3) for a simpler version which may prove a gentler introduction.
+
+## Help & Contributing
+Qustions and suggestions for the code and/or documentation are welcome. We recommend raising an issue [here](https://github.com/AFD-Illinois/iharm3d/issues)
