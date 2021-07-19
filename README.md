@@ -111,4 +111,6 @@ given `typedef`s in order to allocate their backing memory contiguously
 [iharm2d_v3](https://github.com/AFD-Illinois/iharm2d_v3) for a simpler version which may prove a gentler introduction.
 
 ## Help & Contributing
-Qustions and suggestions for the code and/or documentation are welcome. We recommend raising an issue [here](https://github.com/AFD-Illinois/iharm3d/issues)
+Qustions and suggestions for the code and/or documentation are welcome. If you run into problems, have questions, or would like to see a feature, we recommend raising an issue [here](https://github.com/AFD-Illinois/iharm3d/issues).
+
+We welcome collaboration from anyone interested in these problems or in contributing to the code.  Feel free to get in touch either through GitHub by opening pull requests and forks, or directly to the developers via email.
