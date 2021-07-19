@@ -1,8 +1,9 @@
 /******************************************************************************
  *                                                                            *
- * IO.C                                                                       *
+ * RESTART.C                                                                  *
  *                                                                            *
- * HDF5 OUTPUT AND RESTART                                                    *
+ * WRITES RESTART FILE, READS RESTART FILE AND MAKES FUNCTION CALLS TO        *
+ * INITIALIZE GRID, SET P AND U, COMPUTE FOUR-VECTORS AND APPLY BOUNDS        *
  *                                                                            *
  ******************************************************************************/
 
