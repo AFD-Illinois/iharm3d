@@ -219,7 +219,7 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   int loc, int dir, GridDouble cmax, GridDouble cmin)
 {
   double discr, vp, vm, bsq, ee, ef, va2, cs2, cms2, rho, u;
-  double Acov[NDIM], Bcov[NDIM], Acon[NDIM], Bcon[NDIM];which all 
+  double Acov[NDIM], Bcov[NDIM], Acon[NDIM], Bcon[NDIM]; 
   double Asq, Bsq, Au, Bu, AB, Au2, Bu2, AuBu, A, B, C;
 
   DLOOP1 {
