@@ -30,6 +30,7 @@ static int maxr_normalization = 0;
 
 // TODO allow initialization of mad_type w/string?
 static int mad_type;
+static int rand_seed = 0;
 static double BHflux, beta;
 static double rin, rmax;
 static double rBstart, rBend;
@@ -38,6 +39,7 @@ void set_problem_params() {
   set_param("rin", &rin);
   set_param("rmax", &rmax);
   set_param("u_jitter", &u_jitter);
+  set_param("rand_seed", &rand_seed);
 
   set_param("mad_type", &mad_type);
   set_param("BHflux", &BHflux);
@@ -70,7 +72,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   // Initialize RNG
   rng = gsl_rng_alloc(gsl_rng_mt19937);
-  gsl_rng_set(rng, mpi_myrank());  // Deterministic but not symmetric across MPI procs
+  gsl_rng_set(rng, rand_seed + mpi_myrank());  // Deterministic but not symmetric across MPI procs
 
   // Fishbone-Moncrief parameters
   double l = lfish_calc(rmax);

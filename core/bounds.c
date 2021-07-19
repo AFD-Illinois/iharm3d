@@ -55,11 +55,11 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
 #if N1 < NG
           int iactive = NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iactive];
-          pflag[k][j][i] = pflag[k][j][iactive];
+          pflag[k][j][i] = 10;
 #elif X1L_BOUND == OUTFLOW
             int iz = 0 + NG;
             PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iz];
-            pflag[k][j][i] = pflag[k][j][iz];
+            pflag[k][j][i] = 10;
 
             double rescale = G->gdet[CENT][j][iz]/G->gdet[CENT][j][i];
             S->P[B1][k][j][i] *= rescale;
@@ -98,11 +98,11 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
 #if N1 < NG
           int iactive = N1 - 1 + NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iactive];
-          pflag[k][j][i] = pflag[k][j][iactive];
+          pflag[k][j][i] = 10;
 #elif X1R_BOUND == OUTFLOW
           int iz = N1 - 1 + NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iz];
-          pflag[k][j][i] = pflag[k][j][iz];
+          pflag[k][j][i] = 10;
 
           double rescale = G->gdet[CENT][j][iz]/G->gdet[CENT][j][i];
           S->P[B1][k][j][i] *= rescale;
@@ -147,16 +147,16 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
 #if N2 < NG
           int jactive = NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jactive][i];
-          pflag[k][j][i] = pflag[k][jactive][i];
+          pflag[k][j][i] = 10;
 #elif X2L_BOUND == OUTFLOW
           int jz = 0 + NG ;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jz][i];
-          pflag[k][j][i] = pflag[k][jz][i];
+          pflag[k][j][i] = 10;
 #elif X2L_BOUND == POLAR
           // Reflect the zone past NG by NG-j
           int jrefl = NG + (NG - j) - 1;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jrefl][i];
-          pflag[k][j][i] = pflag[k][jrefl][i];
+          pflag[k][j][i] = 10;
           S->P[U2][k][j][i] *= -1.;
           S->P[B2][k][j][i] *= -1.;
 #endif
@@ -176,16 +176,16 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
 #if N2 < NG
           int jactive = N2 - 1 + NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jactive][i];
-          pflag[k][j][i] = pflag[k][jactive][i];
+          pflag[k][j][i] = 10;
 #elif X2R_BOUND == OUTFLOW
           int jz = N2 - 1 + NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jz][i];
-          pflag[k][j][i] = pflag[k][jz][i];
+          pflag[k][j][i] = 10;
 #elif X2R_BOUND == POLAR
           // As j grows beyond N2+NG, reflect the zone that far previous
           int jrefl = (N2 + NG) + (N2 + NG - j) - 1;
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][jrefl][i];
-          pflag[k][j][i] = pflag[k][jrefl][i];
+          pflag[k][j][i] = 10;
           S->P[U2][k][j][i] *= -1.;
           S->P[B2][k][j][i] *= -1.;
 #endif
@@ -209,11 +209,11 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
 #if N3 < NG
           int kactive = NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][kactive][j][i];
-          pflag[k][j][i] = pflag[kactive][j][i];
+          pflag[k][j][i] = 10;
 #elif X3L_BOUND == OUTFLOW
           int kz = 0 + NG ;
           PLOOP S->P[ip][k][j][i] = S->P[ip][kz][j][i];
-          pflag[k][j][i] = pflag[kz][j][i];
+          pflag[k][j][i] = 10;
 #endif
         }
       }
@@ -230,11 +230,11 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
 #if N3 < NG
           int kactive = N3-1+NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][kactive][j][i];
-          pflag[k][j][i] = pflag[kactive][j][i];
+          pflag[k][j][i] = 10;
 #elif X3R_BOUND == OUTFLOW
           int kz = N3 - 1 + NG;
           PLOOP S->P[ip][k][j][i] = S->P[ip][kz][j][i];
-          pflag[k][j][i] = pflag[kz][j][i];
+          pflag[k][j][i] = 10;
 #endif
         }
       }
