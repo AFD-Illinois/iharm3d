@@ -11,14 +11,18 @@
 #if ELECTRONS
 
 // TODO put these in options with a default in decs.h
-#define HOWES 0
-#define KAWAZURA 1
-#define CONSTANT 3
+// Defined as in decs.h, CONSTANT not included in ALLMODELS version
+#define KAWAZURA  9
+#define WERNER    10
+#define ROWAN     11
+#define SHARMA    12
+#define CONSTANT 5
 #define FE_MODEL KAWAZURA
 
 void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k);
 void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S, int i, int j, int k);
 double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
+double get_fels(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int model);
 
 void init_electrons(struct GridGeom *G, struct FluidState *S)
 {
@@ -28,7 +32,15 @@ void init_electrons(struct GridGeom *G, struct FluidState *S)
 
     // Initialize entropies
     S->P[KTOT][k][j][i] = (gam-1.)*S->P[UU][k][j][i]*pow(S->P[RHO][k][j][i],-gam);
+
+    // Initialize different models' entropies
+    #if ALLMODELS
+    for (int idx = KEL0; idx < NVAR ; idx++) {
+      S->P[idx][k][j][i] = (game-1.)*uel*pow(S->P[RHO][k][j][i],-game);
+    }
+    #else
     S->P[KEL][k][j][i] = (game-1.)*uel*pow(S->P[RHO][k][j][i],-game);
+    #endif
   }
 
   // Necessary?  Usually called right afterward
@@ -55,9 +67,16 @@ inline void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Ss, stru
 
   //double uel = 1./(game-1.)*S->P[KEL][k][j][i]*pow(S->P[RHO][k][j][i],game);
 
+  // Evolve different models' entropies
+  #if ALLMODELS
+  for (int idx = KEL0; idx < NVAR ; idx++) {
+    double fel = get_fels(G, Ss, i, j, k, idx);
+    Sf->P[idx][k][j][i] += (game-1.)/(gam-1.)*pow(Ss->P[RHO][k][j][i],gam-game)*fel*(kHarm - Sf->P[KTOT][k][j][i]);
+  }
+  #else
   double fel = get_fel(G, Ss, i, j, k);
-
   Sf->P[KEL][k][j][i] += (game-1.)/(gam-1.)*pow(Ss->P[RHO][k][j][i],gam-game)*fel*(kHarm - Sf->P[KTOT][k][j][i]);
+  #endif
 
   // TODO bhlight calculates Qvisc here instead of this
   //double ugHat = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam)/(gam-1.);
@@ -73,8 +92,62 @@ inline void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Ss, stru
   Sf->P[KTOT][k][j][i] = kHarm;
 }
 
+// New function for ALLMODELS runs.
+#if ALLMODELS
+inline double get_fels(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int model)
+{
+  get_state(G, S, i, j, k, CENT);
+  double bsq = bsq_calc(S, i, j, k);
+  double fel = 0.0;
+if (model == KAWAZURA) {
+  double Tpr = (gam-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
+  double uel = 1./(game-1.)*S->P[model][k][j][i]*pow(S->P[RHO][k][j][i],game);
+  double Tel = (game-1.)*uel/S->P[RHO][k][j][i];
+  if(Tel <= 0.) Tel = SMALL;
+  if(Tpr <= 0.) Tpr = SMALL;
+
+  double Trat = fabs(Tpr/Tel);
+  double pres = S->P[RHO][k][j][i]*Tpr; // Proton pressure
+  double beta = pres/bsq*2;
+  if(beta > 1.e20) beta = 1.e20;
+  
+  double QiQe = 35./(1. + pow(beta/15.,-1.4)*exp(-0.1/Trat));
+  fel = 1./(1. + QiQe);
+} else if (model == WERNER) {
+  double sigma = bsq/S->P[RHO][k][j][i];
+  fel = 0.25*(1+pow(((sigma/5.)/(2+(sigma/5.))), .5));
+} else if (model == ROWAN) {
+  double pres = (gam-1.)*S->P[UU][k][j][i]; // Proton pressure
+  double beta = pres/bsq*2;
+  double sigma = bsq/(S->P[RHO][k][j][i]+S->P[UU][k][j][i]+pres);
+  double betamax = 0.25/sigma;
+  fel = 0.5*exp(-pow(1-beta/betamax, 3.3)/(1+1.2*pow(sigma, 0.7)));
+} else if (model == SHARMA) {
+  double Tpr = (gam-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
+  double uel = 1./(game-1.)*S->P[model][k][j][i]*pow(S->P[RHO][k][j][i],game);
+  double Tel = (game-1.)*uel/S->P[RHO][k][j][i];
+  if(Tel <= 0.) Tel = SMALL;
+  if(Tpr <= 0.) Tpr = SMALL;
+
+  double Trat = fabs(Tel/Tpr);
+  fel = 0.33 * pow(Trat, 0.5);
+}
+
+#if SUPPRESS_HIGHB_HEAT
+  if(bsq/S->P[RHO][k][j][i] > 1.) fel = 0;
+#endif
+
+  return fel;
+}
+//////////////////////////////////
+#else
+//////////////////////////////////
 inline double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
 {
+  get_state(G, S, i, j, k, CENT);
+  double bsq = bsq_calc(S, i, j, k);
+
+#if FE_MODEL == KAWAZURA
   double Tpr = (gam-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
   double uel = 1./(game-1.)*S->P[KEL][k][j][i]*pow(S->P[RHO][k][j][i],game);
   double Tel = (game-1.)*uel/S->P[RHO][k][j][i];
@@ -82,30 +155,30 @@ inline double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, in
   if(Tpr <= 0.) Tpr = SMALL;
 
   double Trat = fabs(Tpr/Tel);
-
   double pres = S->P[RHO][k][j][i]*Tpr; // Proton pressure
-
-  //TODO can I prevent this call?
-  get_state(G, S, i, j, k, CENT);
-  double bsq = bsq_calc(S, i, j, k);
-
   double beta = pres/bsq*2;
   if(beta > 1.e20) beta = 1.e20;
-
-#if FE_MODEL == HOWES
-  double logTrat = log10(Trat);
-  double mbeta = 2. - 0.2*logTrat;
-
-  double c1 = 0.92;
-  double c2 = (Trat <= 1.) ? 1.6/Trat : 1.2/Trat;
-  double c3 = (Trat <= 1.) ? 18. + 5.*logTrat : 18.;
-
-  double beta_pow = pow(beta,mbeta);
-  double qrat = c1*(c2*c2+beta_pow)/(c3*c3 + beta_pow)*exp(-1./beta)*pow(MP/ME*Trat,.5);
-  double fel = 1./(1. + qrat);
-#elif FE_MODEL == KAWAZURA
+  
   double QiQe = 35./(1. + pow(beta/15.,-1.4)*exp(-0.1/Trat));
   double fel = 1./(1. + QiQe);
+#elif FE_MODEL == WERNER
+  double sigma = bsq/S->P[RHO][k][j][i];
+  double fel = 0.25*(1+pow(((sigma/5.)/(2+(sigma/5.))), .5));
+#elif FE_MODEL == ROWAN
+  double pres = (gam-1.)*S->P[UU][k][j][i]; // Proton pressure
+  double beta = pres/bsq*2;
+  double sigma = bsq/(S->P[RHO][k][j][i]+S->P[UU][k][j][i]+pres);
+  double betamax = 0.25/sigma;
+  double fel = 0.5*exp(-pow(1-beta/betamax, 3.3)/(1+1.2*pow(sigma, 0.7)));
+#elif FE_MODEL == SHARMA
+  double Tpr = (gam-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
+  double uel = 1./(game-1.)*S->P[model][k][j][i]*pow(S->P[RHO][k][j][i],game);
+  double Tel = (game-1.)*uel/S->P[RHO][k][j][i];
+  if(Tel <= 0.) Tel = SMALL;
+  if(Tpr <= 0.) Tpr = SMALL;
+
+  double Trat = fabs(Tel/Tpr);
+  double fel = 0.33 * pow(Trat, 0.5);
 #elif FE_MODEL == CONSTANT
   double fel = fel0;
 #endif
@@ -116,6 +189,7 @@ inline double get_fel(struct GridGeom *G, struct FluidState *S, int i, int j, in
 
   return fel;
 }
+#endif
 
 void fixup_electrons(struct FluidState *S)
 {
@@ -131,9 +205,17 @@ void fixup_electrons(struct FluidState *S)
 
 inline void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k)
 {
+
   double kelmax = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam-game)/(tptemin*(gam-1.)/(gamp-1.) + (gam-1.)/(game-1.));
   double kelmin = S->P[KTOT][k][j][i]*pow(S->P[RHO][k][j][i],gam-game)/(tptemax*(gam-1.)/(gamp-1.) + (gam-1.)/(game-1.));
 
+  #if ALLMODELS
+  for (int idx = KEL0; idx < NVAR ; idx++) {
+    if (isnan(S->P[idx][k][j][i])) S->P[idx][k][j][i] = kelmin;
+    S->P[idx][k][j][i] = MY_MAX(S->P[idx][k][j][i], kelmin);
+    S->P[idx][k][j][i] = MY_MIN(S->P[idx][k][j][i], kelmax);
+  }
+  #else
   // Replace NANs with cold electrons
   if (isnan(S->P[KEL][k][j][i])) S->P[KEL][k][j][i] = kelmin;
 
@@ -142,6 +224,7 @@ inline void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k)
 
   // Enforce minimum Tp/Te
   S->P[KEL][k][j][i] = MY_MIN(S->P[KEL][k][j][i], kelmax);
+  #endif
 }
 #endif // ELECTRONS
 
