@@ -38,8 +38,13 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   char fname[80];
 
   #if ELECTRONS
+  #if ALLMODELS
   const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
-                            "KEL", "KTOT"};
+                            "KTOT", "KEL0", "KEL1", "KEL2", "KEL3"};
+  #else
+  const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
+                            "KTOT", "KEL"};
+  #endif
   #else
   const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"}; //Reserve some extra
   #endif
