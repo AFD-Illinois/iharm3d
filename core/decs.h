@@ -140,7 +140,7 @@
 #define KEL3 (12) // Sharma
 #define NVAR (13)
 #else
-#define KEL  (9)
+#define KEL0  (9)
 #define NVAR (10)
 #endif
 #else

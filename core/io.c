@@ -43,7 +43,7 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
                             "KTOT", "KEL0", "KEL1", "KEL2", "KEL3"};
   #else
   const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
-                            "KTOT", "KEL"};
+                            "KTOT", "KEL0"};
   #endif
   #else
   const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"}; //Reserve some extra
