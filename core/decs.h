@@ -36,7 +36,7 @@
       COMPILE-TIME PARAMETERS :
 *******************************************************************************/
 
-#define VERSION "iharm-alpha-3.6"
+#define VERSION "iharm-alpha-3.7"
 
 // Number of active zones on each MPI process
 #define N1       (N1TOT/N1CPU)
@@ -132,9 +132,17 @@
 #define B2  (6)
 #define B3  (7)
 #if ELECTRONS
-#define KEL  (8)
-#define KTOT (9)
+#define KTOT (8)
+#if ALLMODELS     // Nested if statement for ALLMODELS run
+#define KEL0 (9)  // Kawazura
+#define KEL1 (10) // Werner
+#define KEL2 (11) // Rowan
+#define KEL3 (12) // Sharma
+#define NVAR (13)
+#else
+#define KEL0  (9)
 #define NVAR (10)
+#endif
 #else
 #define NVAR (8)
 #endif
