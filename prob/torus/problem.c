@@ -449,6 +449,13 @@ void init(struct GridGeom *G, struct FluidState *S)
 
 }
 
+// This function calculates specific the angular momentum of the
+// Fishbone-Moncrief solution in the midplane,
+// as a function of radius.
+// (see Fishbone & Moncrief eqn. 3.8)
+// It improves on (3.8) by requiring no sign changes
+// for co-rotating (a > 0) vs counter-rotating (a < 0)
+// disks.
 double lfish_calc(double r)
 {
   return (((pow(a, 2) - 2. * a * sqrt(r) + pow(r, 2)) *
