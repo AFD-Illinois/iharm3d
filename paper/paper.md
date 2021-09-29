@@ -48,7 +48,7 @@ bibliography: paper.bib
 ---
 # `iharm3D` Functionality and Purpose
 
-`iharm3D`^[https://github.com/AFD-Illinois/iharm3d] is an open-source C code for simulating black hole accretion systems in arbitrary stationary spacetimes using ideal general-relativistic magnetohydrodynamics (GRMHD). It is an implementation of the HARM ("High Accuracy Relativistic Magnetohydrodynamics") algorithm outlined in @gammie_harm:_2003 with updates as outlined in @mckinney_measurement_2004 and @noble_primitive_2006.  The code is most directly derived from @ryan_bhlight:_2015 but but with radiative transfer portions removed.  HARM is a conservative finite-volume scheme for solving the equations of ideal GRMHD, a hyperbolic system of partial differential equations, on a logically Cartesian mesh in arbitrary coordinates.
+`iharm3D`^[https://github.com/AFD-Illinois/iharm3d] is an open-source C code for simulating black hole accretion systems in arbitrary stationary spacetimes using ideal general-relativistic magnetohydrodynamics (GRMHD). It is an implementation of the HARM ("High Accuracy Relativistic Magnetohydrodynamics") algorithm outlined in @gammie_harm:_2003 with updates as outlined in @mckinney_measurement_2004 and @noble_primitive_2006.  The code is most directly derived from @ryan_bhlight:_2015 but with radiative transfer portions removed.  HARM is a conservative finite-volume scheme for solving the equations of ideal GRMHD, a hyperbolic system of partial differential equations, on a logically Cartesian mesh in arbitrary coordinates.
 
 # Statement of Need
 
@@ -64,6 +64,8 @@ Multiple codes already exist for solving the ideal GRMHD equations on regular Eu
 - HARM-Noble (@noble_primitive_2006, @noble_direct_2009, @noble_circumbinary_2012, @zilhao_dynamic_2014, @bowen_quasi-periodic_2018)
 - IllinoisGRMHD (@etienne_illinoisgrmhd_2015)
 - KORAL (@sadowski_semi-implicit_2013, @sadowski_numerical_2014)
+- GRHydro (@mosta_grhydro_2014)
+- Spritz (@cipolletta_spritz_2020, @cipolletta_spritz_2021)
 
 The emphasis of `iharm3D` development is to provide a simple, fast, and scalable open update to the original open-source implementation of HARM (@gammie_harm:_2003).
 
@@ -73,14 +75,14 @@ In MHD, uncorrected discretization errors inevitably lead to violations of the n
 
 `iharm3D` also retains numerical evaluation of all metric-dependent quantities, allowing trivial modification of the coordinate system or background spacetime so long as the line element is available in analytic form.  This can be used as a form of static mesh refinement, since the coordinates can be adapted to place resolution in areas of interest (e.g., an accretion disk midplane).
 
-In GRMHD, "conserved" variables (energy and momentum density) are complicated analytic functions of "primitive" variables (density, pressure, and velocity).  Conserved variables are stepped forward in time and then inversion to primitives is done numerically. `iharm3d` uses the "$1D_W$" scheme outlined in @noble_primitive_2006.
+In GRMHD, "conserved" variables (energy and momentum densities) are complicated analytic functions of "primitive" variables (density, pressure, and velocity).  Conserved variables are stepped forward in time and then inversion to primitives is done numerically. `iharm3d` uses the "$1D_W$" scheme outlined in @noble_primitive_2006.  As the equations of GRMHD are rescalable, any scale may be chosen for these variables.  For numerical stability, we choose units in which $GM = c = 1$, and scale the density such that the densest zone in the initial conditions has $\rho = 1$.  The mass and length are rescaled in post-processing to reflect the particular system under study.
 
 To model a collisionless plasma, `iharm3D` implements an optional scheme that provides a means of tracking and partitioning dissipation into ions and electrons (@ressler_electron_2015). The code implements the turbulent cascade models of @howes_prescription_2010 and @kawazura_thermal_2019, but new models are easy to implement and welcome.
 
 To avoid catastrophic failures caused by discretization error, especially in low density regions, fluid variables are bounded at the end of each step. Typical `iharm3D` bounds in black hole accretion problems are enforced as follows:
 
 - Density $\rho > 10^{-6} k$, for $k \equiv \frac{1}{r^2 (1 + r/10)}$, with radius $r$ in units of gravitational radius $r_g$ of the central object,
-- Internal energy $u > 10^{-8} k^{\gamma}$ where $\gamma \equiv$ adiabatic index,
+- Internal energy density $u > 10^{-8} k^{\gamma}$ where $\gamma \equiv$ adiabatic index,
 - $\rho$ and $u$ are incremented until $\sigma \equiv \frac{2 P_b}{\rho} < 400$ and $\beta \equiv \frac{P_{gas}}{P_b} > 2.5 \times 10^{-5}$ where $P_b \equiv \frac{b^2}{2}$ is the magnetic pressure,
 - $\rho$ is incremented until $\frac{u}{\rho} < 100$,
 - When evolving electron temperatures, $u$ is decremented until $\frac{P_{gas}}{\rho^{\gamma}} < 3$,
@@ -92,7 +94,7 @@ Global disk simulations inevitably invoke these bounds, most frequently those on
 
 The convergence properties of HARM are well-studied in @gammie_harm:_2003.  `iharm3D` implements most of the tests presented in that paper as integration and regression tests.  Figure \ref{fig:convergence} shows convergence results for linear modes and for un-magnetized Bondi flow.
 
-![Results of convergence tests with `iharm3d`'s main branch, plotting L1 norm of the computed solution vs. the analytic or stable result with increasing domain size.  Wave solutions were performed on a 3D cubic grid N zones to one side, the Bondi accretion problem was performed on a logically Cartesian 2D square grid N zones on one side. \label{fig:convergence}](figures/convergence.pdf)
+![Results of convergence tests with `iharm3d`'s main branch, plotting L1 norm of the difference between the computed solution and the analytic or stable result with increasing domain size.  Wave solutions were performed on a 3D cubic grid N zones to one side, the Bondi accretion problem was performed on a logically Cartesian 2D square grid N zones on one side. \label{fig:convergence}](figures/convergence.pdf)
 
 `iharm3D` implements three additional tests which check that fluid evolution is identical under different domain decompositions: one which initializes a new fluid state, one which restarts from a checkpoint file, and one comparing the initialized state to an equivalent checkpoint file.
 
