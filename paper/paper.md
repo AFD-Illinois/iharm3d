@@ -52,22 +52,24 @@ bibliography: paper.bib
 
 # Statement of Need
 
-Numerical simulations are crucial in modeling observations of active galactic nuclei, such as the recent horizon-scale results from the Event Horizon Telescope and GRAVITY collaborations.  The computational simplicity of ideal GRMHD enables the generation of long, high-resolution simulations and broad parameter-exploration studies that can be compared to observations for parameter inference.
+Numerical simulations are crucial in modeling observations of active galactic nuclei, such as the recent horizon-scale results from the Event Horizon Telescope (EHTC) and GRAVITY collaborations.  The computational simplicity of ideal GRMHD enables the generation of long, high-resolution simulations and broad parameter-exploration studies that can be compared to observations for parameter inference.
 
-Multiple codes already exist for solving the ideal GRMHD equations on regular Eulerian meshes in 3D, including:
+Multiple codes already exist for solving the ideal GRMHD equations on regular Eulerian meshes in 3D.  Some examples of codes currently in use:
 
 - Athena++ (@stone_athena_2020, @white_extension_2016)
 - BHAC (@porth_black_2017)
 - Cosmos++ (@anninos_cosmos_2005, @fragile_numerical_2012, @fragile_numerical_2014)
 - ECHO (@londrillo_high-order_2000, @londrillo_divergence-free_2004)
-- H-AMR (@liska_large-scale_2020, @liska_h-amr_2019, Chatterjee+ 2019?)
+- H-AMR (@liska_h-amr_2019, @liska_large-scale_2020)
 - HARM-Noble (@noble_primitive_2006, @noble_direct_2009, @noble_circumbinary_2012, @zilhao_dynamic_2014, @bowen_quasi-periodic_2018)
 - IllinoisGRMHD (@etienne_illinoisgrmhd_2015)
 - KORAL (@sadowski_semi-implicit_2013, @sadowski_numerical_2014)
 - GRHydro (@mosta_grhydro_2014)
 - Spritz (@cipolletta_spritz_2020, @cipolletta_spritz_2021)
 
-The emphasis of `iharm3D` development is to provide a simple, fast, and scalable open update to the original open-source implementation of HARM (@gammie_harm:_2003).
+As the length of this list illustrates, the field of GRMHD simulation is now well established, and many codes now exist to serve different needs.  These codes can be distinguished by the trade-offs they make in prioritizing speed, simplicity, and generality, with the latter encompassing, e.g., support for dynamical spacetimes, adaptive mesh refinement, or higher-order integration schemes.
+
+In particular, `iharm3D` development focuses on providing the simplest and fastest possible code capable of simulating the original systems of interest when designing HARM, even at the cost of features aimed at more general applicability.  It provides a fast and scalable modern implementation of HARM, but maintains the conventions and simple structure of the original described in @gammie_harm:_2003.  The result is a code relatively easy to understand and modify, yet capable of running simulations at state-of-the-art scale.
 
 # Implementation Notes
 
@@ -110,7 +112,7 @@ Figure \ref{fig:scaling} presents scaling results for `iharm3D` on both Stampede
 
 `iharm3D` is one of several GRMHD codes used by the EHT Collaboration to produce its library of fluid simulations. Images produced from this library were used for validation tests in @PaperIV and @PaperVII and for interpretation of the M87 EHT results in total intensity (@PaperV, @PaperVI) and polarization (@PaperVIII).
 
-`iharm3D` simulations have also been used in @porth_event_2019, @johnson_universal_2020, @gold2020, @palumbo_discriminating_2020, @lin_feature_2020, @ricarte_decomposing_2020, @Wielgus_monitoring_2020, @tiede_variational_2020, and @gelles_role_2021.
+Papers making use of the results of `iharm3D` simulations include @porth_event_2019, @johnson_universal_2020, @gold2020, @palumbo_discriminating_2020, @lin_feature_2020, @ricarte_decomposing_2020, @Wielgus_monitoring_2020, @tiede_variational_2020, and @gelles_role_2021.
 
 # Acknowledgements
 
