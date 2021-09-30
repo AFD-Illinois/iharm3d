@@ -1,0 +1,160 @@
+#!/bin/bash
+
+#SBATCH -J iharm_performance
+#SBATCH -p normal
+#SBATCH -N 64
+#SBATCH --ntasks-per-node 4
+#SBATCH -t 4:00:00
+#SBATCH -o out-%j.txt
+
+module restore harm
+module list
+
+source ~/harm-scripts/test_common.sh
+
+PROB="torus"
+TESTTYPE=${1:-"weak"}
+NNUMS=${2:-"1 2 4 8 16 32"}
+
+# Machine properties
+n_hardware_threads_per_core=2
+n_mpi_ranks_per_node=4
+
+if [[ $TESTTYPE == "weak" ]]; then
+  echo "Starting weak scaling job script on " $(date)
+  PSIZES=${3:-"64"}
+elif [[ $TESTTYPE == "strong" ]]; then
+  echo "Starting strong scaling job script on " $(date)
+  PSIZES=${3:-"256"}
+else
+  echo "Unknown test type $TESTTYPE. Exiting"
+  exit
+fi
+echo "Running $TESTTYPE scaling of $PROB on nodes: $NNUMS"
+echo "Runs will use these nodes:"
+ibrun hostname
+
+mkdir -p $SCRATCH/iharm_scaling
+cd $SCRATCH/iharm_scaling
+
+# If strong, these are total problem sizes
+# If weak, these are sizes *per node*, don't exceed 96/4=24GB problems
+for p_size in $PSIZES
+do
+
+#64 128 256 512 1024
+for n_nodes in $NNUMS
+do
+
+# Calculate job distribution
+n_cpus_per_node=$(( $SLURM_CPUS_ON_NODE / $n_hardware_threads_per_core ))
+nr=$n_mpi_ranks_per_node
+
+# Make directory and prep files
+rm -rf iharm3d_${TESTTYPE}_${PROB}_${p_size}_${n_nodes}_${nr}per
+mkdir -p iharm3d_${TESTTYPE}_${PROB}_${p_size}_${n_nodes}_${nr}per
+cd iharm3d_${TESTTYPE}_${PROB}_${p_size}_${n_nodes}_${nr}per
+
+make -j -f ~/iharm3d/makefile PROB=$PROB
+# TODO only works for torus, try param_sane and param
+cp ~/iharm3d/prob/$PROB/param_sane.dat ./param.dat
+
+# Allocate all cores based on the above
+n_mpi_ranks=$(( $n_nodes * $n_mpi_ranks_per_node ))
+n_openmp_threads_per_rank=$(( $n_cpus_per_node / $n_mpi_ranks_per_node ))
+n_hardware_threads_skipped_between_ranks=$n_openmp_threads_per_rank
+
+if [ "$n_nodes" -eq "1" ]
+then
+n1=1
+n2=1
+n3=$nr
+elif [ "$n_nodes" -eq "2" ]
+then
+n1=1
+n2=1
+n3=$(($nr * 2))
+elif [ "$n_nodes" -eq "4" ]
+then
+n1=1
+n2=2
+n3=$(($nr * 2))
+elif [ "$n_nodes" -eq "8" ]
+then
+n1=1
+n2=2
+n3=$(($nr * 4))
+elif [ "$n_nodes" -eq "16" ]
+then
+n1=1
+n2=4
+n3=$(($nr * 4))
+elif [ "$n_nodes" -eq "32" ]
+then
+n1=1
+n2=4
+n3=$(($nr * 8))
+elif [ "$n_nodes" -eq "64" ]
+then
+n1=1
+n2=8
+n3=$(($nr * 8))
+elif [ "$n_nodes" -eq "128" ]
+then
+n1=2
+n2=8
+n3=$(($nr * 8))
+elif [ "$n_nodes" -eq "256" ]
+then
+n1=4
+n2=8
+n3=$(($nr * 8))
+elif [ "$n_nodes" -eq "512" ]
+then
+n1=4
+n2=8
+n3=$(($nr * 16))
+else
+echo "No topology specified for $n_nodes nodes!"
+continue
+fi
+
+set_cpu_topo $n1 $n2 $n3
+
+if [[ $TESTTYPE == "weak" ]]; then
+  set_problem_size $(($p_size * $n1)) $(($p_size * $n2)) $(($p_size * $n3 / $nr))
+  # This tries to run the default parameters for ~100 steps
+  set_run_dbl tf $(bc -l <<< "128 / $(($p_size * $n3))")
+elif [[ $TESTTYPE == "strong" ]]; then
+  set_problem_size $p_size $p_size $p_size
+  # This tries to run the default parameters for ~100 steps
+  set_run_dbl tf $(bc -l <<< "128 / $p_size")
+fi
+# Output performance data every 10 steps
+set_run_int DTp 10
+
+if [[ $PROB == "mhdmodes" ]]; then
+  set_run_int nmode 0
+fi
+if [[ $PROB == "torus" ]]; then
+  set_run_dbl Rout 10
+fi
+
+# For some reason make/gcc/script doesn't pick up we need to re-compile
+rm build_archive/*.o build_archive/harm
+
+make -j -f ~/iharm3d/makefile PROB=$PROB
+
+echo "Starting harm size $p_size per node on $n_nodes nodes at " $(date)
+echo "Using $nr tasks per node"
+
+export IBRUN_TASKS_PER_NODE=$n_mpi_ranks_per_node
+export OMP_NUM_THREADS=$n_openmp_threads_per_rank
+ibrun -n $n_mpi_ranks ./harm
+
+echo "Ending harm size $p_size on $n_nodes nodes at " $(date)
+
+cd -
+
+done
+done
