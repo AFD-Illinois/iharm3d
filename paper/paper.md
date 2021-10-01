@@ -52,9 +52,9 @@ bibliography: paper.bib
 
 # Statement of Need
 
-Numerical simulations are crucial in modeling observations of active galactic nuclei, such as the recent horizon-scale results from the Event Horizon Telescope (EHTC) and GRAVITY collaborations.  The computational simplicity of ideal GRMHD enables the generation of long, high-resolution simulations and broad parameter-exploration studies that can be compared to observations for parameter inference.
+Numerical simulations are crucial in modeling observations of active galactic nuclei, such as the recent horizon-scale results from the Event Horizon Telescope and GRAVITY collaborations.  The computational simplicity of ideal GRMHD enables the generation of long, high-resolution simulations and broad parameter-exploration studies that can be compared to observations for parameter inference.
 
-Multiple codes already exist for solving the ideal GRMHD equations on regular Eulerian meshes in 3D.  Some examples of codes currently in use:
+Multiple codes already exist for solving the ideal GRMHD equations on regular Eulerian meshes in 3D, including:
 
 - Athena++ (@stone_athena_2020, @white_extension_2016)
 - BHAC (@porth_black_2017)
@@ -69,21 +69,23 @@ Multiple codes already exist for solving the ideal GRMHD equations on regular Eu
 
 As the length of this list illustrates, the field of GRMHD simulation is now well established, and many codes now exist to serve different needs.  These codes can be distinguished by the trade-offs they make in prioritizing speed, simplicity, and generality, with the latter encompassing, e.g., support for dynamical spacetimes, adaptive mesh refinement, or higher-order integration schemes.
 
-In particular, `iharm3D` development focuses on providing the simplest and fastest possible code capable of simulating the original systems of interest when designing HARM, even at the cost of features aimed at more general applicability.  It provides a fast and scalable modern implementation of HARM, but maintains the conventions and simple structure of the original described in @gammie_harm:_2003.  The result is a code relatively easy to understand and modify, yet capable of running simulations at state-of-the-art scale.
+In particular, `iharm3D` aims to be a simple and fast code capable of simulating the original systems of interest when designing HARM, even at the cost of features aimed at more general applicability.  It provides a fast and scalable update to HARM, but maintains the conventions and structure of the original described in @gammie_harm:_2003.  The result is a code that is relatively easy to understand and modify, yet capable of running simulations at state-of-the-art scale.
 
 # Implementation Notes
 
 In MHD, uncorrected discretization errors inevitably lead to violations of the no-monopoles condition $\nabla \cdot B = 0$.  As in the original HARM implementation, `iharm3D` uses the "Flux-CT" scheme for cell-centered constrained transport outlined in @toth_b0_2000.
 
-`iharm3D` also retains numerical evaluation of all metric-dependent quantities, allowing trivial modification of the coordinate system or background spacetime so long as the line element is available in analytic form.  This can be used as a form of static mesh refinement, since the coordinates can be adapted to place resolution in areas of interest (e.g., an accretion disk midplane).
+`iharm3D` also retains numerical evaluation of all metric-dependent quantities, allowing trivial modification of the coordinate system or background spacetime so long as the line element is available in analytic form.  This can be used as a form of static mesh refinement, since the coordinates can be adapted to place resolution in areas of interest (e.g., near the accretion disk midplane).
 
-In GRMHD, "conserved" variables (energy and momentum densities) are complicated analytic functions of "primitive" variables (density, pressure, and velocity).  Conserved variables are stepped forward in time and then inversion to primitives is done numerically. `iharm3d` uses the "$1D_W$" scheme outlined in @noble_primitive_2006.  As the equations of ideal GRMHD are rescalable, any consistent set of units may be chosen to evolve them in the code.  For numerical stability, we choose units in which $GM = c = 1$, and scale the density such that the densest zone in the initial conditions has $\rho = 1$.  The mass and length are rescaled in post-processing to reflect the particular system under study.
+In GRMHD, "conserved" variables (energy and momentum densities) are complicated analytic functions of "primitive" variables (density, pressure, and velocity).  Conserved variables are stepped forward in time and then inversion to primitives is done numerically. `iharm3D` uses the "$1D_W$" scheme outlined in @noble_primitive_2006.
 
-To model a collisionless plasma, `iharm3D` implements an optional scheme that provides a means of tracking and partitioning dissipation into ions and electrons (@ressler_electron_2015). Currently the code implements five heating models: those of @howes_prescription_2010, @kawazura_thermal_2019, @werner_non-thermal_2018, @rowan_electron_2017, and @sharma_electron_2007.
+As the equations of ideal GRMHD are rescalable, any consistent set of units may be chosen to evolve them in the code.  For numerical stability, when simulating accretion systems we choose units in which $GM = c = 1$ with $M$ the mass of the central object, and scale the density of the initial conditions such that the maximum value of $\rho$ is $1$.
 
-To avoid catastrophic failures caused by discretization error, especially in low density regions, fluid variables are bounded at the end of each step. Typical `iharm3D` bounds in black hole accretion problems are enforced as follows:
+To model a collisionless plasma, `iharm3D` implements an optional means of tracking and partitioning dissipation into ions and electrons (@ressler_electron_2015). Currently the code implements five different heating models, described in @howes_prescription_2010, @kawazura_thermal_2019, @werner_non-thermal_2018, @rowan_electron_2017, and @sharma_electron_2007.
 
-- Density $\rho > 10^{-6} k$, for $k \equiv \frac{1}{r^2 (1 + r/10)}$, with radius $r$ in units of gravitational radius $r_g$ of the central object,
+To avoid catastrophic failures caused by discretization error, especially in low density regions, fluid variables are bounded at the end of each step. Typically, the bounds in black hole accretion problems are enforced as follows:
+
+- Density $\rho > 10^{-6} k$, for $k \equiv \frac{1}{r^2 (1 + r/10)}$, with $r$ the radial coordinate,
 - Internal energy density $u > 10^{-8} k^{\gamma}$ where $\gamma \equiv$ adiabatic index,
 - $\rho$ and $u$ are incremented until $\sigma \equiv \frac{2 P_b}{\rho} < 400$ and $\beta \equiv \frac{P_{gas}}{P_b} > 2.5 \times 10^{-5}$ where $P_b \equiv \frac{b^2}{2}$ is the magnetic pressure,
 - $\rho$ is incremented until $\frac{u}{\rho} < 100$,
@@ -96,9 +98,9 @@ Global disk simulations inevitably invoke these bounds, most frequently those on
 
 The convergence properties of HARM are well-studied in @gammie_harm:_2003.  `iharm3D` implements most of the tests presented in that paper as integration and regression tests.  Figure \ref{fig:convergence} shows convergence results for linear modes and for un-magnetized Bondi flow.
 
-![Results of convergence tests with `iharm3d`'s main branch, plotting L1 norm of the difference between the computed solution and the analytic or stable result with increasing domain size.  Wave solutions were performed on a 3D cubic grid N zones to one side, the Bondi accretion problem was performed on a logically Cartesian 2D square grid N zones on one side. \label{fig:convergence}](figures/convergence.pdf)
+![Results of convergence tests with `iharm3D`'s main branch, plotting L1 norm of the difference between the computed solution and the analytic or stable result with increasing domain size.  Wave solutions were performed on a 3D cubic grid N zones to one side, the Bondi accretion problem was performed on a logically Cartesian 2D square grid N zones on one side. \label{fig:convergence}](figures/convergence.pdf){ width=5in }
 
-`iharm3D` implements three additional tests which check that fluid evolution is identical under different domain decompositions: one which initializes a new fluid state, one which restarts from a checkpoint file, and one comparing the initialized state to an equivalent checkpoint file.
+`iharm3D` implements three additional tests which check that fluid evolution is identical for different domain decompositions: one which initializes a new fluid state, one which restarts from a checkpoint file, and one comparing the initialized state to an equivalent checkpoint file.
 
 # Scaling
 
@@ -106,7 +108,7 @@ Key `iharm3D` routines are highly vectorized and have efficient memory access pa
 
 Figure \ref{fig:scaling} presents scaling results for `iharm3D` on both Stampede2 and Frontera.
 
-![Strong scaling performance of iharm3D. Performance is measured in zones advanced by one cycle each second (Zone-Cycles per Second), when a problem with $256^3$ zones is split among N nodes \label{fig:scaling}](figures/scaling.pdf){ width=3in }
+![Strong and weak scaling performance of iharm3D. Performance is measured in zones advanced by one cycle each second (Zone-Cycles per Second), when a problem with $256^3$ zones is split among N nodes \label{fig:scaling}](figures/scaling.pdf){ width=4.5in }
 
 # Research projects using iharm3D
 
@@ -118,6 +120,6 @@ Papers making use of the results of `iharm3D` simulations include @porth_event_2
 
 This work was supported by National Science Foundation grants AST 17-16327, OISE 17-43747, AST 20-07936, AST 20-34306, and PHY 17-48958, by a Donald C. and F. Shirley Jones Fellowship to G.N.W., by the Gordon and Betty Moore Foundation through Grant GBMF7392, and by the US Department of Energy through Los Alamos National Laboratory. Los Alamos National Laboratory is operated by Triad National Security, LLC, for the National Nuclear Security Administration of the US Department of Energy (Contract No. 89233218CNA000001).  This work has been assigned a document release number LA-UR-21-23714.
 
-This work used the Extreme Science and Engineering Discovery Environment (XSEDE) resource Stampede2 at the Texas Advanced Computing Center, which is supported by National Science Foundation grant number ACI-1548562.  The authors acknowledge the Texas Advanced Computing Center (TACC) at The University of Texas at Austin for providing HPC resources that have contributed to the research results reported within this paper.
+This work used the Extreme Science and Engineering Discovery Environment (XSEDE), which is supported by National Science Foundation grant number ACI-1548562, specifically the XSEDE resource Stampede2 at the Texas Advanced Computing Center (TACC) through allocation TG-AST170024.  The authors acknowledge the Texas Advanced Computing Center at The University of Texas at Austin for providing HPC resources that have contributed to the research results reported within this paper.
 
 # References
