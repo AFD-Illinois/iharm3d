@@ -4,14 +4,15 @@ import seaborn as sns
 
 # prettier text
 plt.rc('text', usetex=True)
-plt.rc('font', family='serif',size=12)
+
+plt.rc('font', family='sans-serif',size=12)
 
 # deal with unified color cycle
 sns.set_palette("tab10")
 color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
-fig, ax = plt.subplots(1,4, figsize=(12,3))
+fig, ax = plt.subplots(1,4, figsize=(10.5,3))
 
 vars = ("N", r"$\rho$", "$u$", r"$u^1$", r"$u^2$", r"$u^3$", r"$B^1$", r"$B^2$", r"$B^3$")
 for i,(name,pretty_name) in enumerate(zip(['SLOW', 'FAST', 'ALFVEN', 'bondi'], ["Slow wave", "Fast wave", "Alfvén wave", "Bondi flow"])):

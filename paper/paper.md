@@ -98,17 +98,15 @@ Global disk simulations inevitably invoke these bounds, most frequently those on
 
 The convergence properties of HARM are well-studied in @gammie_harm:_2003.  `iharm3D` implements most of the tests presented in that paper as integration and regression tests.  Figure \ref{fig:convergence} shows convergence results for linear modes and for un-magnetized Bondi flow.
 
-![Results of convergence tests with `iharm3D`'s main branch, plotting L1 norm of the difference between the computed solution and the analytic or stable result with increasing domain size.  Wave solutions were performed on a 3D cubic grid N zones to one side, the Bondi accretion problem was performed on a logically Cartesian 2D square grid N zones on one side. \label{fig:convergence}](figures/convergence.pdf){ width=5in }
+![Results of convergence tests with `iharm3D`'s main branch, plotting L1 norm of the difference between the computed solution and the analytic or stable result with increasing domain size.  Wave solutions were performed on a 3D cubic grid $N$ zones to one side, the Bondi accretion problem was performed on a logically Cartesian 2D square grid $N$ zones on one side. \label{fig:convergence}](figures/convergence.pdf){ width=5in }
 
 `iharm3D` implements three additional tests which check that fluid evolution is identical for different domain decompositions: one which initializes a new fluid state, one which restarts from a checkpoint file, and one comparing the initialized state to an equivalent checkpoint file.
 
 # Scaling
 
-Key `iharm3D` routines are highly vectorized and have efficient memory access patterns. Originally developed for Intel Knights Landing (KNL) chips on the Stampede2 supercomputer at Texas Advanced Computing Center (TACC), `iharm3D` also runs efficiently on TACC's Frontera CPU nodes.
+Key `iharm3D` routines are written for effective compiler vectorization and prioritize simple memory access patterns to make good use of high memory bandwidth. Originally developed for Intel Knights Landing (KNL) chips on the Stampede2 supercomputer at Texas Advanced Computing Center (TACC), `iharm3D` also runs efficiently on TACC Frontera, which uses traditional Cascade Lake (CLX) CPUs.  Figure \ref{fig:scaling} presents scaling results for `iharm3D` on both Stampede2 and Frontera.
 
-Figure \ref{fig:scaling} presents scaling results for `iharm3D` on both Stampede2 and Frontera.
-
-![Strong and weak scaling performance of iharm3D. Performance is measured in zones advanced by one cycle each second (Zone-Cycles per Second), when a problem with $256^3$ zones is split among N nodes \label{fig:scaling}](figures/scaling.pdf){ width=4.5in }
+![Strong and weak scaling performance of iharm3D. Performance is measured in zones advanced by one cycle each second (Zone-Cycles per Second).  In the strong scaling test, an accretion torus problem of constant total size $256^3$ was split among all nodes; in the weak scaling test, the total problem size was varied to ensure that a mesh block of size $64^3$ was allocated to each node. \label{fig:scaling}](figures/scaling.pdf){ width=4.5in }
 
 # Research projects using iharm3D
 

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 # prettier text
 plt.rc('text', usetex=True)
-plt.rc('font', family='serif',size=12)
+plt.rc('font', family='sans-serif',size=12)
 
 # prettier colors
 import seaborn as sns
@@ -29,7 +29,7 @@ axes[0].plot(strong_stampede_256[0], strong_stampede_256[1], 'o-', label='Stampe
 
 # formatting
 axes[0].legend(fontsize=14)
-axes[0].set_xlabel('\# nodes', fontsize=18)
+axes[0].set_xlabel(r'\# nodes', fontsize=18)
 axes[0].set_ylabel('ZCPS', fontsize=18)
 axes[0].set_title(r'strong scaling ($256^3$)', fontsize=20)
 axes[0].set_xscale('log')
