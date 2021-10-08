@@ -43,8 +43,9 @@ void mpi_initialization(int argc, char *argv[])
   MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
   if (comm_size != numprocs) {
     if (rank == 0) {
-      fprintf(stderr, "iharm3D is compiled to use %d MPI processes, but the communicator we see is %d processes!\n", numprocs, comm_size);
-      fprintf(stderr, "Please recompile iharm3D to use the desired number of MPI processes, or change the communicator size.\n");
+      fprintf(stderr, "iharm3D is compiled to use %d MPI processes: N1CPU x N2CPU x N3CPU == %d x %d x %d == %d\n", numprocs, N1CPU, N2CPU, N3CPU, numprocs);
+      fprintf(stderr, "However, the communicator we see is %d processes!\n", comm_size);
+      fprintf(stderr, "Please reset NiCPU in build_archive/parameters.h and recompile, or run iharm3D with a communicator of the expected size.\n");
     }
     exit(-2);
   }
