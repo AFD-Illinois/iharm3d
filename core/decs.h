@@ -36,7 +36,7 @@
       COMPILE-TIME PARAMETERS :
 *******************************************************************************/
 
-#define VERSION "iharm-alpha-3.7"
+#define VERSION "iharm-release-3.7"
 
 // Number of active zones on each MPI process
 #define N1       (N1TOT/N1CPU)
