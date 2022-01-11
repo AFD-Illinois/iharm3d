@@ -58,6 +58,9 @@ int nthreads;
 double game, gamp;
 double fel0;
 double tptemin, tptemax;
+#if FEL_CONSTANT
+double fel_constant;
+#endif
 #endif
 
 int global_start[3];

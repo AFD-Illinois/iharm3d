@@ -1,0 +1,38 @@
+### RUNTIME PARAMETERS ###
+
+# COORDINATES
+[dbl] tf = 20.0
+[dbl] dt = 1.0e-06
+[dbl] x1Min = 0.0
+[dbl] x1Max = 1.0
+[dbl] x2Min = 0.0
+[dbl] x2Max = 1.0
+[dbl] x3Min = 0.0
+[dbl] x3Max = 1.0
+
+# FLUID
+[dbl] gam = 1.666667
+[dbl] cour = 0.9
+
+# OUTPUT
+[dbl] DTd = 0.5
+[dbl] DTf = 10.0
+[dbl] DTl = 0.5
+[int] DTr = 100
+[int] DTp = 10
+
+# Electrons
+[dbl] game = 1.666667
+[dbl] gamp = 1.666667
+[dbl] fel0 = 0.0
+[dbl] tptemin = 0.001
+[dbl] tptemax = 1000.0
+
+# PROBLEM
+[dbl] fel_constant = 0.5
+[dbl] mach = 49.
+[dbl] rhoL = 1.0
+[dbl] rhoR = 1.0
+[dbl] PL = 1.e-8
+[dbl] PR = 1.e-8
+[int] set_tlim = 1

@@ -312,6 +312,9 @@ extern int nthreads;
 extern double game, gamp;
 extern double fel0;
 extern double tptemin, tptemax;
+#if FEL_CONSTANT
+extern double fel_constant;
+#endif
 #endif
 
 

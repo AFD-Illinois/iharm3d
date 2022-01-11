@@ -12,12 +12,16 @@
 
 // TODO put these in options with a default in decs.h
 // Defined as in decs.h, CONSTANT not included in ALLMODELS version
-// KAWAZURA is run by default if ALLMODELS=0 
+// KAWAZURA is run by default if ALLMODELS=0
+
 #define KAWAZURA  9
 #define WERNER    10
 #define ROWAN     11
 #define SHARMA    12
-#define CONSTANT 5 //tbh, this is never considered 
+
+#if FEL_CONSTANT
+#define CONSTANT 9
+#endif
 
 void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k);
 void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S, int i, int j, int k);
@@ -88,6 +92,7 @@ inline double get_fels(struct GridGeom *G, struct FluidState *S, int i, int j, i
   get_state(G, S, i, j, k, CENT);
   double bsq = bsq_calc(S, i, j, k);
   double fel = 0.0;
+
 if (model == KAWAZURA) {
 	// Equation (2) in http://www.pnas.org/lookup/doi/10.1073/pnas.1812491116
   double Tpr = (gamp-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
@@ -126,6 +131,10 @@ if (model == KAWAZURA) {
   double Trat_inv = fabs(Tel/Tpr); //Inverse of the temperature ratio in KAWAZURA
   double QeQi = 0.33 * pow(Trat_inv, 0.5);
 	fel = 1./(1.+1./QeQi);
+}
+
+if (model == CONSTANT) { // Should overwrite KAWAZURA
+  fel = fel_constant;
 }
 
 #if SUPPRESS_HIGHB_HEAT
