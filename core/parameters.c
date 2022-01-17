@@ -72,7 +72,7 @@ void set_core_params() {
   set_param("fel0", &fel0);
   set_param("tptemin", &tptemin);
   set_param("tptemax", &tptemax);
-# if FEL_CONSTANT
+# if (E_MODELS & CONSTANT)
   set_param("fel_constant", &fel_constant);
 #endif
 #endif

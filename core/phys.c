@@ -55,8 +55,8 @@ void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
                       S->bcon[dir][k][j][i]*S->ucon[3][k][j][i];
 
 #if ELECTRONS
-  for (int idx = KEL0; idx < NVAR ; idx++) {
-    flux[idx][k][j][i] = flux[RHO][k][j][i]*S->P[idx][k][j][i];
+  for (int ip = KTOT  + 1; ip < NVAR ; ip++) {
+    flux[ip][k][j][i] = flux[RHO][k][j][i]*S->P[ip][k][j][i];
   }
   flux[KTOT][k][j][i] = flux[RHO][k][j][i]*S->P[KTOT][k][j][i];
 #endif
@@ -104,8 +104,8 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
 #pragma omp for collapse(3)
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     // RHO already includes a factor of gdet!
-    for (int idx = KEL0; idx < NVAR ; idx++) {
-      flux[idx][k][j][i] = flux[RHO][k][j][i]*S->P[idx][k][j][i];
+    for (int ip = KTOT + 1; ip < NVAR ; ip++) {
+      flux[ip][k][j][i] = flux[RHO][k][j][i]*S->P[ip][k][j][i];
     }
     flux[KTOT][k][j][i] = flux[RHO][k][j][i]*S->P[KTOT][k][j][i];
   }

@@ -37,16 +37,24 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   static GridDouble *data;
   char fname[80];
 
+  char varNames[NVAR][HDF_STR_LEN] =  {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"};
   #if ELECTRONS
-  #if ALLMODELS
-  const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
-                            "KTOT", "KEL0", "KEL1", "KEL2", "KEL3"};
-  #else
-  const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3",
-                            "KTOT", "KEL0"};
-  #endif
-  #else
-  const char varNames[NVAR][HDF_STR_LEN] = {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"}; //Reserve some extra
+  strcpy(varNames[KTOT], "KTOT");
+
+  // Append electron heating model names (preferably to KEL0, KEL1, etc..)
+  // To keep track of electron heating model
+  int etracker = E_MODELS;
+  for (int ip = KTOT + 1; ip < NVAR ; ip++) {
+    for (int eFlagIndex = 0; eFlagIndex < sizeof(eFlagsArray) / sizeof(eFlagsArray[0]); eFlagIndex++) {
+      if (etracker & eFlagsArray[eFlagIndex]) {
+				char kelName[HDF_STR_LEN] = "KEL_";
+        strcpy(varNames[ip], strcat(kelName, eNamesArray[eFlagIndex]));
+        // update the tracker
+        etracker -= eFlagsArray[eFlagIndex];
+        break;
+      }
+    } 
+  }
   #endif
 
   static int firstc = 1;
@@ -126,6 +134,9 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   hdf5_write_single_val(&tptemin, "tptemin", H5T_IEEE_F64LE);
   hdf5_write_single_val(&tptemax, "tptemax", H5T_IEEE_F64LE);
   hdf5_write_single_val(&fel0, "fel0", H5T_IEEE_F64LE);
+  #if (E_MODELS & CONSTANT)
+  hdf5_write_single_val(&fel_constant, "fel_constant", H5T_IEEE_F64LE);
+  #endif
 #endif
   hdf5_write_single_val(&cour, "cour", H5T_IEEE_F64LE);
   hdf5_write_single_val(&tf, "tf", H5T_IEEE_F64LE);

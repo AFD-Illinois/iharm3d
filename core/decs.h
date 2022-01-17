@@ -131,18 +131,20 @@
 #define B1  (5)
 #define B2  (6)
 #define B3  (7)
+
 #if ELECTRONS
+// Total number of models (needed to declare eFlagsArray)
+#define NUM_E_MODELS (5)
+// Electron models bit flags
+#define CONSTANT  (1)
+#define KAWAZURA  (2)
+#define WERNER    (4)
+#define ROWAN     (8)
+#define SHARMA    (16)
+
 #define KTOT (8)
-#if ALLMODELS     // Nested if statement for ALLMODELS run
-#define KEL0 (9)  // Kawazura
-#define KEL1 (10) // Werner
-#define KEL2 (11) // Rowan
-#define KEL3 (12) // Sharma
-#define NVAR (13)
-#else
-#define KEL0  (9)
-#define NVAR (10)
-#endif
+#define NVAR (KTOT + ((E_MODELS & CONSTANT) >>  0) + ((E_MODELS & KAWAZURA) >> 1) + ((E_MODELS & WERNER) >> 2)\
+                   + ((E_MODELS & ROWAN) >> 3) + ((E_MODELS & SHARMA) >> 4) + 1)
 #else
 #define NVAR (8)
 #endif
@@ -312,9 +314,11 @@ extern int nthreads;
 extern double game, gamp;
 extern double fel0;
 extern double tptemin, tptemax;
-#if FEL_CONSTANT
+#if (E_MODELS & CONSTANT)
 extern double fel_constant;
 #endif
+extern int eFlagsArray[NUM_E_MODELS];
+extern char eNamesArray[NUM_E_MODELS][20];
 #endif
 
 

@@ -32,11 +32,18 @@
 #define UORHOMAX (100.)
 
 /* ELECTRONS AND OPTIONS
- *   SUPPRESS_MAG_HEAT - (0,1) NO ELECTRON HEATING WHEN SIGMA > 1
- *   BETA_HEAT         - (0,1) BETA-DEPENDENT HEATING
+ *   ELECTRONS          - (0,1)
+ *   MODELS             - (CONSTANT + KAWAZURA + WERNER + ROWAN + SHARMA) //bit field for electron heating models
+ *   WHERE, CONSTANT    - (0,1)
+ *          KAWAZURA    - (0,2)
+ *          WERNER      - (0,4)
+ *          ROWAN       - (0,8)
+ *          SHARMA      - (0,16)
+ *   SUPPRESS_MAG_HEAT  - (0,1) NO ELECTRON HEATING WHEN SIGMA > 1
+ *   BETA_HEAT          - (0,1) BETA-DEPENDENT HEATING
  */
 #define ELECTRONS           1
-#define FEL_CONSTANT        1
+#define E_MODELS            1
 #define SUPPRESS_HIGHB_HEAT 1
 #define BETA_HEAT           1
 
