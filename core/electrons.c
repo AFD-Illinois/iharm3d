@@ -91,13 +91,13 @@ inline double get_fels(struct GridGeom *G, struct FluidState *S, int i, int j, i
   double bsq = bsq_calc(S, i, j, k);
   double fel = 0.0;
 
-if (model | CONSTANT) {
-#if (E_MODELS | CONSTANT) // Special treatment for constant fel since it involves a runtime parameter
+if (model & CONSTANT) {
+#if (E_MODELS & CONSTANT) // Special treatment for constant fel since it involves a runtime parameter
   fel = fel_constant;
 #endif
 }
 
-else if (model | KAWAZURA) {
+else if (model & KAWAZURA) {
 	// Equation (2) in http://www.pnas.org/lookup/doi/10.1073/pnas.1812491116
   double Tpr = (gamp-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
   double uel = 1./(game-1.)*S->P[model][k][j][i]*pow(S->P[RHO][k][j][i],game);
@@ -112,13 +112,13 @@ else if (model | KAWAZURA) {
   fel = 1./(1. + QiQe);
 } 
 
-else if (model | WERNER) {
+else if (model & WERNER) {
 	// Equation (3) in http://academic.oup.com/mnras/article/473/4/4840/4265350
   double sigma = bsq/S->P[RHO][k][j][i];
   fel = 0.25*(1+pow(((sigma/5.)/(2+(sigma/5.))), .5));
 } 
 
-else if (model | ROWAN) {
+else if (model & ROWAN) {
 	// Equation (34) in https://iopscience.iop.org/article/10.3847/1538-4357/aa9380
   double pres = (gamp-1.)*S->P[UU][k][j][i]; // Proton pressure
   double pg = (gam-1)*S->P[UU][k][j][i];
@@ -128,7 +128,7 @@ else if (model | ROWAN) {
   fel = 0.5*exp(-pow(1-beta/betamax, 3.3)/(1+1.2*pow(sigma, 0.7)));
 } 
 
-else if (model | SHARMA) {
+else if (model & SHARMA) {
 	// Equation for \delta on  pg. 719 (Section 4) in https://iopscience.iop.org/article/10.1086/520800
   double Tpr = (gamp-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
   double uel = 1./(game-1.)*S->P[model][k][j][i]*pow(S->P[RHO][k][j][i],game);
@@ -176,4 +176,3 @@ inline void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k)
 
 }
 #endif // ELECTRONS
-
