@@ -12,7 +12,7 @@
 
 void fixup_electrons_1zone(struct FluidState *S, int i, int j, int k);
 void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Sh, struct FluidState *S, int i, int j, int k);
-double get_fels(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int model);
+double get_fels(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int model, int ip);
 
 void init_electrons(struct GridGeom *G, struct FluidState *S)
 {
@@ -60,7 +60,7 @@ inline void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Ss, stru
   for (int ip = KTOT + 1; ip < NVAR ; ip++) {
     for (int eFlagIndex = 0; eFlagIndex < sizeof(eFlagsArray) / sizeof(eFlagsArray[0]); eFlagIndex++) {
       if (etracker & eFlagsArray[eFlagIndex]) {
-        double fel = get_fels(G, Ss, i, j, k, eFlagsArray[eFlagIndex]);
+        double fel = get_fels(G, Ss, i, j, k, eFlagsArray[eFlagIndex], ip);
         Sf->P[ip][k][j][i] += fel * (game-1.)/(gam-1.) * pow(Ss->P[RHO][k][j][i],gam-game) * (kHarm - Sf->P[KTOT][k][j][i]);
         
         // update the tracker
@@ -85,7 +85,7 @@ inline void heat_electrons_1zone(struct GridGeom *G, struct FluidState *Ss, stru
 }
 
 // New function for ALLMODELS runs.
-inline double get_fels(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int model)
+inline double get_fels(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int model, int ip)
 {
   get_state(G, S, i, j, k, CENT);
   double bsq = bsq_calc(S, i, j, k);
@@ -100,7 +100,7 @@ if (model & CONSTANT) {
 else if (model & KAWAZURA) {
 	// Equation (2) in http://www.pnas.org/lookup/doi/10.1073/pnas.1812491116
   double Tpr = (gamp-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
-  double uel = 1./(game-1.)*S->P[model][k][j][i]*pow(S->P[RHO][k][j][i],game);
+  double uel = 1./(game-1.)*S->P[ip][k][j][i]*pow(S->P[RHO][k][j][i],game);
   double Tel = (game-1.)*uel/S->P[RHO][k][j][i];
   if(Tel <= 0.) Tel = SMALL;
   if(Tpr <= 0.) Tpr = SMALL;
@@ -131,7 +131,7 @@ else if (model & ROWAN) {
 else if (model & SHARMA) {
 	// Equation for \delta on  pg. 719 (Section 4) in https://iopscience.iop.org/article/10.1086/520800
   double Tpr = (gamp-1.)*S->P[UU][k][j][i]/S->P[RHO][k][j][i];
-  double uel = 1./(game-1.)*S->P[model][k][j][i]*pow(S->P[RHO][k][j][i],game);
+  double uel = 1./(game-1.)*S->P[ip][k][j][i]*pow(S->P[RHO][k][j][i],game);
   double Tel = (game-1.)*uel/S->P[RHO][k][j][i];
   if(Tel <= 0.) Tel = SMALL;
   if(Tpr <= 0.) Tpr = SMALL;
