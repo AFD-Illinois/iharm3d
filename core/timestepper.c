@@ -17,6 +17,8 @@
 
 #if GRIM_TIMESTEPPER
 
+#include "mkl.h"
+
 // Function declaration(s): residual calculation
 void residual_calc(struct GridGeom *G, struct FluidState *Si,
   struct FluidState *Sf, GridPrim *F, GridPrim *residual, double dt);
@@ -31,6 +33,8 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
   static GridPrim *residual;
   static GridPrim *residual_eps;
   static double jacobian[NVAR*NVAR][k][j][i];
+  static GridPrim *b;
+  static int ipiv[NVAR];
 
   static int firstc = 1;
   if (firstc) {
@@ -98,10 +102,23 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
         PLOOP S_eps->P[ip][k][j][i] = Sf->P[ip][k][j][i];
       #endif
     }
-
-    // L2 NORM CHECK
-
   }
+
+  // Set b = -R(P^(n+1/2))
+    #if INTEL_WORKAROUND
+      memcpy(&(S_eps->P), &(Sf->P), sizeof(GridPrim));
+    #else
+    #pragma omp parallel for simd collapse(3)
+      PLOOP ZLOOPALL b[ip][k][j][i] = -residual_eps[ip][k][j][i];
+    #endif
+
+  // Linear solve
+  ZLOOP{
+    LAPACKE_dgesv(LAPACK_ROW_MAJOR, NVAR, 1, jacobian[k][j][i], NVAR, ipiv, b[k][j][i], 1);
+  }
+
+  // L2 NORM CHECK
+
 }
 
 void residual_calc(struct GridGeom *G, struct FluidState *Si,
