@@ -70,3 +70,7 @@ double fel_constant;
 int global_start[3];
 int global_stop[3];
 
+// grim algo
+#if GRIM_TIMESTEPPER
+
+#endif

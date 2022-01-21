@@ -136,40 +136,33 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 
   double ndt = get_flux(G, Ss, F);
 
-//  update_f(F, dU);
-//  FLAG("Got initial fluxes");
 
 #if METRIC == MKS
   fix_flux(F);
 #endif
 
-//  update_f(F, dU);
-//  FLAG("Fixed Flux");
 
   //Constrained transport for B
   flux_ct(F);
 
-//  update_f(F, dU);
-//  FLAG("CT Step");
 
   // Flux diagnostic globals
   // TODO don't compute every step, only for logs?
   diag_flux(F);
 
-//  update_f(F, dU);
-//  FLAG("Flux Diags");
-
+// GRIM vs HARM time-stepper
+#if GRIM_TIMESTEPPER
+grim_timestep(G, Si, Ss, Sf, F, Dt);
+get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
+prim_to_flux_vec(G, Sf, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Sf->U);
+#else
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);
   get_state_vec(G, Ss, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   get_fluid_source(G, Ss, dU);
 
-  // TODO skip this call if Si,Ss aliased
   get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);
-
-//  update_f(F, dU);
-//  FLAG("Fixed flux. Got Si->U");
 
 #pragma omp parallel for collapse(3)
   PLOOP ZLOOP {
@@ -181,27 +174,18 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   }
   timer_stop(TIMER_UPDATE_U);
 
-  //FLAG("Got Sf->U");
-
   timer_start(TIMER_U_TO_P);
 #pragma omp parallel for collapse(3)
   ZLOOP {
     pflag[k][j][i] = U_to_P(G, Sf, i, j, k, CENT);
-    // This is too annoying even for debug
-    //if (pflag[k][j][i] != 0) LOGN("Pflag is %d\n", pflag[k][j][i]);
   }
   timer_stop(TIMER_U_TO_P);
-
-  //FLAG("Got Sf->P");
-
-  // Not complete without setting four-vectors
-  // Done /before/ each call
-  //get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
 
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
     fail_save[k][j][i] = pflag[k][j][i];
   }
 
+#endif
   return ndt;
 }

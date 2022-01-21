@@ -50,6 +50,20 @@
 #define NDIM       (4)    // Number of total dimensions
 #define NG         (3)    // Number of ghost zones
 
+//Time stepping algo. Default is HARM
+#ifndef GRIM_TIMESTEPPER
+#define GRIM_TIMESTEPPER (0)
+#endif
+
+#if GRIM_TIMESTEPPER
+#ifndef JACOBIAN_EPS
+#define JACOBIAN_EPS (4.e-8)
+#endif
+#ifndef ROOTFIND_TOL
+#define ROOTFIND_TOL (1.e-3)
+#endif
+#endif
+
 // Fixup parameters
 #define RHOMINLIMIT (1.e-20)
 #define UUMINLIMIT  (1.e-20)
@@ -551,6 +565,9 @@ int restart_init(struct GridGeom *G, struct FluidState *S);
 
 // step.c
 void step(struct GridGeom *G, struct FluidState *S);
+
+//timestepper.c
+void grim_timestep(struct GridGeom *G, struct FluidState Si, struct FluidState *Ss, struct FluidState *Sf, struct FluidFlux *F);
 
 // timing.c
 void time_init();
