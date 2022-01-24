@@ -57,77 +57,80 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
     PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Ss->P[ip][k][j][i];
   #endif
 
-  // LOOP FOR ITERATIVE SOLVER //
+  track_solver_iterations = 0;
 
-  // Compute conserved variables for U^(n+1/2)
-  get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
-  prim_to_flux_vec(G, Sf, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Sf->U);
+  while (track_solver_iterations < MAX_ITER_SOLVER){
 
-  // Compute residual for Sf->P
-  get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
-  residual_calc(G, Si, Sf, F, residual, dt);
+    // Compute conserved variables for U^(n+1/2)
+    get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
+    prim_to_flux_vec(G, Sf, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Sf->U);
 
-  // Initialize P_EPS^(n+1/2)
-  #if INTEL_WORKAROUND
-    memcpy(&(S_eps->P), &(Sf->P), sizeof(GridPrim));
-  #else
-  #pragma omp parallel for simd collapse(3)
-    PLOOP ZLOOPALL S_eps->P[ip][k][j][i] = Sf->P[ip][k][j][i];
-  #endif
+    // Compute residual for Sf->P
+    get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
+    residual_calc(G, Si, Sf, F, residual, dt);
 
-  ZLOOP {
-    // Numerically evaluate the Jacobian
-    for (int col = 0; col < NVAR; col++) {
-      // Find small(P)
-      static int is_small = 0;
-      if (abs(Sf->P[col][k][j][i]) < 0.5 * JACOBIAN_EPS) {
-        is_small = 1;
+    // Initialize P_EPS^(n+1/2)
+    #if INTEL_WORKAROUND
+      memcpy(&(S_eps->P), &(Sf->P), sizeof(GridPrim));
+    #else
+    #pragma omp parallel for simd collapse(3)
+      PLOOP ZLOOPALL S_eps->P[ip][k][j][i] = Sf->P[ip][k][j][i];
+    #endif
+
+    ZLOOP {
+      // Numerically evaluate the Jacobian
+      for (int col = 0; col < NVAR; col++) {
+        // Find small(P)
+        static int is_small = 0;
+        if (abs(Sf->P[col][k][j][i]) < 0.5 * JACOBIAN_EPS) {
+          is_small = 1;
+        }
+
+        // Compute P_eps
+        S_eps->P[col][k][j][i] = Sf->P[col][k][j][i] + JACOBIAN_EPS*Sf->P[col][k][j][i]*(1 - is_small) + JACOBIAN_EPS*is_small;
+
+        // Compute residual for prims_eps
+        prim_to_flux(G, S_eps, i, j, k, 0, CENT, S_eps->U);
+        residual_calc(G, Si, S_eps, F, residual_eps, dt);
+
+        for (int row = 0; row < NVAR; row++) {
+          // Jacobian update
+          *jacobian[NVAR*row + col][k][j][i] = (*residual_eps[row][k][j][i] - *residual[row][k][j][i]) 
+          / (S_eps->P[col][k][j][i] - Sf->P[col][k][j][i]);
+        }
+
+        // Reset P_eps
+        #if INTEL_WORKAROUND
+          memcpy(&(S_eps->P), &(Sf->P), sizeof(GridPrim));
+        #else
+        #pragma omp parallel for simd collapse(3)
+          PLOOP S_eps->P[ip][k][j][i] = Sf->P[ip][k][j][i];
+        #endif
       }
-
-      // Compute P_eps
-      S_eps->P[col][k][j][i] = Sf->P[col][k][j][i] + JACOBIAN_EPS*Sf->P[col][k][j][i]*(1 - is_small) + JACOBIAN_EPS*is_small;
-
-      // Compute residual for prims_eps
-      prim_to_flux(G, S_eps, i, j, k, 0, CENT, S_eps->U);
-      residual_calc(G, Si, S_eps, F, residual_eps, dt);
-
-      for (int row = 0; row < NVAR; row++) {
-        // Jacobian update
-        *jacobian[NVAR*row + col][k][j][i] = (*residual_eps[row][k][j][i] - *residual[row][k][j][i]) 
-        / (S_eps->P[col][k][j][i] - Sf->P[col][k][j][i]);
-      }
-
-      // Reset P_eps
-      #if INTEL_WORKAROUND
-        memcpy(&(S_eps->P), &(Sf->P), sizeof(GridPrim));
-      #else
-      #pragma omp parallel for simd collapse(3)
-        PLOOP S_eps->P[ip][k][j][i] = Sf->P[ip][k][j][i];
-      #endif
-    }
-  }
-
-  // Linear solve
-  #pragma omp parallel for collapse(3)
-  ZLOOP{
-    // Linear solve identifiers
-    double *A_per_zone = calloc(NVAR*NVAR, sizeof(double));
-    double *b_per_zone = calloc(NVAR, sizeof(double));
-    int ipiv[NVAR];
-
-    // Set zone-wise A, b
-    for (int col = 0; col < NVAR; col++){
-      for (int row = 0; row < NVAR; row++){
-        A_per_zone[NVAR*row + col] = *jacobian[NVAR*row + col][k][j][i];
-      }
-      b_per_zone[col] = -*residual[col][k][j][i];
     }
 
-    // Linear solve (zone-wise)
-    LAPACKE_dgesv(LAPACK_ROW_MAJOR, NVAR, 1, A_per_zone, NVAR, ipiv, b_per_zone, 1);
-  }
+    // Linear solve
+    #pragma omp parallel for collapse(3)
+    ZLOOP{
+      // Linear solve identifiers
+      double *A_per_zone = calloc(NVAR*NVAR, sizeof(double));
+      double *b_per_zone = calloc(NVAR, sizeof(double));
+      int ipiv[NVAR];
 
-  // L2 NORM CHECK
+      // Set zone-wise A, b
+      for (int col = 0; col < NVAR; col++){
+        for (int row = 0; row < NVAR; row++){
+          A_per_zone[NVAR*row + col] = *jacobian[NVAR*row + col][k][j][i];
+        }
+        b_per_zone[col] = -*residual[col][k][j][i];
+      }
+
+      // Linear solve (zone-wise)
+      LAPACKE_dgesv(LAPACK_ROW_MAJOR, NVAR, 1, A_per_zone, NVAR, ipiv, b_per_zone, 1);
+    }
+
+    track_solver_iterations += 1;
+  } // Solver while loop
 
 }
 

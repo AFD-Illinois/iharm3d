@@ -72,5 +72,5 @@ int global_stop[3];
 
 // grim algo
 #if GRIM_TIMESTEPPER
-
+int track_solver_iterations;
 #endif

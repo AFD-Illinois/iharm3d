@@ -152,9 +152,13 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 
 // GRIM vs HARM time-stepper
 #if GRIM_TIMESTEPPER
-grim_timestep(G, Si, Ss, Sf, F, Dt);
-get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
-prim_to_flux_vec(G, Sf, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Sf->U);
+  grim_timestep(G, Si, Ss, Sf, F, Dt);
+  get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
+  prim_to_flux_vec(G, Sf, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Sf->U);
+  #pragma omp parallel for simd collapse(2)
+  ZLOOPALL {
+    fail_save[k][j][i] = pflag[k][j][i];
+  }
 #else
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);
