@@ -62,6 +62,9 @@
 #ifndef ROOTFIND_TOL
 #define ROOTFIND_TOL (1.e-3)
 #endif
+#ifndef MAX_ITER_SOLVER
+#define MAX_ITER_SOLVER (3)
+#endif
 #endif
 
 // Fixup parameters
@@ -240,6 +243,7 @@ typedef int    GridInt[N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridDouble[N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridVector[NDIM][N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridPrim[NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
+typedef double GridPrimMatrix[NVAR*NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
 
 struct GridGeom {
   double gcov[NPG][NDIM][NDIM][N2+2*NG][N1+2*NG];
@@ -567,7 +571,7 @@ int restart_init(struct GridGeom *G, struct FluidState *S);
 void step(struct GridGeom *G, struct FluidState *S);
 
 //timestepper.c
-void grim_timestep(struct GridGeom *G, struct FluidState Si, struct FluidState *Ss, struct FluidState *Sf, struct FluidFlux *F);
+void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss, struct FluidState *Sf, struct FluidFlux *F, double dt);
 
 // timing.c
 void time_init();
