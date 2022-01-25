@@ -19,12 +19,15 @@
 
 #include "mkl.h"
 
-// Function declaration(s): residual calculation
-void residual_calc(struct GridGeom *G, struct FluidState *Si,
+// Function declaration(s): residual calculation, L2 norm
+void residual_calc(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
+  struct FluidState *Sf, struct FluidFlux *F, double residual[NVAR], double dt, int i, int j, int k);
+
+void residual_calc_vec(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
   struct FluidState *Sf, struct FluidFlux *F, GridPrim *residual, double dt);
 
-int l2norm(struct GridGeom *G, struct FluidState *Si, struct FluidFlux *F,
-  GridPrim *residual, double delta[NVAR], int i, int j, int k);
+int l2norm(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
+  struct FluidFlux *F, double delta[NVAR], int i, int j, int k);
 
 
 void grim_timestep(struct GridGeom *G, struct FluidState *Si, 
@@ -36,7 +39,6 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
   static GridPrim *residual;
   static GridPrim *residual_eps;
   static GridPrimMatrix *jacobian;
-  // static double jacobian[NVAR*NVAR][N3+2*NG][N2+2*NG][N1+2*NG] = {0};
 
   static int firstc = 1;
   if (firstc) {
@@ -66,7 +68,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
 
     // Compute residual for Sf->P
     get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
-    residual_calc(G, Si, Sf, F, residual, dt);
+    residual_calc(G, Ss, Sf, F, residual, dt);
 
     // Initialize P_EPS^(n+1/2)
     #if INTEL_WORKAROUND
@@ -89,7 +91,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
         // Compute P_eps
         S_eps->P[col][k][j][i] = Sf->P[col][k][j][i] + JACOBIAN_EPS*Sf->P[col][k][j][i]*(1 - is_small) + JACOBIAN_EPS*is_small;
 
-        // Compute residual for prims_eps
+        // Compute residual for P_eps
         get_state(G, S_eps, i, j, k, CENT);
         prim_to_flux(G, S_eps, i, j, k, 0, CENT, S_eps->U);
         residual_calc(G, Si, S_eps, F, residual_eps, dt);
@@ -126,11 +128,9 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
       LAPACKE_dgesv(LAPACK_ROW_MAJOR, NVAR, 1, A_per_zone, NVAR, ipiv, b_per_zone, 1);
 
       // update pflags and Sf->P if root finding tolerance is met
-      pflag[k][j][i] = l2norm(G, Si, F, residual, b_per_zone, i, j, k);
+      pflag[k][j][i] = l2norm(G, Si, Ss, F, b_per_zone, i, j, k);
       if (pflag[k][j][i] == 1) {
-        PLOOP {
-          Sf->P[ip][k][j][i] = Ss->P[ip][k][j][i] + b_per_zone[ip];
-        }
+        PLOOP Sf->P[ip][k][j][i] = Ss->P[ip][k][j][i] + b_per_zone[ip];
       }      
     }
 
@@ -139,7 +139,25 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
 
 }
 
-void residual_calc(struct GridGeom *G, struct FluidState *Si,
+void residual_calc(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
+  struct FluidState *Sf, struct FluidFlux *F, double residual[NVAR], double dt, int i, int j, int k) {
+
+  // Get fluid source
+  static double dU[NVAR];
+  
+  get_fluid_source(G, Ss, dU, i, j, k);
+
+// Compute residual
+  PLOOP {
+    residual[ip] = (Sf->U[ip][k][j][i] - Si->U[ip][k][j][i]) / dt
+      + (F->X1[ip][k][j][i+1] - F->X1[ip][k][j][i])/dx[1]
+      + (F->X2[ip][k][j+1][i] - F->X2[ip][k][j][i])/dx[2]
+      + (F->X3[ip][k+1][j][i] - F->X3[ip][k][j][i])/dx[3]
+      - dU[ip];
+  }
+}
+
+void residual_calc_vec(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
   struct FluidState *Sf, struct FluidFlux *F, GridPrim *residual, double dt) {
 
   // Get fluid source
@@ -149,7 +167,7 @@ void residual_calc(struct GridGeom *G, struct FluidState *Si,
     dU = calloc(1, sizeof(GridPrim));
     firstc = 0;
   }
-  get_fluid_source(G, Si, dU);
+  get_fluid_source_vec(G, Ss, dU);
 
 // Compute residual
 #pragma omp parallel for collapse(3)
@@ -163,34 +181,33 @@ void residual_calc(struct GridGeom *G, struct FluidState *Si,
 }
 
 // Compute L2 norm and update Sf->P if tolerance is met
-int l2norm(struct GridGeom *G, struct FluidState *Si, struct FluidFlux *F,
-GridPrim *residual, double delta[NVAR], int i, int j, int k) {
+int l2norm(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
+  struct FluidFlux *F, double delta[NVAR], int i, int j, int k) {
   // Declarations
   double norm = 0;
   static struct FluidState *S_updated;
-  static GridPrim *residual_updated;
+  static double residual_updated[NVAR];
 
   static int firstc = 1;
   if (firstc) {
     S_updated = calloc(1, sizeof(struct FluidState));
-    residual_updated = calloc(1, sizeof(GridPrim));
 
     firstc = 0;
   }
 
   // Updated primitives
   PLOOP {
-    S_updated->P[ip][k][j][i] = Si->P[ip][k][j][i] + delta[ip];
+    S_updated->P[ip][k][j][i] = Ss->P[ip][k][j][i] + delta[ip]; // will add linesearch parameter
   }
 
   // Compute residual
   get_state(G, S_updated, i, j, k, CENT);
   prim_to_flux(G, S_updated, i, j, k, 0, CENT, S_updated->U);
-  residual_calc(G, Si, S_updated, F, residual_updated, dt);
+  residual_calc(G, Si, Ss, S_updated, F, residual_updated, dt);
 
   // L2 norm
   PLOOP{
-    norm += pow(*residual_updated[ip][k][j][i], 2);
+    norm += pow(residual_updated[ip], 2);
   }
   norm = sqrt(norm);
 

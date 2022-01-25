@@ -287,8 +287,26 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   cmin[k][j][i] = (vp > vm) ? vm : vp;
 }
 
-// Source terms for equations of motion
-inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim *dU)
+// Source terms for equations of motion at grid zone
+// Called by GRIM_TIMESTEPPER so far. Ignoring wind term for now
+inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, double dU[NVAR], int i, int j, int k)
+{
+    double mhd[NDIM][NDIM];
+
+    DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]); // TODO make an mhd_calc_vec?
+
+    // Contract mhd stress tensor with connection
+    PLOOP dU[ip] = 0.;
+    DLOOP2 {
+      for (int gam = 0; gam < NDIM; gam++)
+        dU[UU+gam] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
+    }
+
+    PLOOP dU[ip] *= G->gdet[CENT][j][i];
+}
+
+// Source terms for equations of motion over all physical zones
+inline void get_fluid_source_vec(struct GridGeom *G, struct FluidState *S, GridPrim *dU)
 {
 #if WIND_TERM
   static struct FluidState *dS;

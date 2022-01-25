@@ -244,6 +244,7 @@ typedef double GridDouble[N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridVector[NDIM][N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridPrim[NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridPrimMatrix[NVAR*NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
+typedef double ZonePrim[NVAR];
 
 struct GridGeom {
   double gcov[NPG][NDIM][NDIM][N2+2*NG][N1+2*NG];
@@ -538,7 +539,8 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir,
   int loc, int kstart, int kstop, int jstart, int jstop, int istart, int istop, GridPrim flux);
 void bcon_calc(struct FluidState *S, int i, int j, int k);
 void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double *mhd);
-void get_fluid_source(struct GridGeom *G, struct FluidState *S, GridPrim *dU);
+void get_fluid_source(struct GridGeom *G, struct FluidState *S, double dU[NVAR], int i, int j, int k);
+void get_fluid_source_vec(struct GridGeom *G, struct FluidState *S, GridPrim *dU);
 double bsq_calc(struct FluidState *S, int i, int j, int k);
 void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc);
