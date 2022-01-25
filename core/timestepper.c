@@ -36,6 +36,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
   static GridPrim *residual;
   static GridPrim *residual_eps;
   static GridPrimMatrix *jacobian;
+  // static double jacobian[NVAR*NVAR][N3+2*NG][N2+2*NG][N1+2*NG] = {0};
 
   static int firstc = 1;
   if (firstc) {
@@ -75,6 +76,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
       PLOOP ZLOOPALL S_eps->P[ip][k][j][i] = Sf->P[ip][k][j][i];
     #endif
 
+    #pragma omp parallel for simd collapse(2)
     ZLOOP {
       // Numerically evaluate the Jacobian
       for (int col = 0; col < NVAR; col++) {
@@ -94,22 +96,18 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
 
         for (int row = 0; row < NVAR; row++) {
           // Jacobian computation
+          if (mpi_io_proc()) fprintf(stdout, "\n%d %d %g\n", col, row, *jacobian[NVAR*row + col][k][j][i]);
           *jacobian[NVAR*row + col][k][j][i] = (*residual_eps[row][k][j][i] - *residual[row][k][j][i]) 
           / (S_eps->P[col][k][j][i] - Sf->P[col][k][j][i]);
         }
 
         // Reset P_eps
-        #if INTEL_WORKAROUND
-          memcpy(&(S_eps->P), &(Sf->P), sizeof(GridPrim));
-        #else
-        #pragma omp parallel for simd collapse(3)
-          PLOOP S_eps->P[ip][k][j][i] = Sf->P[ip][k][j][i];
-        #endif
+        S_eps->P[col][k][j][i] = Sf->P[col][k][j][i];
       }
     }
 
     // Linear solve
-    #pragma omp parallel for collapse(3)
+    #pragma omp parallel for collapse(2)
     ZLOOP{
       // Linear solve identifiers
       double *A_per_zone = (double*)calloc(NVAR*NVAR, sizeof(double));
@@ -119,7 +117,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
       // Set zone-wise A, b
       for (int col = 0; col < NVAR; col++){
         for (int row = 0; row < NVAR; row++){
-          A_per_zone[NVAR*row + col] = *jacobian[NVAR*row + col][k][j][i];
+          A_per_zone[NVAR*row + col] = *jacobian[NVAR*row+col][k][j][i];
         }
         b_per_zone[col] = -*residual[col][k][j][i];
       }

@@ -136,7 +136,6 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 
   double ndt = get_flux(G, Ss, F);
 
-
 #if METRIC == MKS
   fix_flux(F);
 #endif
