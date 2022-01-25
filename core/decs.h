@@ -347,6 +347,10 @@ extern double poly_norm, poly_xt, poly_alpha, mks_smooth;
 extern int global_start[3];
 extern int global_stop[3];
 
+#if GRIM_TIMESTEPPER
+extern int track_solver_iterations;
+#endif
+
 /*******************************************************************************
     MACROS
 *******************************************************************************/
