@@ -27,7 +27,7 @@ void residual_calc_vec(struct GridGeom *G, struct FluidState *Si, struct FluidSt
   struct FluidState *Sf, struct FluidFlux *F, GridPrim *residual, double dt);
 
 int l2norm(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
-  struct FluidFlux *F, double delta[NVAR], int i, int j, int k);
+  struct FluidFlux *F, double delta[NVAR], double dt, int i, int j, int k);
 
 
 void grim_timestep(struct GridGeom *G, struct FluidState *Si, 
@@ -37,14 +37,13 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
   // Declarations and memory allocation
   static struct FluidState *S_eps;
   static GridPrim *residual;
-  static GridPrim *residual_eps;
   static GridPrimMatrix *jacobian;
+  static double residual_eps[NVAR];
 
   static int firstc = 1;
   if (firstc) {
     S_eps = calloc(1, sizeof(struct FluidState));
     residual = calloc(1, sizeof(GridPrim));
-    residual_eps = calloc(1, sizeof(GridPrim));
     jacobian = calloc(1, sizeof(GridPrimMatrix));
 
     firstc = 0;
@@ -68,9 +67,9 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
 
     // Compute residual for Sf->P
     get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
-    residual_calc(G, Ss, Sf, F, residual, dt);
+    residual_calc_vec(G, Si, Ss, Sf, F, residual, dt);
 
-    // Initialize P_EPS^(n+1/2)
+    // Initialize P_eps^(n+1/2)
     #if INTEL_WORKAROUND
       memcpy(&(S_eps->P), &(Sf->P), sizeof(GridPrim));
     #else
@@ -80,63 +79,59 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
 
     #pragma omp parallel for simd collapse(2)
     ZLOOP {
-      // Numerically evaluate the Jacobian
-      for (int col = 0; col < NVAR; col++) {
-        // Find small(P)
-        static int is_small = 0;
-        if (abs(Sf->P[col][k][j][i]) < 0.5 * JACOBIAN_EPS) {
-          is_small = 1;
+      // Only unconverged zones
+      if (!pflag[k][j][i]){
+        // Numerically evaluate the Jacobian
+        for (int col = 0; col < NVAR; col++) {
+          // Find small(P)
+          static int is_small = 0;
+          if (abs(Sf->P[col][k][j][i]) < 0.5 * JACOBIAN_EPS) {
+            is_small = 1;
+          }
+
+          // Compute P_eps
+          S_eps->P[col][k][j][i] = Sf->P[col][k][j][i] + JACOBIAN_EPS*Sf->P[col][k][j][i]*(1 - is_small) + JACOBIAN_EPS*is_small;
+
+          // Compute residual for P_eps
+          get_state(G, S_eps, i, j, k, CENT);
+          prim_to_flux(G, S_eps, i, j, k, 0, CENT, S_eps->U);
+          residual_calc(G, Si, Ss, S_eps, F, residual_eps, dt, i, j, k);
+
+          for (int row = 0; row < NVAR; row++) {
+            // Jacobian computation
+            if (mpi_io_proc()) fprintf(stdout, "\n%d %d %g\n", col, row, *jacobian[NVAR*row + col][k][j][i]);
+            *jacobian[NVAR*row + col][k][j][i] = (residual_eps[row] - *residual[row][k][j][i]) 
+            / (S_eps->P[col][k][j][i] - Sf->P[col][k][j][i]);
+          }
+
+          // Reset P_eps
+          S_eps->P[col][k][j][i] = Sf->P[col][k][j][i];
         }
 
-        // Compute P_eps
-        S_eps->P[col][k][j][i] = Sf->P[col][k][j][i] + JACOBIAN_EPS*Sf->P[col][k][j][i]*(1 - is_small) + JACOBIAN_EPS*is_small;
+        // Linear solve
+        // Linear solve identifiers
+        double *A_per_zone = (double*)calloc(NVAR*NVAR, sizeof(double));
+        double *b_per_zone = (double*)calloc(NVAR, sizeof(double));
+        int ipiv[NVAR];
 
-        // Compute residual for P_eps
-        get_state(G, S_eps, i, j, k, CENT);
-        prim_to_flux(G, S_eps, i, j, k, 0, CENT, S_eps->U);
-        residual_calc(G, Si, S_eps, F, residual_eps, dt);
-
-        for (int row = 0; row < NVAR; row++) {
-          // Jacobian computation
-          if (mpi_io_proc()) fprintf(stdout, "\n%d %d %g\n", col, row, *jacobian[NVAR*row + col][k][j][i]);
-          *jacobian[NVAR*row + col][k][j][i] = (*residual_eps[row][k][j][i] - *residual[row][k][j][i]) 
-          / (S_eps->P[col][k][j][i] - Sf->P[col][k][j][i]);
+        // Set zone-wise A, b
+        for (int col = 0; col < NVAR; col++){
+          for (int row = 0; row < NVAR; row++){
+            A_per_zone[NVAR*row + col] = *jacobian[NVAR*row+col][k][j][i];
+          }
+          b_per_zone[col] = -*residual[col][k][j][i];
         }
 
-        // Reset P_eps
-        S_eps->P[col][k][j][i] = Sf->P[col][k][j][i];
-      }
-    }
+        // Linear solve (zone-wise)
+        LAPACKE_dgesv(LAPACK_ROW_MAJOR, NVAR, 1, A_per_zone, NVAR, ipiv, b_per_zone, 1);
 
-    // Linear solve
-    #pragma omp parallel for collapse(2)
-    ZLOOP{
-      // Linear solve identifiers
-      double *A_per_zone = (double*)calloc(NVAR*NVAR, sizeof(double));
-      double *b_per_zone = (double*)calloc(NVAR, sizeof(double));
-      int ipiv[NVAR];
-
-      // Set zone-wise A, b
-      for (int col = 0; col < NVAR; col++){
-        for (int row = 0; row < NVAR; row++){
-          A_per_zone[NVAR*row + col] = *jacobian[NVAR*row+col][k][j][i];
-        }
-        b_per_zone[col] = -*residual[col][k][j][i];
-      }
-
-      // Linear solve (zone-wise)
-      LAPACKE_dgesv(LAPACK_ROW_MAJOR, NVAR, 1, A_per_zone, NVAR, ipiv, b_per_zone, 1);
-
-      // update pflags and Sf->P if root finding tolerance is met
-      pflag[k][j][i] = l2norm(G, Si, Ss, F, b_per_zone, i, j, k);
-      if (pflag[k][j][i] == 1) {
+        // update pflags and Sf->P if root finding tolerance is met
+        pflag[k][j][i] = l2norm(G, Si, Ss, F, b_per_zone, dt, i, j, k);
         PLOOP Sf->P[ip][k][j][i] = Ss->P[ip][k][j][i] + b_per_zone[ip];
-      }      
-    }
-
+      } // pflag condition
+    } // ZLOOP
     track_solver_iterations += 1;
   } // Solver while loop
-
 }
 
 void residual_calc(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
@@ -182,7 +177,7 @@ void residual_calc_vec(struct GridGeom *G, struct FluidState *Si, struct FluidSt
 
 // Compute L2 norm and update Sf->P if tolerance is met
 int l2norm(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
-  struct FluidFlux *F, double delta[NVAR], int i, int j, int k) {
+  struct FluidFlux *F, double delta[NVAR], double dt, int i, int j, int k) {
   // Declarations
   double norm = 0;
   static struct FluidState *S_updated;
@@ -203,7 +198,7 @@ int l2norm(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
   // Compute residual
   get_state(G, S_updated, i, j, k, CENT);
   prim_to_flux(G, S_updated, i, j, k, 0, CENT, S_updated->U);
-  residual_calc(G, Si, Ss, S_updated, F, residual_updated, dt);
+  residual_calc(G, Si, Ss, S_updated, F, residual_updated, dt, i, j, k);
 
   // L2 norm
   PLOOP{
