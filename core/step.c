@@ -152,6 +152,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   // Set zero pflags and fail_save to zero
   zero_arrays();
   // time-step primitives
+  get_state_vec(G, Ss, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   grim_timestep(G, Si, Ss, Sf, F, Dt);
   // compute new conserved variables
   get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);

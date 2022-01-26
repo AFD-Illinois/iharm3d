@@ -99,9 +99,8 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
 
           for (int row = 0; row < NVAR; row++) {
             // Jacobian computation
-            if (mpi_io_proc()) fprintf(stdout, "\n%d %d %g\n", col, row, *jacobian[NVAR*row + col][k][j][i]);
-            *jacobian[NVAR*row + col][k][j][i] = (residual_eps[row] - *residual[row][k][j][i]) 
-            / (S_eps->P[col][k][j][i] - Sf->P[col][k][j][i]);
+             (*jacobian)[NVAR*row + col][k][j][i] = (residual_eps[row] - (*residual)[row][k][j][i])
+             / (S_eps->P[col][k][j][i] - Sf->P[col][k][j][i]);
           }
 
           // Reset P_eps
@@ -117,7 +116,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si,
         // Set zone-wise A, b
         for (int col = 0; col < NVAR; col++){
           for (int row = 0; row < NVAR; row++){
-            A_per_zone[NVAR*row + col] = *jacobian[NVAR*row+col][k][j][i];
+            A_per_zone[NVAR*row + col] = (*jacobian)[NVAR*row+col][k][j][i];
           }
           b_per_zone[col] = -*residual[col][k][j][i];
         }

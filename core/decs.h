@@ -244,7 +244,6 @@ typedef double GridDouble[N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridVector[NDIM][N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridPrim[NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridPrimMatrix[NVAR*NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
-typedef double ZonePrim[NVAR];
 
 struct GridGeom {
   double gcov[NPG][NDIM][NDIM][N2+2*NG][N1+2*NG];

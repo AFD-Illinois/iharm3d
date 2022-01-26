@@ -185,6 +185,7 @@ void lr_to_flux(struct GridGeom *G, struct FluidState *Sr,
     (*cmin)[k][j][i] = fabs(MY_MAX(MY_MAX(0., -(*cminL)[k][j][i]), -(*cminR)[k][j][i]));
     (*ctop)[dir][k][j][i] = MY_MAX((*cmax)[k][j][i], (*cmin)[k][j][i]);
     if (isnan(1./(*ctop)[dir][k][j][i])) {
+      
       printf("ctop is 0 or NaN at zone: %i %i %i (%i) ", i,j,k,dir);
 #if METRIC == MKS
       double X[NDIM];
