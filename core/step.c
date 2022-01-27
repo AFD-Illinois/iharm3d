@@ -151,18 +151,28 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 #if GRIM_TIMESTEPPER
   // Set zero pflags and fail_save to zero
   zero_arrays();
-  // time-step primitives
+
+  // Obtain Si->U
+  get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
+  prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);
+
+  // Obtain four-vectors for Ss (needed for source terms)
   get_state_vec(G, Ss, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
+
+  // time-step by root-finding the residual
   grim_timestep(G, Si, Ss, Sf, F, Dt);
+
   // compute new conserved variables
   get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   prim_to_flux_vec(G, Sf, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Sf->U);
+  
   // update failures
   // NOTE: These are no longer U_to_P failures but rather zones where convergence was not achieved for the nonlinear solver
   #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
     fail_save[k][j][i] = pflag[k][j][i];
   }
+  
 #else
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);
