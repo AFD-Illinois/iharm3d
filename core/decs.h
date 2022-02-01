@@ -62,8 +62,8 @@
 #ifndef ROOTFIND_TOL
 #define ROOTFIND_TOL (1.e-3)
 #endif
-#ifndef MAX_ITER_SOLVER
-#define MAX_ITER_SOLVER (3)
+#ifndef MAX_NONLINEAR_ITER
+#define MAX_NONLINEAR_ITER (1)
 #endif
 #endif
 
@@ -243,7 +243,7 @@ typedef int    GridInt[N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridDouble[N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridVector[NDIM][N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridPrim[NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
-typedef double GridPrimMatrix[NVAR*NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
+typedef double GridPrimMatrix[NVAR][NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
 
 struct GridGeom {
   double gcov[NPG][NDIM][NDIM][N2+2*NG][N1+2*NG];
@@ -395,6 +395,8 @@ extern int track_solver_iterations;
 
 // Loop over primitive variables
 #define PLOOP for(int ip = 0; ip < NVAR; ip++)
+#define PLOOP2 for(int ip1 = 0; ip1 < NVAR; ip1++) \
+               for(int ip2 = 0; ip2 < NVAR; ip2++)
 
 // Loop over spacetime indices
 #define DLOOP1 for (int mu = 0; mu < NDIM; mu++)
@@ -576,7 +578,8 @@ int restart_init(struct GridGeom *G, struct FluidState *S);
 void step(struct GridGeom *G, struct FluidState *S);
 
 //timestepper.c
-void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss, struct FluidState *Sf, struct FluidFlux *F, double dt);
+void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
+  struct FluidState *Sf, struct FluidFlux *F, double dt);
 
 // timing.c
 void time_init();

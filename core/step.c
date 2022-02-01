@@ -159,6 +159,14 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   // Obtain four-vectors for Ss (needed for source terms)
   get_state_vec(G, Ss, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
 
+  // Initial guess for Sf->P
+  #if INTEL_WORKAROUND
+    memcpy(&(Sf->P), &(Ss->P), sizeof(GridPrim));
+  #else
+  #pragma omp parallel for simd collapse(3)
+    PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Ss->P[ip][k][j][i];
+  #endif
+
   // time-step by root-finding the residual
   grim_timestep(G, Si, Ss, Sf, F, Dt);
 
