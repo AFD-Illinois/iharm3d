@@ -11,15 +11,18 @@
 #include "hdf5_utils.h"
 
 static int nmode;
+static int dir;
 
 void set_problem_params()
 {
   set_param("nmode", &nmode);
+  set_param("dir", &dir);
 }
 
 void save_problem_data(hid_t string_type){
         hdf5_write_single_val("mhdmodes", "PROB", string_type);
         hdf5_write_single_val(&nmode, "nmode", H5T_STD_I32LE);
+        hdf5_write_single_val(&nmode, "dir", H5T_STD_I32LE);
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
@@ -41,7 +44,8 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   // "Faux-2D" planar waves direction
   // Set to 0 for "full" 3D wave
-  int dir = 0;
+  //int dir = 0;
+  if (mpi_io_proc()) fprintf(stdout, "\nDirection: %d\n", dir);
 
   complex omega, drho, du, du1, du2, du3, dB1, dB2, dB3;
 
@@ -138,7 +142,7 @@ void init(struct GridGeom *G, struct FluidState *S)
        du3 = 0.480384461415;
        dB3 = 0.877058019307;
       }
-    } else { // Fast
+    } else if (nmode == 3) { // Fast
       omega = 5.53726217331*I;
       drho = 0.476395427447;
       du   = 0.635193903263;
@@ -157,6 +161,20 @@ void init(struct GridGeom *G, struct FluidState *S)
        du2  = -0.316873207561;
        dB1  = 0.359559114174;
        dB2  = -0.359559114174;
+      }
+    } else { // Sound (2D). Taken from grim
+      omega = 3.09362659024*I;
+      drho  = 0.345991032308;
+      du    = 0.922642752822;
+      if (dir == 1) {
+        B20 = 0;
+        du2 = -0.170354208129;
+      } else if (dir == 2) {
+        B30 - 0;
+        du3 = -0.170354208129;
+      } else if (dir == 3){
+        B10 = 0;
+        du1 = -0.170354208129;
       }
     }
   }

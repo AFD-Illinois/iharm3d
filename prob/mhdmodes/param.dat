@@ -29,4 +29,5 @@
 [dbl] tptemax = 1000.0
 
 # PROBLEM
+[int] dir = 0
 [int] nmode = 3
