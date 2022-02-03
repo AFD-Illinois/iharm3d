@@ -19,9 +19,9 @@
 
 #include "mkl.h"
 
-// Function declaration(s): residual calculation, jacobian, linear solve, L2 norm
+// Function declaration(s): residual calculation, jacobian, and linear solve
 void residual_calc(struct GridGeom *G, struct FluidState *Stmp, double U_old[NVAR], double divF[NVAR], 
-  double sources[NVAR], double dt, int i, int j, int k double residual[NVAR]);
+  double sources[NVAR], double dt, int i, int j, int k, double residual[NVAR]);
 
 void jacobian(struct GridGeom *G, struct FluidState *Sf, double U_old[NVAR],
   double divF[NVAR], double sources[NVAR], double dt, int i, int j, int k, double J[NVAR*NVAR]);
@@ -29,7 +29,7 @@ void jacobian(struct GridGeom *G, struct FluidState *Sf, double U_old[NVAR],
 void solve(double A[NVAR*NVAR], double b[NVAR]);
 
 void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
-  struct FluidState *Sf, struct FluidFlux *F, double dt) {
+  struct FluidState *S_solver, struct FluidFlux *F, double dt) {
 
   int nonlinear_iter = 0;
 
@@ -70,11 +70,11 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
       get_fluid_source(G, Ss, sources, i, j, k);
 
       // Jacobian calculation
-      jacobian(G, Sf, U_old, divF, sources, dt, i, j, k, jac);
+      jacobian(G, S_solver, U_old, divF, sources, dt, i, j, k, jac);
 
       // Initialize prim_guess
       PLOOP {
-        prim_guess[ip] = Sf->P[ip][k][j][i];
+        prim_guess[ip] = S_solver->P[ip][k][j][i];
         S_guess->P[ip][k][j][i] = prim_guess[ip];
       }
 
@@ -99,13 +99,13 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
       if (norm > max_norm) max_norm = norm;
 
       // Update Sf->P
-      PLOOP Sf->P[ip][k][j][i] = prim_guess[ip];
+      PLOOP S_solver->P[ip][k][j][i] = prim_guess[ip];
       
     }// END OF ZLOOP
 
     max_norm = mpi_max(max_norm);
 
-    if (mpi_io_proc()) fprintf(stdout, "\n\t\t\t\tNonlinear iter = %d. Max L2 norm: %g\n", nonlinear_iter, max_norm);
+    if (mpi_io_proc()) fprintf(stdout, "\n\t\tNonlinear iter = %d. Max L2 norm: %g\n", nonlinear_iter, max_norm);
 
     nonlinear_iter += 1;
 
@@ -125,7 +125,7 @@ void residual_calc(struct GridGeom *G, struct FluidState *Stmp, double U_old[NVA
 }
 
 // Evaluate Jacobian (per zone)
-void jacobian(struct GridGeom *G, struct FluidState *Sf, double U_old[NVAR],
+void jacobian(struct GridGeom *G, struct FluidState *S_solver, double U_old[NVAR],
   double divF[NVAR], double sources[NVAR], double dt, int i, int j, int k, double J[NVAR*NVAR]) {
 
   // Declarations
@@ -144,15 +144,15 @@ void jacobian(struct GridGeom *G, struct FluidState *Sf, double U_old[NVAR],
   }
 
   PLOOP {
-    prims[ip] = Sf->P[ip][k][j][i];
-    prims_eps[ip] = Sf->P[ip][k][j][i];
+    prims[ip] = S_solver->P[ip][k][j][i];
+    prims_eps[ip] = S_solver->P[ip][k][j][i];
     S_eps->P[ip][k][j][i] = prims_eps[ip];
     residual[ip] = 0;
     residual_eps[ip] = 0;
   }
   
   // Calculate residual for Sf->P
-  residual_calc(G, Sf, U_old, divF, sources, dt, i, j, k, residual);
+  residual_calc(G, S_solver, U_old, divF, sources, dt, i, j, k, residual);
 
   // Numerically evaluate the Jacobian
   for (int col = 0; col < NVAR; col++) {

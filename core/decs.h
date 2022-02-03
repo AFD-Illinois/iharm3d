@@ -243,7 +243,6 @@ typedef int    GridInt[N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridDouble[N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridVector[NDIM][N3+2*NG][N2+2*NG][N1+2*NG];
 typedef double GridPrim[NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
-typedef double GridPrimMatrix[NVAR][NVAR][N3+2*NG][N2+2*NG][N1+2*NG];
 
 struct GridGeom {
   double gcov[NPG][NDIM][NDIM][N2+2*NG][N1+2*NG];
@@ -579,7 +578,7 @@ void step(struct GridGeom *G, struct FluidState *S);
 
 //timestepper.c
 void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
-  struct FluidState *Sf, struct FluidFlux *F, double dt);
+  struct FluidState *S_solver, struct FluidFlux *F, double dt);
 
 // timing.c
 void time_init();

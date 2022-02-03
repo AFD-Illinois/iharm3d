@@ -31,10 +31,10 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   // Mean state
   double rho0 = 1.;
-  double u0 = 1.; // TODO set U{n} for boosted entropy
-  double B10 = 0.; // This is set later, see below
-  double B20 = 0.;
-  double B30 = 0.;
+  double u0   = 1.; // TODO set U{n} for boosted entropy
+  double B10  = 0.; // This is set later, see below
+  double B20  = 0.;
+  double B30  = 0.;
 
   // Wavevector
   double k1 = 2.*M_PI;
@@ -45,7 +45,6 @@ void init(struct GridGeom *G, struct FluidState *S)
   // "Faux-2D" planar waves direction
   // Set to 0 for "full" 3D wave
   //int dir = 0;
-  if (mpi_io_proc()) fprintf(stdout, "\nDirection: %d\n", dir);
 
   complex omega, drho, du, du1, du2, du3, dB1, dB2, dB3;
 
@@ -163,12 +162,15 @@ void init(struct GridGeom *G, struct FluidState *S)
        dB2  = -0.359559114174;
       }
     } else { // Sound (2D). Taken from grim
-      omega = 3.09362659024*I;
+      u0 = 2.;
+      double k_sq = ((k1 * k1) + (k2 * k2)); // Square of angular wavenumber
+      double cs2 = (gam * (gam - 1) * u0) / (rho0 + (gam * u0));
+      omega = sqrt(cs2 * k_sq);
       drho  = 0.345991032308;
       du    = 0.922642752822;
       if (dir == 1) {
         B20 = 0;
-        du2 = -0.170354208129;
+        du2 = -0.170354208129; 
       } else if (dir == 2) {
         B30 - 0;
         du3 = -0.170354208129;
@@ -181,7 +183,8 @@ void init(struct GridGeom *G, struct FluidState *S)
 
   // Override tf and the dump and log intervals
   if (nmode > 0) tf = 2.*M_PI/fabs(cimag(omega));
-  DTd = tf/5.; // These are set from param.dat
+  if (nmode == 4) tf = 2.*M_PI/fabs(omega);
+//  DTd = tf/5.; // These are set from param.dat
   DTl = tf/5.;
 
   set_grid(G);

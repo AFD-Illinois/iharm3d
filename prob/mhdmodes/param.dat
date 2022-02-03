@@ -15,7 +15,7 @@
 [dbl] cour = 0.9
 
 # OUTPUT
-[dbl] DTd = 0.2
+[dbl] DTd = 0.05
 [dbl] DTf = 10.0
 [dbl] DTl = 0.5
 [int] DTr = 100
@@ -29,5 +29,6 @@
 [dbl] tptemax = 1000.0
 
 # PROBLEM
-[int] dir = 0
-[int] nmode = 3
+# dir must be set to 0 for 3D wave
+[int] dir = 3
+[int] nmode = 2
