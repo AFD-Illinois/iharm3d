@@ -16,6 +16,7 @@ static MPI_Datatype face_type[3];
 static MPI_Datatype pflag_face_type[3];
 static int rank;
 static int numprocs;
+static int comm_size;
 
 void mpi_initialization(int argc, char *argv[])
 {
@@ -36,10 +37,23 @@ void mpi_initialization(int argc, char *argv[])
     exit(1);
   }
 
+  // Check that our communicator is the right size, and print
+  // a user-friendly error if it is not
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+  if (comm_size != numprocs) {
+    if (rank == 0) {
+      fprintf(stderr, "iharm3D is compiled to use %d MPI processes: N1CPU x N2CPU x N3CPU == %d x %d x %d == %d\n", numprocs, N1CPU, N2CPU, N3CPU, numprocs);
+      fprintf(stderr, "However, the communicator we see is %d processes!\n", comm_size);
+      fprintf(stderr, "Please reset NiCPU in build_archive/parameters.h and recompile, or run iharm3D with a communicator of the expected size.\n");
+    }
+    exit(-2);
+  }
+
   // Set up communicator for Cartesian processor topology
   // Use X3,2,1 ordering
   MPI_Cart_create(MPI_COMM_WORLD, 3, cpudims, periodic, 1, &comm);
-
+  // Find our spot in the new communicator -- note rank may now have changed
   int coord[3];
   MPI_Comm_rank(comm, &rank);
   MPI_Cart_coords(comm, rank, 3, coord);
