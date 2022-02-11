@@ -208,7 +208,6 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
 }
 
 // Replace bad points with values interpolated from neighbors
-#define FLOOP for(int ip=0;ip<B1;ip++)
 void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
 {
   timer_start(TIMER_FIXUP);

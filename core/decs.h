@@ -149,6 +149,11 @@
 #define B2  (6)
 #define B3  (7)
 
+#if GRIM_TIMESTEPPER
+#define Q_TILDE (8)
+#define DELTA_P_TILDE (9)
+#endif
+
 #if ELECTRONS
 // Total number of models (needed to declare eFlagsArray)
 #define NUM_E_MODELS (5)
@@ -159,11 +164,19 @@
 #define ROWAN     (8)
 #define SHARMA    (16)
 
+#if GRIM_TIMESTEPPER
+#define KTOT (10)
+#else
 #define KTOT (8)
+#endif
 #define NVAR (KTOT + ((E_MODELS & CONSTANT) >>  0) + ((E_MODELS & KAWAZURA) >> 1) + ((E_MODELS & WERNER) >> 2)\
                    + ((E_MODELS & ROWAN) >> 3) + ((E_MODELS & SHARMA) >> 4) + 1)
 #else
+#if GRIM_TIMESTEPPER
+#define NVAR (10)
+#else
 #define NVAR (8)
+#endif
 #endif
 
 // Centering of grid functions
@@ -260,6 +273,13 @@ struct FluidState {
   GridVector bcon;
   GridVector bcov;
   GridVector jcon;
+  #if GRIM_TIMESTEPPER
+  GridDouble q;
+  GridDouble delta_p;
+  GridDouble bsq;
+  GridDouble nu_emhd;
+  GridDouble chi_emhd;
+  #endif
 };
 
 struct FluidFlux {
@@ -396,6 +416,18 @@ extern int track_solver_iterations;
 #define PLOOP for(int ip = 0; ip < NVAR; ip++)
 #define PLOOP2 for(int ip1 = 0; ip1 < NVAR; ip1++) \
                for(int ip2 = 0; ip2 < NVAR; ip2++)
+
+// Loop over ideal MHD fluid variables
+#define FLOOP for (int ip  = 0; ip < B1; ip++)
+
+#if GRIM_TIMESTEPPER
+// Loop over new EMHD variables
+#if ELECTRONS
+#define ELOOP for (int ip = Q_TILDE; ip < KTOT; ip++)
+#else
+#define ELOOP for (int ip = Q_TILDE; ip < NVAR; ip++)
+#endif
+#endif
 
 // Loop over spacetime indices
 #define DLOOP1 for (int mu = 0; mu < NDIM; mu++)

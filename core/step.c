@@ -190,7 +190,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);
   get_state_vec(G, Ss, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
-  get_fluid_source_vec(G, Ss, dU);
+  get_ideal_fluid_source_vec(G, Ss, dU);
 
   get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);

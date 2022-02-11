@@ -54,6 +54,11 @@ void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   flux[B3][k][j][i] = S->bcon[3][k][j][i]*S->ucon[dir][k][j][i] -
                       S->bcon[dir][k][j][i]*S->ucon[3][k][j][i];
 
+  #if GRIM_TIMESTEPPER
+  flux[Q_TILDE][k][j][i] = S->ucon[dir][k][j][i] * S->P[Q_TILDE][k][j][i]
+  flux[DELTA_P_TILDE][k][j][i] = S->ucon[dir][k][j][i] * S->P[DELTA_P_TILDE][k][j][i]
+  #endif
+
 #if ELECTRONS
   for (int ip = KTOT  + 1; ip < NVAR ; ip++) {
     flux[ip][k][j][i] = flux[RHO][k][j][i]*S->P[ip][k][j][i];
@@ -97,8 +102,15 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
         - S->bcon[dir][k][j][i] * S->ucon[2][k][j][i]) * G->gdet[loc][j][i];
     flux[B3][k][j][i] = (S->bcon[3][k][j][i] * S->ucon[dir][k][j][i]
         - S->bcon[dir][k][j][i] * S->ucon[3][k][j][i]) * G->gdet[loc][j][i];
-
   }
+
+  #if GRIM_TIMESTEPPER
+  #pragma omp for collapse(3) nowait
+  ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
+    flux[Q_TILDE][k][j][i] = G->gdet[loc][j][i] * (S->ucon[dir][k][j][i] * S->P[Q_TILDE][k][j][i])
+    flux[DELTA_P_TILDE][k][j][i] = G->gdet[loc][j][i] * (S->ucon[dir][k][j][i] * S->P[DELTA_P_TILDE][k][j][i])
+  }
+  #endif
 
 #if ELECTRONS
 #pragma omp for collapse(3)
@@ -181,6 +193,12 @@ inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, in
     lower_grid(S->ucon, S->ucov, G, i, j, k, loc);
     bcon_calc(S, i, j, k);
     lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
+
+    #if GRIM_TIMESTEPPER
+    S->bsq[k][j][i] = bsq_calc(S, i, j, k);
+    S->q[k][j][i] = S->P[Q_TILDE][k][j][i]; // NOTE: Wil lhave to edit this when considering higher order terms
+    S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
+    #endif
 }
 
 // Calculate ucon, ucov, bcon, bcov from primitive variables, over given range
@@ -212,6 +230,15 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
     }
+
+    #if GRIM_TIMESTEPPER
+    #pragma omp for collapse(3)
+    ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
+      S->bsq[k][j][i] = bsq_calc(S, i, j, k);
+      S->q[k][j][i] = S->P[Q_TILDE][k][j][i]; // NOTE: Will have to edit this when considering higher order terms
+      S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
+    }
+    #endif
   }
 
     //lower_grid_vec(S->bcon, S->bcov, G, kstart, kstop, jstart, jstop, istart, istop, loc);
@@ -287,26 +314,28 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   cmin[k][j][i] = (vp > vm) ? vm : vp;
 }
 
+/*------SOURCE TERMS CALLED DURING AN IDEAL MHD RUN------*/
+
 // Source terms for equations of motion at grid zone
-// Called by GRIM_TIMESTEPPER so far. Ignoring wind term for now
-inline void get_fluid_source(struct GridGeom *G, struct FluidState *S, double dU[NVAR], int i, int j, int k)
+// Called only by GRIM_TIMESTEPPER so far. Ignoring wind term for now
+inline void get_ideal_fluid_source(struct GridGeom *G, struct FluidState *S, int i, int j, int k, double dU[NVAR])
 {
-    double mhd[NDIM][NDIM];
+  double mhd[NDIM][NDIM];
 
-    DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]); // TODO make an mhd_calc_vec?
+  DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]); // TODO make an mhd_calc_vec?
 
-    // Contract mhd stress tensor with connection
-    PLOOP dU[ip] = 0.;
-    DLOOP2 {
-      for (int gam = 0; gam < NDIM; gam++)
-        dU[UU+gam] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
-    }
+  // Contract mhd stress tensor with connection
+  PLOOP dU[ip] = 0.;
+  DLOOP2 {
+    for (int gam = 0; gam < NDIM; gam++)
+      dU[UU+gam] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
+  }
 
-    PLOOP dU[ip] *= G->gdet[CENT][j][i];
+  PLOOP dU[ip] *= G->gdet[CENT][j][i];
 }
 
 // Source terms for equations of motion over all physical zones
-inline void get_fluid_source_vec(struct GridGeom *G, struct FluidState *S, GridPrim *dU)
+inline void get_ideal_fluid_source_vec(struct GridGeom *G, struct FluidState *S, GridPrim *dU)
 {
 #if WIND_TERM
   static struct FluidState *dS;
@@ -369,6 +398,73 @@ inline void get_fluid_source_vec(struct GridGeom *G, struct FluidState *S, GridP
   }
 #endif
 }
+
+/*------END OF SOURCE TERMS CALLED DURING AN IDEAL MHD RUN------*/
+
+/*------SOURCE TERMS CALLED DURING AN EXTENDED MHD (EMHD) RUN------*/
+
+// Compute source terms with time derivatives 
+void time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, struct FluidState *S_old,
+  struct FluidState *S, double dt, int loc, int i, int j, int k, double dU[NVAR]) {
+
+    // Compute partial derivative of ucov
+    double dt_ucov[NDIM];
+    DLOOP1 dt_ucov[mu] = (S_new->ucov[mu][k][j][i]] - S_old->ucov[mu][k][j][i]) / dt;
+
+    // Compute temporal part of div of ucon
+    double div_ucon_temporal[NDIM];
+    DLOOP1 div_ucon_temporal[mu] = G->gcon[loc][0][mu][j][i]*dt_ucov[mu];
+
+    // Compute q0 and delta_P0
+    double Theta, Theta_new, Theta_old, dt_Theta;
+    Theta = (gam - 1) * S->[UU][k][j][i] / S->[RHO][k][j][i];
+    Theta_new = (gam - 1) * S_new->[UU][k][j][i] / S_new->[RHO][k][j][i];
+    Theta_old = (gam - 1) * S_old->[UU][k][j][i] / S_old->[RHO][k][j][i];
+    dt_Theta = (Theta_new - Theta_old) / dt;
+
+    double q0, deltaP0;
+    q0 = -S->P[RHO][k][j][i] * S->chi_emhd[k][j][i] * S->bcon[0][k][j][i]/sqrt(S->bsq[k][j][i]) * dt_Theta;
+    DLOOP1 q0 -= S->P[RHO][k][j][i] * S->chi_emhd[k][j][i] * S->bcon[mu][k][j][i]/sqrt(S->bsq[k][j][i]) * Theta
+      * S->ucon[0][k][j][i] * dt_ucov[mu];
+
+    deltaP0 = -S->P[RHO][k][j][i] * S->nu_emhd[k][j][i] * div_ucon_temporal;
+    DLOOP1 deltaP0 += 3. * S->P[RHO][k][j][i] * S->nu_emhd[k][j][i] * S->bcon[0][k][j][i] * S->bcon[mu][k][j][i]
+      / S->bsq[k][j][i] * dt_ucov[mu][k][j][i];
+    
+    // Add the time derivative source terms (conduction and viscosity)
+    // NOTE: Will have to edit this when higher order terms are considered
+    dU[Q_TILDE] += G->gdet[loc][j][i] * (q0 / tau)
+    dU[DELTA_P_TILDE] += G->gdet[loc][j][i] * (deltaP0) / tau
+}
+
+// Compute implicit source terms
+void implicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]){
+  dU[Q_TILDE] -= G->gdet[loc][k][j][i] * (S->P[Q_TILDE][k][j][i] / tau_damp)
+  dU[DELTA_P_TILDE] -= g->gdet[loc][k][j][i] * (S->P[DELTA_P_TILDE][k][j][i] / tau_damp)
+}
+
+// Compute explicit source terms
+void explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]) {
+  
+  // Ideal MHD components
+  double mhd[NDIM][NDIM];
+
+  DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]); // TODO make an mhd_calc_vec?
+
+  PLOOP dU[ip] = 0.; // explicit_sources should be the first source call
+  DLOOP2 {
+    for (int gam = 0; gam < NDIM; gam++)
+      dU[UU+gam] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
+  }
+  PLOOP dU[ip] *= G->gdet[CENT][j][i];
+
+  // Extended MHD components
+  
+
+
+}
+
+/*------END OF SOURCE TERMS CALLED DURING AN EXTENDED MHD (EMHD) RUN------*/
 
 // Returns b.b (twice magnetic pressure)
 inline double bsq_calc(struct FluidState *S, int i, int j, int k)

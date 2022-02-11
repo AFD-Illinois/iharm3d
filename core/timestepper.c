@@ -67,7 +67,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
 
       // Compute source term
       double sources[NVAR] = {0};
-      get_fluid_source(G, Ss, sources, i, j, k);
+      get_ideal_fluid_source(G, Ss, i, j, k, sources);
 
       // Jacobian calculation
       jacobian(G, S_solver, U_old, divF, sources, dt, i, j, k, jac);
