@@ -139,6 +139,13 @@
 #define WENO   (2)
 #define MP5    (3)
 
+// Slope limiter if using LINEAR algorithm (used to compute spatial gradients)
+#if GRIM_TIMESTEPPER
+#ifndef SLOPE_LIMITER
+#define SLOPE_LIMITER MC
+#endif
+#endif
+
 // Primitive and conserved variables
 #define RHO (0)
 #define UU  (1)
@@ -276,9 +283,11 @@ struct FluidState {
   #if GRIM_TIMESTEPPER
   GridDouble q;
   GridDouble delta_p;
+  GridDouble Theta;
   GridDouble bsq;
   GridDouble nu_emhd;
   GridDouble chi_emhd;
+  GridDouble tau;
   #endif
 };
 
@@ -419,15 +428,6 @@ extern int track_solver_iterations;
 
 // Loop over ideal MHD fluid variables
 #define FLOOP for (int ip  = 0; ip < B1; ip++)
-
-#if GRIM_TIMESTEPPER
-// Loop over new EMHD variables
-#if ELECTRONS
-#define ELOOP for (int ip = Q_TILDE; ip < KTOT; ip++)
-#else
-#define ELOOP for (int ip = Q_TILDE; ip < NVAR; ip++)
-#endif
-#endif
 
 // Loop over spacetime indices
 #define DLOOP1 for (int mu = 0; mu < NDIM; mu++)
@@ -571,8 +571,8 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir,
   int loc, int kstart, int kstop, int jstart, int jstop, int istart, int istop, GridPrim flux);
 void bcon_calc(struct FluidState *S, int i, int j, int k);
 void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double *mhd);
-void get_fluid_source(struct GridGeom *G, struct FluidState *S, double dU[NVAR], int i, int j, int k);
-void get_fluid_source_vec(struct GridGeom *G, struct FluidState *S, GridPrim *dU);
+void get_ideal_fluid_source(struct GridGeom *G, struct FluidState *S, int i, int j, int k, double dU[NVAR]);
+void get_ideal_fluid_source_vec(struct GridGeom *G, struct FluidState *S, GridPrim *dU);
 double bsq_calc(struct FluidState *S, int i, int j, int k);
 void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc);
@@ -584,6 +584,10 @@ double mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k, int loc);
 void mhd_vchar(struct GridGeom *G, struct FluidState *Sr, int i, int j, int k,
   int loc, int dir, GridDouble cmax, GridDouble cmin);
+void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, struct FluidState *S_old,
+  struct FluidState *S, double dt, int loc, int i, int j, int k, double dU[NVAR]);
+void emhd_implicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]);
+void emhd_explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]);
 
 // problem.c
 void set_problem_params();
@@ -598,6 +602,8 @@ double get_random();
 
 // reconstruction.c
 void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir);
+void slope_calc_four_vec(GridVector u, int component, int dir, int i, int j, int k, double slope);
+void slope_calc_scalar(GridDouble T, int dir, int i, int j, int k, double slope);
 
 // restart.c
 void restart_write(struct FluidState *S);

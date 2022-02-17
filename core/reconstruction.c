@@ -22,6 +22,12 @@
 #error "Reconstruction not specified!"
 #endif
 
+#if SLOPE_LIMITER == MC
+#define SLOPE_ALGO linear_monotonized_cd
+#elif SLOPE_LIMITER == VAN_LEER
+#define SLOPE_ALGO linear_van_leer
+#endif
+
   // Sanity checks
 #if (RECONSTRUCTION == PPM || RECONSTRUCTION == WENO || RECONSTRUCTION == MP5) && NG < 3
 #error "not enough ghost zones! PPM/WENO/MP5 + NG < 3\n"
@@ -34,6 +40,10 @@ void weno(double x1, double x2, double x3, double x4, double x5, double *lout, d
 double median(double a, double b, double c);
 double mp5_subcalc(double Fjm2, double Fjm1, double Fj, double Fjp1, double Fjp2);
 void mp5(double x1, double x2, double x3, double x4, double x5, double *lout, double *rout);
+
+double linear_monotonized_cd(double unused1, double x1, double x2, double x3, double unused2, double dx);
+double linear_van_leer(double unused1, double x1, double x2, double x3, double unused2, double dx);
+
 
 inline void linear_mc(double unused1, double x1, double x2, double x3, double unused2, double *lout, double *rout)
 {
@@ -270,3 +280,74 @@ void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir)
   timer_stop(TIMER_RECON);
 }
 
+// Linear MC slope limiter
+double linear_monotonized_cd(double unused1, double x1, double x2, double x3, double unused2, double dx) {
+  
+  double Dqm, Dqp, Dqc, extrema;
+
+  Dqm = 2 * (x2 - x1) / dx;
+  Dqp = 2 * (x3 - x2) / dx;
+  Dqc = 0.5 * (x3 - x1) / dx;
+  
+  extrema = Dqm * Dqp;
+
+  if (extrema <= 0) return 0;
+
+  else {
+    if ((fabs(Dqm) < fabs(Dqp)) && (fabs (Dqm) < fabs(Dqc))) return Dqm;
+    else if (fabs(Dqp) < fabs(Dqc)) return Dqp;
+    else return Dqc; 
+  }
+}
+
+// Linear Van Leer slope limiter
+double linear_van_leer(double unused1, double x1, double x2, double x3, double unused2, double dx) {
+  
+  double Dqm, Dqp, extrema;
+
+  Dqm = (x2 - x1) / dx;
+  Dqp = (x3 - x2) / dx;
+  
+  extrema = Dqm * Dqp;
+
+  if (extrema <= 0) return 0;
+
+  else {
+    return (2 * extrema / (Dqm + Dqp)); 
+  }
+}
+
+// Compute slope for 4 velocities
+void slope_calc_four_vec(GridVector u, int component, int dir, int i, int j, int k, double slope) {
+
+  if (dir == 1) {
+    slope = SLOPE_ALGO(u[component][k][j][i-2], u[component][k][j][i-1], u[component][k][j][i],
+        u[component][k][j][i+1], u[component][k][j][i+2], dx[dir]);
+  }
+
+  if (dir == 2) {
+    slope = SLOPE_ALGO(u[component][k][j-2][i], u[component][k][j-1][i], u[component][k][j][i],
+        u[component][k][j+1][i], u[component][k][j+2][i], dx[dir]);
+  }
+
+  if (dir == 3) {
+    slope = SLOPE_ALGO(u[component][k-2][j][i], u[component][k-1][j][i], u[component][k][j][i],
+        u[component][k+1][j][i], u[component][k+2][j][i], dx[dir]);
+  }
+}
+
+// Compute slope for scalars
+void slope_calc_scalar(GridDouble T, int dir, int i, int j, int k, double slope) {
+
+  if (dir == 1) {
+    slope = SLOPE_ALGO(T[k][j][i-2], T[k][j][i-1], T[k][j][i], T[k][j][i+1], T[k][j][i+2], dx[dir]);
+  }
+
+  if (dir == 2) {
+    slope = SLOPE_ALGO(T[k][j-2][i], T[k][j-1][i], T[k][j][i], T[k][j+1][i], T[k][j+2][i], dx[dir]);
+  }
+
+  if (dir == 3) {
+    slope = SLOPE_ALGO(T[k-2][j][i], T[k-1][j][i], T[k][j][i], T[k+1][j][i], T[k+2][j][i], dx[dir]);
+  }
+}

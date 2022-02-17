@@ -20,11 +20,13 @@
 #include "mkl.h"
 
 // Function declaration(s): residual calculation, jacobian, and linear solve
-void residual_calc(struct GridGeom *G, struct FluidState *Stmp, double U_old[NVAR], double divF[NVAR], 
-  double sources[NVAR], double dt, int i, int j, int k, double residual[NVAR]);
+void residual_calc(struct GridGeom *G, struct FluidState *Stmp, struct FluidState *Si, struct FluidState *Ss,
+  double U_old[NVAR], double divF[NVAR], double sources_explicit[NVAR], double sources_implicit_old[NVAR], 
+  double dt, int i, int j, int k, double residual[NVAR]);
 
-void jacobian(struct GridGeom *G, struct FluidState *Sf, double U_old[NVAR],
-  double divF[NVAR], double sources[NVAR], double dt, int i, int j, int k, double J[NVAR*NVAR]);
+void jacobian(struct GridGeom *G, struct FluidState *S_solver, struct FluidState *Si, struct FluidState *Ss, 
+  double U_old[NVAR], double divF[NVAR], double sources_explicit[NVAR], double sources_implicit_old[NVAR],
+  double dt, int i, int j, int k, double J[NVAR*NVAR]);
 
 void solve(double A[NVAR*NVAR], double b[NVAR]);
 
@@ -41,6 +43,14 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
   #pragma omp parallel for reduction(max:max_norm) collapse(2)
     ZLOOP {
 
+      // First off, compute explicit source term, implicit old source term and store old conserved variables
+      double sources_explicit[NVAR]     = {0};
+      double sources_implicit_old[NVAR] = {0};
+      double U_old[NVAR] = {0};
+      emhd_explicit_sources(G, Ss, CENT, i, j, k, sources_explicit);
+      emhd_implicit_sources(G, Si, CENT, i, j, k, sources_implicit_old);
+      PLOOP U_old[ip] = Si->U[ip][k][j][i]; // Initialize U_old with Si->U
+
       // Variable declarations0
       static struct FluidState *S_guess; // Need this since prim_to_flux and mhd_calc require a FluidState object as parameter
       double prim_guess[NVAR] = {0};
@@ -55,22 +65,14 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
         firstc = 0;
       }
 
-      // Initialize U_old with Si->U
-      double U_old[NVAR] = {0};
-      PLOOP U_old[ip] = Si->U[ip][k][j][i];
-
       // Compute flux divergence
       double divF[NVAR] = {0}; 
       PLOOP divF[ip] = (F->X1[ip][k][j][i+1] - F->X1[ip][k][j][i])/dx[1]
             + (F->X2[ip][k][j+1][i] - F->X2[ip][k][j][i])/dx[2]
-            + (F->X3[ip][k+1][j][i] - F->X3[ip][k][j][i])/dx[3];
-
-      // Compute source term
-      double sources[NVAR] = {0};
-      get_ideal_fluid_source(G, Ss, i, j, k, sources);
+            + (F->X3[ip][k+1][j][i] - F->X3[ip][k][j][i])/dx[3];    
 
       // Jacobian calculation
-      jacobian(G, S_solver, U_old, divF, sources, dt, i, j, k, jac);
+      jacobian(G, S_solver, Si, Ss, U_old, divF, sources_explicit, sources_implicit_old, dt, i, j, k, jac);
 
       // Initialize prim_guess
       PLOOP {
@@ -79,7 +81,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
       }
 
       // Assign delta_prim = -residual(P)
-      residual_calc(G, S_guess, U_old, divF, sources, dt, i, j, k, residual);
+      residual_calc(G, S_guess, Si, Ss, U_old, divF, sources_explicit, sources_implicit_old, dt, i, j, k, residual);
       PLOOP delta_prim[ip] = -residual[ip];
 
       // Linear solve
@@ -91,7 +93,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
         S_guess->P[ip][k][j][i] = prim_guess[ip];
       }
 
-      residual_calc(G, S_guess, U_old, divF, sources, dt, i, j, k, residual);
+      residual_calc(G, S_guess, Si, Ss, U_old, divF, sources_explicit, sources_implicit_old, dt, i, j, k, residual);
 
       // L2 norm
       PLOOP norm += pow(residual[ip], 2);
@@ -114,19 +116,29 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
 }
 
 // Residual calculation
-void residual_calc(struct GridGeom *G, struct FluidState *Stmp, double U_old[NVAR], double divF[NVAR], 
-  double sources[NVAR], double dt, int i, int j, int k, double residual[NVAR]) {
+void residual_calc(struct GridGeom *G, struct FluidState *Stmp, struct FluidState *Si, struct FluidState *Ss,
+  double U_old[NVAR], double divF[NVAR], double sources_explicit[NVAR], double sources_implicit_old[NVAR], 
+  double dt, int i, int j, int k, double residual[NVAR]) {
 
-  // Compute conserved variables from prims
+  // Compute Stmp->U . These are new conserved variables
   get_state(G, Stmp, i, j, k, CENT);
   prim_to_flux(G, Stmp, i, j, k, 0, CENT, Stmp->U);
-  // Compute residual 
-  PLOOP residual[ip] = (Stmp->U[ip][k][j][i] - U_old[ip])/dt + divF[ip] - sources[ip];
+
+  // Compute new implicit source terms and time derivative source terms
+  double sources_implicit_new[NVAR]    = {0};
+  double sources_time_derivative[NVAR] = {0};
+  emhd_implicit_sources(G, Stmp, CENT, i, j, k, sources_implicit_new);
+  emhd_time_derivative_sources(G, Stmp, Si, Ss, dt, CENT, i, j, k, sources_time_derivative);
+  
+  // Compute residual
+  PLOOP residual[ip] = (Stmp->U[ip][k][j][i] - U_old[ip])/dt + divF[ip] 
+    - sources_explicit[ip] - 0.5*(sources_implicit_new[ip] + sources_implicit_old[ip]) - sources_time_derivative[ip];
 }
 
 // Evaluate Jacobian (per zone)
-void jacobian(struct GridGeom *G, struct FluidState *S_solver, double U_old[NVAR],
-  double divF[NVAR], double sources[NVAR], double dt, int i, int j, int k, double J[NVAR*NVAR]) {
+void jacobian(struct GridGeom *G, struct FluidState *S_solver, struct FluidState *Si, struct FluidState *Ss,
+  double U_old[NVAR], double divF[NVAR], double sources_explicit[NVAR], double sources_implicit_old[NVAR],
+  double dt, int i, int j, int k, double J[NVAR*NVAR]) {
 
   // Declarations
   int is_small;
@@ -152,7 +164,7 @@ void jacobian(struct GridGeom *G, struct FluidState *S_solver, double U_old[NVAR
   }
   
   // Calculate residual for Sf->P
-  residual_calc(G, S_solver, U_old, divF, sources, dt, i, j, k, residual);
+  residual_calc(G, S_solver, Si, Ss, U_old, divF, sources_explicit, sources_implicit_old, dt, i, j, k, residual);
 
   // Numerically evaluate the Jacobian
   for (int col = 0; col < NVAR; col++) {
@@ -166,7 +178,7 @@ void jacobian(struct GridGeom *G, struct FluidState *S_solver, double U_old[NVAR
     S_eps->P[col][k][j][i] = prims_eps[col];
 
     // Compute the residual for P_eps
-    residual_calc(G, S_eps, U_old, divF, sources, dt, i, j, k, residual_eps);
+    residual_calc(G, S_eps, Si, Ss, U_old, divF, sources_explicit, sources_implicit_old, dt, i, j, k, residual_eps);
 
     for (int row = 0; row < NVAR; row++) {
       J[NVAR*row + col] = (residual_eps[row] - residual[row]) / (prims_eps[col] - prims[col]);
