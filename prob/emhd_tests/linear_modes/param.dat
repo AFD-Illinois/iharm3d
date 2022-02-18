@@ -26,4 +26,4 @@
 [dbl] k1  = 2.*M_PI
 [dbl] k2  = 4.*M_PI
 [dbl] real_omega = -0.5533585207638141
-[dbl] omag_omega = -3.6262571286888425
+[dbl] imag_omega = -3.6262571286888425
