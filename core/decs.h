@@ -595,6 +595,9 @@ void init(struct GridGeom *G, struct FluidState *S);
 // Boundary condition (currently used for Bondi flow)
 void bound_gas_prob_x1r(int i, int j, int k, GridPrim  P, struct GridGeom *G);
 void save_problem_data();
+#if GRIM_TIMESTEPPER
+void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
+#endif
 
 // random.c
 void init_random(int seed);

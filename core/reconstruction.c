@@ -317,7 +317,7 @@ double linear_van_leer(double unused1, double x1, double x2, double x3, double u
   }
 }
 
-// Compute slope for 4 velocities
+// Compute slope for 4 vectors
 void slope_calc_four_vec(GridVector u, int component, int dir, int i, int j, int k, double slope) {
 
   if (dir == 1) {

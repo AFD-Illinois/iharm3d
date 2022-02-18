@@ -75,7 +75,7 @@ void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
                       S->bcon[dir][k][j][i]*S->ucon[3][k][j][i];
 
   #if GRIM_TIMESTEPPER
-  flux[Q_TILDE][k][j][i] = S->ucon[dir][k][j][i] * S->P[Q_TILDE][k][j][i];
+  flux[Q_TILDE][k][j][i]       = S->ucon[dir][k][j][i] * S->P[Q_TILDE][k][j][i];
   flux[DELTA_P_TILDE][k][j][i] = S->ucon[dir][k][j][i] * S->P[DELTA_P_TILDE][k][j][i];
   #endif
 
@@ -219,7 +219,8 @@ inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, in
     S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
     S->bsq[k][j][i]     = bsq_calc(S, i, j, k);
     S->Theta[k][j][i]   = (gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i];
-    // NOTE: Compute chi_emhd, nu_emhd and tau
+    
+    set_emhd_parameters(G, S, i, j, k);
     #endif
 }
 
@@ -260,7 +261,8 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
       S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
       S->bsq[k][j][i]     = bsq_calc(S, i, j, k);
       S->Theta[k][j][i]   = (gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i];
-      // NOTE: Compute chi_emhd, nu_emhd and tau
+      
+      set_emhd_parameters(G, S, i, j, k);
     }
     #endif
   }
