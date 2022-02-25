@@ -443,15 +443,6 @@ void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, 
   double nu_emhd  = S->nu_emhd[k][j][i];
   double tau      = S->tau[k][j][i];
 
-  // double q_new = S_new->P[Q_TILDE][k][j][i];
-  // double q_old = S_old->P[Q_TILDE][k][j][i];
-  
-  // double deltaP_new = S_new->P[DELTA_P_TILDE][k][j][i];
-  // double deltaP_old = S_old->P[DELTA_P_TILDE][k][j][i];
-
-  // double ucon_t_new = S_new->ucon[0][k][j][i];
-  // double ucon_t_old = S_old->ucon[0][k][j][i];
-
   double gdet = G->gdet[loc][j][i];
 
   // Compute partial derivative of ucov
@@ -575,8 +566,6 @@ void emhd_explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, in
 
     q0 -= rho * chi_emhd * (bcon_mu / sqrt(bsq)) * Theta * ucon_nu * grad_ucov[nu][mu];
   }
-
-  // if (mpi_io_proc()) fprintf(stdout, "%g %g %g %g %g\n", q0, grad_Theta[0],  grad_Theta[1],  grad_Theta[2],  grad_Theta[3]);
 
   deltaP0 = -rho * nu_emhd * div_ucon;
   DLOOP2  {
