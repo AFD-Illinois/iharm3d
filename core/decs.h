@@ -63,7 +63,7 @@
 #define ROOTFIND_TOL (1.e-3)
 #endif
 #ifndef MAX_NONLINEAR_ITER
-#define MAX_NONLINEAR_ITER (1)
+#define MAX_NONLINEAR_ITER (3)
 #endif
 #endif
 
@@ -367,16 +367,17 @@ extern int eFlagsArray[NUM_E_MODELS];
 extern char eNamesArray[NUM_E_MODELS][20];
 #endif
 
-
 extern double poly_norm, poly_xt, poly_alpha, mks_smooth;
-
 
 // MPI-specific stuff
 extern int global_start[3];
 extern int global_stop[3];
 
 #if GRIM_TIMESTEPPER
-extern int track_solver_iterations;
+extern double rho_floor_fluid_element;
+extern double uu_floor_fluid_element;
+extern double bsq_floor_fluid_element;
+extern double Theta_floor_fluid_element;
 #endif
 
 /*******************************************************************************
@@ -422,7 +423,7 @@ extern int track_solver_iterations;
   ISLOOP(istart,istop) JSLOOP(jstart,jstop) KSLOOP(kstart,kstop)
 
 // Loop over primitive variables
-#define PLOOP for(int ip = 0; ip < NVAR; ip++)
+#define PLOOP  for(int ip = 0; ip < NVAR; ip++)
 #define PLOOP2 for(int ip1 = 0; ip1 < NVAR; ip1++) \
                for(int ip2 = 0; ip2 < NVAR; ip2++)
 
@@ -605,8 +606,8 @@ double get_random();
 
 // reconstruction.c
 void reconstruct(struct FluidState *S, GridPrim Pl, GridPrim Pr, int dir);
-void slope_calc_four_vec(GridVector u, int component, int dir, int i, int j, int k, double slope);
-void slope_calc_scalar(GridDouble T, int dir, int i, int j, int k, double slope);
+double slope_calc_four_vec(GridVector u, int component, int dir, int i, int j, int k);
+double slope_calc_scalar(GridDouble T, int dir, int i, int j, int k);
 
 // restart.c
 void restart_write(struct FluidState *S);

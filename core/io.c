@@ -38,10 +38,14 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   char fname[80];
 
   char varNames[NVAR][HDF_STR_LEN] =  {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"};
+  #if GRIM_TIMESTEPPER
+  strcpy(varNames[Q_TILDE], "Q_TILDE");
+  strcpy(varNames[DELTA_P_TILDE], "DELTA_P_TILDE");
+  #endif
   #if ELECTRONS
   strcpy(varNames[KTOT], "KTOT");
 
-  // Append electron heating model names (preferably to KEL0, KEL1, etc..)
+  // Append electron heating model names (preferable as compared to KEL0, KEL1, etc..)
   // To keep track of electron heating model
   int etracker = E_MODELS;
   for (int ip = KTOT + 1; ip < NVAR ; ip++) {

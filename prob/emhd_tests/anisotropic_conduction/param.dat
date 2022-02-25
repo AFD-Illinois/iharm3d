@@ -1,7 +1,7 @@
 ### RUNTIME PARAMETERS ###
 
 # COORDINATES
-[dbl] tf = 2.0
+[dbl] tf = 10.0
 [dbl] dt = 1.0e-06
 [dbl] x1Min = 0.0
 [dbl] x1Max = 1.0
@@ -15,16 +15,12 @@
 [dbl] cour = 0.9
 
 # OUTPUT
-[dbl] DTd = 0.01
+[dbl] DTd = 0.1
 [dbl] DTf = 10.0
 [dbl] DTl = 0.5
 [int] DTr = 100
 [int] DTp = 10
 
-# PROBLEM
-[dbl] amp = 1.e-4
-[dbl] real_omega = -0.5533585207638141
-[dbl] imag_omega = -3.6262571286888425
 
 # FLOORS (FOR GRIM ALGO)
 [dbl] rho_floor_fluid_element   = 1.e-20

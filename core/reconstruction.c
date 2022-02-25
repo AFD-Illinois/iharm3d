@@ -318,36 +318,36 @@ double linear_van_leer(double unused1, double x1, double x2, double x3, double u
 }
 
 // Compute slope for 4 vectors
-void slope_calc_four_vec(GridVector u, int component, int dir, int i, int j, int k, double slope) {
+double slope_calc_four_vec(GridVector u, int component, int dir, int i, int j, int k) {
 
   if (dir == 1) {
-    slope = SLOPE_ALGO(u[component][k][j][i-2], u[component][k][j][i-1], u[component][k][j][i],
+    return SLOPE_ALGO(u[component][k][j][i-2], u[component][k][j][i-1], u[component][k][j][i],
         u[component][k][j][i+1], u[component][k][j][i+2], dx[dir]);
   }
 
   if (dir == 2) {
-    slope = SLOPE_ALGO(u[component][k][j-2][i], u[component][k][j-1][i], u[component][k][j][i],
+    return SLOPE_ALGO(u[component][k][j-2][i], u[component][k][j-1][i], u[component][k][j][i],
         u[component][k][j+1][i], u[component][k][j+2][i], dx[dir]);
   }
 
   if (dir == 3) {
-    slope = SLOPE_ALGO(u[component][k-2][j][i], u[component][k-1][j][i], u[component][k][j][i],
+    return SLOPE_ALGO(u[component][k-2][j][i], u[component][k-1][j][i], u[component][k][j][i],
         u[component][k+1][j][i], u[component][k+2][j][i], dx[dir]);
   }
 }
 
 // Compute slope for scalars
-void slope_calc_scalar(GridDouble T, int dir, int i, int j, int k, double slope) {
+double slope_calc_scalar(GridDouble T, int dir, int i, int j, int k) {
 
   if (dir == 1) {
-    slope = SLOPE_ALGO(T[k][j][i-2], T[k][j][i-1], T[k][j][i], T[k][j][i+1], T[k][j][i+2], dx[dir]);
+    return SLOPE_ALGO(T[k][j][i-2], T[k][j][i-1], T[k][j][i], T[k][j][i+1], T[k][j][i+2], dx[dir]);
   }
 
   if (dir == 2) {
-    slope = SLOPE_ALGO(T[k][j-2][i], T[k][j-1][i], T[k][j][i], T[k][j+1][i], T[k][j+2][i], dx[dir]);
+    return SLOPE_ALGO(T[k][j-2][i], T[k][j-1][i], T[k][j][i], T[k][j+1][i], T[k][j+2][i], dx[dir]);
   }
 
   if (dir == 3) {
-    slope = SLOPE_ALGO(T[k-2][j][i], T[k-1][j][i], T[k][j][i], T[k+1][j][i], T[k+2][j][i], dx[dir]);
+    return SLOPE_ALGO(T[k-2][j][i], T[k-1][j][i], T[k][j][i], T[k+1][j][i], T[k+2][j][i], dx[dir]);
   }
 }

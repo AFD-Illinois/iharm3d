@@ -118,11 +118,18 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 {
   static GridPrim *dU;
   static struct FluidFlux *F;
+  #if GRIM_TIMESTEPPER
+  // Temporary fluid struct for nonlinear solver
+  static struct FluidState *S_solver;
+  #endif
 
   static int firstc = 1;
   if (firstc) {
     dU = calloc(1,sizeof(GridPrim));
     F = calloc(1,sizeof(struct FluidFlux));
+    #if GRIM_TIMESTEPPER
+    S_solver = calloc(1, sizeof(struct FluidState));
+    #endif
     firstc = 0;
   }
 
@@ -143,19 +150,12 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   //Constrained transport for B
   flux_ct(F);
 
-
   // Flux diagnostic globals
   diag_flux(F);
 
 // GRIM vs HARM time-stepper
 #if GRIM_TIMESTEPPER
-  // Temporary fluid struct for nonlinear solver
-  static struct FluidState *S_solver;
-  firstc = 1;
-  if (firstc) {
-    S_solver = calloc(1, sizeof(struct FluidState));
-    firstc = 0;
-  }
+  
   // Set zero pflags and fail_save to zero
   zero_arrays();
 
@@ -163,19 +163,20 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);
 
-  // Obtain four-vectors for Ss (needed for source terms)
-  get_state_vec(G, Ss, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
+  // Obtain state for Ss and Ss->U (needed for source terms)
+  get_state_vec(G, Ss, CENT, -NG, N3 + NG - 1, -NG, N2 + NG - 1, -NG, N1 + NG - 1);
+  prim_to_flux_vec(G, Ss, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Ss->U);
 
   // Initial guess for S_solver->P
   #pragma omp parallel for simd collapse(3)
-  PLOOP ZLOOPALL S_solver->P[ip][k][j][i] = Ss->P[ip][k][j][i];
+  PLOOP ZLOOP S_solver->P[ip][k][j][i] = Ss->P[ip][k][j][i];
 
   // time-step by root-finding the residual
   grim_timestep(G, Si, Ss, S_solver, F, Dt);
 
   // compute new conserved variables
   #pragma omp parallel for simd collapse(3)
-  PLOOP ZLOOPALL Sf->P[ip][k][j][i] = S_solver->P[ip][k][j][i];
+  PLOOP ZLOOP Sf->P[ip][k][j][i] = S_solver->P[ip][k][j][i];
   get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   prim_to_flux_vec(G, Sf, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Sf->U);
   

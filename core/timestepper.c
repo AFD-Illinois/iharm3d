@@ -35,6 +35,13 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
 
   int nonlinear_iter = 0;
 
+  static struct FluidState *S_guess; // Need this since prim_to_flux and mhd_calc require a FluidState object as parameter
+  static int firstc = 1;
+  if (firstc){
+    S_guess = calloc(1, sizeof(struct FluidState));
+    firstc = 0;
+  }
+
   // TODO: Source calc term
   while (nonlinear_iter < MAX_NONLINEAR_ITER){
 
@@ -43,7 +50,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
   #pragma omp parallel for reduction(max:max_norm) collapse(2)
     ZLOOP {
 
-      // First off, compute explicit source term, implicit old source term and store old conserved variables
+      // First off, compute explicit source term, old implicit source term and store old conserved variables
       double sources_explicit[NVAR]     = {0};
       double sources_implicit_old[NVAR] = {0};
       double U_old[NVAR] = {0};
@@ -51,28 +58,18 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
       emhd_implicit_sources(G, Si, CENT, i, j, k, sources_implicit_old);
       PLOOP U_old[ip] = Si->U[ip][k][j][i]; // Initialize U_old with Si->U
 
-      // Variable declarations0
-      static struct FluidState *S_guess; // Need this since prim_to_flux and mhd_calc require a FluidState object as parameter
+      // Compute flux divergence
+      double divF[NVAR] = {0}; 
+      PLOOP divF[ip] = (F->X1[ip][k][j][i+1] - F->X1[ip][k][j][i])/dx[1]
+            + (F->X2[ip][k][j+1][i] - F->X2[ip][k][j][i])/dx[2]
+            + (F->X3[ip][k+1][j][i] - F->X3[ip][k][j][i])/dx[3];
+
+      // Variable declarations
       double prim_guess[NVAR] = {0};
       double residual[NVAR] = {0};
       double jac[NVAR*NVAR] = {0};
       double delta_prim[NVAR] = {0};
       double norm = 0;
-
-      static int firstc = 1;
-      if (firstc){
-        S_guess = calloc(1, sizeof(struct FluidState));
-        firstc = 0;
-      }
-
-      // Compute flux divergence
-      double divF[NVAR] = {0}; 
-      PLOOP divF[ip] = (F->X1[ip][k][j][i+1] - F->X1[ip][k][j][i])/dx[1]
-            + (F->X2[ip][k][j+1][i] - F->X2[ip][k][j][i])/dx[2]
-            + (F->X3[ip][k+1][j][i] - F->X3[ip][k][j][i])/dx[3];    
-
-      // Jacobian calculation
-      jacobian(G, S_solver, Si, Ss, U_old, divF, sources_explicit, sources_implicit_old, dt, i, j, k, jac);
 
       // Initialize prim_guess
       PLOOP {
@@ -83,6 +80,9 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
       // Assign delta_prim = -residual(P)
       residual_calc(G, S_guess, Si, Ss, U_old, divF, sources_explicit, sources_implicit_old, dt, i, j, k, residual);
       PLOOP delta_prim[ip] = -residual[ip];
+
+      // Jacobian calculation
+      jacobian(G, S_solver, Si, Ss, U_old, divF, sources_explicit, sources_implicit_old, dt, i, j, k, jac);
 
       // Linear solve
       solve(jac, delta_prim);
@@ -171,7 +171,7 @@ void jacobian(struct GridGeom *G, struct FluidState *S_solver, struct FluidState
 
     // Evaluate small(P)
     is_small = 0;
-    if (abs(prims[col]) < 0.5 * JACOBIAN_EPS) is_small = 1;
+    if (fabs(prims[col]) < 0.5 * JACOBIAN_EPS) is_small = 1;
 
     // Compute P_eps
     prims_eps[col] = prims[col] + JACOBIAN_EPS*prims[col]*(1 - is_small) + JACOBIAN_EPS*is_small;

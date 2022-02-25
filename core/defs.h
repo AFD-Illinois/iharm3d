@@ -72,5 +72,8 @@ int global_stop[3];
 
 // grim algo
 #if GRIM_TIMESTEPPER
-int track_solver_iterations;
+double rho_floor_fluid_element;
+double uu_floor_fluid_element;
+double bsq_floor_fluid_element;
+double Theta_floor_fluid_element;
 #endif

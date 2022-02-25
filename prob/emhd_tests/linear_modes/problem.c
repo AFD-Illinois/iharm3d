@@ -10,24 +10,28 @@
  #include <complex.h>
  #include "hdf5_utils.h"
 
- static double amp, k1, k2, real_omega, imag_omega;
+ static double amp, real_omega, imag_omega;
 
  void set_problem_params()
 {
-    set_param("amp", &amp);
-    set_param("k1", &k1);
-    set_param("k2", &k2);
-    set_param("real_omega", &real_omega);
-    set_param("imag_omega", &imag_omega);
+  set_param("amp", &amp);
+  set_param("real_omega", &real_omega);
+  set_param("imag_omega", &imag_omega);
+  set_param("rho_floor_fluid_element", &rho_floor_fluid_element);
+  set_param("uu_floor_fluid_element", &uu_floor_fluid_element);
+  set_param("bsq_floor_fluid_element", &bsq_floor_fluid_element);
+  set_param("Theta_floor_fluid_element", &Theta_floor_fluid_element);
 }
 
 void save_problem_data(hid_t string_type){
-    hdf5_write_single_val("emhd/linear_modes", "PROB", string_type);
-    hdf5_write_single_val(&amp, "amp", H5T_IEEE_F64LE);
-    hdf5_write_single_val(&k1, "k1", H5T_IEEE_F64LE);
-    hdf5_write_single_val(&k2, "k2", H5T_IEEE_F64LE);   
-    hdf5_write_single_val(&real_omega, "real_omega", H5T_IEEE_F64LE);
-    hdf5_write_single_val(&imag_omega, "imag_omega", H5T_IEEE_F64LE);
+  hdf5_write_single_val("emhd/linear_modes", "PROB", string_type);
+  hdf5_write_single_val(&amp, "amp", H5T_IEEE_F64LE);   
+  hdf5_write_single_val(&real_omega, "real_omega", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&imag_omega, "imag_omega", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&rho_floor_fluid_element, "rho_floor_fluid_element", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&uu_floor_fluid_element, "uu_floor_fluid_element", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&bsq_floor_fluid_element, "bsq_floor_fluid_element", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&Theta_floor_fluid_element, "Theta_floor_fluid_element", H5T_IEEE_F64LE);
 }
 
 // Set chi, nu, tau. Problem dependent
@@ -55,6 +59,10 @@ void init(struct GridGeom *G, struct FluidState *S) {
     // Set grid
     set_grid(G);
     LOG("Set grid");
+
+    // Wavevector
+    double k1 = 2.*M_PI;
+    double k2 = 4.*M_PI;
 
     // Mean state
     double rho0 = 1.;
@@ -92,8 +100,8 @@ void init(struct GridGeom *G, struct FluidState *S) {
         // NOTE: Will have to edit this when higher order terms are included
 
         // Initialize primitives
-        S->P[RHO][k][j][i] = rho0 + drho;
-        S->P[UU][k][j][i]  = u0 + du;
+        S->P[RHO][k][j][i] = MY_MAX(rho0 + drho, rho_floor_fluid_element);
+        S->P[UU][k][j][i]  = MY_MAX(u0 + du, uu_floor_fluid_element);
         S->P[U1][k][j][i]  = u10 + du1;
         S->P[U2][k][j][i]  = u20 + du2;
         S->P[U3][k][j][i]  = u30 + du3;
