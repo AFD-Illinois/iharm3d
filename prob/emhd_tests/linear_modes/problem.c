@@ -17,10 +17,6 @@
   set_param("amp", &amp);
   set_param("real_omega", &real_omega);
   set_param("imag_omega", &imag_omega);
-  set_param("rho_floor_fluid_element", &rho_floor_fluid_element);
-  set_param("uu_floor_fluid_element", &uu_floor_fluid_element);
-  set_param("bsq_floor_fluid_element", &bsq_floor_fluid_element);
-  set_param("Theta_floor_fluid_element", &Theta_floor_fluid_element);
 }
 
 void save_problem_data(hid_t string_type){
@@ -28,10 +24,6 @@ void save_problem_data(hid_t string_type){
   hdf5_write_single_val(&amp, "amp", H5T_IEEE_F64LE);   
   hdf5_write_single_val(&real_omega, "real_omega", H5T_IEEE_F64LE);
   hdf5_write_single_val(&imag_omega, "imag_omega", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&rho_floor_fluid_element, "rho_floor_fluid_element", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&uu_floor_fluid_element, "uu_floor_fluid_element", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&bsq_floor_fluid_element, "bsq_floor_fluid_element", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&Theta_floor_fluid_element, "Theta_floor_fluid_element", H5T_IEEE_F64LE);
 }
 
 // Set chi, nu, tau. Problem dependent
@@ -97,8 +89,6 @@ void init(struct GridGeom *G, struct FluidState *S) {
         double dq       = amp * (((0.5233486841539436)*cos_phi) - ((0.04767672501939603)*sin_phi));
         double ddelta_p = amp * (((0.2909106062057657)*cos_phi) - ((0.02159452055336572)*sin_phi));
 
-        // NOTE: Will have to edit this when higher order terms are included
-
         // Initialize primitives
         S->P[RHO][k][j][i] = MY_MAX(rho0 + drho, rho_floor_fluid_element);
         S->P[UU][k][j][i]  = MY_MAX(u0 + du, uu_floor_fluid_element);
@@ -110,6 +100,15 @@ void init(struct GridGeom *G, struct FluidState *S) {
         S->P[B3][k][j][i]  = B30 + dB3;
         S->P[Q_TILDE][k][j][i]       = q0 + dq;
         S->P[DELTA_P_TILDE][k][j][i] = delta_p0 + ddelta_p;
+
+        if (higher_order_terms == 1) {
+
+          set_emhd_parameters(G, S, i, j, k);
+          S->P[Q_TILDE][k][j][i]       *= sqrt(tau / chi_emhd * rho * pow(Theta, 2));
+          S->P[DELTA_P_TILDE][k][j][i] *= sqrt(tau / nu_emhd * rho * Theta);
+        }
+
+
     }
 
     //Enforce boundary conditions

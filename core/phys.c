@@ -209,19 +209,34 @@ inline void ucon_calc(struct GridGeom *G, struct FluidState *S, int i, int j, in
 inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc)
 {
-    ucon_calc(G, S, i, j, k, loc);
-    lower_grid(S->ucon, S->ucov, G, i, j, k, loc);
-    bcon_calc(S, i, j, k);
-    lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
+  ucon_calc(G, S, i, j, k, loc);
+  lower_grid(S->ucon, S->ucov, G, i, j, k, loc);
+  bcon_calc(S, i, j, k);
+  lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
 
-    #if GRIM_TIMESTEPPER
-    S->q[k][j][i]       = S->P[Q_TILDE][k][j][i]; // NOTE: Will have to edit this when considering higher order terms
-    S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
-    S->bsq[k][j][i]     = MY_MAX(bsq_calc(S, i, j, k), bsq_floor_fluid_element);
-    S->Theta[k][j][i]   = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], Theta_floor_fluid_element);
+  #if GRIM_TIMESTEPPER
+  S->q[k][j][i]       = S->P[Q_TILDE][k][j][i];
+  S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
+  S->bsq[k][j][i]     = MY_MAX(bsq_calc(S, i, j, k), SMALL);
+  S->Theta[k][j][i]   = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], SMALL);
+  
+  set_emhd_parameters(G, S, i, j, k);
+
+  if (higher_order_terms == 1) {
     
-    set_emhd_parameters(G, S, i, j, k);
-    #endif
+    // Initializations
+    double rho = S->P[RHO][k][j][i];
+    double tau = S->tau[k][j][i];
+    double chi_emhd = S->chi_emhd[k][j][i];
+    double nu_emhd  = S->nu_emhd[k][j][i];
+    double Theta = S->Theta[k][j][i];
+
+    S->q[k][j][i]       *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
+    S->delta_p[k][j][i] *= sqrt(nu_emhd * rho * Theta / tau);
+
+  }
+
+  #endif
 }
 
 // Calculate ucon, ucov, bcon, bcov from primitive variables, over given range
@@ -257,17 +272,29 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
     #if GRIM_TIMESTEPPER
     #pragma omp for collapse(3)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
-      S->q[k][j][i]       = S->P[Q_TILDE][k][j][i]; // NOTE: Will have to edit this when considering higher order terms
+      S->q[k][j][i]       = S->P[Q_TILDE][k][j][i]; 
       S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
-      S->bsq[k][j][i]     = MY_MAX(bsq_calc(S, i, j, k), bsq_floor_fluid_element);
-      S->Theta[k][j][i]   = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], Theta_floor_fluid_element);
+      S->bsq[k][j][i]     = MY_MAX(bsq_calc(S, i, j, k), SMALL);
+      S->Theta[k][j][i]   = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], SMALL);
       
       set_emhd_parameters(G, S, i, j, k);
+
+      if (higher_order_terms == 1) {
+
+        // Initializations
+        double rho = S->P[RHO][k][j][i];
+        double tau = S->tau[k][j][i];
+        double chi_emhd = S->chi_emhd[k][j][i];
+        double nu_emhd  = S->nu_emhd[k][j][i];
+        double Theta = S->Theta[k][j][i];
+
+        S->q[k][j][i]       *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
+        S->delta_p[k][j][i] *= sqrt(nu_emhd * rho * Theta / tau);
+      }
     }
     #endif
-  }
 
-    //lower_grid_vec(S->bcon, S->bcov, G, kstart, kstop, jstart, jstop, istart, istop, loc);
+  }
 }
 
 // Calculate components of magnetosonic velocity from primitive variables
@@ -443,6 +470,9 @@ void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, 
   double nu_emhd  = S->nu_emhd[k][j][i];
   double tau      = S->tau[k][j][i];
 
+  double q_tilde       = S->P[Q_TILDE][k][j][i];
+  double delta_p_tilde = S->P[DELTA_P_TILDE][k][j][i];
+
   double gdet = G->gdet[loc][j][i];
 
   // Compute partial derivative of ucov
@@ -486,11 +516,22 @@ void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, 
 
     deltaP0 += 3. * rho * nu_emhd * (bcon_t * bcon_mu / bsq) * dt_ucov[mu];
   }
+
+  // Higher order corrections to the relaxed values
+  if (higher_order_terms == 1) {    
+    q0 *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
+    deltaP0 *= sqrt(nu_emhd * rho * Theta / tau);
+  }
   
   // Add the time derivative source terms (conduction and viscosity)
-  // NOTE: Will have to edit this when higher order terms are considered
   dU[Q_TILDE]       = gdet * (q0 / tau);
   dU[DELTA_P_TILDE] = gdet * (deltaP0 / tau);
+
+  // Higher order corrections to the source terms
+  if (higher_order_terms == 1) {
+    dU[Q_TILDE]       += (q_tilde / 2) * gdet * div_ucon;
+    dU[DELTA_P_TILDE] += (delta_p_tilde / 2) * gdet * div_ucon;
+  }
 }
 
 // Compute implicit source terms
@@ -527,14 +568,15 @@ void emhd_explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, in
   // Initializations
 
   double rho      = S->P[RHO][k][j][i];
-  // double Theta    = S->Theta[k][j][i];
-  double Theta    = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], Theta_floor_fluid_element);
+  double Theta    = S->Theta[k][j][i];
+  // double Theta    = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], SMALL);
   double bsq      = S->bsq[k][j][i];
   double chi_emhd = S->chi_emhd[k][j][i];
   double nu_emhd  = S->nu_emhd[k][j][i];
   double tau      = S->tau[k][j][i];
-  double q        = S->P[Q_TILDE][k][j][i];
-  double deltaP   = S->P[DELTA_P_TILDE][k][j][i];
+  
+  double q_tilde        = S->P[Q_TILDE][k][j][i];
+  double delta_p_tilde   = S->P[DELTA_P_TILDE][k][j][i];
 
   double gdet = G->gdet[loc][j][i];
 
@@ -575,10 +617,21 @@ void emhd_explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, in
     deltaP0 += 3. * rho * nu_emhd * (bcon_mu * bcon_nu / bsq) * grad_ucov[mu][nu];
   }
 
+  // Higher order corrections to the relaxed values
+  if (higher_order_terms == 1) {    
+    q0 *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
+    deltaP0 *= sqrt(nu_emhd * rho * Theta / tau);
+  }
+
   // Add explicit source terms (conduction and viscosity)
-  // NOTE: Will have to edit this when higher order terms are considered
   dU[Q_TILDE]       = gdet * (q0 / tau);
   dU[DELTA_P_TILDE] = gdet * (deltaP0 / tau);
+
+  // Higher order corrections to the source terms
+  if (higher_order_terms == 1) {
+    dU[Q_TILDE]       += (q_tilde / 2) * gdet * div_ucon;
+    dU[DELTA_P_TILDE] += (delta_p_tilde / 2) * gdet * div_ucon;
+  }
 }
 
 // Compute gradient of four velocities and temperature

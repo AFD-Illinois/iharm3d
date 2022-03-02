@@ -21,13 +21,16 @@
 [int] DTr = 100
 [int] DTp = 10
 
+# GRIM ALGO PARAMETERS
+[int] higher_order_terms = 0
+[dbl] conduction_alpha = 1.
+[dbl] viscosity_alpha = 1.
+
+[int] max_nonlinear_iter = 3
+[dbl] jacobian_eps = 4.e-8
+[dbl] rootfind_tol = 1.e-20
+
 # PROBLEM
-[dbl] amp = 1.e-4
+[dbl] amp = 1.e-8
 [dbl] real_omega = -0.5533585207638141
 [dbl] imag_omega = -3.6262571286888425
-
-# FLOORS (FOR GRIM ALGO)
-[dbl] rho_floor_fluid_element   = 1.e-20
-[dbl] uu_floor_fluid_element    = 1.e-20
-[dbl] bsq_floor_fluid_element   = 1.e-20
-[dbl] Theta_floor_fluid_element = 1.e-20

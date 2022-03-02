@@ -42,8 +42,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
     firstc = 0;
   }
 
-  // TODO: Source calc term
-  while (nonlinear_iter < MAX_NONLINEAR_ITER){
+  while (nonlinear_iter < max_nonlinear_iter){
 
     double max_norm = 0;
 
@@ -171,10 +170,10 @@ void jacobian(struct GridGeom *G, struct FluidState *S_solver, struct FluidState
 
     // Evaluate small(P)
     is_small = 0;
-    if (fabs(prims[col]) < 0.5 * JACOBIAN_EPS) is_small = 1;
+    if (fabs(prims[col]) < 0.5 * jacobian_eps) is_small = 1;
 
     // Compute P_eps
-    prims_eps[col] = prims[col] + JACOBIAN_EPS*prims[col]*(1 - is_small) + JACOBIAN_EPS*is_small;
+    prims_eps[col] = prims[col] + jacobian_eps * prims[col] * (1 - is_small) + jacobian_eps * is_small;
     S_eps->P[col][k][j][i] = prims_eps[col];
 
     // Compute the residual for P_eps

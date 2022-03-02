@@ -23,7 +23,7 @@
 #define OUT_TYPE float
 #endif
 
-#define HDF_STR_LEN 20
+#define HDF_STR_LEN 30
 
 void dump(struct GridGeom *G, struct FluidState *S)
 {
@@ -132,6 +132,7 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   hdf5_write_str_list(varNames, "prim_names", HDF_STR_LEN, n_prims);
 
   hdf5_write_single_val(&gam, "gam", H5T_IEEE_F64LE);
+
 #if ELECTRONS
   hdf5_write_single_val(&game, "gam_e", H5T_IEEE_F64LE);
   hdf5_write_single_val(&gamp, "gam_p", H5T_IEEE_F64LE);
@@ -142,11 +143,27 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   hdf5_write_single_val(&fel_constant, "fel_constant", H5T_IEEE_F64LE);
   #endif
 #endif
+
   hdf5_write_single_val(&cour, "cour", H5T_IEEE_F64LE);
   hdf5_write_single_val(&tf, "tf", H5T_IEEE_F64LE);
   hdf5_add_units("tf", "code");
 
+  // EMHD parameters that aren't problem specific
+  #if GRIM_TIMESTEPPER
+  hdf5_make_directory("emhd");
+  hdf5_set_directory("/header/emhd/");
+
+  hdf5_write_single_val(&higher_order_terms, "higher_order_terms", H5T_STD_I32LE);
+  hdf5_write_single_val(&conduction_alpha, "conduction_alpha", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&viscosity_alpha, "viscosity_alpha", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&max_nonlinear_iter, "max_nonlinear_iterations", H5T_STD_I32LE);
+  hdf5_write_single_val(&jacobian_eps, "jacobian_eps", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&rootfind_tol, "rootfinder_tolerance", H5T_IEEE_F64LE);
+  #endif
+
+
   //Geometry
+  hdf5_set_directory("/header/");
   hdf5_make_directory("geom");
   hdf5_set_directory("/header/geom/");
 

@@ -1,10 +1,10 @@
 ### RUNTIME PARAMETERS ###
 
 # COORDINATES
-[dbl] tf = 10.0
+[dbl] tf = 5.0
 [dbl] dt = 1.0e-06
-[dbl] x1Min = 0.0
-[dbl] x1Max = 1.0
+[dbl] x1Min = -0.5
+[dbl] x1Max = 1.5
 [dbl] x2Min = 0.0
 [dbl] x2Max = 1.0
 [dbl] x3Min = 0.0
@@ -12,7 +12,7 @@
 
 # FLUID
 [dbl] gam = 1.333333
-[dbl] cour = 0.9
+[dbl] cour = 0.25
 
 # OUTPUT
 [dbl] DTd = 0.1
@@ -21,18 +21,11 @@
 [int] DTr = 100
 [int] DTp = 10
 
-
 # GRIM ALGO PARAMETERS
-[int] higher_order_terms = 0
-[dbl] conduction_alpha = 1.
-[dbl] viscosity_alpha = 1.
+[int] higher_order_terms = 1
+[dbl] conduction_alpha = 5.
+[dbl] viscosity_alpha = 3.
 
 [int] max_nonlinear_iter = 3
 [dbl] jacobian_eps = 4.e-8
 [dbl] rootfind_tol = 1.e-20
-
-# PROBLEM
-[dbl] A = 0.2
-[dbl] Rsq = 0.005
-[dbl] B0 = 1.e-4
-[dbl] k = 4.

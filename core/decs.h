@@ -55,18 +55,6 @@
 #define GRIM_TIMESTEPPER (0)
 #endif
 
-#if GRIM_TIMESTEPPER
-#ifndef JACOBIAN_EPS
-#define JACOBIAN_EPS (4.e-8)
-#endif
-#ifndef ROOTFIND_TOL
-#define ROOTFIND_TOL (1.e-3)
-#endif
-#ifndef MAX_NONLINEAR_ITER
-#define MAX_NONLINEAR_ITER (3)
-#endif
-#endif
-
 // Fixup parameters
 #define RHOMINLIMIT (1.e-20)
 #define UUMINLIMIT  (1.e-20)
@@ -374,10 +362,13 @@ extern int global_start[3];
 extern int global_stop[3];
 
 #if GRIM_TIMESTEPPER
-extern double rho_floor_fluid_element;
-extern double uu_floor_fluid_element;
-extern double bsq_floor_fluid_element;
-extern double Theta_floor_fluid_element;
+extern double higher_order_terms;
+extern double conduction_alpha;
+extern double viscosity_alpha;
+
+extern int max_nonlinear_iter;
+extern double jacobian_eps;
+extern double rootfind_tol;
 #endif
 
 /*******************************************************************************

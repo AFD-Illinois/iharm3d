@@ -72,8 +72,11 @@ int global_stop[3];
 
 // grim algo
 #if GRIM_TIMESTEPPER
-double rho_floor_fluid_element;
-double uu_floor_fluid_element;
-double bsq_floor_fluid_element;
-double Theta_floor_fluid_element;
+double higher_order_terms;
+double conduction_alpha;
+double viscosity_alpha;
+
+int max_nonlinear_iter;
+double jacobian_eps;
+double rootfind_tol;
 #endif
