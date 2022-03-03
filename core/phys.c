@@ -518,14 +518,22 @@ void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, 
   }
 
   // Higher order corrections to the relaxed values
+  double q0_tilde      = 0.;
+  double deltaP0_tilde = 0.;
+
   if (higher_order_terms == 1) {    
-    q0 *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
-    deltaP0 *= sqrt(nu_emhd * rho * Theta / tau);
+    q0_tilde      = q0      * sqrt(tau / (chi_emhd * rho * pow(Theta, 2)));
+    deltaP0_tilde = deltaP0 * sqrt(tau / (nu_emhd * rho * Theta));
   }
+  else {
+    q0_tilde      = q0;
+    deltaP0_tilde = deltaP0;
+  }
+
   
   // Add the time derivative source terms (conduction and viscosity)
-  dU[Q_TILDE]       = gdet * (q0 / tau);
-  dU[DELTA_P_TILDE] = gdet * (deltaP0 / tau);
+  dU[Q_TILDE]       = gdet * (q0_tilde / tau);
+  dU[DELTA_P_TILDE] = gdet * (deltaP0_tilde / tau);
 
   // Higher order corrections to the source terms
   if (higher_order_terms == 1) {
@@ -575,7 +583,7 @@ void emhd_explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, in
   double nu_emhd  = S->nu_emhd[k][j][i];
   double tau      = S->tau[k][j][i];
   
-  double q_tilde        = S->P[Q_TILDE][k][j][i];
+  double q_tilde         = S->P[Q_TILDE][k][j][i];
   double delta_p_tilde   = S->P[DELTA_P_TILDE][k][j][i];
 
   double gdet = G->gdet[loc][j][i];
@@ -618,14 +626,21 @@ void emhd_explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, in
   }
 
   // Higher order corrections to the relaxed values
+  double q0_tilde      = 0.;
+  double deltaP0_tilde = 0.;
+
   if (higher_order_terms == 1) {    
-    q0 *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
-    deltaP0 *= sqrt(nu_emhd * rho * Theta / tau);
+    q0_tilde      = q0      * sqrt(tau / (chi_emhd * rho * pow(Theta, 2)));
+    deltaP0_tilde = deltaP0 * sqrt(tau / (nu_emhd * rho * Theta));
+  }
+  else {
+    q0_tilde      = q0;
+    deltaP0_tilde = deltaP0;
   }
 
   // Add explicit source terms (conduction and viscosity)
-  dU[Q_TILDE]       = gdet * (q0 / tau);
-  dU[DELTA_P_TILDE] = gdet * (deltaP0 / tau);
+  dU[Q_TILDE]       = gdet * (q0_tilde / tau);
+  dU[DELTA_P_TILDE] = gdet * (deltaP0_tilde / tau);
 
   // Higher order corrections to the source terms
   if (higher_order_terms == 1) {

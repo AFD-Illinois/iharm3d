@@ -102,8 +102,16 @@ void init(struct GridGeom *G, struct FluidState *S) {
         S->P[DELTA_P_TILDE][k][j][i] = delta_p0 + ddelta_p;
 
         if (higher_order_terms == 1) {
+          
+          double rho = S->P[RHO][k][j][i];
+         
+          double Theta = (gam - 1.) * S->P[UU][k][j][i] / S->[RHO][k][j][i];
 
           set_emhd_parameters(G, S, i, j, k);
+          double tau = S->tau[k][j][i];
+          double chi_emhd = S->chi_emhd[k][j][i];
+          double nu_emhd  = S->nu_emhd[k][j][i];
+
           S->P[Q_TILDE][k][j][i]       *= sqrt(tau / chi_emhd * rho * pow(Theta, 2));
           S->P[DELTA_P_TILDE][k][j][i] *= sqrt(tau / nu_emhd * rho * Theta);
         }
