@@ -10,14 +10,14 @@
  #include <complex.h>
  #include "hdf5_utils.h"
 
- static double A, Rsq, B0, k;
+ static double A, Rsq, B0, k0;
 
  void set_problem_params()
 {
   set_param("A", &A);
   set_param("Rsq", &Rsq);
   set_param("B0", &B0);
-  set_param("k", &k);
+  set_param("k0", &k0);
 
 }
 
@@ -26,7 +26,7 @@ void save_problem_data(hid_t string_type){
   hdf5_write_single_val(&A, "A", H5T_IEEE_F64LE);
   hdf5_write_single_val(&Rsq, "Rsq", H5T_IEEE_F64LE);
   hdf5_write_single_val(&B0, "B0", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&k, "k", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&k0, "k0", H5T_IEEE_F64LE);
 
 }
 
@@ -73,7 +73,7 @@ void init(struct GridGeom *G, struct FluidState *S) {
         S->P[U2][k][j][i]  = 0.;
         S->P[U3][k][j][i]  = 0.;
         S->P[B1][k][j][i]  = B0;
-        S->P[B2][k][j][i]  = B0 * sin(2*M_PI*k*X[1]);
+        S->P[B2][k][j][i]  = B0 * sin(2*M_PI*k0*X[1]);
         S->P[B3][k][j][i]  = 0.;
         S->P[Q_TILDE][k][j][i]       = 0.;
         S->P[DELTA_P_TILDE][k][j][i] = 0.;

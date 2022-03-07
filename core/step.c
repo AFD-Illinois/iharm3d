@@ -37,6 +37,25 @@ void step(struct GridGeom *G, struct FluidState *S)
   FLAG("Start step");
   // TODO add back well-named flags /after/ events
 
+  #if DEBUG_GRIM
+  fprintf(stdout, "\n----------PREDICTOR STEP----------\n");
+  fprintf(stdout, "Fluid state before predictor step: \n");
+  fprintf(stdout, "q_tilde:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", S->P[Q_TILDE][k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  fprintf(stdout, "\ndP_tilde:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", S->P[DELTA_P_TILDE][k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  #endif
+
   // Predictor setup
   advance_fluid(G, S, S, Stmp, 0.5*dt);
   FLAG("Advance Fluid Tmp");
@@ -61,6 +80,25 @@ void step(struct GridGeom *G, struct FluidState *S)
   set_bounds(G, Stmp);
   FLAG("Second bounds Tmp");
 
+  #if DEBUG_GRIM
+  fprintf(stdout, "\n----------CORRECTOR STEP----------\n");
+  fprintf(stdout, "Fluid state before corrector step (NOTE: This means boundary syncs have been applied): \n");
+  fprintf(stdout, "q_tilde:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", S->P[Q_TILDE][k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  fprintf(stdout, "\ndP_tilde:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", S->P[DELTA_P_TILDE][k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  #endif
+
   // Corrector step
   double ndt = advance_fluid(G, S, Stmp, S, dt);
   FLAG("Advance Fluid Full");
@@ -82,6 +120,24 @@ void step(struct GridGeom *G, struct FluidState *S)
   FLAG("Fixup U_to_P Full");
   set_bounds(G, S);
   FLAG("Second bounds Full");
+
+  #if DEBUG_GRIM
+  fprintf(stdout, "\nFluid state after corrector step and boundary syncs: \n");
+  fprintf(stdout, "q_tilde:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", S->P[Q_TILDE][k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  fprintf(stdout, "\ndP_tilde:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", S->P[DELTA_P_TILDE][k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  #endif
 
   // Increment time
   t += dt;
@@ -167,6 +223,42 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   get_state_vec(G, Ss, CENT, -NG, N3 + NG - 1, -NG, N2 + NG - 1, -NG, N1 + NG - 1);
   prim_to_flux_vec(G, Ss, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Ss->U);
 
+  #if DEBUG_GRIM
+  fprintf(stdout, "Si (in advance fluid): \n");
+  fprintf(stdout, "q:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", Si->q[k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  fprintf(stdout, "\ndP:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", Si->delta_p[k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  #endif
+
+  #if DEBUG_GRIM
+  fprintf(stdout, "Ss (in advance fluid): \n");
+  fprintf(stdout, "q:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", Ss->q[k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  fprintf(stdout, "\ndP:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", Ss->delta_p[k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  #endif
+
   // Initial guess for S_solver->P
   #pragma omp parallel for simd collapse(3)
   PLOOP ZLOOP S_solver->P[ip][k][j][i] = Ss->P[ip][k][j][i];
@@ -179,6 +271,24 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   PLOOP ZLOOP Sf->P[ip][k][j][i] = S_solver->P[ip][k][j][i];
   get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   prim_to_flux_vec(G, Sf, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Sf->U);
+
+  #if DEBUG_GRIM
+  fprintf(stdout, "Sf (in advance fluid, after timestep): \n");
+  fprintf(stdout, "q_tilde:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", Sf->P[Q_TILDE][k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  fprintf(stdout, "\ndP_tilde:\n");
+  KLOOP_DEBUG_GRIM
+    JLOOP_DEBUG_GRIM {
+      ILOOP_DEBUG_GRIM
+        fprintf(stdout, "%g ", Sf->P[DELTA_P_TILDE][k][j][i]);
+      fprintf(stdout, "\n");
+    }
+  #endif
   
   // update failures
   // NOTE: These are no longer U_to_P failures but rather zones where convergence was not achieved for the nonlinear solver

@@ -35,4 +35,4 @@
 [dbl] A = 0.2
 [dbl] Rsq = 0.005
 [dbl] B0 = 1.e-4
-[dbl] k = 4.
+[dbl] k0 = 4.

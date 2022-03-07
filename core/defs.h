@@ -72,7 +72,7 @@ int global_stop[3];
 
 // grim algo
 #if GRIM_TIMESTEPPER
-double higher_order_terms;
+int higher_order_terms;
 double conduction_alpha;
 double viscosity_alpha;
 

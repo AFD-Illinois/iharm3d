@@ -529,7 +529,6 @@ void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, 
     q0_tilde      = q0;
     deltaP0_tilde = deltaP0;
   }
-
   
   // Add the time derivative source terms (conduction and viscosity)
   dU[Q_TILDE]       = gdet * (q0_tilde / tau);
@@ -537,8 +536,8 @@ void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, 
 
   // Higher order corrections to the source terms
   if (higher_order_terms == 1) {
-    dU[Q_TILDE]       += (q_tilde / 2) * gdet * div_ucon;
-    dU[DELTA_P_TILDE] += (delta_p_tilde / 2) * gdet * div_ucon;
+    dU[Q_TILDE]       += gdet * (q_tilde / 2.) * div_ucon;
+    dU[DELTA_P_TILDE] += gdet * (delta_p_tilde / 2.) * div_ucon;
   }
 }
 
@@ -644,8 +643,8 @@ void emhd_explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, in
 
   // Higher order corrections to the source terms
   if (higher_order_terms == 1) {
-    dU[Q_TILDE]       += (q_tilde / 2) * gdet * div_ucon;
-    dU[DELTA_P_TILDE] += (delta_p_tilde / 2) * gdet * div_ucon;
+    dU[Q_TILDE]       += gdet * (q_tilde / 2) * div_ucon;
+    dU[DELTA_P_TILDE] += gdet * (delta_p_tilde / 2) * div_ucon;
   }
 }
 

@@ -45,6 +45,18 @@
 
 #define GRIM_TIMESTEPPER 1
 
+/* DEBUG_GRIM mode: Print values in a N3D*N2D*N1D stencil near the upper left corner (physical zones)
+ * (Hopefully) useful to debug issues related to the grim algo
+ * Assumes all zones are within a single MPI task
+ */
+
+#define DEBUG_GRIM 0
+#if DEBUG_GRIM
+#define N1D 8
+#define N2D 8
+#define N3D 1
+#endif
+
 /* RECONSTRUCTION ALGORITHM
  *   LINEAR, PPM, WENO, MP5
  *   SLOPE LIMITERS OPTIONS (USED TO COMPUTE GRADIENTS USING PIECEWISE LINEAR RECONSTRUCTION): 

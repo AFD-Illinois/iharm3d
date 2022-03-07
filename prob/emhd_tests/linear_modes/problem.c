@@ -90,8 +90,8 @@ void init(struct GridGeom *G, struct FluidState *S) {
         double ddelta_p = amp * (((0.2909106062057657)*cos_phi) - ((0.02159452055336572)*sin_phi));
 
         // Initialize primitives
-        S->P[RHO][k][j][i] = MY_MAX(rho0 + drho, rho_floor_fluid_element);
-        S->P[UU][k][j][i]  = MY_MAX(u0 + du, uu_floor_fluid_element);
+        S->P[RHO][k][j][i] = MY_MAX(rho0 + drho, SMALL);
+        S->P[UU][k][j][i]  = MY_MAX(u0 + du, SMALL);
         S->P[U1][k][j][i]  = u10 + du1;
         S->P[U2][k][j][i]  = u20 + du2;
         S->P[U3][k][j][i]  = u30 + du3;
@@ -104,19 +104,18 @@ void init(struct GridGeom *G, struct FluidState *S) {
         if (higher_order_terms == 1) {
           
           double rho = S->P[RHO][k][j][i];
+          double u   = S->P[UU][k][j][i];
          
-          double Theta = (gam - 1.) * S->P[UU][k][j][i] / S->[RHO][k][j][i];
+          double Theta = (gam - 1.) * u / rho;
 
           set_emhd_parameters(G, S, i, j, k);
           double tau = S->tau[k][j][i];
           double chi_emhd = S->chi_emhd[k][j][i];
           double nu_emhd  = S->nu_emhd[k][j][i];
 
-          S->P[Q_TILDE][k][j][i]       *= sqrt(tau / chi_emhd * rho * pow(Theta, 2));
-          S->P[DELTA_P_TILDE][k][j][i] *= sqrt(tau / nu_emhd * rho * Theta);
+          S->P[Q_TILDE][k][j][i]       *= sqrt(tau / (chi_emhd * rho * pow(Theta, 2)));
+          S->P[DELTA_P_TILDE][k][j][i] *= sqrt(tau / (nu_emhd * rho * Theta));
         }
-
-
     }
 
     //Enforce boundary conditions

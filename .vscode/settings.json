@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "decs.h": "c"
+        "decs.h": "c",
+        "random": "c"
     }
 }

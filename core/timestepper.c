@@ -101,6 +101,23 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
 
       // Update Sf->P
       PLOOP S_solver->P[ip][k][j][i] = prim_guess[ip];
+
+      #if DEBUG_GRIM
+      // Solver data will be printed at just a single zone to minimize the numbers spewed at the user
+      // The lower right corner of the stencil chosen
+      if ((i == N1D+NG-1) && (j == N2D+NG-1) && (k == N3D+NG-1)) {
+        fprintf(stdout, "\nIteration: %d. Data at (i,j,k) = (%d,%d,%d)\n", nonlinear_iter, i, j, k);
+        fprintf(stdout, "Residual:\n");
+        PLOOP fprintf(stdout, "%g\t", residual[ip]);
+        fprintf(stdout, "\n");
+        fprintf(stdout, "\nJacobian:\n");
+        for (int row = 0; row < NVAR; row++) {
+          for (int col = 0; col < NVAR; col++)
+            fprintf(stdout, "%g\t", jac[NVAR*row + col]);
+          fprintf(stdout, "\n");
+        }
+      }
+      #endif
       
     }// END OF ZLOOP
 

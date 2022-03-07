@@ -104,6 +104,22 @@
 #define STATIC_TIMESTEP 0
 #endif
 
+#ifndef DEBUG_GRIM
+#define DEBUG_GRIM 0
+#endif
+
+#if DEBUG_GRIM
+#ifndef N1D
+#define N1D 8
+#endif
+#ifndef N2D
+#define N2D 8
+#endif
+#ifndef N3D
+#define N3D 1
+#endif
+#endif
+
 // The Intel compiler is a pain
 // Intel 18.0.0 aka 20170811 works
 // Intel 18.0.2,3 aka 20180315 and 20180516 crash in places
@@ -362,7 +378,7 @@ extern int global_start[3];
 extern int global_stop[3];
 
 #if GRIM_TIMESTEPPER
-extern double higher_order_terms;
+extern int higher_order_terms;
 extern double conduction_alpha;
 extern double viscosity_alpha;
 
@@ -412,6 +428,16 @@ extern double rootfind_tol;
   for (int i = (istop) + NG; i >= (istart) + NG; i--)
 #define ZSLOOP_OUT(kstart,kstop,jstart,jstop,istart,istop) \
   ISLOOP(istart,istop) JSLOOP(jstart,jstop) KSLOOP(kstart,kstop)
+
+// Need separate loops to format printing
+#if DEBUG_GRIM
+#define KLOOP_DEBUG_GRIM \
+  for (int k = 0 + NG; k < N3D + NG; k++)
+#define JLOOP_DEBUG_GRIM \
+  for (int j = 0 + NG; j < N2D + NG; j++)
+#define ILOOP_DEBUG_GRIM \
+  for (int i = 0 + NG; i < N1D + NG; i++)
+#endif
 
 // Loop over primitive variables
 #define PLOOP  for(int ip = 0; ip < NVAR; ip++)
