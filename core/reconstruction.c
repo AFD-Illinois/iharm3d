@@ -334,6 +334,7 @@ double slope_calc_four_vec(GridVector u, int component, int dir, int i, int j, i
     return SLOPE_ALGO(u[component][k-2][j][i], u[component][k-1][j][i], u[component][k][j][i],
         u[component][k+1][j][i], u[component][k+2][j][i], dx[dir]);
   }
+  return 0.0;
 }
 
 // Compute slope for scalars
@@ -350,4 +351,5 @@ double slope_calc_scalar(GridDouble T, int dir, int i, int j, int k) {
   if (dir == 3) {
     return SLOPE_ALGO(T[k-2][j][i], T[k-1][j][i], T[k][j][i], T[k+1][j][i], T[k+2][j][i], dx[dir]);
   }
+  return 0.0;
 }

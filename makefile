@@ -18,7 +18,7 @@ CC=h5pcc
 CFLAGS = -std=gnu99 -O3 -march=native -mtune=native -flto -fopenmp -funroll-loops
 MATH_LIB = -lm
 # ICC does not like -lm and uses different flags
-#CFLAGS = -xCORE-AVX2 -Ofast -fstrict-aliasing -Wall -Werror -ipo -qopenmp
+#CFLAGS = -xCORE-AVX2 -Ofast -fstrict-aliasing -Wall -Werror -ipo -qopenmp -qmkl
 #MATH_LIB =
 
 # Name of the executable
