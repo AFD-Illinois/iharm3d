@@ -36,14 +36,14 @@ void fixup(struct GridGeom *G, struct FluidState *S)
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL fflag[k][j][i] = 0;
 
-#pragma omp parallel for collapse(3)
-  ZLOOP fixup_ceiling(G, S, i, j, k);
-
   // Bulk call before bsq calculation below
   get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
 
 #pragma omp parallel for collapse(3)
   ZLOOP fixup_floor(G, S, i, j, k);
+
+#pragma omp parallel for collapse(3)
+  ZLOOP fixup_ceiling(G, S, i, j, k);
 
   // Some debug info about floors
 #if DEBUG
@@ -112,6 +112,15 @@ inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j
       S->P[KTOT][k][j][i] = KTOTMAX;
     }
 #endif
+
+  // 3. Limit temperature by cooling in fluid frame
+  // Note this is applied after the RHO floor has taken effect
+  double u_ceil_temp = UORHOMAX * S->P[RHO][k][j][i];
+  if (S->P[UU][k][j][i] > u_ceil_temp) {
+    fflag[k][j][i] |= HIT_FLOOR_TEMP;
+    S->P[UU][k][j][i] = u_ceil_temp;
+  }
+
 }
 
 inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
@@ -159,13 +168,13 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
 
   // 3. Temperature ceiling: impose maximum temperature
   // Take floors on U into account
-  double rhoflr_temp = MY_MAX(S->P[UU][k][j][i] / UORHOMAX, uflr_max / UORHOMAX);
+  //double rhoflr_temp = MY_MAX(S->P[UU][k][j][i] / UORHOMAX, uflr_max / UORHOMAX);
 
   // Record hitting temperature ceiling
-  if (rhoflr_temp > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_TEMP; // Misnomer for consistency
+  //if (rhoflr_temp > S->P[RHO][k][j][i]) fflag[k][j][i] |= HIT_FLOOR_TEMP; // Misnomer for consistency
 
   // Evaluate highest RHO floor
-  double rhoflr_max = MY_MAX(MY_MAX(rhoflr_geom, rhoflr_b), rhoflr_temp);
+  double rhoflr_max = MY_MAX(rhoflr_geom, rhoflr_b); //, rhoflr_temp);
 
   if (rhoflr_max > S->P[RHO][k][j][i] || uflr_max > S->P[UU][k][j][i]) { // Apply floors
 
