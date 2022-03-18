@@ -149,6 +149,26 @@ void residual_calc(struct GridGeom *G, struct FluidState *Stmp, struct FluidStat
   // Compute residual
   PLOOP residual[ip] = (Stmp->U[ip][k][j][i] - U_old[ip])/dt + divF[ip] 
     - sources_explicit[ip] - 0.5*(sources_implicit_new[ip] + sources_implicit_old[ip]) - sources_time_derivative[ip];
+
+  // Normalize the residuals
+  if (higher_order_terms == 1){
+
+    double rho      = Ss->P[RHO][k][j][i];
+    double Theta    = Ss->Theta[k][j][i];
+    double tau      = Ss->tau[k][j][i];
+    double chi_emhd = Ss->chi_emhd[k][j][i];
+    double nu_emhd  = Ss->nu_emhd[k][j][i];
+
+    residual[Q_TILDE]       *= sqrt(rho * chi_emhd * tau * pow(Theta, 2));
+    residual[DELTA_P_TILDE] *= sqrt(rho * nu_emhd * tau * Theta);
+  }
+  else {
+
+    double tau = Ss->tau[k][j][i];
+
+    residual[Q_TILDE]       *= tau;
+    residual[DELTA_P_TILDE] *= tau;
+  }
 }
 
 // Evaluate Jacobian (per zone)

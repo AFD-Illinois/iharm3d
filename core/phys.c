@@ -334,6 +334,20 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   va2 = bsq/ee;
   cs2 = gam*(gam - 1.)*u/ef;
 
+  #if GRIM_TIMESTEPPER
+  double tau      = S->tau[k][j][i];
+  double chi_emhd = S->chi_emhd[k][j][i];
+  double nu_emhd  = S->nu_emhd[k][j][i];
+
+  // wave speed contribution from dP
+  double cvis2 = (4. / 3.) / (rho + (gam * u)) * rho * nu_emhd / tau;
+  // wave speed contribution from q
+  double ccond2 = (gam - 1.) * chi_emhd / tau;
+
+  ccond2 = 0.5*(cs2 + ccond2 + sqrt(cs2*cs2 + ccond2*ccond2));
+  cs2 = ccond2 + cvis2;
+  #endif
+
   cms2 = cs2 + va2 - cs2*va2;
 
   cms2 = (cms2 < 0) ? SMALL : cms2;
