@@ -2,7 +2,7 @@
  *                                                                            *
  * PROBLEM.C                                                                  *
  *                                                                            *
- * INITIAL CONDITIONS FOR ENTROPY WAVE                                        *
+ * INITIAL CONDITIONS FOR ORSZAG TANG                                         *
  *                                                                            *
  ******************************************************************************/
 
