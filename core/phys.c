@@ -23,7 +23,7 @@ inline void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double 
   u = S->P[UU][k][j][i];
   pres = (gam - 1.)*u;
   w = pres + S->P[RHO][k][j][i] + u;
-  bsq = S->bsq[k][j][i];
+  bsq = MY_MAX(bsq_calc(S, i, j, k), SMALL);
   eta = w + bsq;
   ptot = pres + 0.5*bsq;
 
