@@ -59,6 +59,9 @@ void set_core_params() {
   set_param("poly_alpha", &poly_alpha);
   set_param("mks_smooth", &mks_smooth);
 #endif
+#if SET_RADIAL_BOUNDS
+  set_param("R_inner", &R_inner);
+#endif
   if (N2 < NG) hslope = 1.;
   set_param("Rout", &Rout);
 #endif

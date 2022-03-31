@@ -16,10 +16,10 @@
 #endif
 
 
-#if X1L_BOUND != PERIODIC && X1L_BOUND != OUTFLOW
+#if X1L_BOUND != PERIODIC && X1L_BOUND != OUTFLOW && X1L_BOUND != DIRICHLET
 #error "Unsupported X1L_BOUND"
 #endif
-#if X1R_BOUND != PERIODIC && X1R_BOUND != OUTFLOW && X1R_BOUND != USER
+#if X1R_BOUND != PERIODIC && X1R_BOUND != OUTFLOW && X1R_BOUND != USER && X1L_BOUND != DIRICHLET
 #error "Unsupported X1R_BOUND"
 #endif
 
@@ -57,14 +57,16 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iactive];
           pflag[k][j][i] = pflag[k][j][iactive];
 #elif X1L_BOUND == OUTFLOW
-            int iz = 0 + NG;
-            PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iz];
-            pflag[k][j][i] = pflag[k][j][iz];
+          int iz = 0 + NG;
+          PLOOP S->P[ip][k][j][i] = S->P[ip][k][j][iz];
+          pflag[k][j][i] = pflag[k][j][iz];
 
-            double rescale = G->gdet[CENT][j][iz]/G->gdet[CENT][j][i];
-            S->P[B1][k][j][i] *= rescale;
-            S->P[B2][k][j][i] *= rescale;
-            S->P[B3][k][j][i] *= rescale;
+          double rescale = G->gdet[CENT][j][iz]/G->gdet[CENT][j][i];
+          S->P[B1][k][j][i] *= rescale;
+          S->P[B2][k][j][i] *= rescale;
+          S->P[B3][k][j][i] *= rescale;
+#elif X1L_BOUND == DIRICHLET
+          PLOOP S->P[ip][k][j][i] = S->P_BOUND[ip][i];
 #endif
         }
       }
@@ -110,6 +112,8 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           S->P[B3][k][j][i] *= rescale;
 #elif X1R_BOUND == USER
           bound_gas_prob_x1r(i, j, k, S->P, G);
+#elif X1R_BOUND == DIRICHLET
+          PLOOP S->P[ip][k][j][i] = S->P_BOUND[ip][i-N1];
 #endif
         }
       }

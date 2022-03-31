@@ -150,6 +150,10 @@
 #endif
 #endif
 
+#ifndef SET_RADIAL_BOUNDS
+#define SET_RADIAL_BOUNDS (0)
+#endif
+
 // Primitive and conserved variables
 #define RHO (0)
 #define UU  (1)
@@ -200,10 +204,11 @@
 #define NPG   (5)
 
 // Boundaries
-#define OUTFLOW  (0)
-#define PERIODIC (1)
-#define POLAR    (2)
-#define USER     (3)
+#define OUTFLOW   (0)
+#define PERIODIC  (1)
+#define POLAR     (2)
+#define USER      (3)
+#define DIRICHLET (4)
 
 // Metric
 #define MINKOWSKI (0)
@@ -292,6 +297,9 @@ struct FluidState {
   GridDouble nu_emhd;
   GridDouble chi_emhd;
   GridDouble tau;
+  #endif
+  #if (X1L_BOUND == DIRICHLET) && (X1R_BOUND == DIRICHLET)
+  double P_BOUND[NVAR][2*NG];
   #endif
 };
 
@@ -385,6 +393,10 @@ extern double viscosity_alpha;
 extern int max_nonlinear_iter;
 extern double jacobian_eps;
 extern double rootfind_tol;
+#endif
+
+#if SET_RADIAL_BOUNDS
+extern double R_inner;
 #endif
 
 /*******************************************************************************

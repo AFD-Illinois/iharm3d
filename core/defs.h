@@ -80,3 +80,7 @@ int max_nonlinear_iter;
 double jacobian_eps;
 double rootfind_tol;
 #endif
+
+#if SET_RADIAL_BOUNDS
+double R_inner;
+#endif

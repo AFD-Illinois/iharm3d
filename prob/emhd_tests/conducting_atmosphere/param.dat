@@ -1,0 +1,34 @@
+### RUNTIME PARAMETERS ###
+
+# COORDINATES
+[dbl] tf = 100.0
+[dbl] dt = 1.0e-06
+
+# FLUID
+[dbl] gam = 1.333333
+[dbl] cour = 0.5
+
+# OUTPUT
+[dbl] DTd = 0.1
+[dbl] DTf = 10.0
+[dbl] DTl = 0.5
+[int] DTr = 100
+[int] DTp = 10
+
+# GEOMETRY
+# Note: R_inner is NOT the inner radius of the domain!! That depends on the spin of the BH. 
+# Iff the BH is extremal, is R_inner the inner radius of the domain#
+[dbl] a       = 0.0
+[dbl] hslope  = 1.0
+[dbl] Rout    = 300
+[dbl] R_inner = 100
+
+
+# GRIM ALGO PARAMETERS
+[int] higher_order_terms = 1
+[dbl] conduction_alpha = 1.
+[dbl] viscosity_alpha = 1.
+
+[int] max_nonlinear_iter = 3
+[dbl] jacobian_eps = 4.e-8
+[dbl] rootfind_tol = 1.e-20

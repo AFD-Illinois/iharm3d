@@ -217,13 +217,19 @@ void set_points()
   dx[2] = (x2Max - x2Min)/N2TOT;
   dx[3] = (x3Max - x3Min)/N3TOT;
 #elif METRIC == MKS
+
+  #if SET_RADIAL_BOUNDS
+  Rin  =  R_inner * Rhor;
+  #else
   // Set Rin such that we have 5 zones completely inside the event horizon
   // If xeh = log(Rhor), xin = log(Rin), and xout = log(Rout),
   // then we want xeh = xin + 5.5 * (xout - xin) / N1TOT, or solving/replacing:
   Rin = exp((N1TOT * log(Rhor) / 5.5 - log(Rout)) / (-1. + N1TOT / 5.5));
+  #endif
+  
 
   startx[1] = log(Rin);
-  if (startx[1] < 0.0) { ERROR("Not enough radial zones! Increase N1!"); }
+  if (startx[1] < 0.0) { ERROR("Not enough radial zones! Increase N1!");}
   startx[2] = 0.;
   startx[3] = 0.;
 

@@ -1,0 +1,42 @@
+### RUNTIME PARAMETERS ###
+
+# COORDINATES
+[dbl] tf = 120.0
+[dbl] dt = 1.0e-06
+[dbl] x1Min = -3.141592653589793
+[dbl] x1Max = 3.141592653589793
+[dbl] x2Min = -3.141592653589793
+[dbl] x2Max = 3.141592653589793
+[dbl] x3Min = -0.01
+[dbl] x3Max = 0.01
+
+# FLUID
+[dbl] gam = 1.666667
+[dbl] cour = 0.9
+
+# OUTPUT
+[dbl] DTd = 1.
+[dbl] DTf = 10.0
+[dbl] DTl = 0.5
+[int] DTr = 500
+[int] DTp = 10
+
+# Electrons
+[dbl] game = 1.333333
+[dbl] gamp = 1.666667
+[dbl] fel0 = 0.01
+[dbl] tptemin = 0.001
+[dbl] tptemax = 1000.0
+
+# GRIM ALGO PARAMETERS
+[int] higher_order_terms = 1
+[dbl] conduction_alpha = 1.
+[dbl] viscosity_alpha = 0.
+
+[int] max_nonlinear_iter = 3
+[dbl] jacobian_eps = 4.e-8
+[dbl] rootfind_tol = 1.e-20
+
+# PROBLEM
+[dbl] tscale = 0.05
+[dbl] phase  = 3.14159265358979323846264338327

@@ -7,7 +7,6 @@
  ******************************************************************************/
 
  #include "decs.h"
- #include <complex.h>
  #include "hdf5_utils.h"
 
 void set_problem_params() {
