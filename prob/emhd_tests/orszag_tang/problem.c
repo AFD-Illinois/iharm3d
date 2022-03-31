@@ -27,11 +27,19 @@ void save_problem_data(hid_t string_type){
 // Set chi, nu, tau. Problem dependent
  void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
      
-  double tau   = 0.01;
+  // Initializations
+  double rho = S->P[RHO][k][j][i];
+  double u   = S->P[UU][k][j][i];
+  double P   = (gam - 1.) * u;
+  
+  //sound speed
+  double cs2 = (gam * P) / (rho + (gam * u));
 
+  // set EMHD parameters based on closure relations
+  double tau   = 1.0;
   S->tau[k][j][i]      = tau;
-  S->chi_emhd[k][j][i] = 1.;
-  S->nu_emhd[k][j][i]  = 1.;
+  S->chi_emhd[k][j][i] = conduction_alpha * cs2 * tau;;
+  S->nu_emhd[k][j][i]  = viscosity_alpha * cs2 * tau;;
  }
 
 void init(struct GridGeom *G, struct FluidState *S)
