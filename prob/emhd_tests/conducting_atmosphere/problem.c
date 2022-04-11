@@ -19,17 +19,17 @@ void save_problem_data(hid_t string_type){
 }
 
 // Set chi, nu, tau. Problem dependent
- void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
+void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
      
-    // Initializations
-    double rho = S->P[RHO][k][j][i];
+    Initializations
+   double rho = S->P[RHO][k][j][i];
 
-    // set EMHD parameters based on closure relations
-    double tau   = 10.;
-    double kappa = 0.1;
+    set EMHD parameters based on closure relations
+   double tau   = 10.;
+   double kappa = 0.1;
 
     S->tau[k][j][i]      = tau;
-    S->chi_emhd[k][j][i] = kappa / MY_MAX(SMALL, rho);
+   S->chi_emhd[k][j][i] = kappa / MY_MAX(SMALL, rho);
     S->nu_emhd[k][j][i]  = 0.;
  }
 
@@ -99,53 +99,22 @@ void init(struct GridGeom *G, struct FluidState *S) {
         S->P[DELTA_P_TILDE][k][j][i] = 0.;
 
         // Note that the  velocity primitives defined up there isn't quite right.
-        // For a fluid at rest wrt. the normal observer, ucon = {-1/g^tt,0,0,0}. We need to use this info
+        // For a fluid at rest wrt. the normal observer, ucon = {-1/g_tt,0,0,0}. We need to use this info
         // to obtain the correct values for U1, U2 and U3
         
         // ucon in BL
         double ucon[NDIM] = {0};
-        ucon[0] = 1./sqrt(-G->gcon[CENT][0][0][j][i]);
+        ucon[0] = 1./sqrt(-G->gcov[CENT][0][0][j][i]);
         ucon[1] = 0.;
         ucon[2] = 0.;
         ucon[3] = 0.;
 
-        double r = log(X[1]);
+        double r = exp(X[1]);
 
         double trans[NDIM][NDIM], tmp[NDIM];
         double alpha, gamma, beta[NDIM];
-        memset(trans, 0, 16*sizeof(double));
-        for (int mu = 0; mu < NDIM; mu++) {
-          trans[mu][mu] = 1.;
-        }
 
-        trans[0][1] = 2.*r/(r*r - 2.*r + a*a);
-        trans[3][1] = a/(r*r - 2.*r + a*a);
-
-        // Transform ucon (BL->KS)
-        for (int mu = 0; mu < NDIM; mu++) {
-          tmp[mu] = 0.;
-        }
-        for (int mu = 0; mu < NDIM; mu++) {
-          for (int nu = 0; nu < NDIM; nu++) {
-            tmp[mu] += trans[mu][nu]*ucon[nu];
-          }
-        }
-        for (int mu = 0; mu < NDIM; mu++) {
-          ucon[mu] = tmp[mu];
-        }
-
-        // Transform ucon (KS->MKS)
-        double invtrans[NDIM][NDIM];
-        set_dxdX(X, invtrans);
-        invert(&invtrans[0][0], &trans[0][0]);
-
-        DLOOP1 tmp[mu] = 0.;
-        DLOOP2 {
-          tmp[mu] += trans[mu][nu]*ucon[nu];
-        }
-        DLOOP1 ucon[mu] = tmp[mu];
-
-        // Solve for v. Use same u^t, unchanged under KS -> KS'
+        // Solve for v
         alpha = G->lapse[CENT][j][i];
         gamma = ucon[0]*alpha;
 
@@ -157,9 +126,9 @@ void init(struct GridGeom *G, struct FluidState *S) {
         S->P[U2][k][j][i] = ucon[2] + beta[2]*gamma/alpha;
         S->P[U3][k][j][i] = ucon[3] + beta[3]*gamma/alpha;
 
-        if (higher_order_terms == 1) {
+       if (higher_order_terms == 1) {
 
-          double rho   = S->P[RHO][k][j][i];
+         double rho   = S->P[RHO][k][j][i];
           double u     = S->P[UU][k][j][i];
           double Theta = (gam - 1.) * u / rho;
 
@@ -168,7 +137,7 @@ void init(struct GridGeom *G, struct FluidState *S) {
           double chi_emhd = S->chi_emhd[k][j][i];
 
           S->P[Q_TILDE][k][j][i] *= sqrt(tau / (chi_emhd * rho * pow(Theta, 2)));
-        }
+       }
         
       }
     }
@@ -195,8 +164,8 @@ void init(struct GridGeom *G, struct FluidState *S) {
       S->P_BOUND[B1][i-N1]            = 0.;
       S->P_BOUND[B2][i-N1]            = 0.;
       S->P_BOUND[B3][i-N1]            = 0.;
-      S->P_BOUND[Q_TILDE][i-N1]       = S->P[Q_TILDE][NG][NG][i];
-      S->P_BOUND[DELTA_P_TILDE][i-N1] = 0.;
+     S->P_BOUND[Q_TILDE][i-N1]       = S->P[Q_TILDE][NG][NG][i];
+     S->P_BOUND[DELTA_P_TILDE][i-N1] = 0.;
     }
 
   }
@@ -208,31 +177,5 @@ void init(struct GridGeom *G, struct FluidState *S) {
 
   //Enforce boundary conditions
   set_bounds(G, S);
-
-  // fp_rCoords = fopen(fname_rCoords, "r");
-  // fp_rho     = fopen(fname_rho, "r");
-  // fp_u       = fopen(fname_u, "r");
-  // fp_q       = fopen(fname_q, "r");
-
-  // ILOOPALL {
-
-  //   fscanf(fp_rho, "%lf", &(rho_temp));
-  //   fscanf(fp_u,   "%lf", &(u_temp));
-  //   fscanf(fp_q,   "%lf", &(q_temp));
-
-  //   KLOOPALL {
-  //     JLOOPALL {
-  //       if (fabs(S->P[RHO][k][j][i] - rho_temp) > 1.e-15)
-  //         fprintf(stdout, "RHO, k: %d j: %d i: %d, error: %10.3e\n", k, j, i, fabs(S->P[RHO][k][j][i] - rho_temp));
-  //       if (fabs(S->P[UU][k][j][i] - u_temp) > 1.e-15)
-  //         fprintf(stdout, "UU,  k: %d j: %d i: %d, error: %10.3e\n", k, j, i, fabs(S->P[UU][k][j][i] - u_temp));
-  //     }
-  //   }
-  // }
-
-  // fclose(fp_rCoords);
-  // fclose(fp_rho);
-  // fclose(fp_u);
-  // fclose(fp_q);
 
 }

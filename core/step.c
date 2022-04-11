@@ -24,6 +24,19 @@ void step(struct GridGeom *G, struct FluidState *S)
     first_call = 0;
   }
 
+  // Save radial ghost zone values to Stmp->P_BOUND if Dirichlet bc
+#if X1L_BOUND == DIRICHLET
+  ISLOOP(-NG, -1)
+    PLOOP 
+      Stmp->P_BOUND[ip][i] = S->P_BOUND[ip][i];
+#endif
+
+#if X1R_BOUND == DIRICHLET
+  ISLOOP(N1, N1 - 1 + NG)
+    PLOOP 
+      Stmp->P_BOUND[ip][i-N1] = S->P_BOUND[ip][i-N1];
+#endif
+
   // Need both P_n and P_n+1 to calculate current
   // Work around ICC 18.0.2 bug in assigning to pointers to structs
   // TODO use pointer tricks to avoid deep copy on both compilers
@@ -196,8 +209,6 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 #pragma omp parallel for simd collapse(3)
   PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
 #endif
-
-  double ndt = get_flux(G, Ss, F);
 
 #if METRIC == MKS
   fix_flux(F);
