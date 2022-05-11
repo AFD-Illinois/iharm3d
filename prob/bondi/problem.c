@@ -15,7 +15,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_roots.h>
 
-double C1, C2, n;
+double C4, C3, n, K;
 
 double mdot, rs;
 void set_problem_params() {
@@ -33,15 +33,15 @@ void save_problem_data(hid_t string_type){
 // Adapted from M. Chandra
 double get_Tfunc(double T, double r)
 {
-  return pow(1.+(1.+n)*T,2.)*(1.-2./r+pow(C1/r/r/pow(T,n),2.))-C2;
+  return pow(1.+(1.+n)*T,2.)*(1.-2./r+pow(C4/r/r/pow(T,n),2.))-C3;
 }
 
 double get_T(double r)
 {
   double rtol = 1.e-12;
   double ftol = 1.e-14;
-  double Tmin = 0.6*(sqrt(C2) - 1.)/(n + 1);
-  double Tmax = pow(C1*sqrt(2./r/r/r),1./n);
+  double Tmin = 0.6*(sqrt(C3) - 1.)/(n + 1);
+  double Tmax = pow(C4*sqrt(2./r/r/r),1./n);
   double f0, f1, fh;
   double T0, T1, Th;
   T0 = 0.6*Tmin;
@@ -50,7 +50,7 @@ double get_T(double r)
   f1 = get_Tfunc(T1, r);
 
   if (f0*f1 > 0.) {
-    printf("Failed solving for T at r = %e C1 = %e C2 = %e\n", r, C1, C2);
+    printf("Failed solving for T at r = %e C4 = %e C3 = %e\n", r, C4, C3);
     exit(-1);
   }
 
@@ -115,12 +115,12 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
     n = 1./(gam - 1.);
 
     // Solution constants
-    double uc = sqrt(mdot/(2.*rs));
-    double Vc = -sqrt(pow(uc,2)/(1. - 3.*pow(uc,2)));
+    double uc = sqrt(1/(2.*rs));
+    double Vc = sqrt(pow(uc,2)/(1. - 3.*pow(uc,2)));
     double Tc = -n*pow(Vc,2)/((n + 1.)*(n*pow(Vc,2) - 1.));
-    C1 = uc*pow(rs,2)*pow(Tc,n);
-    C2 = pow(1. + (1. + n)*Tc,2)*(1. - 2.*mdot/rs + pow(C1,2)/
-       (pow(rs,4)*pow(Tc,2*n)));
+    C4 = uc*pow(rs,2)*pow(Tc,n);
+    C3 = pow(1. + (1. + n)*Tc,2)*(1. - 2./rs + pow(uc, 2));
+		K  = pow(4*M_PI*C4 / mdot, 1/n);
 
     firstc = 0;
   }
@@ -137,9 +137,9 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
 
   //double T = T_bondi[j][i];
   double T = get_T(r);
-  double ur = -C1/(pow(T,n)*pow(r,2));
-  double rho = pow(T,n);
-  double u = rho*T/(gam - 1.);
+  double ur = -C4/(pow(T,n)*pow(r,2));
+  double rho = pow(K, -n)*pow(T, n);
+  double u = rho*T / (gam - 1.);
   double ucon_bl[NDIM], ucon_ks[NDIM], ucon_mks[NDIM];
   struct of_geom geom_bl;
 
@@ -200,8 +200,8 @@ void init(struct GridGeom *G, struct FluidState *S)
     printf("mdot = %e\n", mdot);
     printf("rs   = %e\n", rs);
     printf("n    = %e\n", n);
-    printf("C1   = %e\n", C1);
-    printf("C2   = %e\n", C2);
+    printf("C4   = %e\n", C4);
+    printf("C3   = %e\n", C3);
   }
 
 #if ELECTRONS
