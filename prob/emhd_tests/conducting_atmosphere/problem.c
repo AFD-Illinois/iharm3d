@@ -21,16 +21,16 @@ void save_problem_data(hid_t string_type){
 // Set chi, nu, tau. Problem dependent
 void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
      
-    Initializations
-   double rho = S->P[RHO][k][j][i];
+  //Initializations
+  double rho = S->P[RHO][k][j][i];
 
-    set EMHD parameters based on closure relations
-   double tau   = 10.;
-   double kappa = 0.1;
+  //set EMHD parameters based on closure relations
+  double tau   = 10.;
+  double kappa = 0.1;
 
-    S->tau[k][j][i]      = tau;
-   S->chi_emhd[k][j][i] = kappa / MY_MAX(SMALL, rho);
-    S->nu_emhd[k][j][i]  = 0.;
+  S->tau[k][j][i]      = tau;
+  S->chi_emhd[k][j][i] = kappa / MY_MAX(SMALL, rho);
+  S->nu_emhd[k][j][i]  = 0.;
  }
 
 void init(struct GridGeom *G, struct FluidState *S) {

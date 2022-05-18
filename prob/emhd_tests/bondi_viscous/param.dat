@@ -1,0 +1,39 @@
+### RUNTIME PARAMETERS ###
+
+# EVOLUTION
+[dbl] tf = 50.0
+[dbl] dt = 1.0e-06
+
+# FLUID
+[dbl] gam = 1.666667
+[dbl] cour = 0.9
+
+# OUTPUT
+[dbl] DTd = 5.0
+[dbl] DTf = 5.0
+[dbl] DTl = 0.5
+[int] DTr = 10000
+[int] DTp = 100
+
+# GEOMETRY
+[dbl] a = 0.0
+[dbl] Rhor = 2.5
+[dbl] Rout = 20.0
+
+# COORDINATES
+[dbl] hslope = 0.3
+
+# GRIM ALGO PARAMETERS
+[int] higher_order_terms = 0
+[dbl] conduction_alpha = 0
+[dbl] viscosity_alpha = 1.
+
+[int] max_nonlinear_iter = 3
+[dbl] jacobian_eps = 4.e-8
+[dbl] rootfind_tol = 1.e-20
+
+# PROBLEM
+[dbl] mdot = 3.0
+[dbl] rs = 8.0
+
+

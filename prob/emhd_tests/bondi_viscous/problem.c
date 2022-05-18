@@ -25,9 +25,24 @@ void set_problem_params() {
 }
 
 void save_problem_data(hid_t string_type){
-        hdf5_write_single_val("bondi", "PROB", string_type);
-        hdf5_write_single_val(&mdot, "mdot", H5T_IEEE_F64LE);
-        hdf5_write_single_val(&rs, "rs", H5T_IEEE_F64LE);
+  hdf5_write_single_val("emhd/bondi_viscous", "PROB", string_type);
+  hdf5_write_single_val(&mdot, "mdot", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&rs, "rs", H5T_IEEE_F64LE);
+}
+
+// Set chi, nu, tau. Problem dependent
+void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
+     
+  //Initializations
+  double rho = S->P[RHO][k][j][i];
+
+  //set EMHD parameters based on closure relations
+  double tau   = 30.;
+  double eta   = 0.01;
+
+  S->tau[k][j][i]      = tau;
+  S->chi_emhd[k][j][i] = 0.;
+  S->nu_emhd[k][j][i]  = 0.;
 }
 
 // Adapted from M. Chandra
@@ -169,6 +184,9 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
   P[B1][k][j][i] = 0.;
   P[B2][k][j][i] = 0.;
   P[B3][k][j][i] = 0.;
+  P[Q_TILDE][k][j][i]       = 0.;
+  P[DELTA_P_TILDE][k][j][i] = 0.;
+
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
@@ -191,10 +209,6 @@ void init(struct GridGeom *G, struct FluidState *S)
     printf("C4   = %e\n", C4);
     printf("C3   = %e\n", C3);
   }
-
-#if ELECTRONS
-  init_electrons(G, S);
-#endif
 
   //Enforce boundary conditions
   fixup(G, S);
