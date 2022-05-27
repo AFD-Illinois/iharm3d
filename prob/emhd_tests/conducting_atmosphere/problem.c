@@ -176,24 +176,4 @@ void init(struct GridGeom *G, struct FluidState *S) {
   //Enforce boundary conditions
   set_bounds(G, S);
 
-  // EDIT
-  // printf("Init RHO: %10.6e \nInit UU:  %10.6e \nInit U1:  %10.6e\n", S->P[RHO][3][64][3], S->P[UU][3][64][3], S->P[U1][3][64][3]); // EDIT
-
-  // EDIT
-  // ILOOPALL 
-  //   JLOOPALL 
-  //     KLOOPALL {
-  //       double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
-  //       double alpha = G->lapse[CENT][j][i];
-  //       double ucon_t = gamma / alpha;
-  //       double ucon_i[3] = {0};
-  //       if (fabs(ucon_t - 1./sqrt(-G->gcov[CENT][0][0][j][i])) > 1.e-14) 
-  //         printf("Error in u^t at i:%d j:%d k:%d Error: %10.6e\n", i, j, k, fabs(ucon_t - 1./sqrt(-G->gcov[CENT][0][0][j][i])));
-  //       for (int mu = 1; mu < NDIM; mu++) {
-  //         ucon_i[mu] = S->P[U1+mu-1][k][j][i] - gamma*alpha*G->gcon[CENT][0][mu][j][i];
-  //         if (fabs(ucon_i[mu] - 0.) > 1.e-14)
-  //           printf("Error in u^mu at i:%d j:%d k:%d mu: %d Error: %10.6e\n", i, j, k, mu, fabs(ucon_i[mu] - 0.));
-  //       }
-  //     }
-
 }
