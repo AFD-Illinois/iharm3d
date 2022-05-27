@@ -21,10 +21,10 @@ void save_problem_data(hid_t string_type){
 // Set chi, nu, tau. Problem dependent
 void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
      
-  //Initializations
+  // Initializations
   double rho = S->P[RHO][k][j][i];
 
-  //set EMHD parameters based on closure relations
+  // set EMHD parameters based on closure relations
   double tau   = 10.;
   double kappa = 0.1;
 
@@ -68,7 +68,7 @@ void init(struct GridGeom *G, struct FluidState *S) {
     coord(i, NG, NG, CENT, X); // j and k don't matter since we need to compare only the radial coordinate
     error = fabs(X[1] - log(rCoords[i]));
     if (error > 1.e-10) { 
-      fprintf(stdout, "Error at radial zone i = %d, iharm3d: %g, sage nb: %g\n", i, X[1], rCoords[i]);
+      fprintf(stdout, "Error at radial zone i = %d, iharm3d: %g, sage nb: %g\n", i, exp(X[1]), rCoords[i]);
     }
   }
 
@@ -92,7 +92,7 @@ void init(struct GridGeom *G, struct FluidState *S) {
         S->P[U1][k][j][i]            = 0.;
         S->P[U2][k][j][i]            = 0.;
         S->P[U3][k][j][i]            = 0.;
-        S->P[B1][k][j][i]            = 0.;
+        S->P[B1][k][j][i]            = 1./exp(3.*X[1]);
         S->P[B2][k][j][i]            = 0.;
         S->P[B3][k][j][i]            = 0.;
         S->P[Q_TILDE][k][j][i]       = q_temp;
@@ -108,8 +108,6 @@ void init(struct GridGeom *G, struct FluidState *S) {
         ucon[1] = 0.;
         ucon[2] = 0.;
         ucon[3] = 0.;
-
-        double r = exp(X[1]);
 
         double trans[NDIM][NDIM], tmp[NDIM];
         double alpha, gamma, beta[NDIM];
@@ -128,7 +126,7 @@ void init(struct GridGeom *G, struct FluidState *S) {
 
        if (higher_order_terms == 1) {
 
-         double rho   = S->P[RHO][k][j][i];
+          double rho   = S->P[RHO][k][j][i];
           double u     = S->P[UU][k][j][i];
           double Theta = (gam - 1.) * u / rho;
 
@@ -149,7 +147,7 @@ void init(struct GridGeom *G, struct FluidState *S) {
       S->P_BOUND[U1][i]            = S->P[U1][NG][NG][i]; // Since U1 is independent of j and k, we can use the value at any of the zones in those directions
       S->P_BOUND[U2][i]            = S->P[U2][NG][NG][i];
       S->P_BOUND[U3][i]            = S->P[U3][NG][NG][i];
-      S->P_BOUND[B1][i]            = 0.;
+      S->P_BOUND[B1][i]            = S->P[B1][NG][NG][i];
       S->P_BOUND[B2][i]            = 0.;
       S->P_BOUND[B3][i]            = 0.;
       S->P_BOUND[Q_TILDE][i]       = S->P[Q_TILDE][NG][NG][i];
@@ -161,11 +159,11 @@ void init(struct GridGeom *G, struct FluidState *S) {
       S->P_BOUND[U1][i-N1]            = S->P[U1][NG][NG][i]; // Since U1 is independent of j and k, we can use the value at any of the zones in those directions
       S->P_BOUND[U2][i-N1]            = S->P[U2][NG][NG][i];
       S->P_BOUND[U3][i-N1]            = S->P[U3][NG][NG][i];
-      S->P_BOUND[B1][i-N1]            = 0.;
+      S->P_BOUND[B1][i-N1]            = S->P[B1][NG][NG][i];
       S->P_BOUND[B2][i-N1]            = 0.;
       S->P_BOUND[B3][i-N1]            = 0.;
-     S->P_BOUND[Q_TILDE][i-N1]       = S->P[Q_TILDE][NG][NG][i];
-     S->P_BOUND[DELTA_P_TILDE][i-N1] = 0.;
+      S->P_BOUND[Q_TILDE][i-N1]       = S->P[Q_TILDE][NG][NG][i];
+      S->P_BOUND[DELTA_P_TILDE][i-N1] = 0.;
     }
 
   }
@@ -177,5 +175,25 @@ void init(struct GridGeom *G, struct FluidState *S) {
 
   //Enforce boundary conditions
   set_bounds(G, S);
+
+  // EDIT
+  // printf("Init RHO: %10.6e \nInit UU:  %10.6e \nInit U1:  %10.6e\n", S->P[RHO][3][64][3], S->P[UU][3][64][3], S->P[U1][3][64][3]); // EDIT
+
+  // EDIT
+  // ILOOPALL 
+  //   JLOOPALL 
+  //     KLOOPALL {
+  //       double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
+  //       double alpha = G->lapse[CENT][j][i];
+  //       double ucon_t = gamma / alpha;
+  //       double ucon_i[3] = {0};
+  //       if (fabs(ucon_t - 1./sqrt(-G->gcov[CENT][0][0][j][i])) > 1.e-14) 
+  //         printf("Error in u^t at i:%d j:%d k:%d Error: %10.6e\n", i, j, k, fabs(ucon_t - 1./sqrt(-G->gcov[CENT][0][0][j][i])));
+  //       for (int mu = 1; mu < NDIM; mu++) {
+  //         ucon_i[mu] = S->P[U1+mu-1][k][j][i] - gamma*alpha*G->gcon[CENT][0][mu][j][i];
+  //         if (fabs(ucon_i[mu] - 0.) > 1.e-14)
+  //           printf("Error in u^mu at i:%d j:%d k:%d mu: %d Error: %10.6e\n", i, j, k, mu, fabs(ucon_i[mu] - 0.));
+  //       }
+  //     }
 
 }
