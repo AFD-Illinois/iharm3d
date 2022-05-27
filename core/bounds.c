@@ -111,7 +111,7 @@ void set_bounds(struct GridGeom *G, struct FluidState *S)
           S->P[B2][k][j][i] *= rescale;
           S->P[B3][k][j][i] *= rescale;
 #elif X1R_BOUND == USER
-          bound_gas_prob_x1r(i, j, k, S->P, G);
+          bound_gas_prob_x1r(i, j, k, S, G);
 #elif X1R_BOUND == DIRICHLET
           PLOOP S->P[ip][k][j][i] = S->P_BOUND[ip][i-N1];
 #endif

@@ -42,7 +42,7 @@ void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j,
 
   S->tau[k][j][i]      = tau;
   S->chi_emhd[k][j][i] = 0.;
-  S->nu_emhd[k][j][i]  = 0.;
+  S->nu_emhd[k][j][i]  = eta / MY_MAX(SMALL, rho);
 }
 
 // Adapted from M. Chandra
@@ -123,7 +123,7 @@ void set_ut(double ucon[NDIM], struct of_geom *geom)
   ucon[0] = (-BB - sqrt(discr))/(2.*AA);
 }
 
-void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
+void get_prim_bondi(int i, int j, int k, struct FluidState *S, struct GridGeom *G)
 {
   static int firstc = 1;
   if (firstc) {
@@ -143,6 +143,8 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
   double r, th, X[NDIM];
   coord(i, j, k, CENT, X);
   bl_coord(X, &r, &th);
+
+  S->P[B1][k][j][i] = 1./pow(r, 3.);
 
   while (r < Rhor) {
     i++;
@@ -177,16 +179,27 @@ void get_prim_bondi(int i, int j, int k, GridPrim P, struct GridGeom *G)
     ucon_mks[mu] += dXdx[mu][nu]*ucon_ks[nu];
   }
 
-  fourvel_to_prim(ucon_mks, P, G, i, j, k);
+  fourvel_to_prim(ucon_mks, S->P, G, i, j, k);
 
-  P[RHO][k][j][i] = rho;
-  P[UU][k][j][i] = u;
-  P[B1][k][j][i] = 0.;
-  P[B2][k][j][i] = 0.;
-  P[B3][k][j][i] = 0.;
-  P[Q_TILDE][k][j][i]       = 0.;
-  P[DELTA_P_TILDE][k][j][i] = 0.;
+  S->P[RHO][k][j][i] = rho;
+  S->P[UU][k][j][i] = u;
+  S->P[B2][k][j][i] = 0.;
+  S->P[B3][k][j][i] = 0.;
+  S->P[Q_TILDE][k][j][i]       = 0.;
+  S->P[DELTA_P_TILDE][k][j][i] = 0.;
+	
+	if (higher_order_terms == 1) {
 
+		double rho   = S->P[RHO][k][j][i];
+		double u     = S->P[UU][k][j][i];
+		double Theta = (gam - 1.) * u / rho;
+
+		set_emhd_parameters(G, S, i, j, k);
+		double tau      = S->tau[k][j][i];
+		double nu_emhd  = S->nu_emhd[k][j][i];
+
+		S->P[DELTA_P_TILDE][k][j][i] *= sqrt(tau / (nu_emhd * rho * Theta));
+	}
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
@@ -197,7 +210,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   LOG("Grid set");
 
   ZLOOP {
-    get_prim_bondi(i, j, k, S->P, G);
+    get_prim_bondi(i, j, k, S, G);
   }
 
   if (DEBUG && mpi_io_proc()) {
@@ -215,7 +228,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   set_bounds(G, S);
 }
 
-void bound_gas_prob_x1r(int i, int j, int k, GridPrim  P, struct GridGeom *G)
+void bound_gas_prob_x1r(int i, int j, int k, struct FluidState *S, struct GridGeom *G)
 {
-  get_prim_bondi(i, j, k, P, G);
+  get_prim_bondi(i, j, k, S, G);
 }
