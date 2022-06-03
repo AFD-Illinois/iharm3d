@@ -26,6 +26,7 @@ void save_problem_data(hid_t string_type){
   hdf5_write_single_val(&imag_omega, "imag_omega", H5T_IEEE_F64LE);
 }
 
+#if EMHD
 // Set chi, nu, tau. Problem dependent
 void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
      
@@ -48,7 +49,8 @@ void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j,
   #if VISCOSITY
   S->nu_emhd[k][j][i] = viscosity_alpha * cs2 * tau;
   #endif
- }
+}
+#endif
 
 void init(struct GridGeom *G, struct FluidState *S) {
     

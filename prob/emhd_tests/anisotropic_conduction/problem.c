@@ -30,23 +30,30 @@ void save_problem_data(hid_t string_type){
 
 }
 
+#if EMHD
 // Set chi, nu, tau. Problem dependent
- void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
-     
-    // Initializations
-    double rho = S->P[RHO][k][j][i];
-    double u   = S->P[UU][k][j][i];
-    double P   = (gam - 1.) * u;
+void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
+  // Initializations
+  double rho = S->P[RHO][k][j][i];
+  double u   = S->P[UU][k][j][i];
+  double P   = (gam - 1.) * u;
 
-    // sound speed
-    double cs2 = (gam * P) / (rho + (gam * u));
+  // sound speed
+  double cs2 = (gam * P) / (rho + (gam * u));
 
-    // set EMHD parameters based on closure relations
-    double tau = 0.1;
-    S->tau[k][j][i]      = tau;
-    S->chi_emhd[k][j][i] = 0.01;
-    S->nu_emhd[k][j][i]  = 0.;
- }
+  // set EMHD parameters based on closure relations
+  double tau = 0.1;
+  S->tau[k][j][i] = tau;
+
+  #if CONDUCTION
+  S->chi_emhd[k][j][i] = 0.01;
+  #endif
+
+  #if VISCOSITY
+  S->nu_emhd[k][j][i] = 0.;
+  #endif
+}
+#endif
 
 void init(struct GridGeom *G, struct FluidState *S) {
     
@@ -75,8 +82,12 @@ void init(struct GridGeom *G, struct FluidState *S) {
         S->P[B1][k][j][i]  = B0;
         S->P[B2][k][j][i]  = B0 * sin(2*M_PI*k0*X[1]);
         S->P[B3][k][j][i]  = 0.;
+        #if CONDUCTION
         S->P[Q_TILDE][k][j][i]       = 0.;
+        #endif
+        #if VISCOSITY
         S->P[DELTA_P_TILDE][k][j][i] = 0.;
+        #endif
     }
 
     //Enforce boundary conditions
