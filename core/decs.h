@@ -51,8 +51,20 @@
 #define NG         (3)    // Number of ghost zones
 
 //Time stepping algo. Default is HARM
-#ifndef GRIM_TIMESTEPPER
-#define GRIM_TIMESTEPPER (0)
+#ifndef IMEX
+#define IMEX (0)
+#endif
+
+// EMHD problem? Default is no.
+// Same for CONDUCTION and VISCOSITY
+#ifndef EMHD
+#define EMHD (0)
+#endif
+#ifndef CONDUCTION
+#define CONDUCTION (0)
+#endif
+#ifndef VISCOSITY
+#define VISCOSITY (0)
 #endif
 
 // Fixup parameters
@@ -104,11 +116,11 @@
 #define STATIC_TIMESTEP 0
 #endif
 
-#ifndef DEBUG_GRIM
-#define DEBUG_GRIM 0
+#ifndef DEBUG_EMHD
+#define DEBUG_EMHD 0
 #endif
 
-#if DEBUG_GRIM
+#if DEBUG_EMHD
 #ifndef N1D
 #define N1D 8
 #endif
@@ -144,7 +156,7 @@
 #define MP5    (3)
 
 // Slope limiter if using LINEAR algorithm (used to compute spatial gradients)
-#if GRIM_TIMESTEPPER
+#if EMHD
 #ifndef SLOPE_LIMITER
 #define SLOPE_LIMITER MC
 #endif
@@ -164,9 +176,15 @@
 #define B2  (6)
 #define B3  (7)
 
-#if GRIM_TIMESTEPPER
+#if EMHD
+#if CONDUCTION
 #define Q_TILDE (8)
+#if VISCOSITY
 #define DELTA_P_TILDE (9)
+#endif
+#elif VISCOSITY
+#define DELTA_P_TILDE (8)
+#endif
 #endif
 
 #if ELECTRONS
@@ -179,16 +197,32 @@
 #define ROWAN     (8)
 #define SHARMA    (16)
 
-#if GRIM_TIMESTEPPER
+#if EMHD
+#if CONDUCTION
+#if VISCOSITY
 #define KTOT (10)
+#elif
+#define KTOT (9)
+#endif
+#elif VISCOSITY
+#define KTOT (9)
+#endif
 #else
 #define KTOT (8)
 #endif
 #define NVAR (KTOT + ((E_MODELS & CONSTANT) >>  0) + ((E_MODELS & KAWAZURA) >> 1) + ((E_MODELS & WERNER) >> 2)\
                    + ((E_MODELS & ROWAN) >> 3) + ((E_MODELS & SHARMA) >> 4) + 1)
 #else
-#if GRIM_TIMESTEPPER
+#if EMHD
+#if CONDUCTION
+#if VISCOSITY
 #define NVAR (10)
+#else
+#define NVAR (9)
+#endif
+#elif VISCOSITY
+#define NVAR (9)
+#endif
 #else
 #define NVAR (8)
 #endif
@@ -289,13 +323,17 @@ struct FluidState {
   GridVector bcon;
   GridVector bcov;
   GridVector jcon;
-  #if GRIM_TIMESTEPPER
+  #if EMHD
+  #if CONDUCTION
   GridDouble q;
+  GridDouble chi_emhd;
+  #endif
+  #if VISCOSITY
   GridDouble delta_p;
+  GridDouble nu_emhd;
+  #endif
   GridDouble Theta;
   GridDouble bsq;
-  GridDouble nu_emhd;
-  GridDouble chi_emhd;
   GridDouble tau;
   #endif
   #if (X1L_BOUND == DIRICHLET) && (X1R_BOUND == DIRICHLET)
@@ -385,14 +423,17 @@ extern double poly_norm, poly_xt, poly_alpha, mks_smooth;
 extern int global_start[3];
 extern int global_stop[3];
 
-#if GRIM_TIMESTEPPER
-extern int higher_order_terms;
-extern double conduction_alpha;
-extern double viscosity_alpha;
-
+#if IMEX
 extern int max_nonlinear_iter;
 extern double jacobian_eps;
 extern double rootfind_tol;
+#endif
+
+#if EMHD
+extern int higher_order_terms_conduction;
+extern int higher_order_terms_viscosity;
+extern double conduction_alpha;
+extern double viscosity_alpha;
 #endif
 
 #if SET_RADIAL_BOUNDS
@@ -442,12 +483,12 @@ extern double R_inner;
   ISLOOP(istart,istop) JSLOOP(jstart,jstop) KSLOOP(kstart,kstop)
 
 // Need separate loops to format printing
-#if DEBUG_GRIM
-#define KLOOP_DEBUG_GRIM \
+#if DEBUG_EMHD
+#define KLOOP_DEBUG_EMHD \
   for (int k = 0 + NG; k < N3D + NG; k++)
-#define JLOOP_DEBUG_GRIM \
+#define JLOOP_DEBUG_EMHD \
   for (int j = 0 + NG; j < N2D + NG; j++)
-#define ILOOP_DEBUG_GRIM \
+#define ILOOP_DEBUG_EMHD \
   for (int i = 0 + NG; i < N1D + NG; i++)
 #endif
 
@@ -601,7 +642,6 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir,
   int loc, int kstart, int kstop, int jstart, int jstop, int istart, int istop, GridPrim flux);
 void bcon_calc(struct FluidState *S, int i, int j, int k);
 void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double *mhd);
-void get_ideal_fluid_source(struct GridGeom *G, struct FluidState *S, int i, int j, int k, double dU[NVAR]);
 void get_ideal_fluid_source_vec(struct GridGeom *G, struct FluidState *S, GridPrim *dU);
 double bsq_calc(struct FluidState *S, int i, int j, int k);
 void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
@@ -614,10 +654,10 @@ double mhd_gamma_calc(struct GridGeom *G, struct FluidState *S, int i, int j,
   int k, int loc);
 void mhd_vchar(struct GridGeom *G, struct FluidState *Sr, int i, int j, int k,
   int loc, int dir, GridDouble cmax, GridDouble cmin);
-void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, struct FluidState *S_old,
+double explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]);
+double time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, struct FluidState *S_old,
   struct FluidState *S, double dt, int loc, int i, int j, int k, double dU[NVAR]);
-void emhd_implicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]);
-void emhd_explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]);
+double implicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]);
 
 // problem.c
 void set_problem_params();
@@ -625,7 +665,7 @@ void init(struct GridGeom *G, struct FluidState *S);
 // Boundary condition (currently used for Bondi flow)
 void bound_gas_prob_x1r(int i, int j, int k, struct FluidState *S, struct GridGeom *G);
 void save_problem_data();
-#if GRIM_TIMESTEPPER
+#if EMHD
 void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
 #endif
 
@@ -648,7 +688,7 @@ int restart_init(struct GridGeom *G, struct FluidState *S);
 void step(struct GridGeom *G, struct FluidState *S);
 
 //timestepper.c
-void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
+void imex_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
   struct FluidState *S_solver, struct FluidFlux *F, double dt);
 
 // timing.c

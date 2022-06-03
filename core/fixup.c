@@ -195,7 +195,7 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
 
     // Recover primitive variables
     // CFG: do we get any failures here?
-    #if !GRIM_TIMESTEPPER
+    #if !IMEX
     pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
     #endif
   }

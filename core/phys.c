@@ -9,7 +9,7 @@
 
 #include "decs.h"
 
-#if GRIM_TIMESTEPPER
+#if IMEX
 void gradient_calc(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k,
   double grad_ucov[NDIM][NDIM], double grad_Theta[NDIM]);
 #endif
@@ -33,19 +33,25 @@ inline void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double 
               S->bcon[dir][k][j][i]*S->bcov[mu][k][j][i];
   }
 
-  #if GRIM_TIMESTEPPER
-  double q       = S->q[k][j][i];
-  double delta_p = S->delta_p[k][j][i];
+  #if EMHD
   double ucon    = S->ucon[dir][k][j][i];
   double bcon    = S->bcon[dir][k][j][i];
-  
+  #if CONDUCTION
+  double q       = S->q[k][j][i];
   DLOOP1 {
     double bcov = S->bcov[mu][k][j][i];
     double ucov = S->ucov[mu][k][j][i];
-
-    mhd[mu] += (q / sqrt(bsq)) * ((ucon * bcov) + (bcon * ucov))
-            + (-delta_p) * ((bcon * bcov / bsq) - (1./3.) * (delta(dir, mu) + ucon * ucov));
+    mhd[mu] += (q / sqrt(bsq)) * ((ucon * bcov) + (bcon * ucov));
   }
+  #endif
+  #if VISCOSITY
+  double delta_p = S->delta_p[k][j][i];
+  DLOOP1 {
+    double bcov = S->bcov[mu][k][j][i];
+    double ucov = S->ucov[mu][k][j][i];
+    mhd[mu] += (-delta_p) * ((bcon * bcov / bsq) - (1./3.) * (delta(dir, mu) + ucon * ucov));
+  }
+  #endif
   #endif
 }
 
@@ -74,9 +80,13 @@ void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   flux[B3][k][j][i] = S->bcon[3][k][j][i]*S->ucon[dir][k][j][i] -
                       S->bcon[dir][k][j][i]*S->ucon[3][k][j][i];
 
-  #if GRIM_TIMESTEPPER
+  #if EMHD
+  #if CONDUCTION
   flux[Q_TILDE][k][j][i]       = S->P[Q_TILDE][k][j][i] * S->ucon[dir][k][j][i];
+  #endif
+  #if VISCOSITY
   flux[DELTA_P_TILDE][k][j][i] = S->P[DELTA_P_TILDE][k][j][i] * S->ucon[dir][k][j][i];
+  #endif
   #endif
 
 #if ELECTRONS
@@ -124,11 +134,15 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
         - S->bcon[dir][k][j][i] * S->ucon[3][k][j][i]) * G->gdet[loc][j][i];
   }
 
-  #if GRIM_TIMESTEPPER
+  #if EMHD
   #pragma omp for collapse(3) nowait
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
+    #if CONDUCTION
     flux[Q_TILDE][k][j][i]       = G->gdet[loc][j][i] * (S->P[Q_TILDE][k][j][i] * S->ucon[dir][k][j][i]);
+    #endif
+    #if VISCOSITY
     flux[DELTA_P_TILDE][k][j][i] = G->gdet[loc][j][i] * (S->P[DELTA_P_TILDE][k][j][i] * S->ucon[dir][k][j][i]);
+    #endif
   }
   #endif
 
@@ -205,7 +219,7 @@ inline void ucon_calc(struct GridGeom *G, struct FluidState *S, int i, int j, in
 }
 
 // Calculate ucon, ucov, bcon, bcov from primitive variables
-// If GRIM_TIMESTEPPER is enabled, compute q, delta_p, bsq, Theta
+// If IMEX is enabled, compute q, delta_p, bsq, Theta
 inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   int loc)
 {
@@ -214,28 +228,41 @@ inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, in
   bcon_calc(S, i, j, k);
   lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
 
-  #if GRIM_TIMESTEPPER
-  S->q[k][j][i]       = S->P[Q_TILDE][k][j][i];
-  S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
+  #if EMHD
   S->bsq[k][j][i]     = MY_MAX(bsq_calc(S, i, j, k), SMALL);
   S->Theta[k][j][i]   = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], SMALL);
-  
   set_emhd_parameters(G, S, i, j, k);
+  
+  #if CONDUCTION
+  S->q[k][j][i] = S->P[Q_TILDE][k][j][i];
 
-  if (higher_order_terms == 1) {
+  if (higher_order_terms_conduction == 1) {
     
     // Initializations
     double rho = S->P[RHO][k][j][i];
     double tau = S->tau[k][j][i];
     double chi_emhd = S->chi_emhd[k][j][i];
+    double Theta = S->Theta[k][j][i];
+
+    S->q[k][j][i] *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
+
+  }
+  #endif
+  #if VISCOSITY
+  S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
+  
+  if (higher_order_terms_viscosity == 1) {
+    
+    // Initializations
+    double rho = S->P[RHO][k][j][i];
+    double tau = S->tau[k][j][i];
     double nu_emhd  = S->nu_emhd[k][j][i];
     double Theta = S->Theta[k][j][i];
 
-    S->q[k][j][i]       *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
     S->delta_p[k][j][i] *= sqrt(nu_emhd * rho * Theta / tau);
 
   }
-
+  #endif
   #endif
 }
 
@@ -269,28 +296,41 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
       lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
     }
 
-    #if GRIM_TIMESTEPPER
+    #if EMHD
     #pragma omp for collapse(3)
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
-      S->q[k][j][i]       = S->P[Q_TILDE][k][j][i]; 
-      S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
       S->bsq[k][j][i]     = MY_MAX(bsq_calc(S, i, j, k), SMALL);
       S->Theta[k][j][i]   = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], SMALL);
-      
       set_emhd_parameters(G, S, i, j, k);
+      
+      #if CONDUCTION
+      S->q[k][j][i] = S->P[Q_TILDE][k][j][i];
 
-      if (higher_order_terms == 1) {
+      if (higher_order_terms_conduction == 1) {
 
         // Initializations
         double rho = S->P[RHO][k][j][i];
         double tau = S->tau[k][j][i];
         double chi_emhd = S->chi_emhd[k][j][i];
+        double Theta = S->Theta[k][j][i];
+
+        S->q[k][j][i] *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
+      }
+      #endif
+      #if VISCOSITY
+      S->delta_p[k][j][i] = S->P[DELTA_P_TILDE][k][j][i];
+
+      if (higher_order_terms_viscosity == 1) {
+
+        // Initializations
+        double rho = S->P[RHO][k][j][i];
+        double tau = S->tau[k][j][i];
         double nu_emhd  = S->nu_emhd[k][j][i];
         double Theta = S->Theta[k][j][i];
 
-        S->q[k][j][i]       *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
         S->delta_p[k][j][i] *= sqrt(nu_emhd * rho * Theta / tau);
       }
+      #endif      
     }
     #endif
 
@@ -334,15 +374,21 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   va2 = bsq/ee;
   cs2 = gam*(gam - 1.)*u/ef;
 
-  #if GRIM_TIMESTEPPER
-  double tau      = S->tau[k][j][i];
-  double chi_emhd = S->chi_emhd[k][j][i];
-  double nu_emhd  = S->nu_emhd[k][j][i];
+  #if EMHD
+  double tau    = S->tau[k][j][i];
+  double ccond2 = 0.;
+  double cvis2  = 0.;
 
-  // wave speed contribution from dP
-  double cvis2 = (4. / 3.) / (rho + (gam * u)) * rho * nu_emhd / tau;
+  #if CONDUCTION
+  double chi_emhd = S->chi_emhd[k][j][i];
   // wave speed contribution from q
-  double ccond2 = (gam - 1.) * chi_emhd / tau;
+  ccond2 = (gam - 1.) * chi_emhd / tau;
+  #endif
+  #if VISCOSITY
+  double nu_emhd  = S->nu_emhd[k][j][i];
+  // wave speed contribution from dP
+  cvis2 = (4. / 3.) / (rho + (gam * u)) * rho * nu_emhd / tau;
+  #endif
 
   ccond2 = 0.5*(cs2 + ccond2 + sqrt(cs2*cs2 + ccond2*ccond2));
   cs2 = ccond2 + cvis2;
@@ -381,27 +427,8 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   cmin[k][j][i] = (vp > vm) ? vm : vp;
 }
 
-/*------SOURCE TERMS CALLED DURING AN IDEAL MHD RUN------*/
-
-// Source terms for equations of motion at grid zone
-// Ignoring wind term for now
-inline void get_ideal_fluid_source(struct GridGeom *G, struct FluidState *S, int i, int j, int k, double dU[NVAR])
-{
-  double mhd[NDIM][NDIM];
-
-  DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]); // TODO make an mhd_calc_vec?
-
-  // Contract mhd stress tensor with connection
-  PLOOP dU[ip] = 0.;
-  DLOOP2 {
-    for (int gam = 0; gam < NDIM; gam++)
-      dU[UU+gam] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
-  }
-
-  PLOOP dU[ip] *= G->gdet[CENT][j][i];
-}
-
-// Source terms for equations of motion over all physical zones
+// Wrapper for HARM algo call to compute ideal GRMHD source terms. Calls explicit_sources
+// Having said that, this function contains a wind source term (if enabled), which is not present in the explicit_sources function
 inline void get_ideal_fluid_source_vec(struct GridGeom *G, struct FluidState *S, GridPrim *dU)
 {
 #if WIND_TERM
@@ -412,19 +439,9 @@ inline void get_ideal_fluid_source_vec(struct GridGeom *G, struct FluidState *S,
 
 #pragma omp parallel for collapse(3)
   ZLOOP {
-    double mhd[NDIM][NDIM];
-
-    DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]); // TODO make an mhd_calc_vec?
-
-    // Contract mhd stress tensor with connection
-    // TODO this is scattered memory access.  Precompute mu,nu sums
-    PLOOP (*dU)[ip][k][j][i] = 0.;
-    DLOOP2 {
-      for (int gam = 0; gam < NDIM; gam++)
-        (*dU)[UU+gam][k][j][i] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
-    }
-
-    PLOOP (*dU)[ip][k][j][i] *= G->gdet[CENT][j][i];
+    double dU_per_zone[NVAR] = {0};
+    explicit_sources(G, S, CENT, i, j, k, dU_per_zone);
+    PLOOP (*dU)[ip][k][j][i] = dU_per_zone[ip];
   }
 
   // Add a small "wind" source term in RHO,UU
@@ -466,28 +483,128 @@ inline void get_ideal_fluid_source_vec(struct GridGeom *G, struct FluidState *S,
 #endif
 }
 
-/*------END OF SOURCE TERMS CALLED DURING AN IDEAL MHD RUN------*/
+// Compute explicit source terms
+// NOTE: This function is outside the IMEX conditional directive since the HARM algo calls it (through get_ideal_fluid_source_vec)
+double explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]) {
+  
+  // Ideal MHD components
+  double mhd[NDIM][NDIM];
 
-/*------SOURCE TERMS CALLED DURING AN EXTENDED MHD (EMHD) RUN------*/
+  DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]);
 
-// Compute source terms with time derivatives
-// TODO: Load all variables
-#if GRIM_TIMESTEPPER
-void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, struct FluidState *S_old,
-  struct FluidState *S, double dt, int loc, int i, int j, int k, double dU[NVAR]) {
+  PLOOP dU[ip] = 0.; // explicit_sources should be the first source call
+  DLOOP2 {
+    for (int gam = 0; gam < NDIM; gam++)
+      dU[UU+gam] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
+  }
+  FLOOP dU[ip] *= G->gdet[CENT][j][i];
 
+  // Extended MHD components
+  #if EMHD
   // Initializations
+
   double rho      = S->P[RHO][k][j][i];
   double Theta    = S->Theta[k][j][i];
   double bsq      = S->bsq[k][j][i];
-  double chi_emhd = S->chi_emhd[k][j][i];
-  double nu_emhd  = S->nu_emhd[k][j][i];
   double tau      = S->tau[k][j][i];
+  double gdet     = G->gdet[loc][j][i];
 
-  double q_tilde       = S->P[Q_TILDE][k][j][i];
+  // Compute gradient of ucov and Theta
+  double grad_ucov[NDIM][NDIM] = {0}, grad_Theta[NDIM] = {0};
+  gradient_calc(G, S, loc, i, j, k, grad_ucov, grad_Theta);
+
+  // Compute div of ucon (all terms but the time-derivative ones are nonzero)
+  double div_ucon = 0;
+  DLOOP2 {
+    double gcon_mu_nu = G->gcon[loc][mu][nu][j][i];
+
+    div_ucon += gcon_mu_nu * grad_ucov[mu][nu];
+  }
+
+  // Compute q0 and deltaP0 (everything but the time-derivative terms)
+  #if CONDUCTION
+  double chi_emhd = S->chi_emhd[k][j][i];
+  double q_tilde  = S->P[Q_TILDE][k][j][i];
+  
+  double q0 = 0.;
+
+  DLOOP1 {
+    double bcon_mu = S->bcon[mu][k][j][i];
+
+    q0 -= rho * chi_emhd * (bcon_mu / sqrt(bsq)) * grad_Theta[mu];
+  }
+
+  DLOOP2 {
+    double bcon_mu = S->bcon[mu][k][j][i];
+    double ucon_nu = S->ucon[nu][k][j][i];
+
+    q0 -= rho * chi_emhd * (bcon_mu / sqrt(bsq)) * Theta * ucon_nu * grad_ucov[nu][mu];
+  }
+
+  // Higher order correction to the relaxed value
+  double q0_tilde = 0.;
+
+  if (higher_order_terms_conduction == 1)
+    q0_tilde = q0 * sqrt(tau / (chi_emhd * rho * pow(Theta, 2)));
+  else
+    q0_tilde = q0;
+
+  // Add explicit source term (conduction)
+  dU[Q_TILDE] = gdet * (q0_tilde / tau);
+
+  // Higher order correction to the source term
+  if (higher_order_terms_conduction == 1)
+    dU[Q_TILDE] += gdet * (q_tilde / 2) * div_ucon;
+
+  #endif
+
+  #if VISCOSITY
+  double nu_emhd       = S->nu_emhd[k][j][i];
   double delta_p_tilde = S->P[DELTA_P_TILDE][k][j][i];
 
-  double gdet = G->gdet[loc][j][i];
+  double deltaP0 = 0.;
+
+  deltaP0 = -rho * nu_emhd * div_ucon;
+  DLOOP2  {
+    double bcon_mu = S->bcon[mu][k][j][i];
+    double bcon_nu = S->bcon[nu][k][j][i];
+    
+    deltaP0 += 3. * rho * nu_emhd * (bcon_mu * bcon_nu / bsq) * grad_ucov[mu][nu];
+  }
+
+  //Higher order correction to the relaxed value
+  double deltaP0_tilde = 0.;
+
+  if (higher_order_terms_viscosity == 1) 
+    deltaP0_tilde = deltaP0 * sqrt(tau / (nu_emhd * rho * Theta));
+  else
+    deltaP0_tilde = deltaP0;
+
+  // Add explicit source term (viscosity)
+  dU[DELTA_P_TILDE] = gdet * (deltaP0_tilde / tau);
+
+  // Higher order correction to the source term
+  if (higher_order_terms_viscosity == 1)
+    dU[DELTA_P_TILDE] += gdet * (delta_p_tilde / 2) * div_ucon;
+
+  #endif
+
+  #endif
+  return 0.0;
+}
+
+// Compute source terms with time derivatives
+#if IMEX
+double time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, struct FluidState *S_old,
+  struct FluidState *S, double dt, int loc, int i, int j, int k, double dU[NVAR]) {
+
+  #if EMHD
+  // Initializations
+  double rho   = S->P[RHO][k][j][i];
+  double Theta = S->Theta[k][j][i];
+  double bsq   = S->bsq[k][j][i];
+  double tau   = S->tau[k][j][i];
+  double gdet  = G->gdet[loc][j][i];
 
   // Compute partial derivative of ucov
   double dt_ucov[NDIM] = {0};
@@ -506,16 +623,21 @@ void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, 
     div_ucon += gcon_t_mu * dt_ucov[mu];
   }
 
-  // Compute q0 and delta_P0 (temporal terms)
   double Theta_new, Theta_old, dt_Theta;
   Theta_new = S_new->Theta[k][j][i];
   Theta_old = S_old->Theta[k][j][i];
 
   dt_Theta = (Theta_new - Theta_old) / dt;
 
-  double q0 = 0., deltaP0 = 0.;
   double ucon_t  = S->ucon[0][k][j][i];
   double bcon_t  = S->bcon[0][k][j][i];
+
+  // Compute q0 and delta_P0 (temporal terms)
+  #if CONDUCTION
+  double chi_emhd = S->chi_emhd[k][j][i];
+  double q_tilde       = S->P[Q_TILDE][k][j][i];
+
+  double q0 = 0.;
 
   q0 = -rho * chi_emhd * (bcon_t / sqrt(bsq)) * dt_Theta;
   DLOOP1 {
@@ -524,6 +646,28 @@ void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, 
     q0 -= rho * chi_emhd * (bcon_mu / sqrt(bsq)) * Theta * ucon_t * dt_ucov[mu];
   }
 
+  // Higher order correction to the relaxed value
+  double q0_tilde = 0.;
+  if (higher_order_terms_conduction == 1)    
+    q0_tilde = q0 * sqrt(tau / (chi_emhd * rho * pow(Theta, 2)));
+  else
+    q0_tilde = q0;
+
+  // Add the time derivative source term (conduction)
+  dU[Q_TILDE] = gdet * (q0_tilde / tau);
+
+  // Higher order correction to the source term
+  if (higher_order_terms_conduction == 1)
+    dU[Q_TILDE] += gdet * (q_tilde / 2.) * div_ucon;
+
+  #endif
+  
+  #if VISCOSITY
+  double nu_emhd  = S->nu_emhd[k][j][i];
+  double delta_p_tilde = S->P[DELTA_P_TILDE][k][j][i];
+
+  double deltaP0 = 0.;
+
   deltaP0 = -rho * nu_emhd * div_ucon;
   DLOOP1 {
     double bcon_mu = S->bcon[mu][k][j][i];
@@ -531,135 +675,48 @@ void emhd_time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, 
     deltaP0 += 3. * rho * nu_emhd * (bcon_t * bcon_mu / bsq) * dt_ucov[mu];
   }
 
-  // Higher order corrections to the relaxed values
-  double q0_tilde      = 0.;
+  // Higher order correction to the relaxed value
   double deltaP0_tilde = 0.;
-
-  if (higher_order_terms == 1) {    
-    q0_tilde      = q0      * sqrt(tau / (chi_emhd * rho * pow(Theta, 2)));
+  if (higher_order_terms_viscosity == 1)    
     deltaP0_tilde = deltaP0 * sqrt(tau / (nu_emhd * rho * Theta));
-  }
-  else {
-    q0_tilde      = q0;
+  else
     deltaP0_tilde = deltaP0;
-  }
-  
-  // Add the time derivative source terms (conduction and viscosity)
-  dU[Q_TILDE]       = gdet * (q0_tilde / tau);
+
+  // Add the time derivative source term (viscosity)
   dU[DELTA_P_TILDE] = gdet * (deltaP0_tilde / tau);
 
-  // Higher order corrections to the source terms
-  if (higher_order_terms == 1) {
-    dU[Q_TILDE]       += gdet * (q_tilde / 2.) * div_ucon;
+  // Higher order correction to the source term
+  if (higher_order_terms_viscosity == 1)
     dU[DELTA_P_TILDE] += gdet * (delta_p_tilde / 2.) * div_ucon;
-  }
+
+  #endif
+  
+  #endif
+  return 0.0;
 }
 
 // Compute implicit source terms
-void emhd_implicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]){
+double implicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]){
 
+  #if EMHD
   // Initializations
-  double q_tilde       = S->P[Q_TILDE][k][j][i];
+  double tau  = S->tau[k][j][i];
+  double gdet = G->gdet[loc][j][i];
+
+  #if CONDUCTION
+  double q_tilde = S->P[Q_TILDE][k][j][i];
+  
+  dU[Q_TILDE]    = -gdet * (q_tilde / tau);
+  #endif
+
+  #if VISCOSITY
   double delta_p_tilde = S->P[DELTA_P_TILDE][k][j][i];
-  double tau           = S->tau[k][j][i];
 
-  double gdet = G->gdet[loc][j][i];
-
-  dU[Q_TILDE]       = -gdet * (q_tilde / tau);
   dU[DELTA_P_TILDE] = -gdet * (delta_p_tilde / tau);
-}
+  #endif
 
-// Compute explicit source terms
-void emhd_explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]) {
-  
-  // Ideal MHD components
-  double mhd[NDIM][NDIM];
-
-  DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]);
-
-  PLOOP dU[ip] = 0.; // explicit_sources should be the first source call
-  DLOOP2 {
-    for (int gam = 0; gam < NDIM; gam++)
-      dU[UU+gam] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
-  }
-  FLOOP dU[ip] *= G->gdet[CENT][j][i];
-
-  // Extended MHD components
-
-  // Initializations
-
-  double rho      = S->P[RHO][k][j][i];
-  double Theta    = S->Theta[k][j][i];
-  // double Theta    = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], SMALL);
-  double bsq      = S->bsq[k][j][i];
-  double chi_emhd = S->chi_emhd[k][j][i];
-  double nu_emhd  = S->nu_emhd[k][j][i];
-  double tau      = S->tau[k][j][i];
-  
-  double q_tilde         = S->P[Q_TILDE][k][j][i];
-  double delta_p_tilde   = S->P[DELTA_P_TILDE][k][j][i];
-
-  double gdet = G->gdet[loc][j][i];
-
-  double grad_ucov[NDIM][NDIM] = {0}, grad_Theta[NDIM] = {0};
-
-  // Compute gradient of ucov and Theta
-  gradient_calc(G, S, loc, i, j, k, grad_ucov, grad_Theta);
-
-  // Compute div of ucon (all terms but the time-derivative ones are nonzero)
-  double div_ucon = 0;
-  DLOOP2 {
-    double gcon_mu_nu = G->gcon[loc][mu][nu][j][i];
-
-    div_ucon += gcon_mu_nu * grad_ucov[mu][nu];
-  }
-
-  // Compute q0 and deltaP0 (everything but the time-derivative terms)
-  double q0 = 0., deltaP0 = 0.;
-
-  DLOOP1 {
-    double bcon_mu = S->bcon[mu][k][j][i];
-
-    q0 -= rho * chi_emhd * (bcon_mu / sqrt(bsq)) * grad_Theta[mu];
-  }
-
-  DLOOP2 {
-    double bcon_mu = S->bcon[mu][k][j][i];
-    double ucon_nu = S->ucon[nu][k][j][i];
-
-    q0 -= rho * chi_emhd * (bcon_mu / sqrt(bsq)) * Theta * ucon_nu * grad_ucov[nu][mu];
-  }
-
-  deltaP0 = -rho * nu_emhd * div_ucon;
-  DLOOP2  {
-    double bcon_mu = S->bcon[mu][k][j][i];
-    double bcon_nu = S->bcon[nu][k][j][i];
-    
-    deltaP0 += 3. * rho * nu_emhd * (bcon_mu * bcon_nu / bsq) * grad_ucov[mu][nu];
-  }
-
-  // Higher order corrections to the relaxed values
-  double q0_tilde      = 0.;
-  double deltaP0_tilde = 0.;
-
-  if (higher_order_terms == 1) {    
-    q0_tilde      = q0      * sqrt(tau / (chi_emhd * rho * pow(Theta, 2)));
-    deltaP0_tilde = deltaP0 * sqrt(tau / (nu_emhd * rho * Theta));
-  }
-  else {
-    q0_tilde      = q0;
-    deltaP0_tilde = deltaP0;
-  }
-
-  // Add explicit source terms (conduction and viscosity)
-  dU[Q_TILDE]       = gdet * (q0_tilde / tau);
-  dU[DELTA_P_TILDE] = gdet * (deltaP0_tilde / tau);
-
-  // Higher order corrections to the source terms
-  if (higher_order_terms == 1) {
-    dU[Q_TILDE]       += gdet * (q_tilde / 2) * div_ucon;
-    dU[DELTA_P_TILDE] += gdet * (delta_p_tilde / 2) * div_ucon;
-  }
+  #endif
+  return 0.0;
 }
 
 // Compute gradient of four velocities and temperature
@@ -683,8 +740,9 @@ void gradient_calc(struct GridGeom *G, struct FluidState *S, int loc, int i, int
       grad_ucov[mu][nu] -= G->conn[gam][mu][nu][j][i] * S->ucov[gam][k][j][i];
   }
 
-  // Compute temperature gradient
-  // Time derivative component computed in emhd_time_derivative_sources
+  #if EMHD
+  // Compute temperature gradient (need only if EMHD is enabled)
+  // Time derivative component computed in time_derivative_sources
   grad_Theta[0] = 0;
 
   grad_Theta[1] = slope_calc_scalar(S->Theta, 1, i, j, k);
@@ -692,11 +750,9 @@ void gradient_calc(struct GridGeom *G, struct FluidState *S, int loc, int i, int
   grad_Theta[2] = slope_calc_scalar(S->Theta, 2, i, j, k);
 
   grad_Theta[3] = slope_calc_scalar(S->Theta, 3, i, j, k);
-
+  #endif
 }
 #endif
-
-/*------END OF SOURCE TERMS CALLED DURING AN EXTENDED MHD (EMHD) RUN------*/
 
 // Returns b.b (twice magnetic pressure)
 inline double bsq_calc(struct FluidState *S, int i, int j, int k)

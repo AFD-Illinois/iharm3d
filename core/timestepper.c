@@ -15,7 +15,7 @@
 
 #include "decs.h"
 
-#if GRIM_TIMESTEPPER
+#if IMEX
 
 #include "mkl.h"
 
@@ -30,7 +30,7 @@ void jacobian(struct GridGeom *G, struct FluidState *S_solver, struct FluidState
 
 void solve(double A[NVAR*NVAR], double b[NVAR]);
 
-void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
+void imex_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState *Ss,
   struct FluidState *S_solver, struct FluidFlux *F, double dt) {
 
   int nonlinear_iter = 0;
@@ -53,8 +53,8 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
       double sources_explicit[NVAR]     = {0};
       double sources_implicit_old[NVAR] = {0};
       double U_old[NVAR] = {0};
-      emhd_explicit_sources(G, Ss, CENT, i, j, k, sources_explicit);
-      emhd_implicit_sources(G, Si, CENT, i, j, k, sources_implicit_old);
+      explicit_sources(G, Ss, CENT, i, j, k, sources_explicit);
+      implicit_sources(G, Si, CENT, i, j, k, sources_implicit_old);
       PLOOP U_old[ip] = Si->U[ip][k][j][i]; // Initialize U_old with Si->U
 
       // Compute flux divergence
@@ -102,7 +102,7 @@ void grim_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
       // Update Sf->P
       PLOOP S_solver->P[ip][k][j][i] = prim_guess[ip];
 
-      #if DEBUG_GRIM
+      #if DEBUG_EMHD
       // Solver data will be printed at just a single zone to minimize the numbers spewed at the user
       // The lower right corner of the stencil chosen
       if ((i == N1D+NG-1) && (j == N2D+NG-1) && (k == N3D+NG-1)) {
@@ -143,32 +143,51 @@ void residual_calc(struct GridGeom *G, struct FluidState *Stmp, struct FluidStat
   // Compute new implicit source terms and time derivative source terms
   double sources_implicit_new[NVAR]    = {0};
   double sources_time_derivative[NVAR] = {0};
-  emhd_implicit_sources(G, Stmp, CENT, i, j, k, sources_implicit_new);
-  emhd_time_derivative_sources(G, Stmp, Si, Ss, dt, CENT, i, j, k, sources_time_derivative);
+  implicit_sources(G, Stmp, CENT, i, j, k, sources_implicit_new);
+  time_derivative_sources(G, Stmp, Si, Ss, dt, CENT, i, j, k, sources_time_derivative);
   
   // Compute residual
   PLOOP residual[ip] = (Stmp->U[ip][k][j][i] - U_old[ip])/dt + divF[ip] 
     - sources_explicit[ip] - 0.5*(sources_implicit_new[ip] + sources_implicit_old[ip]) - sources_time_derivative[ip];
 
+
+  #if EMHD
+  #if CONDUCTION
   // Normalize the residuals
-  if (higher_order_terms == 1){
+  if (higher_order_terms_conduction == 1){
 
     double rho      = Ss->P[RHO][k][j][i];
     double Theta    = Ss->Theta[k][j][i];
     double tau      = Ss->tau[k][j][i];
     double chi_emhd = Ss->chi_emhd[k][j][i];
-    double nu_emhd  = Ss->nu_emhd[k][j][i];
 
     residual[Q_TILDE]       *= sqrt(rho * chi_emhd * tau * pow(Theta, 2));
-    residual[DELTA_P_TILDE] *= sqrt(rho * nu_emhd * tau * Theta);
   }
   else {
 
     double tau = Ss->tau[k][j][i];
 
     residual[Q_TILDE]       *= tau;
+  }
+  #endif
+  #if VISCOSITY
+  if (higher_order_terms_viscosity == 1){
+
+    double rho      = Ss->P[RHO][k][j][i];
+    double Theta    = Ss->Theta[k][j][i];
+    double tau      = Ss->tau[k][j][i];
+    double nu_emhd  = Ss->nu_emhd[k][j][i];
+
+    residual[DELTA_P_TILDE] *= sqrt(rho * nu_emhd * tau * Theta);
+  }
+  else {
+
+    double tau = Ss->tau[k][j][i];
+
     residual[DELTA_P_TILDE] *= tau;
   }
+  #endif
+  #endif
 }
 
 // Evaluate Jacobian (per zone)

@@ -20,28 +20,34 @@
 }
 
 void save_problem_data(hid_t string_type){
-  hdf5_write_single_val("emhd/linear_modes", "PROB", string_type);
+  hdf5_write_single_val("emhd_linear_modes", "PROB", string_type);
   hdf5_write_single_val(&amp, "amp", H5T_IEEE_F64LE);   
   hdf5_write_single_val(&real_omega, "real_omega", H5T_IEEE_F64LE);
   hdf5_write_single_val(&imag_omega, "imag_omega", H5T_IEEE_F64LE);
 }
 
 // Set chi, nu, tau. Problem dependent
- void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
+void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
      
-    // Initializations
-    double rho = S->P[RHO][k][j][i];
-    double u   = S->P[UU][k][j][i];
-    double P   = (gam - 1.) * u;
+  // Initializations
+  double rho = S->P[RHO][k][j][i];
+  double u   = S->P[UU][k][j][i];
+  double P   = (gam - 1.) * u;
 
-    // sound speed
-    double cs2 = (gam * P) / (rho + (gam * u));
+  // sound speed
+  double cs2 = (gam * P) / (rho + (gam * u));
 
-    // set EMHD parameters based on closure relations
-    double tau = 1.;
-    S->tau[k][j][i]      = tau;
-    S->chi_emhd[k][j][i] = cs2 * tau;
-    S->nu_emhd[k][j][i]  = cs2 * tau;
+  // set EMHD parameters based on closure relations
+  double tau = 1.;
+  S->tau[k][j][i] = tau;
+
+  #if CONDUCTION
+  S->chi_emhd[k][j][i] = conduction_alpha * cs2 * tau;
+  #endif
+
+  #if VISCOSITY
+  S->nu_emhd[k][j][i] = viscosity_alpha * cs2 * tau;
+  #endif
  }
 
 void init(struct GridGeom *G, struct FluidState *S) {
@@ -98,10 +104,11 @@ void init(struct GridGeom *G, struct FluidState *S) {
         S->P[B1][k][j][i]  = B10 + dB1;
         S->P[B2][k][j][i]  = B20 + dB2;
         S->P[B3][k][j][i]  = B30 + dB3;
-        S->P[Q_TILDE][k][j][i]       = q0 + dq;
-        S->P[DELTA_P_TILDE][k][j][i] = delta_p0 + ddelta_p;
 
-        if (higher_order_terms == 1) {
+        #if CONDUCTION
+        S->P[Q_TILDE][k][j][i] = q0 + dq;
+
+        if (higher_order_terms_conduction == 1) {
           
           double rho = S->P[RHO][k][j][i];
           double u   = S->P[UU][k][j][i];
@@ -111,11 +118,29 @@ void init(struct GridGeom *G, struct FluidState *S) {
           set_emhd_parameters(G, S, i, j, k);
           double tau = S->tau[k][j][i];
           double chi_emhd = S->chi_emhd[k][j][i];
-          double nu_emhd  = S->nu_emhd[k][j][i];
 
           S->P[Q_TILDE][k][j][i]       *= sqrt(tau / (chi_emhd * rho * pow(Theta, 2)));
+        }
+        #endif
+
+        #if VISCOSITY
+        S->P[DELTA_P_TILDE][k][j][i] = delta_p0 + ddelta_p;
+
+        if (higher_order_terms_viscosity == 1) {
+          
+          double rho = S->P[RHO][k][j][i];
+          double u   = S->P[UU][k][j][i];
+         
+          double Theta = (gam - 1.) * u / rho;
+
+          set_emhd_parameters(G, S, i, j, k);
+          double tau = S->tau[k][j][i];
+          double nu_emhd  = S->nu_emhd[k][j][i];
+
           S->P[DELTA_P_TILDE][k][j][i] *= sqrt(tau / (nu_emhd * rho * Theta));
         }
+        #endif
+
     }
 
     //Enforce boundary conditions

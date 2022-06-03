@@ -50,23 +50,27 @@ void step(struct GridGeom *G, struct FluidState *S)
   FLAG("Start step");
   // TODO add back well-named flags /after/ events
 
-  #if DEBUG_GRIM
+  #if DEBUG_EMHD
   fprintf(stdout, "\n----------PREDICTOR STEP----------\n");
   fprintf(stdout, "Fluid state before predictor step: \n");
+  #if CONDUCTION
   fprintf(stdout, "q_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", S->P[Q_TILDE][k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
+  #if VISCOSITY
   fprintf(stdout, "\ndP_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", S->P[DELTA_P_TILDE][k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
   #endif
 
   // Predictor setup
@@ -93,23 +97,27 @@ void step(struct GridGeom *G, struct FluidState *S)
   set_bounds(G, Stmp);
   FLAG("Second bounds Tmp");
 
-  #if DEBUG_GRIM
+  #if DEBUG_EMHD
   fprintf(stdout, "\n----------CORRECTOR STEP----------\n");
   fprintf(stdout, "Fluid state before corrector step (NOTE: This means boundary syncs have been applied): \n");
+  #if CONDUCTION
   fprintf(stdout, "q_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", S->P[Q_TILDE][k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
+  #if VISCOSITY
   fprintf(stdout, "\ndP_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", S->P[DELTA_P_TILDE][k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
   #endif
 
   // Corrector step
@@ -134,22 +142,26 @@ void step(struct GridGeom *G, struct FluidState *S)
   set_bounds(G, S);
   FLAG("Second bounds Full");
 
-  #if DEBUG_GRIM
+  #if DEBUG_EMHD
   fprintf(stdout, "\nFluid state after corrector step and boundary syncs: \n");
+  #if CONDUCTION
   fprintf(stdout, "q_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", S->P[Q_TILDE][k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
+  #if VISCOSITY
   fprintf(stdout, "\ndP_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", S->P[DELTA_P_TILDE][k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
   #endif
 
   // Increment time
@@ -187,7 +199,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 {
   static GridPrim *dU;
   static struct FluidFlux *F;
-  #if GRIM_TIMESTEPPER
+  #if IMEX
   // Temporary fluid struct for nonlinear solver
   static struct FluidState *S_solver;
   #endif
@@ -196,7 +208,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   if (firstc) {
     dU = calloc(1,sizeof(GridPrim));
     F = calloc(1,sizeof(struct FluidFlux));
-    #if GRIM_TIMESTEPPER
+    #if IMEX
     S_solver = calloc(1, sizeof(struct FluidState));
     #endif
     firstc = 0;
@@ -223,7 +235,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   diag_flux(F);
 
 // GRIM vs HARM time-stepper
-#if GRIM_TIMESTEPPER
+#if IMEX
   
   // Set zero pflags and fail_save to zero
   zero_arrays();
@@ -236,40 +248,48 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   get_state_vec(G, Ss, CENT, -NG, N3 + NG - 1, -NG, N2 + NG - 1, -NG, N1 + NG - 1);
   prim_to_flux_vec(G, Ss, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Ss->U);
 
-  #if DEBUG_GRIM
+  #if DEBUG_EMHD
   fprintf(stdout, "Si (in advance fluid): \n");
+  #if CONDUCTION
   fprintf(stdout, "q:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", Si->q[k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
+  #if VISCOSITY
   fprintf(stdout, "\ndP:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", Si->delta_p[k][j][i]);
       fprintf(stdout, "\n");
     }
   #endif
+  #endif
 
-  #if DEBUG_GRIM
+  #if DEBUG_EMHD
   fprintf(stdout, "Ss (in advance fluid): \n");
+  #if CONDUCTION
   fprintf(stdout, "q:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", Ss->q[k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
+  #if VISCOSITY
   fprintf(stdout, "\ndP:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", Ss->delta_p[k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
   #endif
 
   // Initial guess for S_solver->P
@@ -277,7 +297,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   PLOOP ZLOOP S_solver->P[ip][k][j][i] = Ss->P[ip][k][j][i];
 
   // time-step by root-finding the residual
-  grim_timestep(G, Si, Ss, S_solver, F, Dt);
+  imex_timestep(G, Si, Ss, S_solver, F, Dt);
 
   // compute new conserved variables
   #pragma omp parallel for simd collapse(3)
@@ -285,22 +305,26 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   prim_to_flux_vec(G, Sf, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Sf->U);
 
-  #if DEBUG_GRIM
+  #if DEBUG_EMHD
   fprintf(stdout, "Sf (in advance fluid, after timestep): \n");
+  #if CONDUCTION
   fprintf(stdout, "q_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", Sf->P[Q_TILDE][k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
+  #if VISCOSITY
   fprintf(stdout, "\ndP_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
+  KLOOP_DEBUG_EMHD
+    JLOOP_DEBUG_EMHD {
+      ILOOP_DEBUG_EMHD
         fprintf(stdout, "%g ", Sf->P[DELTA_P_TILDE][k][j][i]);
       fprintf(stdout, "\n");
     }
+  #endif
   #endif
   
   // update failures
@@ -309,7 +333,8 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   ZLOOPALL {
     fail_save[k][j][i] = pflag[k][j][i];
   }
-  
+
+// Defaults to HARM algo if IMEX is set to 0 in parameters.h 
 #else
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);

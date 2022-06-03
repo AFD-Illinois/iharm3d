@@ -65,15 +65,24 @@ void restart_write_backend(struct FluidState *S, int type)
   hdf5_write_single_val(&gamp, "gamp", H5T_IEEE_F64LE);
   hdf5_write_single_val(&fel0, "fel0", H5T_IEEE_F64LE);
   #endif
-  #if GRIM_TIMESTEPPER
-  hdf5_make_directory("emhd");
-  hdf5_set_directory("/emhd/");
-  hdf5_write_single_val(&higher_order_terms, "higher_order_terms", H5T_STD_I32LE);
-  hdf5_write_single_val(&conduction_alpha, "conduction_alpha", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&viscosity_alpha, "viscosity_alpha", H5T_IEEE_F64LE);
+  #if IMEX
+  hdf5_make_directory("imex");
+  hdf5_set_directory("/imex/");
   hdf5_write_single_val(&max_nonlinear_iter, "max_nonlinear_iterations", H5T_STD_I32LE);
   hdf5_write_single_val(&jacobian_eps, "jacobian_eps", H5T_IEEE_F64LE);
   hdf5_write_single_val(&rootfind_tol, "rootfinder_tolerance", H5T_IEEE_F64LE);
+  #if EMHD
+  hdf5_make_directory("emhd");
+  hdf5_set_directory("/imex/emhd/");
+  int conduction_enabled = CONDUCTION;
+  int viscosity_enabled  = VISCOSITY;
+  hdf5_write_single_val(&conduction_enabled, "conduction", H5T_STD_I32LE);
+  hdf5_write_single_val(&viscosity_enabled,  "viscosity", H5T_STD_I32LE);
+  hdf5_write_single_val(&higher_order_terms_conduction, "higher_order_terms_conduction", H5T_STD_I32LE);
+  hdf5_write_single_val(&higher_order_terms_viscosity, "higher_order_terms_viscosity", H5T_STD_I32LE);
+  hdf5_write_single_val(&conduction_alpha,   "conduction_alpha", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&viscosity_alpha,    "viscosity_alpha", H5T_IEEE_F64LE);
+  #endif
   hdf5_set_directory("/");
   #endif
   hdf5_write_single_val(&cour, "cour", H5T_IEEE_F64LE);
@@ -165,13 +174,16 @@ void restart_read(char *fname, struct FluidState *S)
   hdf5_read_single_val(&gamp, "gamp", H5T_IEEE_F64LE);
   hdf5_read_single_val(&fel0, "fel0", H5T_IEEE_F64LE);
   #endif
-  #if GRIM_TIMESTEPPER
-  hdf5_read_single_val(&higher_order_terms, "emhd/higher_order_terms", H5T_STD_I32LE);
-  hdf5_read_single_val(&conduction_alpha, "emhd/conduction_alpha", H5T_IEEE_F64LE);
-  hdf5_read_single_val(&viscosity_alpha, "emhd/viscosity_alpha", H5T_IEEE_F64LE);
-  hdf5_read_single_val(&max_nonlinear_iter, "emhd/max_nonlinear_iterations", H5T_STD_I32LE);
-  hdf5_read_single_val(&jacobian_eps, "emhd/jacobian_eps", H5T_IEEE_F64LE);
-  hdf5_read_single_val(&rootfind_tol, "emhd/rootfinder_tolerance", H5T_IEEE_F64LE);
+  #if IMEX
+  hdf5_read_single_val(&max_nonlinear_iter, "imex/max_nonlinear_iterations", H5T_STD_I32LE);
+  hdf5_read_single_val(&jacobian_eps, "imex/jacobian_eps", H5T_IEEE_F64LE);
+  hdf5_read_single_val(&rootfind_tol, "imex/rootfinder_tolerance", H5T_IEEE_F64LE);
+  #if EMHD
+  hdf5_read_single_val(&higher_order_terms_conduction, "imex/emhd/higher_order_terms_conduction", H5T_STD_I32LE);
+  hdf5_read_single_val(&higher_order_terms_viscosity, "imex/emhd/higher_order_terms_viscosity", H5T_STD_I32LE);
+  hdf5_read_single_val(&conduction_alpha, "imex/emhd/conduction_alpha", H5T_IEEE_F64LE);
+  hdf5_read_single_val(&viscosity_alpha, "imex/emhd/viscosity_alpha", H5T_IEEE_F64LE);
+  #endif
   #endif
   // I want to be able to change tf/cadences/courant mid-run
   // Hence we just pick these up from param.dat again unless we're testing the MHD modes

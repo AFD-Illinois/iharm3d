@@ -87,14 +87,17 @@ void set_core_params() {
   set_param("DTp", &DTp);
   // I set output dir via command line, since it's machine-specific
 
-  #if GRIM_TIMESTEPPER
-  set_param("higher_order_terms", &higher_order_terms);
-  set_param("conduction_alpha", &conduction_alpha);
-  set_param("viscosity_alpha", &viscosity_alpha);
-  
+  #if IMEX  
   set_param("max_nonlinear_iter", &max_nonlinear_iter);
   set_param("jacobian_eps", &jacobian_eps);
   set_param("rootfind_tol", &rootfind_tol);
+  #endif
+
+  #if EMHD
+  set_param("higher_order_terms_conduction", &higher_order_terms_conduction);
+  set_param("higher_order_terms_viscosity", &higher_order_terms_viscosity);
+  set_param("conduction_alpha", &conduction_alpha);
+  set_param("viscosity_alpha", &viscosity_alpha);
   #endif
 
 }
