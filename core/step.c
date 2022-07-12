@@ -48,26 +48,6 @@ void step(struct GridGeom *G, struct FluidState *S)
 #endif
   LOGN("Step %d",nstep);
   FLAG("Start step");
-  // TODO add back well-named flags /after/ events
-
-  #if DEBUG_GRIM
-  fprintf(stdout, "\n----------PREDICTOR STEP----------\n");
-  fprintf(stdout, "Fluid state before predictor step: \n");
-  fprintf(stdout, "q_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", S->P[Q_TILDE][k][j][i]);
-      fprintf(stdout, "\n");
-    }
-  fprintf(stdout, "\ndP_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", S->P[DELTA_P_TILDE][k][j][i]);
-      fprintf(stdout, "\n");
-    }
-  #endif
 
   // Predictor setup
   advance_fluid(G, S, S, Stmp, 0.5*dt);
@@ -78,8 +58,16 @@ void step(struct GridGeom *G, struct FluidState *S)
   FLAG("Heat Electrons Tmp");
 #endif
 
+  #if DEBUG_EMHD
+  fprintf(stdout, "\nHalf-step\n");
+  PLOOP fprintf(stdout, "%6.5e ", Stmp->P[ip][NG][N2D][N1D]);
+  fprintf(stdout, "\n");
+  PLOOP fprintf(stdout, "%6.5e ", Stmp->U[ip][NG][N2D][N1D]);
+  fprintf(stdout, "\n%6.5e %6.5e %6.5e %6.5e %6.5e\n", Stmp->tau[NG][N2D][N1D], Stmp->q[NG][N2D][N1D],Stmp->delta_p[NG][N2D][N1D], Stmp->Theta[NG][N2D][N1D], Stmp->bsq[NG][N2D][N1D]);
+  #endif
+  
   // Fixup routines: smooth over outlier zones
-  fixup(G, Stmp);
+  fixup(G, Stmp, CENT);
   FLAG("Fixup Tmp");
 #if ELECTRONS
   fixup_electrons(Stmp);
@@ -88,28 +76,11 @@ void step(struct GridGeom *G, struct FluidState *S)
   // Need an MPI call _before_ fixup_utop to obtain correct pflags
   set_bounds(G, Stmp);
   FLAG("First bounds Tmp");
+  #if (!DRIFT_FRAME)
   fixup_utoprim(G, Stmp);
   FLAG("Fixup U_to_P Tmp");
   set_bounds(G, Stmp);
   FLAG("Second bounds Tmp");
-
-  #if DEBUG_GRIM
-  fprintf(stdout, "\n----------CORRECTOR STEP----------\n");
-  fprintf(stdout, "Fluid state before corrector step (NOTE: This means boundary syncs have been applied): \n");
-  fprintf(stdout, "q_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", S->P[Q_TILDE][k][j][i]);
-      fprintf(stdout, "\n");
-    }
-  fprintf(stdout, "\ndP_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", S->P[DELTA_P_TILDE][k][j][i]);
-      fprintf(stdout, "\n");
-    }
   #endif
 
   // Corrector step
@@ -121,7 +92,15 @@ void step(struct GridGeom *G, struct FluidState *S)
   FLAG("Heat Electrons Full");
 #endif
 
-  fixup(G, S);
+  #if DEBUG_EMHD
+  fprintf(stdout, "\nFull-step\n");
+  PLOOP fprintf(stdout, "%6.5e ", S->P[ip][NG][N2D][N1D]);
+  fprintf(stdout, "\n");
+  PLOOP fprintf(stdout, "%6.5e ", S->U[ip][NG][N2D][N1D]);
+  fprintf(stdout, "\n%6.5e %6.5e %6.5e %6.5e %6.5e\n", S->tau[NG][N2D][N1D], S->q[NG][N2D][N1D],S->delta_p[NG][N2D][N1D], S->Theta[NG][N2D][N1D], S->bsq[NG][N2D][N1D]);
+  #endif
+
+  fixup(G, S, CENT);
   FLAG("Fixup Full");
 #if ELECTRONS
   fixup_electrons(S);
@@ -129,27 +108,11 @@ void step(struct GridGeom *G, struct FluidState *S)
 #endif
   set_bounds(G, S);
   FLAG("First bounds Full");
+  #if (!DRIFT_FRAME)
   fixup_utoprim(G, S);
   FLAG("Fixup U_to_P Full");
   set_bounds(G, S);
   FLAG("Second bounds Full");
-
-  #if DEBUG_GRIM
-  fprintf(stdout, "\nFluid state after corrector step and boundary syncs: \n");
-  fprintf(stdout, "q_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", S->P[Q_TILDE][k][j][i]);
-      fprintf(stdout, "\n");
-    }
-  fprintf(stdout, "\ndP_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", S->P[DELTA_P_TILDE][k][j][i]);
-      fprintf(stdout, "\n");
-    }
   #endif
 
   // Increment time
@@ -187,7 +150,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 {
   static GridPrim *dU;
   static struct FluidFlux *F;
-  #if GRIM_TIMESTEPPER
+  #if IMEX
   // Temporary fluid struct for nonlinear solver
   static struct FluidState *S_solver;
   #endif
@@ -196,7 +159,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   if (firstc) {
     dU = calloc(1,sizeof(GridPrim));
     F = calloc(1,sizeof(struct FluidFlux));
-    #if GRIM_TIMESTEPPER
+    #if IMEX
     S_solver = calloc(1, sizeof(struct FluidState));
     #endif
     firstc = 0;
@@ -222,94 +185,54 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   // Flux diagnostic globals
   diag_flux(F);
 
-// GRIM vs HARM time-stepper
-#if GRIM_TIMESTEPPER
+// IMEX timestep
+#if IMEX
   
-  // Set zero pflags and fail_save to zero
+  // Set pflags and fail_save to zero
   zero_arrays();
 
   // Obtain Si->U
   get_state_vec(G, Si, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   prim_to_flux_vec(G, Si, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Si->U);
 
+  // Update B-field primitives analytically
+  #pragma omp parallel for collapse(3)
+  BLOOP ZLOOP {
+    S_solver->U[ip][k][j][i] = Si->U[ip][k][j][i] +
+      Dt*((F->X1[ip][k][j][i] - F->X1[ip][k][j][i+1])/dx[1] +
+          (F->X2[ip][k][j][i] - F->X2[ip][k][j+1][i])/dx[2] +
+          (F->X3[ip][k][j][i] - F->X3[ip][k+1][j][i])/dx[3]);
+
+    // Update the primitive B-fields
+    S_solver->P[ip][k][j][i] = S_solver->U[ip][k][j][i]/G->gdet[CENT][j][i];
+  }
+
   // Obtain state for Ss and Ss->U (needed for source terms)
   get_state_vec(G, Ss, CENT, -NG, N3 + NG - 1, -NG, N2 + NG - 1, -NG, N1 + NG - 1);
   prim_to_flux_vec(G, Ss, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Ss->U);
 
-  #if DEBUG_GRIM
-  fprintf(stdout, "Si (in advance fluid): \n");
-  fprintf(stdout, "q:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", Si->q[k][j][i]);
-      fprintf(stdout, "\n");
-    }
-  fprintf(stdout, "\ndP:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", Si->delta_p[k][j][i]);
-      fprintf(stdout, "\n");
-    }
-  #endif
-
-  #if DEBUG_GRIM
-  fprintf(stdout, "Ss (in advance fluid): \n");
-  fprintf(stdout, "q:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", Ss->q[k][j][i]);
-      fprintf(stdout, "\n");
-    }
-  fprintf(stdout, "\ndP:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", Ss->delta_p[k][j][i]);
-      fprintf(stdout, "\n");
-    }
-  #endif
-
   // Initial guess for S_solver->P
   #pragma omp parallel for simd collapse(3)
-  PLOOP ZLOOP S_solver->P[ip][k][j][i] = Ss->P[ip][k][j][i];
+  FLOOP ZLOOP S_solver->P[ip][k][j][i] = Ss->P[ip][k][j][i];
 
-  // time-step by root-finding the residual
-  grim_timestep(G, Si, Ss, S_solver, F, Dt);
+  // timestep by root-finding
+  imex_timestep(G, Si, Ss, S_solver, F, Dt);
 
   // compute new conserved variables
   #pragma omp parallel for simd collapse(3)
   PLOOP ZLOOP Sf->P[ip][k][j][i] = S_solver->P[ip][k][j][i];
   get_state_vec(G, Sf, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
   prim_to_flux_vec(G, Sf, 0, CENT, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1, Sf->U);
-
-  #if DEBUG_GRIM
-  fprintf(stdout, "Sf (in advance fluid, after timestep): \n");
-  fprintf(stdout, "q_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", Sf->P[Q_TILDE][k][j][i]);
-      fprintf(stdout, "\n");
-    }
-  fprintf(stdout, "\ndP_tilde:\n");
-  KLOOP_DEBUG_GRIM
-    JLOOP_DEBUG_GRIM {
-      ILOOP_DEBUG_GRIM
-        fprintf(stdout, "%g ", Sf->P[DELTA_P_TILDE][k][j][i]);
-      fprintf(stdout, "\n");
-    }
-  #endif
   
   // update failures
   // NOTE: These are no longer U_to_P failures but rather zones where convergence was not achieved for the nonlinear solver
   #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
     fail_save[k][j][i] = pflag[k][j][i];
+    pflag[k][j][i] = 0.;
   }
-  
+
+// Defaults to HARM algo if IMEX is set to 0 in parameters.h 
 #else
   // Update Si to Sf
   timer_start(TIMER_UPDATE_U);

@@ -52,7 +52,10 @@ void set_problem_params() {
 void save_problem_data(hid_t string_type)
 {
 	hdf5_write_single_val(&mad_type, "mad_type", H5T_STD_I32LE);
-	hdf5_write_single_val("torus", "PROB", string_type);
+  if (EMHD)
+	  hdf5_write_single_val("emhd/torus", "PROB", string_type);
+  else
+	  hdf5_write_single_val("torus", "PROB", string_type);
 	hdf5_write_single_val(&rin, "rin", H5T_IEEE_F64LE);
 	hdf5_write_single_val(&rmax, "rmax", H5T_IEEE_F64LE);
 	hdf5_write_single_val(&beta, "beta", H5T_IEEE_F64LE);
@@ -62,6 +65,76 @@ void save_problem_data(hid_t string_type)
 	hdf5_write_single_val(&rBend, "rBend", H5T_IEEE_F64LE);
 
 }
+
+#if EMHD
+// Set chi, nu, tau. Problem dependent
+void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
+
+  // Initializations
+  double rho = MY_MAX(S->P[RHO][k][j][i], SMALL);
+  double u   = MY_MAX(S->P[UU][k][j][i], SMALL);
+  double P   = (gam - 1.) * u;
+  double bsq = S->bsq[k][j][i];
+
+  // Compute dynamical time
+  double X[NDIM];
+  coord(i, j, k, CENT, X);
+  double r, th;
+  bl_coord(X, &r, &th);
+  
+  double tau_dyn = pow(r, 1.5);
+  double tau     = tau_dyn;
+
+  // Compute local sound speed
+  double cs = sqrt(gam * P / (rho + (gam * u)));
+
+  double lambda    = 0.01;
+  double inv_exp_g = 0.;
+  double f_fmin    = 0.;
+
+  // set EMHD parameters based on closure relations
+  #if CONDUCTION
+  double q = S->q[k][j][i];
+
+  double q_max   = rho * pow(cs, 3.);
+  double q_ratio = fabs(q) / q_max;
+  inv_exp_g      = exp(-(q_ratio - 1.) / lambda);
+  f_fmin         = inv_exp_g / (inv_exp_g + 1.) + 1.e-5;
+  
+  tau = MY_MIN(tau, f_fmin * tau_dyn);
+  #endif
+
+  #if VISCOSITY
+  double delta_p = S->delta_p[k][j][i];
+
+  double delta_p_comp_ratio = MY_MAX(P - 2./3. * delta_p, SMALL) / MY_MAX(P + 1./3. * delta_p, SMALL);
+  double delta_p_plus       = MY_MAX(0.5 * bsq * delta_p_comp_ratio, 1.49 * P / 1.07);
+  double delta_p_minus      = MY_MAX(-bsq, -2.99 * P / 1.07);
+
+  double delta_p_max = 0.;
+  if (delta_p > 0.)
+    delta_p_max = delta_p_plus;
+  else
+    delta_p_max = delta_p_minus;
+  
+  double delta_p_ratio = fabs(delta_p) / (fabs(delta_p_max) + SMALL);
+  inv_exp_g      = exp(-(delta_p_ratio - 1.) / lambda);
+  f_fmin         = inv_exp_g / (inv_exp_g + 1.) + 1.e-5;
+  
+  tau = MY_MIN(tau, f_fmin * tau_dyn);
+  #endif
+
+  S->tau[k][j][i] = tau;
+
+  double max_alpha = (1. - cs*cs) / (2*cs*cs + 1.e-12);
+  #if CONDUCTION
+  S->chi_emhd[k][j][i] = MY_MIN(max_alpha, conduction_alpha) * cs * cs * tau;
+  #endif
+  #if VISCOSITY
+  S->nu_emhd[k][j][i] = MY_MIN(max_alpha, viscosity_alpha) * cs * cs * tau;
+  #endif
+}
+#endif
 
 void init(struct GridGeom *G, struct FluidState *S)
 {
@@ -185,6 +258,7 @@ void init(struct GridGeom *G, struct FluidState *S)
     S->P[B1][k][j][i] = 0.;
     S->P[B2][k][j][i] = 0.;
     S->P[B3][k][j][i] = 0.;
+
   } // ZSLOOP
 
   // Find the zone in which rBend of Narayan condition resides
@@ -219,7 +293,8 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
   umax /= rhomax;
   rhomax = 1.;
-  fixup(G, S);
+
+  fixup(G, S, CENT);
   set_bounds(G, S);
 
   // Calculate UU along midplane, propagate to all processes
@@ -288,7 +363,7 @@ void init(struct GridGeom *G, struct FluidState *S)
         exit(-1);
       }
     } else { // TODO How about 2D?
-      q = rho_av/rhomax;
+      q = rho_av/rhomax - 0.2;
     }
 
     A[i][j] = 0.;
@@ -441,8 +516,21 @@ void init(struct GridGeom *G, struct FluidState *S)
   init_electrons(G,S);
 #endif
 
+#if EMHD
+  ZLOOP {
+    #if CONDUCTION
+    S->q[k][j][i]          = 0.;
+    S->P[Q_TILDE][k][j][i] = 0.;
+    #endif
+    #if VISCOSITY
+    S->delta_p[k][j][i]          = 0.;
+    S->P[DELTA_P_TILDE][k][j][i] = 0.;
+    #endif
+  }
+#endif
+
   // Enforce boundary conditions
-  fixup(G, S);
+  fixup(G, S, CENT);
   set_bounds(G, S);
 
   LOG("Finished init()");

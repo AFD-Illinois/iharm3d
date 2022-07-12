@@ -37,11 +37,18 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   static GridDouble *data;
   char fname[80];
 
-  char varNames[NVAR][HDF_STR_LEN] =  {"RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"};
-  #if GRIM_TIMESTEPPER
+  char varNames[NVAR][HDF_STR_LEN] =  {"RHO", "UU", "U1", "U2", "U3"};
+  #if EMHD
+  #if CONDUCTION
   strcpy(varNames[Q_TILDE], "Q_TILDE");
+  #endif
+  #if VISCOSITY
   strcpy(varNames[DELTA_P_TILDE], "DELTA_P_TILDE");
   #endif
+  #endif
+  strcpy(varNames[B1], "B1");
+  strcpy(varNames[B2], "B2");
+  strcpy(varNames[B3], "B3");
   #if ELECTRONS
   strcpy(varNames[KTOT], "KTOT");
 
@@ -149,16 +156,35 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
   hdf5_add_units("tf", "code");
 
   // EMHD parameters that aren't problem specific
-  #if GRIM_TIMESTEPPER
-  hdf5_make_directory("emhd");
-  hdf5_set_directory("/header/emhd/");
-
-  hdf5_write_single_val(&higher_order_terms, "higher_order_terms", H5T_STD_I32LE);
-  hdf5_write_single_val(&conduction_alpha, "conduction_alpha", H5T_IEEE_F64LE);
-  hdf5_write_single_val(&viscosity_alpha, "viscosity_alpha", H5T_IEEE_F64LE);
+  #if IMEX
+  hdf5_make_directory("imex");
+  hdf5_set_directory("/header/imex/");
   hdf5_write_single_val(&max_nonlinear_iter, "max_nonlinear_iterations", H5T_STD_I32LE);
   hdf5_write_single_val(&jacobian_eps, "jacobian_eps", H5T_IEEE_F64LE);
   hdf5_write_single_val(&rootfind_tol, "rootfinder_tolerance", H5T_IEEE_F64LE);
+  #if LINESEARCH
+  hdf5_write_single_val(&max_linesearch_iter, "max_linesearch_iterations", H5T_STD_I32LE);
+  hdf5_write_single_val(&linesearch_eps, "linesearch_eps", H5T_IEEE_F64LE);
+  #endif
+  #if EMHD
+  hdf5_make_directory("emhd");
+  hdf5_set_directory("/header/imex/emhd/");
+  int conduction_enabled = CONDUCTION;
+  int viscosity_enabled  = VISCOSITY;
+  hdf5_write_single_val(&conduction_enabled, "conduction", H5T_STD_I32LE);
+  hdf5_write_single_val(&viscosity_enabled,  "viscosity", H5T_STD_I32LE);
+  hdf5_write_single_val(&higher_order_terms_conduction, "higher_order_terms_conduction", H5T_STD_I32LE);
+  hdf5_write_single_val(&higher_order_terms_viscosity, "higher_order_terms_viscosity", H5T_STD_I32LE);
+  hdf5_write_single_val(&conduction_alpha,   "conduction_alpha", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&viscosity_alpha,    "viscosity_alpha", H5T_IEEE_F64LE);
+  pack_write_scalar(S->tau, "tau", OUT_H5_TYPE);
+  #if CONDUCTION
+  pack_write_scalar(S->chi_emhd, "chi_emhd", OUT_H5_TYPE);
+  #endif
+  #if VISCOSITY
+  pack_write_scalar(S->nu_emhd, "nu_emhd", OUT_H5_TYPE);
+  #endif
+  #endif
   #endif
 
 
@@ -242,6 +268,12 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
     ZLOOP fail_save[k][j][i] = 0;
 
     pack_write_int(fflag, "fixup");
+
+    // Write out the L2 norm of the residuals.
+    #if IMEX
+    pack_write_scalar(imex_errors, "imex_errors", OUT_H5_TYPE);
+    ZLOOP imex_errors[k][j][i] = 0.;
+    #endif
   }
 
 #if DEBUG

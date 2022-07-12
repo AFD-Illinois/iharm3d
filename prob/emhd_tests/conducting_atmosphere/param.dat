@@ -9,7 +9,7 @@
 [dbl] cour = 0.5
 
 # OUTPUT
-[dbl] DTd = 5.0
+[dbl] DTd = 20.0
 [dbl] DTf = 10.0
 [dbl] DTl = 0.5
 [int] DTr = 2000
@@ -23,12 +23,15 @@
 [dbl] Rout    = 300
 [dbl] R_inner = 100
 
-
-# GRIM ALGO PARAMETERS
-[int] higher_order_terms = 1
-[dbl] conduction_alpha = 1.
-[dbl] viscosity_alpha = 0.
-
+# IMEX ALGO PARAMETERS
+# CONSIDERED ONLY IF IMEX IS SET TO 1 IN PARAMETERS.H
 [int] max_nonlinear_iter = 3
 [dbl] jacobian_eps = 4.e-8
 [dbl] rootfind_tol = 1.e-20
+
+# EMHD PARAMETERS
+# CONSIDERED ONLY IF EMHD IS SET TO 1 IN PARAMETERS.H
+[int] higher_order_terms_conduction = 1
+[int] higher_order_terms_viscosity = 0
+[dbl] conduction_alpha = 1.
+[dbl] viscosity_alpha = 0.

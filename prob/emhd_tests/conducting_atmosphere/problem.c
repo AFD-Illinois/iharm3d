@@ -18,6 +18,7 @@ void save_problem_data(hid_t string_type){
   hdf5_write_single_val("emhd/conducting_atmosphere", "PROB", string_type);
 }
 
+#if EMHD
 // Set chi, nu, tau. Problem dependent
 void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j, int k){
      
@@ -25,13 +26,19 @@ void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j,
   double rho = S->P[RHO][k][j][i];
 
   // set EMHD parameters based on closure relations
-  double tau   = 10.;
-  double kappa = 0.1;
+  double tau      = 10.;
+  S->tau[k][j][i] = tau;
 
-  S->tau[k][j][i]      = tau;
+  #if CONDUCTION
+  double kappa = 0.1;
   S->chi_emhd[k][j][i] = kappa / MY_MAX(SMALL, rho);
+  #endif
+
+  #if VISCOSITY
   S->nu_emhd[k][j][i]  = 0.;
+  #endif
  }
+ #endif
 
 void init(struct GridGeom *G, struct FluidState *S) {
     
@@ -95,8 +102,12 @@ void init(struct GridGeom *G, struct FluidState *S) {
         S->P[B1][k][j][i]            = 1./exp(3.*X[1]);
         S->P[B2][k][j][i]            = 0.;
         S->P[B3][k][j][i]            = 0.;
+        #if CONDUCTION
         S->P[Q_TILDE][k][j][i]       = q_temp;
+        #endif
+        #if VISCOSITY
         S->P[DELTA_P_TILDE][k][j][i] = 0.;
+        #endif
 
         // Note that the  velocity primitives defined up there isn't quite right.
         // For a fluid at rest wrt. the normal observer, ucon = {-1/g_tt,0,0,0}. We need to use this info
@@ -124,7 +135,8 @@ void init(struct GridGeom *G, struct FluidState *S) {
         S->P[U2][k][j][i] = ucon[2] + beta[2]*gamma/alpha;
         S->P[U3][k][j][i] = ucon[3] + beta[3]*gamma/alpha;
 
-       if (higher_order_terms == 1) {
+        #if CONDUCTION
+        if (higher_order_terms_conduction == 1) {
 
           double rho   = S->P[RHO][k][j][i];
           double u     = S->P[UU][k][j][i];
@@ -135,12 +147,14 @@ void init(struct GridGeom *G, struct FluidState *S) {
           double chi_emhd = S->chi_emhd[k][j][i];
 
           S->P[Q_TILDE][k][j][i] *= sqrt(tau / (chi_emhd * rho * pow(Theta, 2)));
-       }
-        
+        }
+        #endif
+ 
       }
     }
 
     // Save boundary values for Dirichlet boundary conditions
+    #if (X1L_BOUND == DIRICHLET) && (X1R_BOUND == DIRICHLET)
     if (i < NG) {
       S->P_BOUND[RHO][i]           = S->P[RHO][NG][NG][i];
       S->P_BOUND[UU][i]            = S->P[UU][NG][NG][i];
@@ -150,8 +164,12 @@ void init(struct GridGeom *G, struct FluidState *S) {
       S->P_BOUND[B1][i]            = S->P[B1][NG][NG][i];
       S->P_BOUND[B2][i]            = 0.;
       S->P_BOUND[B3][i]            = 0.;
+      #if CONDUCTION
       S->P_BOUND[Q_TILDE][i]       = S->P[Q_TILDE][NG][NG][i];
+      #endif
+      #if VISCOSITY
       S->P_BOUND[DELTA_P_TILDE][i] = 0.;
+      #endif
     }
     if (i > N1 + NG - 1) {
       S->P_BOUND[RHO][i-N1]           = S->P[RHO][NG][NG][i];
@@ -162,9 +180,14 @@ void init(struct GridGeom *G, struct FluidState *S) {
       S->P_BOUND[B1][i-N1]            = S->P[B1][NG][NG][i];
       S->P_BOUND[B2][i-N1]            = 0.;
       S->P_BOUND[B3][i-N1]            = 0.;
+      #if CONDUCTION
       S->P_BOUND[Q_TILDE][i-N1]       = S->P[Q_TILDE][NG][NG][i];
+      #endif
+      #if VISCOSITY
       S->P_BOUND[DELTA_P_TILDE][i-N1] = 0.;
+      #endif
     }
+    #endif
 
   }
 

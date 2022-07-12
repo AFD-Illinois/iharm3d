@@ -12,6 +12,9 @@
 GridInt pflag;
 GridInt fail_save;
 GridInt fflag;
+#if IMEX
+GridDouble imex_errors;
+#endif
 
 #if DEBUG
 struct FluidFlux preserve_F;
@@ -70,15 +73,21 @@ double fel_constant;
 int global_start[3];
 int global_stop[3];
 
-// grim algo
-#if GRIM_TIMESTEPPER
-int higher_order_terms;
-double conduction_alpha;
-double viscosity_alpha;
-
+#if IMEX
 int max_nonlinear_iter;
 double jacobian_eps;
 double rootfind_tol;
+#if LINESEARCH
+int max_linesearch_iter;
+double linesearch_eps;
+#endif
+#endif
+
+#if EMHD
+int higher_order_terms_conduction;
+int higher_order_terms_viscosity;
+double conduction_alpha;
+double viscosity_alpha;
 #endif
 
 #if SET_RADIAL_BOUNDS

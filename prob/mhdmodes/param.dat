@@ -21,14 +21,27 @@
 [int] DTr = 100
 [int] DTp = 10
 
-# Electrons
+# ELECTRONS
 [dbl] game = 1.333333
 [dbl] gamp = 1.666667
 [dbl] fel0 = 0.01
 [dbl] tptemin = 0.001
 [dbl] tptemax = 1000.0
 
+# IMEX ALGO PARAMETERS
+# CONSIDERED ONLY IF IMEX IS SET TO 1 IN PARAMETERS.H
+[int] max_nonlinear_iter = 3
+[dbl] jacobian_eps = 4.e-8
+[dbl] rootfind_tol = 1.e-20
+
+# EMHD PARAMETERS
+# CONSIDERED ONLY IF EMHD IS SET TO 1 IN PARAMETERS.H
+[int] higher_order_terms_conduction = 0
+[int] higher_order_terms_viscosity = 0
+[dbl] conduction_alpha = 1.
+[dbl] viscosity_alpha = 1.
+
 # PROBLEM
-# dir must be set to 0 for 3D wave
-[int] dir = 3
+# DIR MUST BE SET TO 0 FOR 3D WAVE
+[int] dir = 0
 [int] nmode = 2
