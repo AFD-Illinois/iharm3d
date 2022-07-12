@@ -91,6 +91,10 @@ void set_core_params() {
   set_param("max_nonlinear_iter", &max_nonlinear_iter);
   set_param("jacobian_eps", &jacobian_eps);
   set_param("rootfind_tol", &rootfind_tol);
+  #if LINESEARCH
+  set_param("max_linesearch_iter", &max_linesearch_iter);
+  set_param("linesearch_eps", &linesearch_eps);
+  #endif
   #endif
 
   #if EMHD

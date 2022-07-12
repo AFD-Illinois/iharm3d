@@ -12,6 +12,9 @@
 GridInt pflag;
 GridInt fail_save;
 GridInt fflag;
+#if IMEX
+GridDouble imex_errors;
+#endif
 
 #if DEBUG
 struct FluidFlux preserve_F;
@@ -74,6 +77,10 @@ int global_stop[3];
 int max_nonlinear_iter;
 double jacobian_eps;
 double rootfind_tol;
+#if LINESEARCH
+int max_linesearch_iter;
+double linesearch_eps;
+#endif
 #endif
 
 #if EMHD

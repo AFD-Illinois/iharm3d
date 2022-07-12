@@ -9,14 +9,14 @@
 
 #include "decs.h"
 
-#if IMEX
+#if EMHD
 void gradient_calc(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k,
   double grad_ucov[NDIM][NDIM], double grad_Theta[NDIM]);
 #endif
 
 // MHD stress-energy tensor with first index up, second index down. A factor of
 // sqrt(4 pi) is absorbed into the definition of b.
-inline void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double *mhd)
+inline void mhd_calc(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int dir, double *mhd)
 {
   double u, pres, w, bsq, eta, ptot;
 
@@ -26,6 +26,11 @@ inline void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double 
   bsq = MY_MAX(bsq_calc(S, i, j, k), SMALL);
   eta = w + bsq;
   ptot = pres + 0.5*bsq;
+
+  #if EMHD
+  // Use closure relations to compute tau, chi and nu
+  set_emhd_parameters(G, S, i, j, k);
+  #endif
 
   DLOOP1 {
     mhd[mu] = eta*S->ucon[dir][k][j][i]*S->ucov[mu][k][j][i] +
@@ -37,11 +42,11 @@ inline void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double 
   double ucon    = S->ucon[dir][k][j][i];
   double bcon    = S->bcon[dir][k][j][i];
   #if CONDUCTION
-  double q       = S->q[k][j][i];
+  double q = S->q[k][j][i];
   DLOOP1 {
     double bcov = S->bcov[mu][k][j][i];
     double ucov = S->ucov[mu][k][j][i];
-    mhd[mu] += (q / sqrt(bsq)) * ((ucon * bcov) + (bcon * ucov));
+    mhd[mu] += 0*(q / sqrt(bsq)) * ((ucon * bcov) + (bcon * ucov));
   }
   #endif
   #if VISCOSITY
@@ -49,7 +54,7 @@ inline void mhd_calc(struct FluidState *S, int i, int j, int k, int dir, double 
   DLOOP1 {
     double bcov = S->bcov[mu][k][j][i];
     double ucov = S->ucov[mu][k][j][i];
-    mhd[mu] += (-delta_p) * ((bcon * bcov / bsq) - (1./3.) * (delta(dir, mu) + ucon * ucov));
+    mhd[mu] += 0*(-delta_p) * ((bcon * bcov / bsq) - (1./3.) * (delta(dir, mu) + ucon * ucov));
   }
   #endif
   #endif
@@ -64,7 +69,7 @@ void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
   // Particle number flux
   flux[RHO][k][j][i] = S->P[RHO][k][j][i]*S->ucon[dir][k][j][i];
 
-  mhd_calc(S, i, j, k, dir, mhd);
+  mhd_calc(G, S, i, j, k, dir, mhd);
 
   // MHD stress-energy tensor w/ first index up, second index down
   flux[UU][k][j][i] = mhd[0] + flux[RHO][k][j][i];
@@ -82,7 +87,7 @@ void prim_to_flux(struct GridGeom *G, struct FluidState *S, int i, int j, int k,
 
   #if EMHD
   #if CONDUCTION
-  flux[Q_TILDE][k][j][i]       = S->P[Q_TILDE][k][j][i] * S->ucon[dir][k][j][i];
+  flux[Q_TILDE][k][j][i] = S->P[Q_TILDE][k][j][i] * S->ucon[dir][k][j][i];
   #endif
   #if VISCOSITY
   flux[DELTA_P_TILDE][k][j][i] = S->P[DELTA_P_TILDE][k][j][i] * S->ucon[dir][k][j][i];
@@ -114,7 +119,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
 
     flux[RHO][k][j][i] = S->P[RHO][k][j][i] * S->ucon[dir][k][j][i] * G->gdet[loc][j][i];
 
-    mhd_calc(S, i, j, k, dir, mhd);
+    mhd_calc(G, S, i, j, k, dir, mhd);
 
     // MHD stress-energy tensor w/ first index up, second index down
     flux[UU][k][j][i] = mhd[0] * G->gdet[loc][j][i] + flux[RHO][k][j][i];
@@ -138,7 +143,7 @@ void prim_to_flux_vec(struct GridGeom *G, struct FluidState *S, int dir, int loc
   #pragma omp for collapse(3) nowait
   ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
     #if CONDUCTION
-    flux[Q_TILDE][k][j][i]       = G->gdet[loc][j][i] * (S->P[Q_TILDE][k][j][i] * S->ucon[dir][k][j][i]);
+    flux[Q_TILDE][k][j][i] = G->gdet[loc][j][i] * (S->P[Q_TILDE][k][j][i] * S->ucon[dir][k][j][i]);
     #endif
     #if VISCOSITY
     flux[DELTA_P_TILDE][k][j][i] = G->gdet[loc][j][i] * (S->P[DELTA_P_TILDE][k][j][i] * S->ucon[dir][k][j][i]);
@@ -228,10 +233,10 @@ inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, in
   bcon_calc(S, i, j, k);
   lower_grid(S->bcon, S->bcov, G, i, j, k, loc);
 
+  // Need auxillary scalar fields to (i) set emhd parameters (ii) compute components of stress-energy tensor
   #if EMHD
   S->bsq[k][j][i]     = MY_MAX(bsq_calc(S, i, j, k), SMALL);
   S->Theta[k][j][i]   = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], SMALL);
-  set_emhd_parameters(G, S, i, j, k);
   
   #if CONDUCTION
   S->q[k][j][i] = S->P[Q_TILDE][k][j][i];
@@ -239,12 +244,12 @@ inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, in
   if (higher_order_terms_conduction == 1) {
     
     // Initializations
-    double rho = S->P[RHO][k][j][i];
-    double tau = S->tau[k][j][i];
+    double rho      = S->P[RHO][k][j][i];
+    double tau      = S->tau[k][j][i];
     double chi_emhd = S->chi_emhd[k][j][i];
-    double Theta = S->Theta[k][j][i];
+    double Theta    = S->Theta[k][j][i];
 
-    S->q[k][j][i] *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
+    S->q[k][j][i] *= (tau > 0.) ? sqrt(chi_emhd * rho * pow(Theta, 2) / tau) : 1.;
 
   }
   #endif
@@ -254,16 +259,17 @@ inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, in
   if (higher_order_terms_viscosity == 1) {
     
     // Initializations
-    double rho = S->P[RHO][k][j][i];
-    double tau = S->tau[k][j][i];
-    double nu_emhd  = S->nu_emhd[k][j][i];
-    double Theta = S->Theta[k][j][i];
+    double rho     = S->P[RHO][k][j][i];
+    double tau     = S->tau[k][j][i];
+    double nu_emhd = S->nu_emhd[k][j][i];
+    double Theta   = S->Theta[k][j][i];
 
-    S->delta_p[k][j][i] *= sqrt(nu_emhd * rho * Theta / tau);
+    S->delta_p[k][j][i] *= (tau > 0.) ? sqrt(nu_emhd * rho * Theta / tau) : 1.;
 
   }
   #endif
   #endif
+
 }
 
 // Calculate ucon, ucov, bcon, bcov from primitive variables, over given range
@@ -301,7 +307,6 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
     ZSLOOP(kstart, kstop, jstart, jstop, istart, istop) {
       S->bsq[k][j][i]     = MY_MAX(bsq_calc(S, i, j, k), SMALL);
       S->Theta[k][j][i]   = MY_MAX((gam - 1.) * S->P[UU][k][j][i] / S->P[RHO][k][j][i], SMALL);
-      set_emhd_parameters(G, S, i, j, k);
       
       #if CONDUCTION
       S->q[k][j][i] = S->P[Q_TILDE][k][j][i];
@@ -309,12 +314,12 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
       if (higher_order_terms_conduction == 1) {
 
         // Initializations
-        double rho = S->P[RHO][k][j][i];
-        double tau = S->tau[k][j][i];
+        double rho      = S->P[RHO][k][j][i];
+        double tau      = S->tau[k][j][i];
         double chi_emhd = S->chi_emhd[k][j][i];
-        double Theta = S->Theta[k][j][i];
+        double Theta    = S->Theta[k][j][i];
 
-        S->q[k][j][i] *= sqrt(chi_emhd * rho * pow(Theta, 2) / tau);
+        S->q[k][j][i] *= (tau > 0.) ? sqrt(chi_emhd * rho * pow(Theta, 2) / tau) : 1.;
       }
       #endif
       #if VISCOSITY
@@ -323,12 +328,12 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
       if (higher_order_terms_viscosity == 1) {
 
         // Initializations
-        double rho = S->P[RHO][k][j][i];
-        double tau = S->tau[k][j][i];
-        double nu_emhd  = S->nu_emhd[k][j][i];
-        double Theta = S->Theta[k][j][i];
+        double rho     = S->P[RHO][k][j][i];
+        double tau     = S->tau[k][j][i];
+        double nu_emhd = S->nu_emhd[k][j][i];
+        double Theta   = S->Theta[k][j][i];
 
-        S->delta_p[k][j][i] *= sqrt(nu_emhd * rho * Theta / tau);
+        S->delta_p[k][j][i] *= (tau > 0.) ? sqrt(nu_emhd * rho * Theta / tau) : 1.;
       }
       #endif      
     }
@@ -366,9 +371,9 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   }
 
   // Find fast magnetosonic speed
-  bsq = bsq_calc(S, i, j, k);
-  rho = fabs(S->P[RHO][k][j][i]);
-  u = fabs(S->P[UU][k][j][i]);
+  bsq = MY_MAX(S->bsq[k][j][i], SMALL);
+  rho = S->P[RHO][k][j][i];
+  u = S->P[UU][k][j][i];
   ef = rho + gam*u;
   ee = bsq + ef;
   va2 = bsq/ee;
@@ -381,12 +386,12 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
 
   #if CONDUCTION
   double chi_emhd = S->chi_emhd[k][j][i];
-  // wave speed contribution from q
+  // wave speed contribution due to q
   ccond2 = (gam - 1.) * chi_emhd / tau;
   #endif
   #if VISCOSITY
   double nu_emhd  = S->nu_emhd[k][j][i];
-  // wave speed contribution from dP
+  // wave speed contribution due to dP
   cvis2 = (4. / 3.) / (rho + (gam * u)) * rho * nu_emhd / tau;
   #endif
 
@@ -485,14 +490,14 @@ inline void get_ideal_fluid_source_vec(struct GridGeom *G, struct FluidState *S,
 
 // Compute explicit source terms
 // NOTE: This function is outside the IMEX conditional directive since the HARM algo calls it (through get_ideal_fluid_source_vec)
-double explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]) {
+double explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[]) {
   
   // Ideal MHD components
   double mhd[NDIM][NDIM];
 
-  DLOOP1 mhd_calc(S, i, j, k, mu, mhd[mu]);
+  DLOOP1 mhd_calc(G, S, i, j, k, mu, mhd[mu]);
 
-  PLOOP dU[ip] = 0.; // explicit_sources should be the first source call
+  FLOOP dU[ip] = 0.; // explicit_sources should be the first source call
   DLOOP2 {
     for (int gam = 0; gam < NDIM; gam++)
       dU[UU+gam] += mhd[mu][nu]*G->conn[nu][gam][mu][j][i];
@@ -596,7 +601,7 @@ double explicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i
 // Compute source terms with time derivatives
 #if IMEX
 double time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, struct FluidState *S_old,
-  struct FluidState *S, double dt, int loc, int i, int j, int k, double dU[NVAR]) {
+  struct FluidState *S, double dt, int loc, int i, int j, int k, double dU[]) {
 
   #if EMHD
   // Initializations
@@ -635,7 +640,7 @@ double time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, str
   // Compute q0 and delta_P0 (temporal terms)
   #if CONDUCTION
   double chi_emhd = S->chi_emhd[k][j][i];
-  double q_tilde       = S->P[Q_TILDE][k][j][i];
+  double q_tilde  = S->P[Q_TILDE][k][j][i];
 
   double q0 = 0.;
 
@@ -696,23 +701,21 @@ double time_derivative_sources(struct GridGeom *G, struct FluidState *S_new, str
 }
 
 // Compute implicit source terms
-double implicit_sources(struct GridGeom *G, struct FluidState *S, int loc, int i, int j, int k, double dU[NVAR]){
+double implicit_sources(struct GridGeom *G, struct FluidState *S, struct FluidState *S_tau, int loc, int i, int j, int k, double dU[]){
 
   #if EMHD
   // Initializations
-  double tau  = S->tau[k][j][i];
+  double tau  = S_tau->tau[k][j][i];
   double gdet = G->gdet[loc][j][i];
 
   #if CONDUCTION
   double q_tilde = S->P[Q_TILDE][k][j][i];
-  
   dU[Q_TILDE]    = -gdet * (q_tilde / tau);
   #endif
 
   #if VISCOSITY
   double delta_p_tilde = S->P[DELTA_P_TILDE][k][j][i];
-
-  dU[DELTA_P_TILDE] = -gdet * (delta_p_tilde / tau);
+  dU[DELTA_P_TILDE]    = -gdet * (delta_p_tilde / tau);
   #endif
 
   #endif

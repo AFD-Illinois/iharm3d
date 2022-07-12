@@ -22,28 +22,28 @@
 
 static struct FluidState *Stmp;
 
-void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
-void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
+void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int loc);
+void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int loc);
 
 // Apply floors to density, internal energy
-void fixup(struct GridGeom *G, struct FluidState *S)
+void fixup(struct GridGeom *G, struct FluidState *S, int loc)
 {
   timer_start(TIMER_FIXUP);
 
   static int firstc = 1;
-  if (firstc) {Stmp = calloc(1,sizeof(struct FluidState)); firstc = 0;}
+  if (firstc) { Stmp = calloc(1, sizeof(struct FluidState)); firstc = 0; }
 
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL fflag[k][j][i] = 0;
 
-#pragma omp parallel for collapse(3)
-  ZLOOP fixup_ceiling(G, S, i, j, k);
-
   // Bulk call before bsq calculation below
-  get_state_vec(G, S, CENT, 0, N3-1, 0, N2-1, 0, N1-1);
+  get_state_vec(G, S, loc, 0, N3 - 1, 0, N2 - 1, 0, N1 - 1);
 
 #pragma omp parallel for collapse(3)
-  ZLOOP fixup_floor(G, S, i, j, k);
+  ZLOOP {
+    fixup_floor(G, S, i, j, k, loc);
+    fixup_ceiling(G, S, i, j, k, loc);
+  }
 
   // Some debug info about floors
 #if DEBUG
@@ -86,11 +86,11 @@ void fixup(struct GridGeom *G, struct FluidState *S)
   timer_stop(TIMER_FIXUP);
 }
 
-inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
+inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int loc)
 {
   // First apply ceilings:
   // 1. Limit gamma with respect to normal observer
-  double gamma = mhd_gamma_calc(G, S, i, j, k, CENT);
+  double gamma = mhd_gamma_calc(G, S, i, j, k, loc);
 
   if (gamma > GAMMAMAX) {
     fflag[k][j][i] |= HIT_FLOOR_GAMMA;
@@ -114,21 +114,28 @@ inline void fixup_ceiling(struct GridGeom *G, struct FluidState *S, int i, int j
 #endif
 }
 
-inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k)
-{
+inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, int k, int loc)
+{  
   // Then apply floors:
   // 1. Geometric hard floors, not based on fluid relationships
   double rhoflr_geom, uflr_geom;
   if(METRIC == MKS) {
     double r, th, X[NDIM];
-    coord(i, j, k, CENT, X);
+    coord(i, j, k, loc, X);
     bl_coord(X, &r, &th);
 
+    // IMEX floors - need to be more generous
+    #if IMEX
+    double rhoscal = pow(r, -3./2);
+    rhoflr_geom = RHOMIN*rhoscal;
+    uflr_geom = UUMIN*rhoscal;
+    #else
     // New, steeper floor in rho
     // Previously raw r^-2, r^-1.5
     double rhoscal = pow(r, -2.) * 1 / (1 + r/FLOOR_R_CHAR);
     rhoflr_geom = RHOMIN*rhoscal;
     uflr_geom = UUMIN*pow(rhoscal, gam);
+    #endif
 
     // Impose overall minimum
     // TODO These would only be hit at by r^-3 floors for r_out = 100,000M.  Worth keeping?
@@ -145,7 +152,7 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
 
 
   // 2. Magnetic floors: impose maximum magnetization sigma = bsq/rho, inverse beta prop. to bsq/U
-  //get_state(G, S, i, j, k, CENT); // called above
+  //get_state(G, S, i, j, k, loc); // called above
   double bsq = bsq_calc(S, i, j, k);
   double rhoflr_b = bsq/BSQORHOMAX;
   double uflr_b = bsq/BSQOUMAX;
@@ -167,8 +174,89 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
   // Evaluate highest RHO floor
   double rhoflr_max = MY_MAX(MY_MAX(rhoflr_geom, rhoflr_b), rhoflr_temp);
 
-  if (rhoflr_max > S->P[RHO][k][j][i] || uflr_max > S->P[UU][k][j][i]) { // Apply floors
+  if (rhoflr_max > S->P[RHO][k][j][i] || uflr_max > S->P[UU][k][j][i]) {
+    // Refer to Appendix B3 in https://doi.org/10.1093/mnras/stx364 (hereafter R17)
+    #if DRIFT_FRAME
 
+    // Geometrical quantities
+    double gdet  = G->gdet[loc][j][i];
+    double alpha = G->lapse[loc][j][i];
+    double beta[NDIM] = {0};
+    beta[1] = alpha*alpha*G->gcon[CENT][0][1][j][i];
+    beta[2] = alpha*alpha*G->gcon[CENT][0][2][j][i];
+    beta[3] = alpha*alpha*G->gcon[CENT][0][3][j][i];
+
+    // Fluid quantities
+    double rho   = S->P[RHO][k][j][i];
+    double u     = S->P[UU][k][j][i];
+    double P     = (gam - 1.) * u;
+    double w_old = MY_MAX(rho + u + P, SMALL);
+
+    double ucon[NDIM] = {0};
+    double ucov[NDIM] = {0};
+    DLOOP1 ucon[mu] = S->ucon[mu][k][j][i];
+    ucon[0] = MY_MAX(ucon[0], SMALL);
+    DLOOP2 ucov[mu] += G->gcov[loc][mu][nu][j][i]*ucon[nu];
+
+    // Normal observer magnetic field
+    double Bcon[NDIM] = {0};
+    double Bcov[NDIM] = {0};
+    Bcon[0] = 0.;
+    Bcon[1] = S->P[B1][k][j][i];
+    Bcon[2] = S->P[B2][k][j][i];
+    Bcon[3] = S->P[B3][k][j][i];
+    DLOOP2 Bcov[mu] += G->gcov[loc][mu][nu][j][i]*Bcon[nu];
+    double Bsq = MY_MAX(dot(Bcon, Bcov), SMALL);
+
+    // Normal observer conserved fluid momentum
+    double Qcov[NDIM];
+    Qcov[0] = w_old * ucon[0] * ucov[0] + P;
+    Qcov[1] = w_old * ucon[0] * ucov[1];
+    Qcov[2] = w_old * ucon[0] * ucov[2];
+    Qcov[3] = w_old * ucon[0] * ucov[3];
+
+    // Momentum along magnetic field lines. Kept constant
+    double QdotB = dot(Bcon, Qcov);
+
+    // Initial parallel velocity (refer R17 Eqn B10)
+    double vpar = QdotB / (sqrt(Bsq) * w_old * pow(ucon[0], 2.));
+
+    // Compute t-component of drift velocity (refer R17 Eqn B13)
+    double ucon_dr[NDIM] = {0};
+    ucon_dr[0] = 1. / sqrt(pow(ucon[0], -2.) + pow(vpar, 2.));
+
+    // Compute spatial components of drift velocity (refer R17 B11)
+    for (int mu=1; mu < NDIM; mu++)
+      ucon_dr[mu] = ucon[mu] * (ucon_dr[0] / ucon[0]) - (vpar * Bcon[mu] * ucon_dr[0] / sqrt(Bsq));
+
+    // Update rho, u and compute new enthalpy
+    S->P[RHO][k][j][i] = MY_MAX(S->P[RHO][k][j][i], rhoflr_max);
+    S->P[UU][k][j][i]  = MY_MAX(S->P[UU][k][j][i], uflr_max);
+    P = (gam - 1.) * S->P[UU][k][j][i];
+    double w_new  = S->P[RHO][k][j][i] + S->P[UU][k][j][i] + P;
+
+    // Compute new parallel velocity (refer R17 B14)
+    double x = (2. * QdotB) / (sqrt(Bsq) * w_new * ucon_dr[0]);
+    vpar = x / (1 + sqrt(1 + x*x)) * (1. / ucon_dr[0]);
+
+    // Compute new fluid four velocity (refer R17 B13 and B11)
+    ucon[0] = 1. / sqrt(pow(ucon_dr[0], -2.) - pow(vpar, 2.));
+    for (int mu=1; mu < NDIM; mu++) {
+      ucon[mu] = ucon_dr[mu] * (ucon[0] / ucon_dr[0]) + (vpar * Bcon[mu] * ucon[0] / sqrt(Bsq));
+      S->ucon[mu][k][j][i] = ucon[mu];
+    }
+    lower_grid(S->ucon, S->ucov, G, i, j, k, loc);
+
+    // New lorentz factor
+    double gamma = ucon[0]*alpha;
+
+    // Compute new velocity primitives
+    S->P[U1][k][j][i] = ucon[1] + beta[1]*gamma/alpha;
+    S->P[U2][k][j][i] = ucon[2] + beta[2]*gamma/alpha;
+    S->P[U3][k][j][i] = ucon[3] + beta[3]*gamma/alpha;
+
+    // Floors in normal observer frame
+    #else
     // Initialize a dummy fluid parcel
     PLOOP {
       Stmp->P[ip][k][j][i] = 0;
@@ -177,15 +265,15 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
 
     // Add mass and internal energy, but not velocity
     Stmp->P[RHO][k][j][i] = MY_MAX(0., rhoflr_max - S->P[RHO][k][j][i]);
-    Stmp->P[UU][k][j][i] = MY_MAX(0., uflr_max - S->P[UU][k][j][i]);
+    Stmp->P[UU][k][j][i]  = MY_MAX(0., uflr_max - S->P[UU][k][j][i]);
 
     // Get conserved variables for the parcel
-    get_state(G, Stmp, i, j, k, CENT);
-    prim_to_flux(G, Stmp, i, j, k, 0, CENT, Stmp->U);
+    get_state(G, Stmp, i, j, k, loc);
+    prim_to_flux(G, Stmp, i, j, k, 0, loc, Stmp->U);
 
     // And for the current state
-    //get_state(G, S, i, j, k, CENT); // Called just above, or vectorized above that
-    prim_to_flux(G, S, i, j, k, 0, CENT, S->U);
+    //get_state(G, S, i, j, k, loc); // Called just above, or vectorized above that
+    prim_to_flux(G, S, i, j, k, 0, loc, S->U);
 
     // Add new conserved variables to current values
     PLOOP {
@@ -195,14 +283,49 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
 
     // Recover primitive variables
     // CFG: do we get any failures here?
-    #if !IMEX
-    pflag[k][j][i] = U_to_P(G, S, i, j, k, CENT);
+    pflag[k][j][i] = U_to_P(G, S, i, j, k, loc);
     #endif
   }
 
 #if ELECTRONS
-    // Reset entropy after floors
-    S->P[KTOT][k][j][i] = (gam - 1.)*S->P[UU][k][j][i]/pow(S->P[RHO][k][j][i],gam);
+  // Reset entropy after floors
+  S->P[KTOT][k][j][i] = (gam - 1.)*S->P[UU][k][j][i]/pow(S->P[RHO][k][j][i],gam);
+#endif
+
+#if EMHD
+// Update scalar fields, now that density and internal energy floors have been applied 
+// before applying EMHD floors
+  get_state(G, S, i, j, k, loc);
+
+  double rho   = S->P[RHO][k][j][i];
+  double u     = S->P[UU][k][j][i];
+  double P     = (gam - 1.) * u;
+  double Theta = S->Theta[k][j][i];
+  double cs    = sqrt(gam * P / (rho + (gam * u)));
+
+  #if CONDUCTION
+  double q = S->q[k][j][i];
+
+  double q_max           = 1.07 * rho * pow(cs, 3.);
+  double max_frac        = MY_MAX(fabs(q) / q_max, 1.);
+  S->P[Q_TILDE][k][j][i] = S->P[Q_TILDE][k][j][i] / max_frac;
+  #endif
+
+  #if VISCOSITY
+  double delta_p = S->delta_p[k][j][i];
+
+  double delta_p_comp_ratio = MY_MAX(P - 2./3. * delta_p, SMALL) / MY_MAX(P + 1./3. * delta_p, SMALL);
+  double delta_p_plus       = MY_MIN(1.07 * 0.5 * bsq * delta_p_comp_ratio, 1.49 * P);
+  double delta_p_minus      = MY_MAX(-1.07 * bsq, -2.99 * P);
+
+  if (delta_p > 0.)
+    S->P[DELTA_P_TILDE][k][j][i] = S->P[DELTA_P_TILDE][k][j][i] * (1. / MY_MAX(delta_p / delta_p_plus, 1.));
+  else
+    S->P[DELTA_P_TILDE][k][j][i] = S->P[DELTA_P_TILDE][k][j][i] * (1. / MY_MAX(delta_p / delta_p_minus, 1.));
+  #endif
+
+  // Update q and dP with new q_tilde and dP_tilde values
+  get_state(G, S, i, j, k, loc);
 #endif
 
 }
@@ -255,14 +378,14 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   ZLOOP {
     if (pflag[k][j][i] == 0) {
       double wsum = 0.;
-      double sum[B1];
-      FLOOP sum[ip] = 0.;
+      double sum[5];
+      FIDLOOP sum[ip] = 0.;
       for (int l = -1; l < 2; l++) {
         for (int m = -1; m < 2; m++) {
           for (int n = -1; n < 2; n++) {
             double w = 1./(abs(l) + abs(m) + abs(n) + 1)*pflag[k+n][j+m][i+l];
             wsum += w;
-            FLOOP sum[ip] += w*S->P[ip][k+n][j+m][i+l];
+            FIDLOOP sum[ip] += w*S->P[ip][k+n][j+m][i+l];
           }
         }
       }
@@ -273,7 +396,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
         //exit(-1);
         continue;
       }
-      FLOOP S->P[ip][k][j][i] = sum[ip]/wsum;
+      FIDLOOP S->P[ip][k][j][i] = sum[ip]/wsum;
 
       // Cell is fixed, could now use for other interpolations
       // However, this is harmful to MPI-determinism
@@ -284,9 +407,9 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
 #endif
 
       // Make sure fixed values still abide by floors
-      fixup_ceiling(G, S, i, j, k);
+      fixup_ceiling(G, S, i, j, k, CENT);
       get_state(G, S, i, j, k, CENT);
-      fixup_floor(G, S, i, j, k);
+      fixup_floor(G, S, i, j, k, CENT);
     }
   }
 
@@ -303,4 +426,3 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
 
   timer_stop(TIMER_FIXUP);
 }
-#undef FLOOP
