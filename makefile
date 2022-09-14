@@ -16,6 +16,7 @@ SYSTEM_LIBDIR = /lib64
 CC=h5pcc
 # Example CFLAGS for going fast with GCC
 CFLAGS = -std=gnu99 -O3 -march=native -mtune=native -flto -fopenmp -funroll-loops
+LDFLAGS = 
 MATH_LIB = -lm
 # ICC does not like -lm and uses different flags
 #CFLAGS = -xCORE-AVX2 -Ofast -fstrict-aliasing -Wall -Werror -ipo -qopenmp -qmkl
@@ -38,7 +39,10 @@ ifneq (,$(findstring frontera,$(HOST)))
         -include $(MAKEFILE_PATH)/machines/frontera.make
 endif
 ifneq (,$(findstring beginsbh,begins$(HOST)))
-        -include $(MAKEFILE_PATH)/machines/bh.make
+        -include $(MAKEFILE_PATH)/machines/bh.make	
+endif
+ifneq (,$(findstring delta,$(HOST)))
+        -include $(MAKEFILE_PATH)/machines/delta.make
 endif
 -include $(MAKEFILE_PATH)/machines/$(HOST).make
 
@@ -50,9 +54,9 @@ GIT_VERSION := $(shell cd $(MAKEFILE_PATH); git describe --dirty --always --tags
 ## LINKING PARAMETERS ##
 
 LINK = $(CC)
-LDFLAGS = $(CFLAGS)
+LDFLAGS += $(CFLAGS)
 
-HDF5_LIB = -lhdf5_hl -lhdf5
+HDF5_LIB = -lhdf5
 MPI_LIB = #TODO these are hard to find due to ubiquity of mpicc
 GSL_LIB = -lgsl -lgslcblas
 
@@ -90,6 +94,11 @@ endif
 ifneq ($(strip $(GSL_DIR)),)
 	INC += -I$(GSL_DIR)/include/
 	LIBDIR += -L$(GSL_DIR)/lib/
+endif
+ifneq ($(strip $(MKL_DIR)),)
+	INC += -I$(MKL_DIR)/include/
+	LIBDIR += -L$(MKL_DIR)/lib/intel64/
+	LIB += $(MKL_LIB)
 endif
 ifneq ($(strip $(SYSTEM_LIBDIR)),)
 	# Prefer user libraries (above) to system

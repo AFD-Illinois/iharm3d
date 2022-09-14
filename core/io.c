@@ -15,7 +15,7 @@
 
 // TODO move bsq to this scope?
 
-#if DEBUG
+#if (DEBUG || TEST)
 #define OUT_H5_TYPE H5T_IEEE_F64LE
 #define OUT_TYPE double
 #else

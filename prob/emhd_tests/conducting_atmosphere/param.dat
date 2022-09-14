@@ -29,6 +29,11 @@
 [dbl] jacobian_eps = 4.e-8
 [dbl] rootfind_tol = 1.e-20
 
+# LINESEARCH PARAMETERS
+# CONSIDERED ONLY IF LINESEARCH IS SET TO 1 IN PARAMETERS.H
+[int] max_linesearch_iter = 3
+[dbl] linesearch_eps      = 1.e-4
+
 # EMHD PARAMETERS
 # CONSIDERED ONLY IF EMHD IS SET TO 1 IN PARAMETERS.H
 [int] higher_order_terms_conduction = 1

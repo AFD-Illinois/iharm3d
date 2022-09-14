@@ -17,16 +17,16 @@
 
 double C4, C3, n, K;
 
-double mdot, rs;
+double mdot_bondi, rs;
 void set_problem_params() {
-  set_param("mdot", &mdot);
+  set_param("mdot_bondi", &mdot_bondi);
   set_param("rs", &rs);
   set_param("Rhor", &Rhor);
 }
 
 void save_problem_data(hid_t string_type){
   hdf5_write_single_val("emhd/bondi_viscous", "PROB", string_type);
-  hdf5_write_single_val(&mdot, "mdot", H5T_IEEE_F64LE);
+  hdf5_write_single_val(&mdot_bondi, "mdot_bondi", H5T_IEEE_F64LE);
   hdf5_write_single_val(&rs, "rs", H5T_IEEE_F64LE);
 }
 
@@ -46,7 +46,7 @@ void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j,
   #endif
 
   #if VISCOSITY
-  double eta = 0.01
+  double eta = 0.01;
   S->nu_emhd[k][j][i] = eta / MY_MAX(SMALL, rho);
   #endif
 }
@@ -142,7 +142,7 @@ void get_prim_bondi(int i, int j, int k, struct FluidState *S, struct GridGeom *
     double Tc = -n*pow(Vc,2)/((n + 1.)*(n*pow(Vc,2) - 1.));
     C4 = uc*pow(rs,2)*pow(Tc,n);
     C3 = pow(1. + (1. + n)*Tc,2)*(1. - 2./rs + pow(uc, 2));
-		K  = pow(4*M_PI*C4 / mdot, 1/n);
+		K  = pow(4*M_PI*C4 / mdot_bondi, 1/n);
 
     firstc = 0;
   }
@@ -193,8 +193,9 @@ void get_prim_bondi(int i, int j, int k, struct FluidState *S, struct GridGeom *
   S->P[B2][k][j][i] = 0.;
   S->P[B3][k][j][i] = 0.;
   
+  #if EMHD
   #if CONDUCTION
-  S->P[Q_TILDE][k][j][i]       = 0.;
+  S->P[Q_TILDE][k][j][i] = 0.;
   #endif
 
   #if VISCOSITY
@@ -213,6 +214,7 @@ void get_prim_bondi(int i, int j, int k, struct FluidState *S, struct GridGeom *
 		S->P[DELTA_P_TILDE][k][j][i] *= sqrt(tau / (nu_emhd * rho * Theta));
 	}
   #endif
+  #endif
 }
 
 void init(struct GridGeom *G, struct FluidState *S)
@@ -229,7 +231,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   if (DEBUG && mpi_io_proc()) {
     printf("a = %e Rhor = %e\n", a, Rhor);
 
-    printf("mdot = %e\n", mdot);
+    printf("mdot = %e\n", mdot_bondi);
     printf("rs   = %e\n", rs);
     printf("n    = %e\n", n);
     printf("C4   = %e\n", C4);
@@ -237,7 +239,7 @@ void init(struct GridGeom *G, struct FluidState *S)
   }
 
   //Enforce boundary conditions
-  fixup(G, S);
+  fixup(G, S, CENT);
   set_bounds(G, S);
 }
 

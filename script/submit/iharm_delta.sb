@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Default job submission for HARM on Frontera CPU
+# Override w/ sbatch --job-name, --nodes, --partition as necessary
+# Note: ONE (1) task per node: N{1,2,3}CPU product should *equal* the -N parameter
+
+#SBATCH --job-name=iharm
+#SBATCH --partition cpu
+#SBATCH --nodes 1
+#SBATCH --tasks-per-node 1
+#SBATCH --cpus-per-task=128
+#SBATCH --exclusive
+#SBATCH --mem=0
+#SBATCH --account=bbgv-delta-cpu
+
+#SBATCH --time=24:00:00
+#SBATCH --output=out-%j.txt
+
+export OMP_NUM_THREADS=128
+
+# Record stuff about run
+date
+pwd
+
+module list
+
+srun ./harm -p param.dat

@@ -79,9 +79,6 @@ void imex_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
         double delta_prim[NFVAR] = {0};
         double norm = 0;
 
-        // Update Ss magnetic field primitives now that explicit sources have been computed
-        BLOOP Ss->P[ip][k][j][i] = S_solver->P[ip][k][j][i];
-
         // Initialize prim_guess
         PLOOP {
           prim_guess[ip] = S_solver->P[ip][k][j][i];
@@ -161,6 +158,12 @@ void imex_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
 
       
     }// END OF ZLOOP
+
+    #if DEBUG_EMHD
+    fprintf(stdout, "\nNonlinear solver iter: %d\n", nonlinear_iter);
+    PLOOP fprintf(stdout, "%12.11e ", S_solver->P[ip][NG][N2D][N1D]);
+    fprintf(stdout, "\n");
+    #endif
 
     max_norm = mpi_max(max_norm);
 

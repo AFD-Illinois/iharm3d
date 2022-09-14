@@ -17,6 +17,10 @@
 #define N2CPU 1
 #define N3CPU 1
 
+/* TEST PROBLEM ?*/
+/* SET TO 1 IF YOU WANT DOUBLE PRECISION OUTPUT*/
+#define TEST 1
+
 /* METRIC
  *   MINKOWSKI, MKS
  */
@@ -45,6 +49,7 @@
  */
 
 #define IMEX 1
+#define LINESEARCH 1
 
 /* EXTENDED MHD
  *  EMHD - (0,1), CONDUCTION - (0,1), VISCOSITY - (0,1)

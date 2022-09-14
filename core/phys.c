@@ -46,7 +46,7 @@ inline void mhd_calc(struct GridGeom *G, struct FluidState *S, int i, int j, int
   DLOOP1 {
     double bcov = S->bcov[mu][k][j][i];
     double ucov = S->ucov[mu][k][j][i];
-    mhd[mu] += 0*(q / sqrt(bsq)) * ((ucon * bcov) + (bcon * ucov));
+    mhd[mu] += (q / sqrt(bsq)) * ((ucon * bcov) + (bcon * ucov));
   }
   #endif
   #if VISCOSITY
@@ -54,7 +54,7 @@ inline void mhd_calc(struct GridGeom *G, struct FluidState *S, int i, int j, int
   DLOOP1 {
     double bcov = S->bcov[mu][k][j][i];
     double ucov = S->ucov[mu][k][j][i];
-    mhd[mu] += 0*(-delta_p) * ((bcon * bcov / bsq) - (1./3.) * (delta(dir, mu) + ucon * ucov));
+    mhd[mu] += (-delta_p) * ((bcon * bcov / bsq) - (1./3.) * (delta(dir, mu) + ucon * ucov));
   }
   #endif
   #endif
@@ -371,7 +371,7 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   }
 
   // Find fast magnetosonic speed
-  bsq = MY_MAX(S->bsq[k][j][i], SMALL);
+  bsq = MY_MAX(bsq_calc(S, i, j, k), SMALL);
   rho = S->P[RHO][k][j][i];
   u = S->P[UU][k][j][i];
   ef = rho + gam*u;

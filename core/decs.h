@@ -146,6 +146,10 @@
 #endif
 #endif
 
+#ifndef TEST
+#define TEST 0
+#endif
+
 // The Intel compiler is a pain
 // Intel 18.0.0 aka 20170811 works
 // Intel 18.0.2,3 aka 20180315 and 20180516 crash in places
