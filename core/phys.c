@@ -38,26 +38,26 @@ inline void mhd_calc(struct GridGeom *G, struct FluidState *S, int i, int j, int
               S->bcon[dir][k][j][i]*S->bcov[mu][k][j][i];
   }
 
-  #if EMHD
-  double ucon    = S->ucon[dir][k][j][i];
-  double bcon    = S->bcon[dir][k][j][i];
-  #if CONDUCTION
-  double q = S->q[k][j][i];
-  DLOOP1 {
-    double bcov = S->bcov[mu][k][j][i];
-    double ucov = S->ucov[mu][k][j][i];
-    mhd[mu] += (q / sqrt(bsq)) * ((ucon * bcov) + (bcon * ucov));
-  }
-  #endif
-  #if VISCOSITY
-  double delta_p = S->delta_p[k][j][i];
-  DLOOP1 {
-    double bcov = S->bcov[mu][k][j][i];
-    double ucov = S->ucov[mu][k][j][i];
-    mhd[mu] += (-delta_p) * ((bcon * bcov / bsq) - (1./3.) * (delta(dir, mu) + ucon * ucov));
-  }
-  #endif
-  #endif
+//  #if EMHD
+//  double ucon    = S->ucon[dir][k][j][i];
+//  double bcon    = S->bcon[dir][k][j][i];
+//  #if CONDUCTION
+//  double q = S->q[k][j][i];
+//  DLOOP1 {
+//    double bcov = S->bcov[mu][k][j][i];
+//    double ucov = S->ucov[mu][k][j][i];
+//    mhd[mu] += (q / sqrt(bsq)) * ((ucon * bcov) + (bcon * ucov));
+//  }
+//  #endif
+//  #if VISCOSITY
+//  double delta_p = S->delta_p[k][j][i];
+//  DLOOP1 {
+//    double bcov = S->bcov[mu][k][j][i];
+//    double ucov = S->ucov[mu][k][j][i];
+//    mhd[mu] += (-delta_p) * ((bcon * bcov / bsq) - (1./3.) * (delta(dir, mu) + ucon * ucov));
+//  }
+//  #endif
+//  #endif
 }
 
 // TODO OLD only used in fixup.c and even then hacked to hell

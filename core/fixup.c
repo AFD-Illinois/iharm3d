@@ -292,41 +292,41 @@ inline void fixup_floor(struct GridGeom *G, struct FluidState *S, int i, int j, 
   S->P[KTOT][k][j][i] = (gam - 1.)*S->P[UU][k][j][i]/pow(S->P[RHO][k][j][i],gam);
 #endif
 
-#if EMHD
-// Update scalar fields, now that density and internal energy floors have been applied 
-// before applying EMHD floors
-  get_state(G, S, i, j, k, loc);
-
-  double rho   = S->P[RHO][k][j][i];
-  double u     = S->P[UU][k][j][i];
-  double P     = (gam - 1.) * u;
-  double Theta = S->Theta[k][j][i];
-  double cs    = sqrt(gam * P / (rho + (gam * u)));
-
-  #if CONDUCTION
-  double q = S->q[k][j][i];
-
-  double q_max           = 1.07 * rho * pow(cs, 3.);
-  double max_frac        = MY_MAX(fabs(q) / q_max, 1.);
-  S->P[Q_TILDE][k][j][i] = S->P[Q_TILDE][k][j][i] / max_frac;
-  #endif
-
-  #if VISCOSITY
-  double delta_p = S->delta_p[k][j][i];
-
-  double delta_p_comp_ratio = MY_MAX(P - 2./3. * delta_p, SMALL) / MY_MAX(P + 1./3. * delta_p, SMALL);
-  double delta_p_plus       = MY_MIN(1.07 * 0.5 * bsq * delta_p_comp_ratio, 1.49 * P);
-  double delta_p_minus      = MY_MAX(-1.07 * bsq, -2.99 * P);
-
-  if (delta_p > 0.)
-    S->P[DELTA_P_TILDE][k][j][i] = S->P[DELTA_P_TILDE][k][j][i] * (1. / MY_MAX(delta_p / delta_p_plus, 1.));
-  else
-    S->P[DELTA_P_TILDE][k][j][i] = S->P[DELTA_P_TILDE][k][j][i] * (1. / MY_MAX(delta_p / delta_p_minus, 1.));
-  #endif
-
-  // Update q and dP with new q_tilde and dP_tilde values
-  get_state(G, S, i, j, k, loc);
-#endif
+//#if EMHD
+//// Update scalar fields, now that density and internal energy floors have been applied 
+//// before applying EMHD floors
+//  get_state(G, S, i, j, k, loc);
+//
+//  double rho   = S->P[RHO][k][j][i];
+//  double u     = S->P[UU][k][j][i];
+//  double P     = (gam - 1.) * u;
+//  double Theta = S->Theta[k][j][i];
+//  double cs    = sqrt(gam * P / (rho + (gam * u)));
+//
+//  #if CONDUCTION
+//  double q = S->q[k][j][i];
+//
+//  double q_max           = 1.07 * rho * pow(cs, 3.);
+//  double max_frac        = MY_MAX(fabs(q) / q_max, 1.);
+//  S->P[Q_TILDE][k][j][i] = S->P[Q_TILDE][k][j][i] / max_frac;
+//  #endif
+//
+//  #if VISCOSITY
+//  double delta_p = S->delta_p[k][j][i];
+//
+//  double delta_p_comp_ratio = MY_MAX(P - 2./3. * delta_p, SMALL) / MY_MAX(P + 1./3. * delta_p, SMALL);
+//  double delta_p_plus       = MY_MIN(1.07 * 0.5 * bsq * delta_p_comp_ratio, 1.49 * P);
+//  double delta_p_minus      = MY_MAX(-1.07 * bsq, -2.99 * P);
+//
+//  if (delta_p > 0.)
+//    S->P[DELTA_P_TILDE][k][j][i] = S->P[DELTA_P_TILDE][k][j][i] * (1. / MY_MAX(delta_p / delta_p_plus, 1.));
+//  else
+//    S->P[DELTA_P_TILDE][k][j][i] = S->P[DELTA_P_TILDE][k][j][i] * (1. / MY_MAX(delta_p / delta_p_minus, 1.));
+//  #endif
+//
+//  // Update q and dP with new q_tilde and dP_tilde values
+//  get_state(G, S, i, j, k, loc);
+//#endif
 
 }
 
