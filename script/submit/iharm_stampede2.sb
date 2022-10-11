@@ -11,14 +11,14 @@
 
 #SBATCH -N 1
 
-#SBATCH --ntasks-per-node 4
+#SBATCH --ntasks-per-node 1
 
 #SBATCH -t 48:00:00
 #SBATCH -o out-%j.txt
 
 # Schedule based on 2x hyperthreading, regardless of actual number of threads
 NUM_CPUS=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
-export OMP_NUM_THREADS=$(( $NUM_CPUS * 2 / 4 ))
+export OMP_NUM_THREADS=$(( $NUM_CPUS * 2))
 
 # Record stuff about run
 date

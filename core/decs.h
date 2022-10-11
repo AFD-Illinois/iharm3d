@@ -536,6 +536,8 @@ extern double R_inner;
   for (int j = N2D - NG; j < N2D + NG; j++)
 #define ILOOP_DEBUG_EMHD \
   for (int i = N1D - NG; i < N1D + NG; i++)
+#define ZLOOP_DEBUG_EMHD \
+  KLOOP_DEBUG_EMHD JLOOP_DEBUG_EMHD ILOOP_DEBUG_EMHD
 #endif
 
 // Loop over primitive variables

@@ -378,14 +378,14 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   ZLOOP {
     if (pflag[k][j][i] == 0) {
       double wsum = 0.;
-      double sum[5];
-      FIDLOOP sum[ip] = 0.;
+      double sum[NFVAR];
+      FLOOP sum[ip] = 0.;
       for (int l = -1; l < 2; l++) {
         for (int m = -1; m < 2; m++) {
           for (int n = -1; n < 2; n++) {
             double w = 1./(abs(l) + abs(m) + abs(n) + 1)*pflag[k+n][j+m][i+l];
             wsum += w;
-            FIDLOOP sum[ip] += w*S->P[ip][k+n][j+m][i+l];
+            FLOOP sum[ip] += w*S->P[ip][k+n][j+m][i+l];
           }
         }
       }
@@ -396,7 +396,7 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
         //exit(-1);
         continue;
       }
-      FIDLOOP S->P[ip][k][j][i] = sum[ip]/wsum;
+      FLOOP S->P[ip][k][j][i] = sum[ip]/wsum;
 
       // Cell is fixed, could now use for other interpolations
       // However, this is harmful to MPI-determinism

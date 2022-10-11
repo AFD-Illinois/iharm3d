@@ -59,11 +59,36 @@ void step(struct GridGeom *G, struct FluidState *S)
 #endif
 
   #if DEBUG_EMHD
-  fprintf(stdout, "\nHalf-step\n");
-  PLOOP fprintf(stdout, "%6.5e ", Stmp->P[ip][NG][N2D][N1D]);
-  fprintf(stdout, "\n");
-  PLOOP fprintf(stdout, "%6.5e ", Stmp->U[ip][NG][N2D][N1D]);
-  fprintf(stdout, "\n%6.5e %6.5e %6.5e %6.5e %6.5e\n", Stmp->tau[NG][N2D][N1D], Stmp->q[NG][N2D][N1D],Stmp->delta_p[NG][N2D][N1D], Stmp->Theta[NG][N2D][N1D], Stmp->bsq[NG][N2D][N1D]);
+  fprintf(stdout, "\nHalf-step 'q_tilde'\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", Stmp->P[Q_TILDE][NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\nHalf-step 'dP_tilde'\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", Stmp->P[DELTA_P_TILDE][NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\nHalf-step 'q'\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", Stmp->q[NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\nHalf-step 'dP'\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", Stmp->delta_p[NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\nHalf-step 'tau'\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", Stmp->tau[NG][j][i]);
+    fprintf(stdout, "\n");
+  } 
   #endif
   
   // Fixup routines: smooth over outlier zones
@@ -76,12 +101,12 @@ void step(struct GridGeom *G, struct FluidState *S)
   // Need an MPI call _before_ fixup_utop to obtain correct pflags
   set_bounds(G, Stmp);
   FLAG("First bounds Tmp");
-  #if (!DRIFT_FRAME)
+  // #if (!DRIFT_FRAME)
   fixup_utoprim(G, Stmp);
   FLAG("Fixup U_to_P Tmp");
   set_bounds(G, Stmp);
   FLAG("Second bounds Tmp");
-  #endif
+  // #endif
 
   // Corrector step
   double ndt = advance_fluid(G, S, Stmp, S, dt);
@@ -93,11 +118,36 @@ void step(struct GridGeom *G, struct FluidState *S)
 #endif
 
   #if DEBUG_EMHD
-  fprintf(stdout, "\nFull-step\n");
-  PLOOP fprintf(stdout, "%6.5e ", S->P[ip][NG][N2D][N1D]);
-  fprintf(stdout, "\n");
-  PLOOP fprintf(stdout, "%6.5e ", S->U[ip][NG][N2D][N1D]);
-  fprintf(stdout, "\n%6.5e %6.5e %6.5e %6.5e %6.5e\n", S->tau[NG][N2D][N1D], S->q[NG][N2D][N1D],S->delta_p[NG][N2D][N1D], S->Theta[NG][N2D][N1D], S->bsq[NG][N2D][N1D]);
+  fprintf(stdout, "\nFull-step 'q_tilde'\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", S->P[Q_TILDE][NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\nFull-step 'dP_tilde'\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", S->P[DELTA_P_TILDE][NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\nFull-step 'q'\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", S->q[NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\nFull-step 'dP'\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", S->delta_p[NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\nFull-step 'tau'\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", S->tau[NG][j][i]);
+    fprintf(stdout, "\n");
+  } 
   #endif
 
   fixup(G, S, CENT);
@@ -108,12 +158,12 @@ void step(struct GridGeom *G, struct FluidState *S)
 #endif
   set_bounds(G, S);
   FLAG("First bounds Full");
-  #if (!DRIFT_FRAME)
+  // #if (!DRIFT_FRAME)
   fixup_utoprim(G, S);
   FLAG("Fixup U_to_P Full");
   set_bounds(G, S);
   FLAG("Second bounds Full");
-  #endif
+  // #endif
 
   // Increment time
   t += dt;
@@ -173,7 +223,28 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   PLOOP ZLOOPALL Sf->P[ip][k][j][i] = Si->P[ip][k][j][i];
 #endif
 
-	double ndt = get_flux(G, Ss, F);	
+	double ndt = get_flux(G, Ss, F);
+
+  #if DEBUG_EMHD
+  fprintf(stdout, "\nUU fluxes along X1\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", F->X1[UU][NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\nUU fluxes along X2\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", F->X2[UU][NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  fprintf(stdout, "\nUU fluxes along X3\n");
+  JLOOP_DEBUG_EMHD {
+    ILOOP_DEBUG_EMHD
+      fprintf(stdout, "%6.5e ", F->X3[UU][NG][j][i]);
+    fprintf(stdout, "\n");
+  }
+  #endif
 
 #if METRIC == MKS
   fix_flux(F);
@@ -215,6 +286,11 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   #pragma omp parallel for simd collapse(3)
   FLOOP ZLOOP S_solver->P[ip][k][j][i] = Ss->P[ip][k][j][i];
 
+  // pflag is set to 1 by default. 0 means converged, 1 means not converged. This is done to match the pflags meaning in HARM algo
+  #pragma omp parallel for simd collapse(2)
+  ZLOOPALL {
+    pflag[k][j][i] = 1;
+  }
   // timestep by root-finding
   imex_timestep(G, Si, Ss, S_solver, F, Dt);
 
@@ -229,7 +305,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
     fail_save[k][j][i] = pflag[k][j][i];
-    pflag[k][j][i] = 0.;
+    // pflag[k][j][i] = 0.;
   }
 
 // Defaults to HARM algo if IMEX is set to 0 in parameters.h 

@@ -96,7 +96,7 @@ void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j,
   #if CONDUCTION
   double q = S->q[k][j][i];
 
-  double q_max   = rho * pow(cs, 3.);
+  double q_max   = conduction_alpha * rho * pow(cs, 3.);
   double q_ratio = fabs(q) / q_max;
   inv_exp_g      = exp(-(q_ratio - 1.) / lambda);
   f_fmin         = inv_exp_g / (inv_exp_g + 1.) + 1.e-5;
@@ -108,7 +108,7 @@ void set_emhd_parameters(struct GridGeom *G, struct FluidState *S, int i, int j,
   double delta_p = S->delta_p[k][j][i];
 
   double delta_p_comp_ratio = MY_MAX(P - 2./3. * delta_p, SMALL) / MY_MAX(P + 1./3. * delta_p, SMALL);
-  double delta_p_plus       = MY_MAX(0.5 * bsq * delta_p_comp_ratio, 1.49 * P / 1.07);
+  double delta_p_plus       = MY_MIN(0.5 * bsq * delta_p_comp_ratio, 1.49 * P / 1.07);
   double delta_p_minus      = MY_MAX(-bsq, -2.99 * P / 1.07);
 
   double delta_p_max = 0.;
@@ -517,7 +517,7 @@ void init(struct GridGeom *G, struct FluidState *S)
 #endif
 
 #if EMHD
-  ZLOOP {
+  ZLOOPALL {
     #if CONDUCTION
     S->q[k][j][i]          = 0.;
     S->P[Q_TILDE][k][j][i] = 0.;
