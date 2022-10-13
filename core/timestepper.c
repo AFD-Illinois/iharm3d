@@ -55,7 +55,7 @@ void imex_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
   #pragma omp parallel for reduction(max:max_norm) collapse(2)
     ZLOOP {
 
-      if (pflag[k][j][i] == 1.) {
+      if (pflag[k][j][i] == 1) {
 
         // First off, compute explicit source term, old implicit source term and store old conserved variables
         double sources_explicit[NFVAR]     = {0};
@@ -117,12 +117,13 @@ void imex_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
 
         // Linesearch
         double step_length  = 1.;
-        // Account for negative prims after update
         // Check if rho + drho > 0. and u + du > 0. If not, set step length to 0.1. If it's still < 0., break and average in fixup.c
         if (((S_guess->P[RHO][k][j][i] + step_length * delta_prim[RHO]) < 0.) || ((S_guess->P[UU][k][j][i] + step_length * delta_prim[UU]) < 0.))
           step_length = 0.1;
-        if (((S_guess->P[RHO][k][j][i] + step_length * delta_prim[RHO]) < 0.) || ((S_guess->P[UU][k][j][i] + step_length * delta_prim[UU]) < 0.))
-          break;  
+        if (((S_guess->P[RHO][k][j][i] + step_length * delta_prim[RHO]) < 0.) || ((S_guess->P[UU][k][j][i] + step_length * delta_prim[UU]) < 0.)) {
+          solve_fail[k][j][i] = 1;
+          break;
+        }  
         #if LINESEARCH
         // L2 norm
         FLOOP norm += pow(residual[ip], 2.);
@@ -148,16 +149,6 @@ void imex_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
           double denom  = (f1 - f0 - (fprime0 * step_length)) * condition + (1 - condition);
           double step_length_new = -fprime0 * step_length * step_length / denom / 2.;
           step_length = step_length * (1 - condition) + (condition * step_length_new);
-
-          // if ((i == N1D) && (j == N2D) && (k == NG)) {
-          //   fprintf(stdout, "\n");
-          //   FLOOP fprintf(stdout, "%6.5e ", residual[ip]);
-          //   fprintf(stdout, "\n");
-          //   FLOOP fprintf(stdout, "%6.5e ", delta_prim[ip]);
-          //   fprintf(stdout, "\n");
-          //   FLOOP fprintf(stdout, "%6.5e ", S_linesearch->P[ip][k][j][i]);
-          //   fprintf(stdout, "\nStep length: %6.5e %d %6.5e %6.5e\n", step_length, condition, denom, step_length_new);
-          // }
 
           // Check if new solution has converged to required tolerance
           if (condition == 0) break;
@@ -186,21 +177,7 @@ void imex_timestep(struct GridGeom *G, struct FluidState *Si, struct FluidState 
 
         // Check for convergence
         if (norm < rootfind_tol)
-          pflag[k][j][i] = 0.;
-
-        // if ((i == N1D) && (j == N2D) && (k == NG)) {
-        //   fprintf(stdout, "\n");
-        //   FLOOP fprintf(stdout, "%6.5e ", residual[ip]);
-        //   fprintf(stdout, "\n");
-        //   FLOOP fprintf(stdout, "%6.5e ", divF[ip]);
-        //   fprintf(stdout, "\n");
-        //   FLOOP fprintf(stdout, "%6.5e ", sources_explicit[ip]);
-        //   fprintf(stdout, "\n");
-        //   FLOOP fprintf(stdout, "%6.5e ", sources_implicit_old[ip]);
-        //   fprintf(stdout, "\n");
-        //   PLOOP fprintf(stdout, "%6.5e ", S_solver->P[ip][k][j][i]);
-        //   fprintf(stdout, "\n");          
-        // }
+          pflag[k][j][i] = 0;
       
       }// End of pflag check
 
@@ -240,14 +217,6 @@ void residual_calc(struct GridGeom *G, struct FluidState *Stmp, struct FluidStat
   double sources_time_derivative[NFVAR] = {0};
   implicit_sources(G, Stmp, Ss, CENT, i, j, k, sources_implicit_new);
   time_derivative_sources(G, Stmp, Si, Ss, dt, CENT, i, j, k, sources_time_derivative);
-
-  // if ((i == N1D) && (j == N2D) && (k == NG)) {
-  //   fprintf(stdout, "\n%s \n", call_type);
-  //   FLOOP fprintf(stdout, "%6.5e ", sources_time_derivative[ip]);
-  //   fprintf(stdout, "\n");
-  //   FLOOP fprintf(stdout, "%6.5e ", sources_implicit_new[ip]);
-  //   fprintf(stdout, "\n");          
-  // }
   
   // Compute residual
   FLOOP residual[ip] = (Stmp->U[ip][k][j][i] - U_old[ip])/dt + divF[ip] 

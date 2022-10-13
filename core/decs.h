@@ -398,6 +398,8 @@ extern GridInt fail_save;
 extern GridInt fflag;
 #if IMEX
 extern GridDouble imex_errors;
+extern GridInt solve_fail;
+extern GridInt solve_fail_io;
 #endif
 //};
 

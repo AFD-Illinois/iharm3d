@@ -244,12 +244,13 @@ inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, in
   if (higher_order_terms_conduction == 1) {
     
     // Initializations
-    double rho      = S->P[RHO][k][j][i];
-    double tau      = S->tau[k][j][i];
-    double chi_emhd = S->chi_emhd[k][j][i];
-    double Theta    = S->Theta[k][j][i];
+    double rho   = S->P[RHO][k][j][i];
+    double u     = S->P[UU][k][j][i];
+    double pg     = (gam - 1.)*u;
+    double cs2   = gam*pg/(rho + gam*u);
+    double Theta = S->Theta[k][j][i]; // temperature has been updated above
 
-    S->q[k][j][i] *= (tau > 0.) ? sqrt(chi_emhd * rho * pow(Theta, 2) / tau) : 1.;
+    S->q[k][j][i] *= sqrt(rho * conduction_alpha * cs2 * pow(Theta, 2));
 
   }
   #endif
@@ -259,12 +260,13 @@ inline void get_state(struct GridGeom *G, struct FluidState *S, int i, int j, in
   if (higher_order_terms_viscosity == 1) {
     
     // Initializations
-    double rho     = S->P[RHO][k][j][i];
-    double tau     = S->tau[k][j][i];
-    double nu_emhd = S->nu_emhd[k][j][i];
-    double Theta   = S->Theta[k][j][i];
+    double rho   = S->P[RHO][k][j][i];
+    double u     = S->P[UU][k][j][i];
+    double pg     = (gam - 1.)*u;
+    double cs2   = gam*pg/(rho + gam*u);
+    double Theta = S->Theta[k][j][i]; // temperature has been updated above
 
-    S->delta_p[k][j][i] *= (tau > 0.) ? sqrt(nu_emhd * rho * Theta / tau) : 1.;
+    S->delta_p[k][j][i] *= sqrt(rho * viscosity_alpha * cs2 * Theta);
 
   }
   #endif
@@ -314,12 +316,13 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
       if (higher_order_terms_conduction == 1) {
 
         // Initializations
-        double rho      = S->P[RHO][k][j][i];
-        double tau      = S->tau[k][j][i];
-        double chi_emhd = S->chi_emhd[k][j][i];
-        double Theta    = S->Theta[k][j][i];
+        double rho   = S->P[RHO][k][j][i];
+        double u     = S->P[UU][k][j][i];
+        double pg    = (gam - 1.)*u;
+        double cs2   = gam*pg/(rho + gam*u);
+        double Theta = S->Theta[k][j][i];
 
-        S->q[k][j][i] *= (tau > 0.) ? sqrt(chi_emhd * rho * pow(Theta, 2) / tau) : 1.;
+        S->q[k][j][i] *= sqrt(rho * conduction_alpha * cs2 * pow(Theta, 2));
       }
       #endif
       #if VISCOSITY
@@ -328,12 +331,13 @@ void get_state_vec(struct GridGeom *G, struct FluidState *S, int loc,
       if (higher_order_terms_viscosity == 1) {
 
         // Initializations
-        double rho     = S->P[RHO][k][j][i];
-        double tau     = S->tau[k][j][i];
-        double nu_emhd = S->nu_emhd[k][j][i];
-        double Theta   = S->Theta[k][j][i];
+        double rho   = S->P[RHO][k][j][i];
+        double u     = S->P[UU][k][j][i];
+        double pg    = (gam - 1.)*u;
+        double cs2   = gam*pg/(rho + gam*u);
+        double Theta = S->Theta[k][j][i];
 
-        S->delta_p[k][j][i] *= (tau > 0.) ? sqrt(nu_emhd * rho * Theta / tau) : 1.;
+        S->delta_p[k][j][i] *= sqrt(rho * viscosity_alpha * cs2 * Theta);
       }
       #endif      
     }
@@ -374,7 +378,7 @@ inline void mhd_vchar(struct GridGeom *G, struct FluidState *S, int i, int j, in
   bsq = MY_MAX(bsq_calc(S, i, j, k), SMALL);
   rho = S->P[RHO][k][j][i];
   u = S->P[UU][k][j][i];
-  ef = rho + gam*u;
+  ef = MY_MAX(rho + gam*u, SMALL);
   ee = bsq + ef;
   va2 = bsq/ee;
   cs2 = gam*(gam - 1.)*u/ef;

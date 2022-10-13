@@ -259,7 +259,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
 // IMEX timestep
 #if IMEX
   
-  // Set pflags and fail_save to zero
+  // Set pflags, fail_save and solve_fail to zero
   zero_arrays();
 
   // Obtain Si->U
@@ -305,6 +305,7 @@ inline double advance_fluid(struct GridGeom *G, struct FluidState *Si,
   #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
     fail_save[k][j][i] = pflag[k][j][i];
+    solve_fail_io[k][j][i] = solve_fail[k][j][i];
     // pflag[k][j][i] = 0.;
   }
 

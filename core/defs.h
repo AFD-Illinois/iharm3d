@@ -14,6 +14,8 @@ GridInt fail_save;
 GridInt fflag;
 #if IMEX
 GridDouble imex_errors;
+GridInt solve_fail;
+GridInt solve_fail_io;
 #endif
 
 #if DEBUG

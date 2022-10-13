@@ -272,7 +272,9 @@ void dump_backend(struct GridGeom *G, struct FluidState *S, int type)
     // Write out the L2 norm of the residuals.
     #if IMEX
     pack_write_scalar(imex_errors, "imex_errors", OUT_H5_TYPE);
+    pack_write_scalar(solve_fail_io, "solver_failures", H5T_STD_I32LE);
     ZLOOP imex_errors[k][j][i] = 0.;
+    ZLOOP solve_fail_io[k][j][i] = 0;
     #endif
   }
 

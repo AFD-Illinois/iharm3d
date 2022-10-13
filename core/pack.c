@@ -26,6 +26,11 @@ void pack_write_scalar(double in[N3+2*NG][N2+2*NG][N1+2*NG], const char* name, h
       ((float*) out)[ind] = (float) in[k][j][i];
       ind++;
     }
+  } else if (hdf5_type == H5T_STD_I32LE) {
+    ZLOOP_OUT {
+      ((int*) out)[ind] = (int) in[k][j][i];
+      ind++;
+    }
   } else {
     fprintf(stderr, "Scalar type not supported!\n\n");
     exit(-1);

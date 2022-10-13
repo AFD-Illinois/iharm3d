@@ -338,9 +338,11 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   // Flip the logic of the pflag[] so that it now indicates which cells are good
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
-    pflag[k][j][i] = !pflag[k][j][i];
+      pflag[k][j][i] = !pflag[k][j][i];
+      #if IMEX
+      solve_fail[k][j][i] = !solve_fail[k][j][i];
+      #endif
   }
-
 #if DEBUG
   int nbad_utop = 0;
 #pragma omp parallel for simd collapse(2) reduction (+:nbad_utop)
@@ -353,6 +355,22 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
 
   // Make sure we are not using ill defined physical corner regions
   // TODO find a way to do this once, or put it in bounds at least?
+  #if IMEX
+  for (int k = 0; k < NG; k++) {
+    for (int j = 0; j < NG; j++) {
+      for (int i = 0; i < NG; i++) {
+        if(global_start[2] == 0 && global_start[1] == 0 && global_start[0] == 0) solve_fail[k][j][i] = 0;
+        if(global_start[2] == 0 && global_start[1] == 0 && global_stop[0] == N1TOT) solve_fail[k][j][i+N1+NG] = 0;
+        if(global_start[2] == 0 && global_stop[1] == N2TOT && global_start[0] == 0) solve_fail[k][j+N2+NG][i] = 0;
+        if(global_stop[2] == N3TOT && global_start[1] == 0 && global_start[0] == 0) solve_fail[k+N3+NG][j][i] = 0;
+        if(global_start[2] == 0 && global_stop[1] == N2TOT && global_stop[0] == N1TOT) solve_fail[k][j+N2+NG][i+N1+NG] = 0;
+        if(global_stop[2] == N3TOT && global_start[1] == 0 && global_stop[0] == N1TOT) solve_fail[k+N3+NG][j][i+N1+NG] = 0;
+        if(global_stop[2] == N3TOT && global_stop[1] == N2TOT && global_start[0] == 0) solve_fail[k+N3+NG][j+N2+NG][i] = 0;
+        if(global_stop[2] == N3TOT && global_stop[1] == N2TOT && global_stop[0] == N1TOT) solve_fail[k+N3+NG][j+N2+NG][i+N1+NG] = 0;
+      }
+    }
+  }
+  #else
   for (int k = 0; k < NG; k++) {
     for (int j = 0; j < NG; j++) {
       for (int i = 0; i < NG; i++) {
@@ -366,7 +384,8 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
         if(global_stop[2] == N3TOT && global_stop[1] == N2TOT && global_stop[0] == N1TOT) pflag[k+N3+NG][j+N2+NG][i+N1+NG] = 0;
       }
     }
-}
+  }
+  #endif
 
 #if DEBUG
   // Keep track of how many points we fix
@@ -376,6 +395,31 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
   // TODO is parallelizing this version okay?
 //#pragma omp parallel for collapse(3) reduction(+:bad)
   ZLOOP {
+    #if IMEX
+    if (solve_fail[k][j][i] == 0) {
+      double wsum = 0.;
+      double sum[NFVAR];
+      FLOOP sum[ip] = 0.;
+      for (int l = -1; l < 2; l++) {
+        for (int m = -1; m < 2; m++) {
+          for (int n = -1; n < 2; n++) {
+            double w = 1./(abs(l) + abs(m) + abs(n) + 1)*solve_fail[k+n][j+m][i+l];
+            wsum += w;
+            FLOOP sum[ip] += w*S->P[ip][k+n][j+m][i+l];
+          }
+        }
+      }
+      if(wsum < 1.e-10) {
+        fprintf(stderr, "fixup_utoprim: No usable neighbors at %d %d %d\n", i, j, k);
+        continue;
+      }
+      FLOOP S->P[ip][k][j][i] = sum[ip]/wsum;
+
+      fixup_ceiling(G, S, i, j, k, CENT);
+      get_state(G, S, i, j, k, CENT);
+      fixup_floor(G, S, i, j, k, CENT);
+    }
+    #else
     if (pflag[k][j][i] == 0) {
       double wsum = 0.;
       double sum[NFVAR];
@@ -411,6 +455,8 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
       get_state(G, S, i, j, k, CENT);
       fixup_floor(G, S, i, j, k, CENT);
     }
+
+    #endif
   }
 
 #if DEBUG
@@ -422,6 +468,9 @@ void fixup_utoprim(struct GridGeom *G, struct FluidState *S)
 #pragma omp parallel for simd collapse(2)
   ZLOOPALL {
     pflag[k][j][i] = 0;
+    #if IMEX
+    solve_fail[k][j][i] = 0;
+    #endif
   }
 
   timer_stop(TIMER_FIXUP);

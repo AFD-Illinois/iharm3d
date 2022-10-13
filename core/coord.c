@@ -330,5 +330,9 @@ void zero_arrays()
   ZLOOPALL {
     pflag[k][j][i] = 0;
     fail_save[k][j][i] = 0;
+    #if IMEX
+    solve_fail[k][j][i] = 0.;
+    solve_fail_io[k][j][i] = 0;
+    #endif
   }
 }
