@@ -170,22 +170,48 @@ void gcov_func(double X[NDIM], double gcov[NDIM][NDIM])
   sth = sin(th);
 
   s2 = sth*sth;
-  rho2 = r*r + a*a*cth*cth;
+  // rho2 = r*r + a*a*cth*cth;
 
-  gcov[0][0] = -1. + 2.*r/rho2;
-  gcov[0][1] = 2.*r/rho2;
-  gcov[0][3] = -2.*a*r*s2/rho2;
+  // gcov[0][0] = -1. + 2.*r/rho2;
+  // gcov[0][1] = 2.*r/rho2;
+  // gcov[0][3] = -2.*a*r*s2/rho2;
+
+  // gcov[1][0] = gcov[0][1];
+  // gcov[1][1] = 1. + 2.*r/rho2;
+  // gcov[1][3] = -a*s2*(1. + 2.*r/rho2);
+
+  // gcov[2][2] = rho2;
+
+  // gcov[3][0] = gcov[0][3];
+  // gcov[3][1] = gcov[1][3];
+  // gcov[3][3] = s2*(rho2 + a*a*s2*(1. + 2.*r/rho2));
+
+  double gtt, gg, gthth;
+  double gvec[3];
+  get_coefficients(r, th, gvec);
+  gtt = gvec[0];
+  gg = gvec[1];
+  gthth = gvec[2];
+
+  double twoF = (1./sqrt(gg) - (gtt/gg))*gthth;
+  double Delta = gthth*(gtt/gg) + a*a;
+  double Sigma = gthth/sqrt(gg) + a*a*cth*cth;
+  double PII = (gthth/sqrt(gg) + a*a)*(gthth/sqrt(gg) + a*a) - Delta*a*a*s2;
+
+  gcov[0][0] = -(1. - twoF/Sigma);
+  gcov[0][1] = twoF/Sigma;
+  gcov[0][3] = -twoF/Sigma*a*s2;
 
   gcov[1][0] = gcov[0][1];
-  gcov[1][1] = 1. + 2.*r/rho2;
-  gcov[1][3] = -a*s2*(1. + 2.*r/rho2);
+  gcov[1][1] = (1. + twoF/Sigma);
+  gcov[1][3] = -(1. + twoF/Sigma)*a*s2;
 
-  gcov[2][2] = rho2;
+  gcov[2][2] = Sigma;
 
   gcov[3][0] = gcov[0][3];
   gcov[3][1] = gcov[1][3];
-  gcov[3][3] = s2*(rho2 + a*a*s2*(1. + 2.*r/rho2));
-
+  gcov[3][3] = PII/Sigma*s2;
+  
   // Apply coordinate transformation to code coordinates X
   double dxdX[NDIM][NDIM];
   set_dxdX(X, dxdX);
@@ -220,8 +246,8 @@ void set_points()
   // Set Rin such that we have 5 zones completely inside the event horizon
   // If xeh = log(Rhor), xin = log(Rin), and xout = log(Rout),
   // then we want xeh = xin + 5.5 * (xout - xin) / N1TOT, or solving/replacing:
-  Rin = exp((N1TOT * log(Rhor) / 5.5 - log(Rout)) / (-1. + N1TOT / 5.5));
-
+  //Rin = exp((N1TOT * log(Rhor) / 5.5 - log(Rout)) / (-1. + N1TOT / 5.5));
+  Rin = 1.1051709180756477;
   startx[1] = log(Rin);
   if (startx[1] < 0.0) { ERROR("Not enough radial zones! Increase N1!"); }
   startx[2] = 0.;

@@ -1,0 +1,568 @@
+/******************************************************************************
+ *                                                                            *
+ * PROBLEM.C                                                                  *
+ *                                                                            *
+ * INITIAL CONDITIONS FOR FISHBONE-MONCRIEF TORUS                             *
+ *                                                                            *
+ ******************************************************************************/
+
+#include "bl_coord.h"
+#include "decs.h"
+#include "hdf5_utils.h"
+
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
+
+static gsl_rng *rng;
+
+// Local declarations
+double lfish_calc(double rmax);
+double lfish_calc_2(double rmax);
+
+// Different MAD initializations
+#define SANE 0
+#define RYAN 1
+#define R3S3 2
+#define GAUSSIAN 3
+#define NARAYAN 4
+
+// Alternative normalization from HARMPI.  Dosn't seem common to use
+static int maxr_normalization = 0;
+
+// TODO allow initialization of mad_type w/string?
+static int mad_type;
+static double BHflux, beta;
+static double rin, rmax;
+static double rBstart, rBend;
+static double u_jitter;
+void set_problem_params() {
+  set_param("rin", &rin);
+  set_param("rmax", &rmax);
+  set_param("u_jitter", &u_jitter);
+
+  set_param("mad_type", &mad_type);
+  set_param("BHflux", &BHflux);
+  set_param("beta", &beta);
+
+  set_param("rBstart", &rBstart);
+  set_param("rBend", &rBend);
+}
+
+// Save problem specific details
+// This is done in each dump file in /header/problem/
+void save_problem_data(hid_t string_type)
+{
+	hdf5_write_single_val(&mad_type, "mad_type", H5T_STD_I32LE);
+	hdf5_write_single_val("torus", "PROB", string_type);
+	hdf5_write_single_val(&rin, "rin", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&rmax, "rmax", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&beta, "beta", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&u_jitter, "u_jitter", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&BHflux, "bhflux", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&rBstart, "rBstart", H5T_IEEE_F64LE);
+	hdf5_write_single_val(&rBend, "rBend", H5T_IEEE_F64LE);
+
+}
+void metric_rderivatives(double r, double th, double dgcov[4][4]) {
+  double dr = 1e-6;
+  double gcov_r1[4][4], gcov_r2[4][4], gcov_r3[4][4], gcov_r4[4][4];
+
+  bl_gcov_func(r + 2 * dr, th, gcov_r1); 
+  bl_gcov_func(r + dr, th, gcov_r2);     
+  bl_gcov_func(r - dr, th, gcov_r3);     
+  bl_gcov_func(r - 2 * dr, th, gcov_r4); 
+
+  for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+          dgcov[i][j] = (-gcov_r1[i][j] + 8 * gcov_r2[i][j] - 8 * gcov_r3[i][j] + gcov_r4[i][j]) / (12.0 * dr);
+      }
+  }
+}
+double get_lnh(double gcov[NDIM][NDIM], double l){
+
+  double exp2psi = gcov[3][3];
+  double exp2nu = gcov[0][3]/gcov[3][3] - gcov[0][0];
+  double t1 = -0.5*sqrt(4.*l*l*exp2nu/exp2psi + 1.) + 0.5*log((sqrt(1. + 4.*l*l*exp2nu/exp2psi) + 1.)/exp2nu);
+  return t1;
+
+}
+void init(struct GridGeom *G, struct FluidState *S)
+{
+  // Magnetic field
+  double (*A)[N2 + 2*NG] = malloc(sizeof(*A) * (N1 + 2*NG));
+
+  // Initialize RNG
+  rng = gsl_rng_alloc(gsl_rng_mt19937);
+  gsl_rng_set(rng, mpi_myrank());  // Deterministic but not symmetric across MPI procs
+
+  // Fishbone-Moncrief parameters
+  //double l = lfish_calc(rmax);
+  double l = lfish_calc_2(rmax);
+  double kappa = 1.e-3;
+
+  // Grid parameters
+  // Rhor = (1. + sqrt(1. - a*a));
+  Rhor = 0.1;
+  // These are never used but I'm keeping them around in case
+  //double z1 = 1 + pow(1 - a*a,1./3.)*(pow(1+a,1./3.) + pow(1-a,1./3.));
+  //double z2 = sqrt(3*a*a + z1*z1);
+  //Risco = 3 + z2 - sqrt((3-z1)*(3 + z1 + 2*z2));
+
+  set_grid(G);
+  LOG("Grid set");
+
+  // TODO put this in a function
+  double rhomax = 0.;
+  double umax = 0.;
+  ZSLOOP(-1, N3, -1, N2, -1, N1) {
+    double X[NDIM];
+    coord(i, j, k, CENT, X);
+    double r, th;
+    bl_coord(X, &r, &th);
+
+    double sth = sin(th);
+    double cth = cos(th);
+
+    // Calculate lnh
+    double DD = r * r - 2. * r + a * a;
+    double AA = (r * r + a * a) * (r * r + a * a) -
+             DD * a * a * sth * sth;
+    double SS = r * r + a * a * cth * cth;
+
+    double thin = M_PI / 2.;
+    double sthin = sin(thin);
+    double cthin = cos(thin);
+
+    double DDin = rin * rin - 2. * rin + a * a;
+    double AAin = (rin * rin + a * a) * (rin * rin + a * a)
+             - DDin * a * a * sthin * sthin;
+    double SSin = rin * rin + a * a * cthin * cthin;
+
+    double lnh;
+    double gcov[NDIM][NDIM],gcov_rin_thpi[NDIM][NDIM];
+    bl_gcov_func(r, th, gcov);
+    bl_gcov_func(rin, M_PI/2, gcov_rin_thpi);
+    double omega = -gcov[0][3]/gcov[3][3];
+    double omega_rin_pi2 = -gcov_rin_thpi[0][3]/gcov_rin_thpi[3][3];
+    double lnh2; 
+    if (r >= rin) {
+      
+       lnh = get_lnh(gcov, l) - l*omega - (get_lnh(gcov_rin_thpi, l) + l*omega_rin_pi2);
+      //fprintf(stderr, "diff(l), diff(lnh): %f, %f\n", l-l_g, lnh-lnh2 );
+    } else {
+      lnh = 1.;
+    }
+
+    // regions outside torus
+    if (lnh < 0. || r < rin) {
+      // Nominal values; real value set by fixup
+
+      S->P[RHO][k][j][i] = 1.e-7 * RHOMIN;
+      S->P[UU][k][j][i] = 1.e-7 * UUMIN;
+      S->P[U1][k][j][i] = 0.;
+      S->P[U2][k][j][i] = 0.;
+      S->P[U3][k][j][i] = 0.;
+    }
+    /* region inside magnetized torus; u^i is calculated in
+     * Boyer-Lindquist coordinates, as per Fishbone & Moncrief,
+     * so it needs to be transformed at the end */
+    else {
+      double hm1 = exp(lnh) - 1.;
+      double rho = pow(hm1 * (gam - 1.) / (kappa * gam),
+               1. / (gam - 1.));
+      double u = kappa * pow(rho, gam) / (gam - 1.);
+
+      // Calculate u^phi
+      double gcov[NDIM][NDIM], dmet[NDIM][NDIM];
+       bl_gcov_func(r, th, gcov);
+       double gtt = gcov[0][0];
+       double gphph = gcov[3][3];
+       double gtph = gcov[0][3];
+ 
+       // double expm2chi = SS * SS * DD / (AA * AA * sth * sth);
+       double expm2chi = (gtph - gtt*gphph)/gphph/gphph;
+       double up1 =
+           sqrt((-1. +
+           sqrt(1. + 4. * l * l * expm2chi)) / 2.);
+ 
+       // double up = 2. * a * r * sqrt(1. +
+       //            up1 * up1) / sqrt(AA * SS *
+       //            DD) +
+       //     sqrt(SS / AA) * up1 / sth;
+       double exppsi = sqrt(gphph);
+       double expnu = sqrt(gtph - gtt*gphph);
+       double omega = -gtph/gphph;
+       double up = up1/exppsi + omega/expnu*sqrt(1. + up1*up1);
+
+
+      S->P[RHO][k][j][i] = rho;
+      if (rho > rhomax) rhomax = rho;
+      if (u > umax && r > rin) umax = u;
+      u *= (1. + u_jitter * (gsl_rng_uniform(rng) - 0.5));
+      S->P[UU][k][j][i] = u;
+      S->P[U1][k][j][i] = 0.;
+      S->P[U2][k][j][i] = 0.;
+      S->P[U3][k][j][i] = up;
+
+      // Convert from 4-velocity to 3-velocity
+      coord_transform(G, S, i, j, k);
+    }
+
+    S->P[B1][k][j][i] = 0.;
+    S->P[B2][k][j][i] = 0.;
+    S->P[B3][k][j][i] = 0.;
+  } // ZSLOOP
+
+  // Find the zone in which rBend of Narayan condition resides
+  // This just uses the farthest process in R
+  // For /very/ large N1CPU it might fail
+  // TODO only do this for NARAYAN condition
+  int iend_global = 0;
+  if (global_stop[0] == N1TOT && global_start[1] == 0 && global_start[2] == 0) {
+    int iend = NG;
+    double r_iend = 0.0;
+    while (r_iend < rBend) {
+      iend++;
+      double Xend[NDIM];
+      coord(iend,N2/2+NG,NG,CORN,Xend);
+      double thend;
+      bl_coord(Xend,&r_iend,&thend);
+    }
+    iend--;
+    iend_global = global_start[0] + iend - NG; //Translate to coordinates for uu_mid below
+    if(DEBUG) printf("[MPI %d] Furthest torus zone is %d (locally %d), at r = %f\n", mpi_myrank(), iend_global, iend, r_iend);
+  }
+  iend_global = mpi_reduce_int(iend_global);
+
+  // Normalize the densities so that max(rho) = 1
+  umax = mpi_max(umax);
+  rhomax = mpi_max(rhomax);
+
+#pragma omp parallel for simd collapse(2)
+  ZLOOPALL {
+    S->P[RHO][k][j][i] /= rhomax;
+    S->P[UU][k][j][i] /= rhomax;
+  }
+  umax /= rhomax;
+  rhomax = 1.;
+  fixup(G, S);
+  set_bounds(G, S);
+
+  // Calculate UU along midplane, propagate to all processes
+  double *uu_plane_send = calloc(N1TOT,sizeof(double));
+
+  // This relies on an even N2TOT /and/ N2CPU
+  if ((global_start[1] == N2TOT/2 || N2CPU == 1) && global_start[2] == 0) {
+    int j_mid = N2TOT/2 - global_start[1] + NG;
+    int k = NG; // Axisymmetric
+    ILOOP {
+      int i_global = global_start[0] + i - NG;
+      uu_plane_send[i_global] = 0.25*(S->P[UU][k][j_mid][i] + S->P[UU][k][j_mid][i-1] +
+                          S->P[UU][k][j_mid-1][i] + S->P[UU][k][j_mid-1][i-1]);
+    }
+  }
+
+  double *uu_plane = calloc(N1TOT,sizeof(double));
+  mpi_reduce_vector(uu_plane_send, uu_plane, N1TOT);
+  free(uu_plane_send);
+  //printf ("UU in plane is "); for (int i =0; i < N1TOT; i++) printf("%.10e ", uu_plane[i]);
+
+  // Find corner-centered vector potential
+#pragma omp parallel for simd collapse(2)
+  ZSLOOP(0, 0, -NG+1, N2+NG-1, -NG+1, N1+NG-1) {
+    double X[NDIM];
+    coord(i,j,k,CORN,X);
+    double r, th;
+    bl_coord(X,&r,&th);
+
+    double q;
+
+    // Field in disk
+    double rho_av = 0.25*(S->P[RHO][k][j][i] + S->P[RHO][k][j][i-1] +
+                    S->P[RHO][k][j-1][i] + S->P[RHO][k][j-1][i-1]);
+    double uu_av = 0.25*(S->P[UU][k][j][i] + S->P[UU][k][j][i-1] +
+                         S->P[UU][k][j-1][i] + S->P[UU][k][j-1][i-1]);
+
+    int i_global = global_start[0] + i - NG;
+    double uu_plane_av = uu_plane[i_global];
+    double uu_end = uu_plane[iend_global];
+
+    if (N3 > 1) {
+      if (mad_type == SANE) {
+        q = rho_av/rhomax - 0.2;
+      } else if (mad_type == RYAN) { // BR's smoothed poloidal in-torus
+        q = pow(sin(th),3)*pow(r/rin,3.)*exp(-r/400)*rho_av/rhomax - 0.2;
+
+      } else if (mad_type == R3S3) { // Just the r^3 sin^3 th term, proposed EHT standard MAD
+        q = pow(r/rin,3.)*rho_av/rhomax - 0.2;
+
+      } else if (mad_type == GAUSSIAN) { // Gaussian-strength vertical threaded field
+        double wid = 2; //Radius of half-maximum. Units of rin
+        q = gsl_ran_gaussian_pdf((r/rin)*sin(th), wid/sqrt(2*log(2)));
+
+      } else if (mad_type == NARAYAN) { // Narayan '12, Penna '12 conditions
+        // Former uses rstart=25, rend=810, lam_B=25
+        double uc = uu_av - uu_end;
+        double ucm = uu_plane_av - uu_end;
+        q = pow(sin(th),3)*(uc/(ucm+SMALL) - 0.2) / 0.8;
+        //Exclude q outside torus and large q resulting from division by SMALL
+        if ( r > rBend || r < rBstart || fabs(q) > 1.e2 ) q = 0;
+
+        //if (q != 0 && th > M_PI/2-0.1 && th < M_PI/2+0.1) printf("q_mid is %.10e\n", q);
+      } else {
+        printf("MAD = %i not supported!\n", mad_type);
+        exit(-1);
+      }
+    } else { // TODO How about 2D?
+      q = rho_av/rhomax;
+    }
+
+    A[i][j] = 0.;
+    if (q > 0.) {
+      if (mad_type == NARAYAN) { // Narayan limit uses alternating loops
+        double lam_B = 25;
+        double flux_correction = sin( 1/lam_B * (pow(r,2./3) + 15./8*pow(r,-2./5) - pow(rBstart,2./3) - 15./8*pow(rBstart,-2./5)));
+        double q_mod = q*flux_correction;
+        A[i][j] = q_mod;
+      } else {
+        A[i][j] = q;
+      }
+    }
+  } // ZSLOOP
+
+  // Calculate B-field and find bsq_max
+  double bsq_max = 0.;
+  double beta_min = 1e100;
+  ZLOOP {
+    double X[NDIM];
+    coord(i,j,k,CORN,X);
+    double r, th;
+    bl_coord(X,&r,&th);
+
+    // Flux-ct
+    S->P[B1][k][j][i] = -(A[i][j] - A[i][j + 1]
+	+ A[i + 1][j] - A[i + 1][j + 1]) /
+	(2. * dx[2] * G->gdet[CENT][j][i]);
+    S->P[B2][k][j][i] = (A[i][j] + A[i][j + 1]
+	     - A[i + 1][j] - A[i + 1][j + 1]) /
+	     (2. * dx[1] * G->gdet[CENT][j][i]);
+
+    S->P[B3][k][j][i] = 0.;
+
+    get_state(G, S, i, j, k, CENT);
+    if ((r > rBstart && r < rBend) || mad_type != NARAYAN) {
+      double bsq_ij = bsq_calc(S, i, j, k);
+      if (bsq_ij > bsq_max) bsq_max = bsq_ij;
+      double beta_ij = (gam - 1.)*(S->P[UU][k][j][i])/(0.5*(bsq_ij+SMALL)) ;
+      if(beta_ij < beta_min) beta_min = beta_ij ;
+    }
+  }
+  bsq_max = mpi_max(bsq_max);
+  beta_min = mpi_min(beta_min);
+
+  double umax_plane = 0;
+  for (int i = 0; i < N1TOT; i++) {
+      double X[NDIM];
+      coord(i,NG,NG,CORN,X);
+      double r, th;
+      bl_coord(X,&r,&th);
+      if ((r > rBstart && r < rBend) || mad_type != NARAYAN) {
+        if (uu_plane[i] > umax_plane) umax_plane = uu_plane[i];
+      }
+  }
+
+  double norm = 0;
+  if (!maxr_normalization) {
+    // Ratio of max UU, beta
+    double beta_act = (gam - 1.) * umax / (0.5 * bsq_max);
+    // In plane only
+    //double beta_act = (gam - 1.) * umax_plane / (0.5 * bsq_max);
+    LOGN("Umax is %.10e", umax);
+    LOGN("bsq_max is %.10e", bsq_max);
+    LOGN("beta is %.10e", beta_act);
+    norm = sqrt(beta_act / beta);
+  } else {
+    // Beta_min = 100 normalization
+    LOGN("Min beta in torus is %f", beta_min);
+    norm = sqrt(beta_min / beta) ;
+  }
+
+  // Apply normalization
+  LOGN("Normalization is %f\n", norm);
+  ZLOOP {
+    S->P[B1][k][j][i] *= norm ;
+    S->P[B2][k][j][i] *= norm ;
+    // B3 is uniformly 0
+  }
+
+  // This adds a central flux based on specifying some BHflux
+  // Initialize a net magnetic field inside the initial torus
+  // TODO do this only for BHflux > SMALL
+  ZSLOOP(0, 0, 0, N2, 0, N1) {
+    double X[NDIM];
+    coord(i,j,k,CORN,X);
+    double r,th;
+    bl_coord(X, &r, &th);
+
+    A[i][j] = 0.;
+
+    double x = r*sin(th);
+    double z = r*cos(th);
+    double a_hyp = 20.;
+    double b_hyp = 60.;
+    double x_hyp = a_hyp*sqrt(1. + pow(z/b_hyp,2));
+
+    double q = (pow(x,2) - pow(x_hyp,2))/pow(x_hyp,2);
+    if (x < x_hyp) {
+      A[i][j] = 10.*q;
+    }
+  }
+
+  // Evaluate net flux
+  double Phi_proc = 0.;
+  ISLOOP(5, N1-1) {
+    JSLOOP(0, N2-1) {
+      int jglobal = j - NG + global_start[1];
+      //int j = N2/2+NG;
+      int k = NG;
+      if (jglobal == N2TOT / 2) {
+        double X[NDIM];
+        coord(i, j, k, CENT, X);
+        double r, th;
+        bl_coord(X, &r, &th);
+
+        if (r < rin) {
+          double B2net = (A[i][j] + A[i][j + 1] - A[i + 1][j] - A[i + 1][j + 1]);
+          // / (2.*dx[1]*G->gdet[CENT][j][i]);
+          Phi_proc += fabs(B2net) * M_PI / N3CPU; // * 2.*dx[1]*G->gdet[CENT][j][i]
+        }
+      }
+    }
+  }
+
+  //If left bound in X1.  Note different convention from bhlight!
+  if (global_start[0] == 0) {
+    JSLOOP(0, N2/2-1) {
+      int i = 5 + NG;
+
+      double B1net = -(A[i][j] - A[i][j+1] + A[i+1][j] - A[i+1][j+1]); // /(2.*dx[2]*G->gdet[CENT][j][i]);
+      Phi_proc += fabs(B1net)*M_PI/N3CPU;  // * 2.*dx[2]*G->gdet[CENT][j][i]
+    }
+  }
+  double Phi = mpi_reduce(Phi_proc);
+
+  norm = BHflux/(Phi + SMALL);
+
+  ZLOOP {
+    // Flux-ct
+    S->P[B1][k][j][i] += -norm
+        * (A[i][j] - A[i][j + 1] + A[i + 1][j] - A[i + 1][j + 1])
+        / (2. * dx[2] * G->gdet[CENT][j][i]);
+    S->P[B2][k][j][i] += norm
+        * (A[i][j] + A[i][j + 1] - A[i + 1][j] - A[i + 1][j + 1])
+        / (2. * dx[1] * G->gdet[CENT][j][i]);
+  }
+
+#if ELECTRONS
+  init_electrons(G,S);
+#endif
+
+  // Enforce boundary conditions
+  fixup(G, S);
+  set_bounds(G, S);
+
+  LOG("Finished init()");
+
+}
+
+// This function calculates specific the angular momentum of the
+// Fishbone-Moncrief solution in the midplane,
+// as a function of radius.
+// (see Fishbone & Moncrief eqn. 3.8)
+// It improves on (3.8) by requiring no sign changes
+// for co-rotating (a > 0) vs counter-rotating (a < 0)
+// disks.
+
+double eval_equation(double l, double gphph, double gtt, double gtph, double dgphph, double dgtt, double dgtph) {
+  double psi = 0.5 * log(gphph);
+  double nu = 0.5 * log(gtph/gphph - gtt);
+  double omega = -gtph / gphph;
+  double dpsi = 0.5 * dgphph / gphph;
+  double dnu = 0.5 * (dgtph/gphph - gtph*dgphph/(gphph*gphph) - dgtt) / (gtph/gphph - gtt);
+  double domega = -(dgtph*gphph - gtph*dgphph) / (gphph*gphph);
+  double term1 = -0.5 * (dpsi + dnu);
+  double term2 = -l * domega;
+  double exp2nu = gtph/ gphph - gtt;
+  double exp2psi = gphph;
+  double sqrt_term = 1.0 + (4.0 * l*l * exp2nu) / exp2psi;
+  double term3 = 0.5 * (dpsi - dnu) * sqrt(sqrt_term);
+
+  return term1 + term2 + term3;
+}
+
+double solve_for_l(double l_min, double l_max, double gphph, double gtt, double gtph, double dgphph, double dgtt, double dgtph) {
+  double f_min = eval_equation(l_min, gphph, gtt, gtph, dgphph, dgtt, dgtph);
+  double f_max = eval_equation(l_max, gphph, gtt, gtph, dgphph, dgtt, dgtph);
+  double TOLERANCE = 1e-12;
+  int MAX_ITER = 1000; 
+  if (f_min * f_max > 0) {
+      fprintf(stderr, "Root not bracketed [%f, %f]\n", l_min, l_max);
+      return NAN;
+  }
+  
+  double l_mid, f_mid;
+  int iter = 0;
+  
+  while (fabs(l_max - l_min) > TOLERANCE && iter < MAX_ITER) {
+      iter++;
+      l_mid = (l_min + l_max) / 2.0;
+      f_mid = eval_equation(l_mid, gphph, gtt, gtph, dgphph, dgtt, dgtph);
+      if (fabs(f_mid) < TOLERANCE) {
+          return l_mid;
+      } else if (f_mid * f_min < 0) {
+          l_max = l_mid;
+          f_max = f_mid;
+      } else {
+          l_min = l_mid;
+          f_min = f_mid;
+      }
+  }
+  
+  return (l_min + l_max) / 2.0;
+}
+
+double lfish_calc_2(double r)
+{
+    double gcov[NDIM][NDIM], dgcov[NDIM][NDIM];
+    bl_gcov_func(r, M_PI/2., gcov);
+    metric_rderivatives(r, M_PI/2., dgcov);
+
+    double gtt = gcov[0][0];
+    double gphph = gcov[3][3];
+
+    double gtph = gcov[0][3];
+    double dgphph = dgcov[3][3];
+    double dgtt = dgcov[0][0];
+    double dgtph = dgcov[0][3];
+
+    double l_min = 0;
+    double l_max = 10;
+
+    double lsolved = solve_for_l(l_min, l_max, gphph, gtt, gtph, dgphph, dgtt, dgtph);
+    return lsolved;
+}
+
+double lfish_calc(double r)
+{
+  return (((pow(a, 2) - 2. * a * sqrt(r) + pow(r, 2)) *
+     ((-2. * a * r *
+       (pow(a, 2) - 2. * a * sqrt(r) +
+        pow(r,
+      2))) / sqrt(2. * a * sqrt(r) + (-3. + r) * r) +
+      ((a + (-2. + r) * sqrt(r)) * (pow(r, 3) + pow(a, 2) *
+      (2. + r))) / sqrt(1 + (2. * a) / pow (r, 1.5) - 3. / r)))
+    / (pow(r, 3) * sqrt(2. * a * sqrt(r) + (-3. + r) * r) *
+       (pow(a, 2) + (-2. + r) * r))
+      );
+}
+

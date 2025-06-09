@@ -23,6 +23,6 @@ void bl_gcon_func(double r, double th, double gcon[NDIM][NDIM]);
 double bl_gdet_func(double r, double th);
 
 void bl_to_ks(double X[NDIM], double ucon_bl[NDIM], double ucon_ks[NDIM]);
-
+void get_coefficients(double r, double th, double gvec[3]);
 void coord_transform(struct GridGeom *G, struct FluidState *S, int i, int j, int k);
 

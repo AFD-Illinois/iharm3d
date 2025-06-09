@@ -407,6 +407,7 @@ void fix_flux(struct FluidFlux *F);
 // coord.c
 void coord(int i, int j, int k, int loc, double *X);
 void bl_coord(const double X[NDIM], double *r, double *th);
+void get_coefficients(double r, double th, double gvec[3]);
 void gcov_func(double *X, double gcov[NDIM][NDIM]);
 void set_dxdX(double X[NDIM], double dxdX[NDIM][NDIM]);
 void set_points();
