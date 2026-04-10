@@ -59,26 +59,26 @@ void current_calc(struct GridGeom *G, struct FluidState *S, struct FluidState *S
 
     // X0
     DLOOP1 {
-      gF0p[mu] = gFcon_calc(G, S,  0, mu, i, j, k);
-      gF0m[mu] = gFcon_calc(G, Ssave, 0, mu, i, j, k);
+      gF0p[mu] = gFcon_calc(G, S,     mu, 0, i, j, k);
+      gF0m[mu] = gFcon_calc(G, Ssave, mu, 0, i, j, k);
     }
 
     // X1
     DLOOP1 {
-      gF1p[mu] = gFcon_calc(G, Sa, 1, mu, i+1, j, k);
-      gF1m[mu] = gFcon_calc(G, Sa, 1, mu, i-1, j, k);
+      gF1p[mu] = gFcon_calc(G, Sa, mu, 1, i+1, j, k);
+      gF1m[mu] = gFcon_calc(G, Sa, mu, 1, i-1, j, k);
     }
 
     // X2
     DLOOP1 {
-      gF2p[mu] = gFcon_calc(G, Sa, 2, mu, i, j+1, k);
-      gF2m[mu] = gFcon_calc(G, Sa, 2, mu, i, j-1, k);
+      gF2p[mu] = gFcon_calc(G, Sa, mu, 2, i, j+1, k);
+      gF2m[mu] = gFcon_calc(G, Sa, mu, 2, i, j-1, k);
     }
 
     // X3
     DLOOP1 {
-      gF3p[mu] = gFcon_calc(G, Sa, 3, mu, i, j, k+1);
-      gF3m[mu] = gFcon_calc(G, Sa, 3, mu, i, j, k-1);
+      gF3p[mu] = gFcon_calc(G, Sa, mu, 3, i, j, k+1);
+      gF3m[mu] = gFcon_calc(G, Sa, mu, 3, i, j, k-1);
     }
 
     // Difference: D_mu F^{mu nu} = 4 \pi j^nu
